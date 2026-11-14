@@ -837,7 +837,8 @@ int main(int argc, char** argv)
             auto* cart = nds->NDSCartSlot.GetCart();
             const PkNdsFieldGame* g = cart ? pk_nds_field_game_rom(cart->GetROM(), cart->GetROMLength()) : nullptr;
             u32 args[4] = {n > 2 ? num(b) : 0, n > 3 ? num(c) : 0, n > 4 ? num(d) : 0, 0};
-            if (n > 5) sscanf(line, "%*s %*s %*s %*s %*s %u", &args[3]);
+            // the fourth argument is the line's sixth word (the split above reads five)
+            if (n == 5) sscanf(line, "%*s %*s %*s %*s %*s %u", &args[3]);
             int seq = pk_nds_call_action(nds, g, (int) num(a), args);
             int st = 0, f = 0;
             while (seq && (st = pk_nds_call_status(seq)) == 0 && f < 20) { runFrames(1, heldKeys); f++; }

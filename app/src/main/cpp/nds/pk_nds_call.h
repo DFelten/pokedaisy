@@ -22,7 +22,14 @@ enum PkNdsAction {
      * x / z (the spawn's fly tile: GetSpawnIdByMapAndCoords finds it again). The game's own FieldMoves_FlyTask from
      * there: the cut-in, the flight, the landing; and the journal's "flew to" line. */
     PK_NDS_ACTION_FLY = 3,
+    /** The bag on a party Pokémon (Gen 4: stub/pk_nds_item.c): arg0 = PK_NDS_ITEM_* mode | slot << 8 | move slot << 16,
+     * arg1 = the item, arg2 = the Pokémon's personality (USE / GIVE / TAKE check it again), arg3 = the party's count.
+     * Result PK_NDS_ITEM_RESULT = the helper's answer (CHECK: its mask), PK_NDS_ITEM_RESULT + 1 = the item held before. */
+    PK_NDS_ACTION_ITEM = 4,
 };
+
+/** Where an item job's answer is among its results (the helper's op). */
+#define PK_NDS_ITEM_RESULT 9
 
 /** Posts [action] for the next frame; 0 when the field isn't free (or this cart has no recipe), else the job's number. */
 int pk_nds_call_action(melonDS::NDS* nds, const PkNdsFieldGame* game, int action, const uint32_t args[4]);

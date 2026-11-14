@@ -44,6 +44,49 @@ typedef struct PkNdsSkill {
     unsigned int check[8];
 } PkNdsSkill;
 
+/** Gen 4's bag helper (stub/pk_nds_item.c): its code, then its PkNdsItem, at the top of the spare ITCM (past the
+ * scripts and the FLY check's scratch). */
+#define PK_NDS_ITEM_ADDR 0x01FFF000u
+#define PK_NDS_ITEM_ARGS 0x01FFF800u
+
+/** What the helper does (PkNdsItem.mode) and what it answers. */
+#define PK_NDS_ITEM_CHECK 0u     // a mask: bit slot * 4 + move = the item would do something there
+#define PK_NDS_ITEM_USE 1u
+#define PK_NDS_ITEM_GIVE 2u
+#define PK_NDS_ITEM_TAKE 3u
+/** CHECK's moveSlot for a one-move PP item: every move of every Pokémon. */
+#define PK_NDS_ITEM_EACH_MOVE 0xFFu
+
+#define PK_NDS_ITEM_DONE 0u
+#define PK_NDS_ITEM_NO_EFFECT 1u
+#define PK_NDS_ITEM_NONE_LEFT 2u
+#define PK_NDS_ITEM_CHANGED 3u    // not the Pokémon the pick showed (or an egg now)
+#define PK_NDS_ITEM_HOLDS_IT 4u
+#define PK_NDS_ITEM_REFUSED 5u    // Mail, or the item kept out ([keepItem])
+#define PK_NDS_ITEM_BAG_FULL 6u
+#define PK_NDS_ITEM_NOTHING 7u    // TAKE: it holds nothing
+
+/** The helper's arguments: the game's functions, the party / bag / map from the job's ops, the request; [out] = the
+ * item the Pokémon held before (GIVE / TAKE). */
+typedef struct PkNdsItem {
+    unsigned int getMon;      // Party_GetPokemonBySlotIndex(party, slot)
+    unsigned int getValue;    // Pokemon_GetValue(mon, param, NULL)
+    unsigned int setValue;    // Pokemon_SetValue(mon, param, &value)
+    unsigned int check;       // Pokemon_CheckItemEffects(mon, item, moveSlot, heap): TRUE = it would do something
+    unsigned int apply;       // Pokemon_ApplyItemEffects(mon, item, moveSlot, location, heap)
+    unsigned int bagRemove;   // Bag_TryRemoveItem(bag, item, count, heap)
+    unsigned int bagAdd;      // Bag_TryAddItem(bag, item, count, heap)
+    unsigned int bagCanFit;   // Bag_CanFitItem(bag, item, count, heap)
+    unsigned int arceusForm;  // Pokemon_SetArceusForm(mon) after the held item changes (0: none)
+    unsigned int paramPersonality, paramHeld, paramEgg;   // the MON_DATA_* numbers
+    unsigned int mailFirst, mailLast, keepItem;           // items GIVE / TAKE leave alone
+    unsigned int heap;
+    unsigned int party, bag, location, count;             // stored by the job's ops
+    unsigned int mode, item, slot, moveSlot, personality;
+    unsigned int value;       // SetValue's argument
+    unsigned int out;
+} PkNdsItem;
+
 typedef struct PkNdsJob {
     unsigned int seq;    // the host's number for this job
     unsigned int done;   // the hook sets it to seq once the ops ran

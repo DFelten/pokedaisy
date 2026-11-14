@@ -2,10 +2,12 @@
 """The DS games' in-game code and scripts, as bytes for the app (app/src/main/cpp/nds/pk_nds_stub_gen.h).
 
     python3 scripts/gen_nds_stub.py     # needs clang + LLVM's objcopy, and $DECOMPS/pokeplatinum built in Docker
+    python3 scripts/gen_nds_stub.py --only PK_NDS_ITEM_CODE   # rebuilds one array, keeps the others' bytes as they are
 
 - stub/pk_nds_hook.c: the function caller pk_nds_call.cpp hooks into the game's main loop - clang for armv5te, ARM
   mode, no jump tables, so the bytes run wherever they're copied (the script checks there's nothing to relocate).
 - stub/pk_nds_skill.c: Gen 5's field-skill helper (Black's FLY), built the same way.
+- stub/pk_nds_item.c: Gen 4's bag helper (USE / GIVE / TAKE on a party Pokémon), built the same way.
 - stub/platinum_*.s: field scripts in the game's own script language, assembled with pret/pokeplatinum's own macros
   and make_script_bin.sh in its build image (pokeplatinum-build, the one that builds the retail ROM byte for byte).
 - stub/heartgold_*.s: the same for HeartGold / SoulSilver, with pret/pokeheartgold's macros and makescript.sh (in the
@@ -21,7 +23,9 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STUB = os.path.join(ROOT, "app/src/main/cpp/nds/stub")
 OUT = os.path.join(ROOT, "app/src/main/cpp/nds/pk_nds_stub_gen.h")
-LLVM = os.environ.get("LLVM_BIN", "/opt/homebrew/opt/llvm/bin")
+LLVM = os.environ.get("LLVM_BIN") or next(
+    (d for d in ("/opt/homebrew/opt/llvm/bin", "/usr/bin") if os.path.exists(os.path.join(d, "llvm-objcopy"))), "/usr/bin")
+CODE = [("PK_NDS_HOOK_CODE", "pk_nds_hook.c"), ("PK_NDS_SKILL_CODE", "pk_nds_skill.c"), ("PK_NDS_ITEM_CODE", "pk_nds_item.c")]
 SCRIPTS = [("PK_NDS_PLATINUM_PC", "platinum_pc.s"), ("PK_NDS_HEARTGOLD_PC", "heartgold_pc.s")]
 
 
@@ -70,10 +74,26 @@ def array(name, data):
     return f"static const unsigned char {name}[{len(data)}] = {{\n" + "".join(f"    {r},\n" for r in rows) + "};\n"
 
 
+def existing():
+    """The arrays the header has now, by name, as their text."""
+    import re
+    if not os.path.exists(OUT):
+        return {}
+    text = open(OUT).read()
+    return {m.group(1): m.group(0) for m in re.finditer(r"static const unsigned char (\w+)\[\d+\] = \{\n.*?\n\};\n", text, re.S)}
+
+
 def main():
+    only = set(sys.argv[sys.argv.index("--only") + 1].split(",")) if "--only" in sys.argv else None
+    have = existing()
     with tempfile.TemporaryDirectory() as tmp:
-        parts = [array("PK_NDS_HOOK_CODE", hook(tmp)), array("PK_NDS_SKILL_CODE", hook(tmp, "pk_nds_skill.c"))]
+        parts = []
+        for sym, src in CODE:
+            parts.append(have[sym] if only is not None and sym not in only and sym in have else array(sym, hook(tmp, src)))
         for sym, name in SCRIPTS:
+            if only is not None and sym not in only and sym in have:
+                parts.append(have[sym])
+                continue
             data = script(tmp, name)
             assert len(data) <= 0x1000, (name, len(data))
             parts.append(array(sym, data))

@@ -323,6 +323,9 @@ object MgbaCore {
     const val NDS_ACTION_PC = 1
     /** FLY's checks: [1] = the game's FLY error (0 = may fly from here), [1 + n] = fly spot n unlocked. */
     const val NDS_ACTION_FLY_CHECK = 2
+    /** The bag on a party Pokémon (Gen 4, companion/data/DsBag.kt): mode | slot << 8 | move << 16, the item, the
+     * Pokémon's personality, the party's count; result DsBag.RESULT = the game's answer, the next the item held before. */
+    const val NDS_ACTION_ITEM = 4
     /** FLY (slot, map header, x, z): the game's own cut-in, flight and landing. */
     const val NDS_ACTION_FLY = 3
 

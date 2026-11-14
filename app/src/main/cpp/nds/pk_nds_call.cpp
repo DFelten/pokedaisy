@@ -288,6 +288,85 @@ const Gen5Fns WHITE2 = {
     },
 };
 
+// The bag on a party Pokémon (stub/pk_nds_item.c): the party menu's functions, the map's label for the friendship an
+// item gives (Pokemon_ApplyItemEffects' location), and the save's party / bag.
+struct ItemFns {
+    u32 saveDataGetBag;   // (saveData)
+    u32 mapLabel;         // (mapHeaderID): Platinum's MapHeader_GetMapLabelTextID, HG / SS' MapHeader_GetMapSec
+    PkNdsItem item;       // the helper's functions and constants; the request filled in per job
+    int offLocation;      // FieldSystem.location (its mapHeaderID first)
+    // Each function's first word, checked before a job: callSet 2 is the German and French HeartGold too, and a cart
+    // whose code isn't where this table says gets no job rather than a call into something else.
+    struct { u32 addr, word; } code[11];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1), the party menu's own calls (party_menu/main.c, callbacks.c, context_menu.c).
+const ItemFns PLATINUM_ITEMS = {
+    0x0207D991,   // SaveData_GetBag
+    0x0203A139,   // MapHeader_GetMapLabelTextID
+    {
+        0x0207A0FD,   // Party_GetPokemonBySlotIndex
+        0x02074471,   // Pokemon_GetValue
+        0x02074B31,   // Pokemon_SetValue
+        0x02096421,   // Pokemon_CheckItemEffects
+        0x02096955,   // Pokemon_ApplyItemEffects
+        0x0207D60D,   // Bag_TryRemoveItem
+        0x0207D571,   // Bag_TryAddItem
+        0x0207D55D,   // Bag_CanFitItem
+        0x02077929,   // Pokemon_SetArceusForm
+        0, 6, 76,     // MON_DATA_PERSONALITY, _HELD_ITEM, _IS_EGG
+        137, 148,     // Mail
+        112,          // the Griseous Orb: the party menu changes Giratina's form with it (and not in the Distortion World)
+        11,           // HEAP_ID_FIELD2
+    },
+    0x1C,
+    {
+        {0x0207D990, 0x21034B01}, {0x0203A138, 0xF7FFB508}, {0x0207A0FC, 0x1C05B538},
+        {0x02074470, 0x1C05B570}, {0x02074B30, 0x1C05B570}, {0x02096420, 0xB086B5F8},
+        {0x02096954, 0xB09CB5F8}, {0x0207D60C, 0xB083B5F0}, {0x0207D570, 0xB083B5F0},
+        {0x0207D55C, 0xF7FFB508}, {0x02077928, 0x47184B00},
+    },
+};
+
+// pret/pokeheartgold's xMAP (built in its Docker image: the US HeartGold byte for byte), its party menu's calls
+// (party_menu.c, party_menu_items.c, party_menu_list_items.c); SoulSilver's ARM9 is the same.
+const ItemFns HEARTGOLD_ITEMS = {
+    0x0207879D,   // Save_Bag_Get
+    0x0203B36D,   // MapHeader_GetMapSec (PartyMenu_GetCurrentMapSec)
+    {
+        0x02074645,   // Party_GetMonByIndex
+        0x0206E541,   // GetMonData
+        0x0206EC41,   // SetMonData
+        0x0208FD9D,   // CanUseItemOnPokemon
+        0x020902D1,   // UseItemOnPokemon
+        0x02078435,   // Bag_TakeItem
+        0x02078399,   // Bag_AddItem
+        0x02078385,   // Bag_HasSpaceForItem
+        0x02071BC9,   // Pokemon_UpdateArceusForm
+        0, 6, 76,
+        137, 148,
+        112,
+        11,
+    },
+    0x20,
+    {
+        {0x0207879C, 0x21034B01}, {0x0203B36C, 0xF7FFB508}, {0x02074644, 0x1C05B538},
+        {0x0206E540, 0x1C05B570}, {0x0206EC40, 0x1C05B570}, {0x0208FD9C, 0xB086B5F8},
+        {0x020902D0, 0xB09DB5F0}, {0x02078434, 0xB083B5F0}, {0x02078398, 0xB083B5F0},
+        {0x02078384, 0xF7FFB508}, {0x02071BC8, 0x47184B00},
+    },
+};
+
+const ItemFns* itemFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 1: return &PLATINUM_ITEMS;
+    case 2: return &HEARTGOLD_ITEMS;
+    default: return nullptr;
+    }
+}
+
 struct Pending {
     int seq;
     uint32_t parent;   // the field map's ApplicationManager the hook sits in (Gen 5: the GameSystem)
@@ -683,6 +762,36 @@ int pk_nds_call_action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, i
         int ev = o.add(f->journalCreateEventUsedMove, (u32) f->fieldMoveFly, args[1], (u32) f->heapField2);
         int j = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offJournalEntry);
         o.add(f->journalSaveData, Ops::res(j), Ops::res(ev), (u32) f->journalLocation);
+        break;
+    }
+    case PK_NDS_ACTION_ITEM: {
+        const ItemFns* it = itemFnsFor(game);
+        if (!it) return 0;
+        for (const auto& c : it->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsItem req = it->item;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.moveSlot = (args[0] >> 16) & 0xFF;
+        req.item = args[1];
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        u8 have[sizeof(PK_NDS_ITEM_CODE)];
+        itcmRead(mem, PK_NDS_ITEM_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_ITEM_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_ITEM_ADDR, PK_NDS_ITEM_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_ITEM_ARGS, &req, sizeof(req));
+        int sd = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offSaveData);
+        int party = o.add(f->saveDataGetParty, Ops::res(sd));
+        int bag = o.add(it->saveDataGetBag, Ops::res(sd));
+        int loc = o.add(PK_NDS_OP_LOAD32, fs, (u32) it->offLocation);
+        int hdr = o.add(PK_NDS_OP_LOAD32, Ops::res(loc), 0);
+        int label = o.add(it->mapLabel, Ops::res(hdr));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, party), Ops::res(party));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, bag), Ops::res(bag));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, location), Ops::res(label));
+        int answer = o.add(PK_NDS_ITEM_ADDR, PK_NDS_ITEM_ARGS);
+        o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, out));
+        if (answer != PK_NDS_ITEM_RESULT) return 0;
         break;
     }
     default:

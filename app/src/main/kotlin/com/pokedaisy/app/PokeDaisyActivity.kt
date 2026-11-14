@@ -576,11 +576,48 @@ class PokeDaisyActivity : Activity() {
         /** A DS game's Repels ([com.pokedaisy.app.companion.data.useGen4Repel], Black's [com.pokedaisy.app.companion.data.useGen5Repel]);
          * nothing else yet. */
         private fun dsRepel(itemId: Int) = dsRepelKnown() && com.pokedaisy.app.companion.data.GEN4_REPEL_KINDS.any { it.first == itemId }
-        override fun canUse(itemId: Int) = dsRepel(itemId) || tmSupport(itemId) || fieldItemSupport()?.canUse(itemId) == true
-        override fun canGive(itemId: Int) = fieldItemSupport()?.canGive(itemId) == true
-        override fun marked(itemId: Int) = dsRepel(itemId) || tmSupport(itemId) || fieldItemSupport()?.marked(itemId) == true
-        override fun picksMon(itemId: Int) = fieldItemSupport()?.picksMon(itemId) == true
-        override fun picksMove(itemId: Int) = fieldItemSupport()?.picksMove(itemId) == true
+        /** The DS games' bag on a Pokémon ([com.pokedaisy.app.companion.data.DsBag]): melonDS, a proved cart. */
+        private fun dsBag() = dsBagCart && dsCalls()
+        private fun dsUse(itemId: Int) = dsBag() && com.pokedaisy.app.companion.data.DsBag.canUse(itemId)
+        private fun dsGive(itemId: Int) = dsBag() && com.pokedaisy.app.companion.data.DsBag.canGive(
+            itemId, com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game)?.itemPockets?.get(itemId),
+        )
+        override fun canUse(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || tmSupport(itemId) || fieldItemSupport()?.canUse(itemId) == true
+        override fun canGive(itemId: Int) = dsGive(itemId) || fieldItemSupport()?.canGive(itemId) == true
+        override fun marked(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || dsGive(itemId) || tmSupport(itemId) || fieldItemSupport()?.marked(itemId) == true
+        override fun picksMon(itemId: Int) = dsUse(itemId) || fieldItemSupport()?.picksMon(itemId) == true
+        override fun picksMove(itemId: Int) = (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId)) ||
+            fieldItemSupport()?.picksMove(itemId) == true
+
+        /** A DS bag job ([com.pokedaisy.app.companion.data.DsBag]): its answer (result PK_NDS_ITEM_RESULT, the held item
+         * after it) made into [map]'s; NOT_NOW when the field isn't free, as the PC's. */
+        private fun <T> dsBagJob(args: IntArray, notNow: (com.pokedaisy.app.companion.data.ItemUseResult) -> T,
+                                 done: (T) -> Unit, map: (Long, Int) -> T) {
+            var out: T? = null
+            dsAction(MgbaCore.NDS_ACTION_ITEM, args, ran = { res ->
+                val r = res ?: return@dsAction com.pokedaisy.app.companion.data.ItemUseResult.FAILED
+                out = map(r[com.pokedaisy.app.companion.data.DsBag.RESULT].toLong() and 0xFFFFFFFFL, r[com.pokedaisy.app.companion.data.DsBag.RESULT + 1])
+                com.pokedaisy.app.companion.data.ItemUseResult.USED
+            }) { o -> done(out?.takeIf { o.result == com.pokedaisy.app.companion.data.ItemUseResult.USED } ?: notNow(o.result)) }
+        }
+
+        private fun dsTargets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) {
+            val party = telemetry.snapshot.value.party
+            if (give) return done(com.pokedaisy.app.companion.data.DsBag.targets(itemId, true, 0, party))
+            dsBagJob(com.pokedaisy.app.companion.data.DsBag.checkArgs(itemId, party.size),
+                { com.pokedaisy.app.companion.data.PartyTargets(it) }, done) { mask, _ ->
+                com.pokedaisy.app.companion.data.DsBag.targets(itemId, false, mask, party)
+            }
+        }
+
+        private fun dsOnMon(mode: Int, itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, move: Int,
+                            done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
+            val count = telemetry.snapshot.value.party.size
+            dsBagJob(com.pokedaisy.app.companion.data.DsBag.args(mode, itemId, target.slot, move, target.personality, count),
+                { com.pokedaisy.app.companion.data.ItemUseOutcome(it) }, done) { code, held ->
+                com.pokedaisy.app.companion.data.DsBag.outcome(mode, code.toInt(), held)
+            }
+        }
 
         /** [work] on the emu thread with the game's functions, [done] with its answer on the main thread;
          * [failed] when there's no game to ask (or the work throws). */
@@ -636,7 +673,7 @@ class PokeDaisyActivity : Activity() {
         }
 
         override fun targets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) =
-            onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, busy ->
+            if (if (give) dsGive(itemId) else dsUse(itemId)) dsTargets(itemId, give, done) else onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, busy ->
                 com.pokedaisy.app.companion.data.partyTargets(s, itemId, give, busy, calls)
             }
 
@@ -665,20 +702,20 @@ class PokeDaisyActivity : Activity() {
         }
 
         override fun useOn(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
-            onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.useOnMon(s, itemId, target, moveIndex, busy, calls) }
+            if (dsUse(itemId)) dsOnMon(com.pokedaisy.app.companion.data.DsBag.USE, itemId, target, moveIndex, done) else onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.useOnMon(s, itemId, target, moveIndex, busy, calls) }
 
         override fun give(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
-            onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.giveToMon(s, itemId, target, busy, calls) }
+            if (dsGive(itemId)) dsOnMon(com.pokedaisy.app.companion.data.DsBag.GIVE, itemId, target, 0, done) else onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.giveToMon(s, itemId, target, busy, calls) }
 
-        override fun canTake() = fieldItemSupport()?.canTake == true
+        override fun canTake() = dsBag() || fieldItemSupport()?.canTake == true
 
         override fun heldItems(done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) =
-            onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, _ ->
+            if (dsBag()) done(com.pokedaisy.app.companion.data.DsBag.held(telemetry.snapshot.value.party)) else onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, _ ->
                 com.pokedaisy.app.companion.data.partyHeldItems(s, calls)
             }
 
         override fun take(target: com.pokedaisy.app.companion.data.PartyTarget, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
-            onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.takeFromMon(s, target, busy, calls) }
+            if (dsBag()) dsOnMon(com.pokedaisy.app.companion.data.DsBag.TAKE, 0, target, 0, done) else onGame(failed, done) { s, calls, busy -> com.pokedaisy.app.companion.data.takeFromMon(s, target, busy, calls) }
 
         override fun canPc() = dsCalls() || fieldItemSupport()?.canPc == true || gbField() != null
 
@@ -1527,6 +1564,8 @@ class PokeDaisyActivity : Activity() {
     @Volatile private var romRev = -1
     /** The loaded cart is Origin HeartGold's ([com.pokedaisy.app.companion.data.OriginHeartGold]: a Japanese header). */
     @Volatile private var romOrigin = false
+    /** A DS cart the bag's USE / GIVE / TAKE on a Pokémon were proved on (companion/data/DsBag.kt). */
+    @Volatile private var dsBagCart = false
 
     /**
      * Where the battle POKéMON pane's switch finds the party menu: retail
@@ -2519,6 +2558,9 @@ class PokeDaisyActivity : Activity() {
         val ndsCode = if (nds) RomIdentity.ndsGameCode(r).orEmpty() else ""
         romOrigin = nds && ndsCode == com.pokedaisy.app.companion.data.OriginHeartGold.CODE &&
             com.pokedaisy.app.companion.data.OriginHeartGold.matches(r)
+        // Retail only: Renegade Platinum keeps retail's header (and code), but the jobs weren't tried on it.
+        dsBagCart = nds && com.pokedaisy.app.companion.data.DsBag.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
+            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r))
         dsWildRates = if (!nds) null else if (romOrigin) {
             // Its tables are read in the background (NdsArt.prefetch); the core may start first, so read them here then.
             { (com.pokedaisy.app.companion.data.OriginHeartGold.data ?: com.pokedaisy.app.companion.data.NdsArt.readOrigin(r))?.wildRates ?: IntArray(0) }

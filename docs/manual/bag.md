@@ -85,7 +85,7 @@ To take a held item back, open the Pokémon's summary on the party tab and tap `
 It only works while you're walking around. If a menu, a conversation or a battle is open, it tells you so (close the game's menus first). Items that need the game's own screens, like the ones that raise a level or make a Pokémon evolve, and letters, aren't offered here.
 
 > [!NOTE]
-> This works in FireRed, LeafGreen, Ruby, Sapphire and Emerald (in every language PokeDaisy supports, except the Japanese Ruby, Sapphire and Emerald), and in Unbound, Radical Red, Gaia, Odyssey, Amethyst, Orange Islands, Ultra Violet, FireRed Rocket Edition, Ash Gray, Let's Go, Sword and Shield Ultimate Plus, GS Chronicles, Glazed, Emerald Kaizo and Recharged Emerald. SoulGold has `USE` on the items that keep wild Pokémon away. In other games, use items in the game as normal; the bag tab updates by itself.
+> This works in FireRed, LeafGreen, Ruby, Sapphire and Emerald (in every language PokeDaisy supports, except the Japanese Ruby, Sapphire and Emerald), and in Unbound, Radical Red, Gaia, Odyssey, Amethyst, Orange Islands, Ultra Violet, FireRed Rocket Edition, Ash Gray, Let's Go, Sword and Shield Ultimate Plus, GS Chronicles, Glazed, Emerald Kaizo and Recharged Emerald. SoulGold has `USE` on the items that keep wild Pokémon away. On the DS, Platinum (the US release), HeartGold and SoulSilver (the US releases) have `USE`, `GIVE` and `TAKE` too. In other games, use items in the game as normal; the bag tab updates by itself.
 
 ## The PC from anywhere
 
