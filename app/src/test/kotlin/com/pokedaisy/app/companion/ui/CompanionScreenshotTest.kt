@@ -465,6 +465,28 @@ open class CompanionScreenshotTest {
         }
     }
 
+    /** LEARN in Black 2: the next level-up moves and the bag's TMs from the cart, no verdicts (the advice is Gen 3's). */
+    @Test
+    fun partyDetailLearnBlack2() {
+        activeGame = GameKind.BLACK2
+        romLanguage = 'E'
+        romGameCode = ""
+        val rom = java.io.File(java.io.File(java.io.File(RETAIL_ROM_DIR).parentFile, "nds"), "Pokemon - Black Version 2 (USA, Europe) (NDSi Enhanced).nds")
+        val dir = kotlin.io.path.createTempDirectory("nds-art").toFile()
+        try {
+            if (rom.isFile && com.pokedaisy.app.companion.data.NdsArt.extractTo(rom, dir)) com.pokedaisy.app.companion.data.NdsArt.dir = dir
+            val t = com.pokedaisy.app.companion.data.readGen5Telemetry(FixtureMemoryReader.load("black2"), com.pokedaisy.app.companion.data.GEN5_BLACK2)
+            val v = buildSnapshotView(t).copy(game = GameKind.BLACK2)
+            v.party.forEach { m -> m.iconAsset?.let { GameArt.get(paparazzi.context, it) } }
+            val tables = v.pokedex?.tables ?: return
+            val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+            snapshot { AppTheme { MonDetailScreen(v.party, 0, {}, {}, learn = ctx, initialLearnPick = 0) } }
+        } finally {
+            com.pokedaisy.app.companion.data.NdsArt.dir = null
+            dir.deleteRecursively()
+        }
+    }
+
     /** BATTLE STYLE > GEN 5: your turn, then the move plates (the same states the GEN 4 buttons have). */
     @Test fun battleControlsGen5() = gen5Shot(com.pokedaisy.app.companion.data.BATTLE_INPUT_ACTION_SELECT)
 
