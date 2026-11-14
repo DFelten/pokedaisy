@@ -319,6 +319,10 @@ object MgbaCore {
     /** How job [seq] did: 1 ran, 0 still waiting, -1 never will (the field changed under it). Emu thread. */
     external fun pkNdsActionStatus(seq: Int): Int
 
+    /** Gen 5's USE effect for the next NDS_ACTION_ITEM (companion/data/DsBag.kt's Effect: heal, heal divisor, revive,
+     * status bits, PP, all moves). Emu thread. */
+    external fun pkNdsItemEffect(heal: Int, healDiv: Int, revive: Int, statusMask: Int, pp: Int, ppAll: Int)
+
     /** PC anywhere: the Pokémon Storage System's menu, as a Pokémon Center PC opens it. */
     const val NDS_ACTION_PC = 1
     /** FLY's checks: [1] = the game's FLY error (0 = may fly from here), [1 + n] = fly spot n unlocked. */

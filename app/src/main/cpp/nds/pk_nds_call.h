@@ -28,6 +28,10 @@ enum PkNdsAction {
     PK_NDS_ACTION_ITEM = 4,
 };
 
+/** Gen 5's USE effect (stub/pk_nds_item5.c's PkNdsItem5 fields), the app's for the item: set before an ITEM action. */
+struct PkNdsItem5Effect { uint32_t heal, healDiv, revive, statusMask, pp, ppAll; };
+void pk_nds_call_item5_effect(const PkNdsItem5Effect& effect);
+
 /** Where an item job's answer is among its results (the helper's op). */
 #define PK_NDS_ITEM_RESULT 9
 

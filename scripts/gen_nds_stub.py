@@ -8,6 +8,7 @@
   mode, no jump tables, so the bytes run wherever they're copied (the script checks there's nothing to relocate).
 - stub/pk_nds_skill.c: Gen 5's field-skill helper (Black's FLY), built the same way.
 - stub/pk_nds_item.c: Gen 4's bag helper (USE / GIVE / TAKE on a party Pokémon), built the same way.
+- stub/pk_nds_item5.c: Gen 5's (its effects from the app, the game's get / set and bag calls), built the same way.
 - stub/platinum_*.s: field scripts in the game's own script language, assembled with pret/pokeplatinum's own macros
   and make_script_bin.sh in its build image (pokeplatinum-build, the one that builds the retail ROM byte for byte).
 - stub/heartgold_*.s: the same for HeartGold / SoulSilver, with pret/pokeheartgold's macros and makescript.sh (in the
@@ -25,7 +26,8 @@ STUB = os.path.join(ROOT, "app/src/main/cpp/nds/stub")
 OUT = os.path.join(ROOT, "app/src/main/cpp/nds/pk_nds_stub_gen.h")
 LLVM = os.environ.get("LLVM_BIN") or next(
     (d for d in ("/opt/homebrew/opt/llvm/bin", "/usr/bin") if os.path.exists(os.path.join(d, "llvm-objcopy"))), "/usr/bin")
-CODE = [("PK_NDS_HOOK_CODE", "pk_nds_hook.c"), ("PK_NDS_SKILL_CODE", "pk_nds_skill.c"), ("PK_NDS_ITEM_CODE", "pk_nds_item.c")]
+CODE = [("PK_NDS_HOOK_CODE", "pk_nds_hook.c"), ("PK_NDS_SKILL_CODE", "pk_nds_skill.c"), ("PK_NDS_ITEM_CODE", "pk_nds_item.c"),
+        ("PK_NDS_ITEM5_CODE", "pk_nds_item5.c")]
 SCRIPTS = [("PK_NDS_PLATINUM_PC", "platinum_pc.s"), ("PK_NDS_HEARTGOLD_PC", "heartgold_pc.s")]
 
 
@@ -37,9 +39,13 @@ def hook(tmp, src="pk_nds_hook.c"):
     obj = os.path.join(tmp, src[:-2] + ".o")
     run(["clang", "--target=armv5te-none-eabi", "-marm", "-O2", "-fno-jump-tables", "-ffreestanding", "-fno-builtin",
          "-nostdlib", "-c", os.path.join(STUB, src), "-o", obj])
-    relocs = subprocess.run([os.path.join(LLVM, "llvm-objdump"), "-r", "--section=.text.entry", obj],
-                            capture_output=True, text=True, check=True).stdout
-    assert "R_ARM" not in relocs, "the hook needs relocating:\n" + relocs
+    # Every relocation of .text.entry (its records are in .rel.text.entry: `--section` filters by that name, so it's
+    # read whole here). A call out of the section (a static function not inlined, the runtime's divide) would land
+    # nowhere once only .text.entry is copied into the game.
+    relocs = subprocess.run([os.path.join(LLVM, "llvm-objdump"), "-r", obj], capture_output=True, text=True, check=True).stdout
+    entry = relocs.split("RELOCATION RECORDS FOR [.text.entry]:", 1)[1].split("RELOCATION RECORDS FOR", 1)[0] if \
+        "RELOCATION RECORDS FOR [.text.entry]:" in relocs else ""
+    assert "R_ARM" not in entry, src + " needs relocating:\n" + entry
     out = os.path.join(tmp, src[:-2] + ".bin")
     run([os.path.join(LLVM, "llvm-objcopy"), "-O", "binary", "--only-section=.text.entry", obj, out])
     return open(out, "rb").read()

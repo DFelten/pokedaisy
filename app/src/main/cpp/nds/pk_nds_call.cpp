@@ -367,6 +367,94 @@ const ItemFns* itemFnsFor(const PkNdsFieldGame* game)
     }
 }
 
+// Gen 5's bag on a party Pokémon (stub/pk_nds_item5.c): no decomp, so traced in the running game (nds_dump's `watch` on
+// the Pokémon's record and the bag's slot while the game's own bag used a Potion on the player's Black 2 save), each then
+// called headless. The save image (SaveControl -> backup system -> image) holds the party and the bag.
+struct ItemFns5 {
+    u32 saveControlPtr;
+    int offBackupSystem, offImage, offParty, offBag;
+    PkNdsItem5 item;
+    struct { u32 addr, word; } code[10];
+};
+
+// The MON_DATA numbers (the same in all four: Gen 4's, three lower from STATUS on), Mail, and the items GIVE / TAKE
+// leave to the game: the Griseous Orb, the Drives and the Plates (their Pokémon's form goes with them).
+#define GEN5_ITEM_PARAMS 0, 6, 76, 157, 160, 161, 58, 66, 54, 137, 148, \
+    {112, 116, 117, 118, 119, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313}, 0, 0xDC, 0, 0
+
+// Black 2 (IREO rev 0): traced on the player's save (above), each function then called headless. Its bag calls take
+// (bag, item, count) and ignore a fourth.
+const ItemFns5 BLACK2_ITEMS = {
+    0x0209A338, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {
+        0x0201CCF9,   // the getter: decrypts, reads [param], encrypts again
+        0x0201CD1D,   // the setter (by value): decrypts, writes, fixes the checksum, encrypts again
+        0x0200842D,   // the bag's remove (bag, item, count): FALSE without that many
+        0x02008269,   // its add
+        0x02008239,   // whether the add has room
+        GEN5_ITEM_PARAMS, 1,
+    },
+    {
+        {0x0201CCF8, 0x1C05B570}, {0x0201CCFC, 0x1C161C0C}, {0x0201CD1C, 0x1C05B570}, {0x0201CD20, 0x1C161C0C},
+        {0x0200842C, 0xB082B570}, {0x02008430, 0x1C0E1C05}, {0x02008268, 0xF7FFB508}, {0x0200826C, 0x2800FFEF},
+        {0x02008238, 0xF7FFB508}, {0x0200823C, 0x2800FFDD},
+    },
+};
+
+// White 2 (IRDO rev 0): Black 2's bag calls where Black 2's are, its getter / setter 0x2C later (found by Black 2's
+// code with its calls masked), its SaveControl with its statics.
+const ItemFns5 WHITE2_ITEMS = {
+    0x0209A378, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x0201CD25, 0x0201CD49, 0x0200842D, 0x02008269, 0x02008239, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x0201CD24, 0x1C05B570}, {0x0201CD28, 0x1C161C0C}, {0x0201CD48, 0x1C05B570}, {0x0201CD4C, 0x1C161C0C},
+        {0x0200842C, 0xB082B570}, {0x02008430, 0x1C0E1C05}, {0x02008268, 0xF7FFB508}, {0x0200826C, 0x2800FFEF},
+        {0x02008238, 0xF7FFB508}, {0x0200823C, 0x2800FFDD},
+    },
+};
+
+// Black (IRBO rev 0): the getter / setter found by Black 2's code, the bag calls by their shape (the field's own item
+// script commands call them, overlay 21). They take a heap for the item's data: HEAPID 1 (one the field always has;
+// 2 and 6 aren't there and hang).
+const ItemFns5 BLACK_ITEMS = {
+    0x020A7298, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x02017E1D, 0x02017E41, 0x02007F1D, 0x02007E51, 0x02007E3D, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x02017E1C, 0x1C05B570}, {0x02017E20, 0x1C161C0C}, {0x02017E40, 0x1C05B570}, {0x02017E44, 0x1C161C0C},
+        {0x02007F1C, 0xB083B5F0}, {0x02007F20, 0x1C0F1C06}, {0x02007E50, 0xB086B5F8}, {0x02007E54, 0x1C0D1C06},
+        {0x02007E3C, 0xF7FFB508}, {0x02007E40, 0x2800FFDB},
+    },
+};
+
+// White (IRAO rev 0): Black's bag calls where Black's are, its getter / setter 0x1C later.
+const ItemFns5 WHITE_ITEMS = {
+    0x020A72B8, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x02017E39, 0x02017E5D, 0x02007F1D, 0x02007E51, 0x02007E3D, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x02017E38, 0x1C05B570}, {0x02017E3C, 0x1C161C0C}, {0x02017E5C, 0x1C05B570}, {0x02017E60, 0x1C161C0C},
+        {0x02007F1C, 0xB083B5F0}, {0x02007F20, 0x1C0F1C06}, {0x02007E50, 0xB086B5F8}, {0x02007E54, 0x1C0D1C06},
+        {0x02007E3C, 0xF7FFB508}, {0x02007E40, 0x2800FFDB},
+    },
+};
+
+const ItemFns5* itemFns5For(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 3: return &BLACK_ITEMS;
+    case 4: return &WHITE_ITEMS;
+    case 5: return &BLACK2_ITEMS;
+    case 6: return &WHITE2_ITEMS;
+    default: return nullptr;
+    }
+}
+
+// The helpers' code ends before their arguments, and the arguments before the ITCM does.
+static_assert(sizeof(PK_NDS_ITEM_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM_ADDR, "Gen 4's bag helper runs into its arguments");
+static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into its arguments");
+static_assert(PK_NDS_ITEM_ARGS + sizeof(PkNdsItem5) <= 0x02000000u && PK_NDS_ITEM_ARGS + sizeof(PkNdsItem) <= 0x02000000u,
+              "the bag helpers' arguments run past the ITCM");
+
 struct Pending {
     int seq;
     uint32_t parent;   // the field map's ApplicationManager the hook sits in (Gen 5: the GameSystem)
@@ -376,6 +464,7 @@ struct Pending {
 };
 
 int nextSeq = 1;
+PkNdsItem5Effect item5Effect = {};
 Pending pending = {};
 int lastDone = 0, lastFailed = 0;
 uint32_t lastResults[PK_NDS_MAX_RESULTS];
@@ -706,6 +795,42 @@ static int gen5Action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, co
         o.add(f.setEvent, gs, Ops::res(ev));
         return postGen5(mem, f, gs, o, true);
     }
+    case PK_NDS_ACTION_ITEM: {
+        // arg0 = mode | slot << 8 | move << 16, arg1 = the item, arg2 = the personality, arg3 = the party's count; USE's
+        // effect from pk_nds_call_item5_effect (the app's, per item)
+        const ItemFns5* it = itemFns5For(game);
+        if (!it) return 0;
+        for (const auto& c : it->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        u32 sc = rd32(mem, it->saveControlPtr);
+        u32 bs = inMain(sc) ? rd32(mem, sc + it->offBackupSystem) : 0;
+        u32 img = inMain(bs) ? rd32(mem, bs + it->offImage) : 0;
+        if (!inMain(img)) return 0;
+        PkNdsItem5 req = it->item;
+        req.party = img + it->offParty;
+        req.bag = img + it->offBag;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.moveSlot = (args[0] >> 16) & 0xFF;
+        req.item = args[1];
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        req.heal = item5Effect.heal;
+        req.healDiv = item5Effect.healDiv;
+        req.revive = item5Effect.revive;
+        req.statusMask = item5Effect.statusMask;
+        req.pp = item5Effect.pp;
+        req.ppAll = item5Effect.ppAll;
+        u8 have[sizeof(PK_NDS_ITEM5_CODE)];
+        itcmRead(mem, PK_NDS_ITEM5_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_ITEM5_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_ITEM5_ADDR, PK_NDS_ITEM5_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_ITEM_ARGS, &req, sizeof(req));
+        // the helper's answer at PK_NDS_ITEM_RESULT and the item held before after it, as Gen 4's (padded to its op)
+        for (int i = 0; i < PK_NDS_ITEM_RESULT; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem5, mode));
+        o.add(PK_NDS_ITEM5_ADDR, PK_NDS_ITEM_ARGS);
+        o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem5, out));
+        return postGen5(mem, f, gs, o, false);
+    }
     default:
         return 0;
     }
@@ -881,4 +1006,9 @@ void pk_nds_call_itcm_write(const PkNdsCallMemory& mem, uint32_t addr, const voi
 void pk_nds_call_reset(void)
 {
     pending = {};
+}
+
+void pk_nds_call_item5_effect(const PkNdsItem5Effect& effect)
+{
+    item5Effect = effect;
 }

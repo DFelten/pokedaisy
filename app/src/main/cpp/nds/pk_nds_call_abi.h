@@ -87,6 +87,33 @@ typedef struct PkNdsItem {
     unsigned int out;
 } PkNdsItem;
 
+/** Gen 5's bag helper (stub/pk_nds_item5.c): its code from the Gen 4 FLY check's scratch (no Gen 5 job uses it), its
+ * PkNdsItem5 at PK_NDS_ITEM_ARGS like Gen 4's (a game runs one or the other). */
+#define PK_NDS_ITEM5_ADDR 0x01FFE000u
+#define PK_NDS_ITEM5_KEEP 24
+/** An amount meaning "all the way" (HP to its maximum, PP to the move's). */
+#define PK_NDS_ITEM5_FULL 0xFFFFu
+
+/** Its arguments: the game's get / set of a Pokémon's data (by value) and its bag calls (bag, item, count), the MON_DATA
+ * numbers, the party (the first Pokémon and the stride), the request and - for USE - the effect. */
+typedef struct PkNdsItem5 {
+    unsigned int getValue;    // (mon, param, NULL)
+    unsigned int setValue;    // (mon, param, value)
+    unsigned int bagRemove;   // (bag, item, count): TRUE = taken
+    unsigned int bagAdd;      // (bag, item, count)
+    unsigned int bagCanFit;   // (bag, item, count)
+    unsigned int pPersonality, pHeld, pEgg, pStatus, pHp, pMaxHp, pPp1, pMaxPp1, pMove1;
+    unsigned int mailFirst, mailLast;
+    unsigned int keep[PK_NDS_ITEM5_KEEP];   // items GIVE / TAKE leave to the game (forms change with them)
+    unsigned int party, stride, count, bag;
+    unsigned int heap;        // the bag calls' 4th argument (Black / White load the item's data with it)
+    unsigned int mode, item, slot, moveSlot, personality;
+    // USE's effect: heal (points, PK_NDS_ITEM5_FULL, or with healDiv a share of the maximum), revive (0, 1 = to full,
+    // n = to max / n), the status bits it clears, PP (points or PK_NDS_ITEM5_FULL; ppAll: every move, else moveSlot's)
+    unsigned int heal, healDiv, revive, statusMask, pp, ppAll;
+    unsigned int out;
+} PkNdsItem5;
+
 typedef struct PkNdsJob {
     unsigned int seq;    // the host's number for this job
     unsigned int done;   // the hook sets it to seq once the ops ran

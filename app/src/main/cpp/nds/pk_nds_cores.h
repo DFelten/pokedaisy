@@ -26,6 +26,7 @@
     X(int, action, (int action, const uint32_t args[4]), (action, args)) \
     X(int, action_status, (int seq), (seq)) \
     X(bool, action_results, (int seq, uint32_t* out), (seq, out)) \
+    X(void, item5_effect, (const uint32_t effect[6]), (effect)) \
     X(void, set_wild_off, (bool off), (off)) \
     X(void, set_keep_start_menu, (bool on), (on)) \
     X(void, set_cpu_boost, (bool on), (on)) \

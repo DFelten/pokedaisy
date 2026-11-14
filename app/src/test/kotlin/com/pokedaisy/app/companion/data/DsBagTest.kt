@@ -19,7 +19,31 @@ class DsBagTest {
         assertTrue(DsBag.proved("IPKE", 0))
         assertTrue(DsBag.proved("IPGE", 0))
         assertFalse(DsBag.proved("IPKD", 0))
-        assertFalse(DsBag.proved("IRBO", 0))
+        listOf("IRBO", "IRAO", "IREO", "IRDO").forEach { assertTrue(it, DsBag.proved(it, 0)) }
+        assertTrue(DsBag.gen5("IREO"))
+        assertFalse(DsBag.gen5("IPKE"))
+    }
+
+    @Test fun gen5Effects() {
+        // what the helper applies: Black / White's amounts
+        assertEquals(DsBag.Effect(heal = 20), DsBag.effect(17))
+        assertEquals(DsBag.Effect(heal = 50), DsBag.effect(26))
+        assertEquals(DsBag.Effect(heal = DsBag.FULL, statusMask = 0xFF), DsBag.effect(23))
+        assertEquals(DsBag.Effect(revive = 2), DsBag.effect(28))
+        assertEquals(DsBag.Effect(heal = 1, healDiv = 4), DsBag.effect(158))   // Sitrus: a quarter
+        assertEquals(intArrayOf(0, 0, 0, 0, 10, 1).toList(), DsBag.effect(40)!!.words().toList())   // Elixir
+        // herbs (friendship), vitamins, PP Up, Rare Candy: the game's bag
+        listOf(34, 35, 36, 37, 45, 50, 51, 169).forEach { assertFalse("$it", DsBag.canUse(it, gen5 = true)) }
+        assertTrue(DsBag.picksMove(38, gen5 = true))
+        assertFalse(DsBag.picksMove(40, gen5 = true))
+        assertFalse(DsBag.picksMove(51, gen5 = true))
+        // form items stay out of Gen 5's GIVE / TAKE
+        assertFalse(DsBag.canGive(117, POCKET_ITEMS, gen5 = true))
+        assertFalse(DsBag.canGive(300, POCKET_ITEMS, gen5 = true))
+        assertTrue(DsBag.canGive(300, POCKET_ITEMS))
+        assertEquals(SlotVerdict.HOLDS_MAIL, DsBag.held(listOf(mon(1, held = 117)), gen5 = true).targets[0].verdict)
+        // an all-moves item: any move's bit counts
+        assertEquals(SlotVerdict.OK, DsBag.targets(40, false, 1L shl 2, listOf(mon(1)), gen5 = true).targets[0].verdict)
     }
 
     @Test fun useAndGiveRules() {

@@ -586,6 +586,11 @@ int pk_ndsm_action(int action, const uint32_t args[4])
     return ds ? pk_nds_call_action(ds->nds, ds->field, action, args) : 0;
 }
 
+void pk_ndsm_item5_effect(const uint32_t effect[6])
+{
+    pk_nds_call_item5_effect({effect[0], effect[1], effect[2], effect[3], effect[4], effect[5]});
+}
+
 bool pk_ndsm_action_results(int seq, uint32_t* out)
 {
     return pk_nds_call_results(seq, out);

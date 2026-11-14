@@ -578,23 +578,29 @@ class PokeDaisyActivity : Activity() {
         private fun dsRepel(itemId: Int) = dsRepelKnown() && com.pokedaisy.app.companion.data.GEN4_REPEL_KINDS.any { it.first == itemId }
         /** The DS games' bag on a Pokémon ([com.pokedaisy.app.companion.data.DsBag]): melonDS, a proved cart. */
         private fun dsBag() = dsBagCart && dsCalls()
-        private fun dsUse(itemId: Int) = dsBag() && com.pokedaisy.app.companion.data.DsBag.canUse(itemId)
+        private fun dsUse(itemId: Int) = dsBag() && com.pokedaisy.app.companion.data.DsBag.canUse(itemId, dsBagGen5)
         private fun dsGive(itemId: Int) = dsBag() && com.pokedaisy.app.companion.data.DsBag.canGive(
-            itemId, com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game)?.itemPockets?.get(itemId),
+            itemId,
+            // Gen 4's pocket from its item table; Gen 5's from the bag as the companion read it (the pockets it was found in)
+            if (dsBagGen5) telemetry.snapshot.value.items.firstOrNull { it.itemId == itemId }?.pocket
+            else com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game)?.itemPockets?.get(itemId),
+            dsBagGen5,
         )
         override fun canUse(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || tmSupport(itemId) || fieldItemSupport()?.canUse(itemId) == true
         override fun canGive(itemId: Int) = dsGive(itemId) || fieldItemSupport()?.canGive(itemId) == true
         override fun marked(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || dsGive(itemId) || tmSupport(itemId) || fieldItemSupport()?.marked(itemId) == true
         override fun picksMon(itemId: Int) = dsUse(itemId) || fieldItemSupport()?.picksMon(itemId) == true
-        override fun picksMove(itemId: Int) = (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId)) ||
+        override fun picksMove(itemId: Int) = (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId, dsBagGen5)) ||
             fieldItemSupport()?.picksMove(itemId) == true
 
         /** A DS bag job ([com.pokedaisy.app.companion.data.DsBag]): its answer (result PK_NDS_ITEM_RESULT, the held item
          * after it) made into [map]'s; NOT_NOW when the field isn't free, as the PC's. */
-        private fun <T> dsBagJob(args: IntArray, notNow: (com.pokedaisy.app.companion.data.ItemUseResult) -> T,
+        private fun <T> dsBagJob(itemId: Int, args: IntArray, notNow: (com.pokedaisy.app.companion.data.ItemUseResult) -> T,
                                  done: (T) -> Unit, map: (Long, Int) -> T) {
             var out: T? = null
-            dsAction(MgbaCore.NDS_ACTION_ITEM, args, ran = { res ->
+            // Gen 5's USE effect goes to the native side first, on the emu thread with the job
+            val effect = if (dsBagGen5) (com.pokedaisy.app.companion.data.DsBag.effect(itemId) ?: com.pokedaisy.app.companion.data.DsBag.Effect()).words() else null
+            dsAction(MgbaCore.NDS_ACTION_ITEM, args, before = effect?.let { e -> { MgbaCore.pkNdsItemEffect(e[0], e[1], e[2], e[3], e[4], e[5]) } }, ran = { res ->
                 val r = res ?: return@dsAction com.pokedaisy.app.companion.data.ItemUseResult.FAILED
                 out = map(r[com.pokedaisy.app.companion.data.DsBag.RESULT].toLong() and 0xFFFFFFFFL, r[com.pokedaisy.app.companion.data.DsBag.RESULT + 1])
                 com.pokedaisy.app.companion.data.ItemUseResult.USED
@@ -603,17 +609,17 @@ class PokeDaisyActivity : Activity() {
 
         private fun dsTargets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) {
             val party = telemetry.snapshot.value.party
-            if (give) return done(com.pokedaisy.app.companion.data.DsBag.targets(itemId, true, 0, party))
-            dsBagJob(com.pokedaisy.app.companion.data.DsBag.checkArgs(itemId, party.size),
+            if (give) return done(com.pokedaisy.app.companion.data.DsBag.targets(itemId, true, 0, party, dsBagGen5))
+            dsBagJob(itemId, com.pokedaisy.app.companion.data.DsBag.checkArgs(itemId, party.size, dsBagGen5),
                 { com.pokedaisy.app.companion.data.PartyTargets(it) }, done) { mask, _ ->
-                com.pokedaisy.app.companion.data.DsBag.targets(itemId, false, mask, party)
+                com.pokedaisy.app.companion.data.DsBag.targets(itemId, false, mask, party, dsBagGen5)
             }
         }
 
         private fun dsOnMon(mode: Int, itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, move: Int,
                             done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
             val count = telemetry.snapshot.value.party.size
-            dsBagJob(com.pokedaisy.app.companion.data.DsBag.args(mode, itemId, target.slot, move, target.personality, count),
+            dsBagJob(itemId, com.pokedaisy.app.companion.data.DsBag.args(mode, itemId, target.slot, move, target.personality, count),
                 { com.pokedaisy.app.companion.data.ItemUseOutcome(it) }, done) { code, held ->
                 com.pokedaisy.app.companion.data.DsBag.outcome(mode, code.toInt(), held)
             }
@@ -710,7 +716,7 @@ class PokeDaisyActivity : Activity() {
         override fun canTake() = dsBag() || fieldItemSupport()?.canTake == true
 
         override fun heldItems(done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) =
-            if (dsBag()) done(com.pokedaisy.app.companion.data.DsBag.held(telemetry.snapshot.value.party)) else onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, _ ->
+            if (dsBag()) done(com.pokedaisy.app.companion.data.DsBag.held(telemetry.snapshot.value.party, dsBagGen5)) else onGame(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED), done) { s, calls, _ ->
                 com.pokedaisy.app.companion.data.partyHeldItems(s, calls)
             }
 
@@ -828,6 +834,8 @@ class PokeDaisyActivity : Activity() {
      * battle) or it never ran. */
     private fun dsAction(
         action: Int, args: IntArray,
+        /** Run on the emu thread just before the job is posted (Gen 5's item effect). */
+        before: (() -> Unit)? = null,
         ran: ((IntArray?) -> com.pokedaisy.app.companion.data.ItemUseResult)? = null,
         done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit,
     ) {
@@ -850,6 +858,7 @@ class PokeDaisyActivity : Activity() {
             }
         }
         engine.requestFieldItemJob(inBattle) { _, _ ->
+            before?.invoke()
             val seq = MgbaCore.pkNdsAction(action, args[0], args[1], args[2], args[3])
             if (seq == 0) finish(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW) else poll(seq, 30)
         }
@@ -1566,6 +1575,8 @@ class PokeDaisyActivity : Activity() {
     @Volatile private var romOrigin = false
     /** A DS cart the bag's USE / GIVE / TAKE on a Pokémon were proved on (companion/data/DsBag.kt). */
     @Volatile private var dsBagCart = false
+    /** ... and it's Black / White / Black 2 / White 2 (USE by DsBag's effects). */
+    @Volatile private var dsBagGen5 = false
 
     /**
      * Where the battle POKéMON pane's switch finds the party menu: retail
@@ -2560,7 +2571,10 @@ class PokeDaisyActivity : Activity() {
             com.pokedaisy.app.companion.data.OriginHeartGold.matches(r)
         // Retail only: Renegade Platinum keeps retail's header (and code), but the jobs weren't tried on it.
         dsBagCart = nds && com.pokedaisy.app.companion.data.DsBag.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
-            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r))
+            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r)) &&
+            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
+                com.pokedaisy.app.companion.data.Black2Redux.matches(r))
+        dsBagGen5 = dsBagCart && com.pokedaisy.app.companion.data.DsBag.gen5(ndsCode)
         dsWildRates = if (!nds) null else if (romOrigin) {
             // Its tables are read in the background (NdsArt.prefetch); the core may start first, so read them here then.
             { (com.pokedaisy.app.companion.data.OriginHeartGold.data ?: com.pokedaisy.app.companion.data.NdsArt.readOrigin(r))?.wildRates ?: IntArray(0) }

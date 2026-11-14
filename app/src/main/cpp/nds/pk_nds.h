@@ -74,6 +74,9 @@ int pk_nds_action(int action, const uint32_t args[4]);
 int pk_nds_action_status(int seq);
 // The job's results once it ran (PK_NDS_MAX_RESULTS words), false if it hasn't.
 bool pk_nds_action_results(int seq, uint32_t* out);
+// Gen 5's USE effect for the next ITEM action (pk_nds_call.h's PkNdsItem5Effect: heal, healDiv, revive, statusMask, pp,
+// ppAll). Emu thread.
+void pk_nds_item5_effect(const uint32_t effect[6]);
 // WILD ENCOUNTERS OFF: no random encounters (the field read holds the map's grass / surf rates at 0). Emu thread.
 void pk_nds_set_wild_off(bool off);
 /** DS LAYOUT floats the X menu: it comes back after a menu screen left by touch (the game closes it then). */

@@ -531,6 +531,7 @@ int pk_ndsd_field_bits(void)
 int pk_ndsd_action(int, const uint32_t[4]) { return 0; }
 int pk_ndsd_action_status(int) { return -1; }
 bool pk_ndsd_action_results(int, uint32_t*) { return false; }
+void pk_ndsd_item5_effect(const uint32_t[6]) {}
 
 void pk_ndsd_set_wild_off(bool off)
 {

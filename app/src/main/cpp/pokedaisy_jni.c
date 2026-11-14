@@ -2191,6 +2191,13 @@ Java_com_pokedaisy_app_MgbaCore_pkNdsAction(JNIEnv* env, jobject thiz, jint acti
     return pk_nds_active() ? pk_nds_action((int) action, args) : 0;
 }
 
+// Gen 5's USE effect for the next ITEM action (pk_nds_call.h's PkNdsItem5Effect).
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkNdsItemEffect(JNIEnv* env, jobject thiz, jint heal, jint healDiv, jint revive, jint statusMask, jint pp, jint ppAll) {
+    uint32_t e[6] = {(uint32_t) heal, (uint32_t) healDiv, (uint32_t) revive, (uint32_t) statusMask, (uint32_t) pp, (uint32_t) ppAll};
+    if (pk_nds_active()) pk_nds_item5_effect(e);
+}
+
 // The job's results once it ran (op i's into [i]), or null.
 JNIEXPORT jintArray JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkNdsActionResults(JNIEnv* env, jobject thiz, jint seq) {
