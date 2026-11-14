@@ -26,7 +26,15 @@ enum PkNdsAction {
      * arg1 = the item, arg2 = the Pokémon's personality (USE / GIVE / TAKE check it again), arg3 = the party's count.
      * Result PK_NDS_ITEM_RESULT = the helper's answer (CHECK: its mask), PK_NDS_ITEM_RESULT + 1 = the item held before. */
     PK_NDS_ACTION_ITEM = 4,
+    /** TRADE EVOLUTIONS (Platinum / HeartGold / SoulSilver: stub/pk_nds_evo.c): arg0 = PK_NDS_EVO_CHECK / _START |
+     * slot << 8, arg2 = the Pokémon's personality (START checks it again), arg3 = the party's count. Result
+     * PK_NDS_EVO_RESULT = the helper's answer (PK_NDS_EVO_*), the six after it each slot's trade evolution target (CHECK;
+     * 0 = none). START leaves the game's evolution playing in a field task of ours, which puts the map back after. */
+    PK_NDS_ACTION_TRADE_EVO = 5,
 };
+
+/** Where a trade evolution job's answer is among its results (the helper's op); the slots' targets follow it. */
+#define PK_NDS_EVO_RESULT 4
 
 /** Gen 5's USE effect (stub/pk_nds_item5.c's PkNdsItem5 fields), the app's for the item: set before an ITEM action. */
 struct PkNdsItem5Effect { uint32_t heal, healDiv, revive, statusMask, pp, ppAll; };

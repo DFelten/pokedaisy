@@ -332,6 +332,9 @@ object MgbaCore {
     const val NDS_ACTION_ITEM = 4
     /** FLY (slot, map header, x, z): the game's own cut-in, flight and landing. */
     const val NDS_ACTION_FLY = 3
+    /** TRADE EVOLUTIONS (companion/data/DsTradeEvo.kt): CHECK / START | slot << 8, -, the personality, the party's count;
+     * result DsTradeEvo.RESULT = the helper's answer, the six after it each slot's target (CHECK). */
+    const val NDS_ACTION_TRADE_EVO = 5
 
     // --- cheats (pk_cheats.c, see cheats/Cheats.kt) ---
 

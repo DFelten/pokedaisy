@@ -114,6 +114,51 @@ typedef struct PkNdsItem5 {
     unsigned int out;
 } PkNdsItem5;
 
+/** TRADE EVOLUTIONS' helper on Platinum / HeartGold / SoulSilver (stub/pk_nds_evo.c): its code after the job block and
+ * its PkNdsEvo after that, both below the scripts. They stay there while the evolution plays (its field task runs this
+ * code every frame), so nothing else may be written there. */
+#define PK_NDS_EVO_ADDR 0x01FFC680u
+#define PK_NDS_EVO_ARGS 0x01FFCE00u
+
+#define PK_NDS_EVO_CHECK 0u   // each party slot's trade evolution target into targets[]
+#define PK_NDS_EVO_START 1u   // slot / personality: evolve it
+
+/** What START answers (CHECK answers STARTED). */
+#define PK_NDS_EVO_STARTED 0u
+#define PK_NDS_EVO_NONE 1u     // it doesn't evolve by trading now (another species, an Everstone, its item missing, an egg)
+#define PK_NDS_EVO_MOVED 2u    // the slot holds another Pokémon now
+#define PK_NDS_EVO_BUSY 3u     // an evolution of ours is still playing
+
+/** The field task's state (PkNdsEvo.state). */
+#define PK_NDS_EVO_IDLE 0u
+#define PK_NDS_EVO_LEAVING 1u
+#define PK_NDS_EVO_BEGIN 2u
+#define PK_NDS_EVO_PLAYING 3u
+#define PK_NDS_EVO_RETURNING 4u
+#define PK_NDS_EVO_FINISHED 5u
+
+/** The helper's arguments: the game's functions and constants, what the job's ops store, the request, the task's state. */
+typedef struct PkNdsEvo {
+    unsigned int createTask;     // FieldSystem_CreateTask(fieldSystem, func, env)
+    unsigned int leaveMap;       // (task): fade out + finish the map (Platinum FieldTransition_FadeOutAndFinishMap)
+    unsigned int backToMap;      // (task): start the map + fade in (FieldTransition_StartMapAndFadeIn)
+    unsigned int heapCreate, heapDestroy, heapParent, heapId, heapSize;
+    unsigned int begin;          // Evolution_Begin: 12 arguments with a Poketch (Platinum), 11 without (HeartGold)
+    unsigned int isDone, free;
+    unsigned int getMon;         // (party, slot)
+    unsigned int getValue;       // (mon, param, NULL)
+    unsigned int getEvolution;   // (party, mon, context, item, &method)
+    unsigned int getOptions, getContest, getPokedex, getBag, getRecords, getPoketch;   // (saveData); getPoketch 0: none
+    unsigned int soundStop, stopBgm, bgm, setScene, playFieldBgm;
+    unsigned int offLocation;    // FieldSystem.location (its map id first)
+    unsigned int pPersonality, pHeld, pEgg;
+    unsigned int ctxTrade, flags;   // the trade's evolution context and Evolution_Begin flags
+    unsigned int fieldSystem, saveData, party, count;   // stored by the job's ops
+    unsigned int mode, slot, personality;
+    unsigned int state, mon, target, method, evo;
+    unsigned int targets[6];
+} PkNdsEvo;
+
 typedef struct PkNdsJob {
     unsigned int seq;    // the host's number for this job
     unsigned int done;   // the hook sets it to seq once the ops ran

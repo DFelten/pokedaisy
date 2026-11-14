@@ -3072,7 +3072,15 @@ the LICENSES page.
 saves, states, input, the stylus), `pk_nds_platform.cpp` (melonDS's Platform: files, threads, the save callback),
 `pk_nds_field.cpp` (the field read: field / text / menu / battle / bike / surf bits, the BGM id, WILD ENCOUNTERS' hold,
 the battle controller's command), `pk_nds_call.cpp` + `stub/pk_nds_hook.c` (running the game's own functions from its
-main loop: PC, FLY), `pk_nds_wide.cpp` (EXPAND), `pk_nds_music.cpp` (STEADY). Saves: the game writes its flash a sector
+main loop: PC, FLY), `pk_nds_wide.cpp` (EXPAND), `pk_nds_music.cpp` (STEADY).
+TRADE EVOLUTIONS (US Platinum, HeartGold, SoulSilver; `DsTradeEvo.kt`, `stub/pk_nds_evo.c`): a job asks the game's own
+trade rules for each slot's target (`Pokemon_GetEvolutionTargetSpecies` / `GetMonEvolution` with the trade class and the
+held item) and START makes a field task of ours whose code stays in the spare ITCM (0x01FFC680, its PkNdsEvo at
+0x01FFCE00) while it runs: fade out and finish the map (`FieldTransition_FadeOutAndFinishMap`, HG's `sub_020553B0`), the
+start menu's evolution steps (its heap, the music stopped, `Evolution_Begin` / `sub_02075A7C` with the link trade's
+flags 4 and no party), then the map's music, the map and a fade in. The scene uses up the held item itself. Checked with
+nds_dump's `action 5` on all three carts (an ONIX given a Metal Coat to STEELIX, about 1,500 frames to the free field);
+the text waits for A held a few frames (HG drops one-frame presses there). Saves: the game writes its flash a sector
 at a time, so the file (512 KB) is written once the writes have been quiet a while, and before a state or a close.
 States carry the save memory's CRC32 in a header of ours, so a resume checks `pk_nds_state_matches_save` like the GBA's
 `pkStateMatchesSave` (save files are sacred). The DS's bottom screen goes on the bottom display (`NdsBottomScreen.kt`)

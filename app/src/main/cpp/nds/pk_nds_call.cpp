@@ -449,6 +449,89 @@ const ItemFns5* itemFns5For(const PkNdsFieldGame* game)
     }
 }
 
+// TRADE EVOLUTIONS (stub/pk_nds_evo.c): the game's own evolution as its link trade runs it, in a field task of ours
+// that leaves and restores the map as the start menu's evolution does (StartMenu_EvolveInit / StartMenu_Evolve, HG's
+// Task_StartMenu_Evolution / _WaitEvolution: their heap, the music stopped before and the map's put back after).
+struct EvoFns {
+    u32 getParty;   // (saveData)
+    PkNdsEvo evo;   // the helper's functions and constants; the request filled in per job
+    struct { u32 addr, word; } code[21];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1); the heap id, the music and FieldSystem.location as StartMenu_Evolve uses them.
+const EvoFns PLATINUM_EVO = {
+    0x0207A269,   // SaveData_GetParty
+    {
+        0x02050905,   // FieldSystem_CreateTask
+        0x02055975,   // FieldTransition_FadeOutAndFinishMap
+        0x020559CD,   // FieldTransition_StartMapAndFadeIn
+        0x02017FC9, 0x0201807D, 3, 0x49, 0x30000,   // Heap_Create / Heap_Destroy: HEAP_ID_EVOLUTION in HEAP_ID_APPLICATION
+        0x0207AE69, 0x0207B0D1, 0x0207B0E1,         // Evolution_Begin / _IsDone / _Free
+        0x0207A0FD,   // Party_GetPokemonBySlotIndex
+        0x02074471,   // Pokemon_GetValue
+        0x02076B95,   // Pokemon_GetEvolutionTargetSpecies
+        0x02025E45, 0x0208C325, 0x02027561, 0x0207D991, 0x0202CD89, 0x02056B25,   // SaveData_GetOptions,
+        // PokemonSummaryScreen_ShowContestData, SaveData_GetPokedex / _GetBag / _GetGameRecords / _GetPoketch
+        0x0200569D, 0x020055D1, 0x475, 0x02004235, 0x020556A1,   // Sound_StopWaveOutAndSequences, Sound_StopBGM(SEQ_SHINKA),
+        // Sound_SetScene, FieldBGM_PlayEffectiveForMapHeader
+        0x1C,         // FieldSystem.location
+        0, 6, 76,     // MON_DATA_PERSONALITY, _HELD_ITEM, _IS_EGG
+        1, 4,         // EVO_CLASS_BY_TRADE; the trade's flags
+    },
+    {
+        {0x0207A268, 0x21024B01}, {0x02050904, 0x1C05B570}, {0x02055974, 0x49024B01}, {0x020559CC, 0x49024B01},
+        {0x02017FC8, 0x2304B508}, {0x0201807C, 0x1C04B510}, {0x0207AE68, 0xB089B5F0}, {0x0207B0D0, 0x78003067},
+        {0x0207B0E0, 0x1C04B510}, {0x0207A0FC, 0x1C05B538}, {0x02074470, 0x1C05B570}, {0x02076B94, 0xB091B5F0},
+        {0x02025E44, 0x21014B01}, {0x0208C324, 0xF7C4B508}, {0x02027560, 0x21074B01}, {0x0207D990, 0x21034B01},
+        {0x0202CD88, 0x21144B01}, {0x02056B24, 0x21054B01}, {0x0200569C, 0x2010B538}, {0x020055D0, 0x1C04B510},
+        {0x020556A0, 0x1C05B570},
+    },
+};
+
+// pret/pokeheartgold's xMAP (US; SoulSilver's ARM9 is the same, every word below checked in both).
+const EvoFns HEARTGOLD_EVO = {
+    0x02074905,   // SaveArray_Party_Get
+    {
+        0x020504F1,   // FieldSystem_CreateTask
+        0x020553B1,   // sub_020553B0: fade out, then CallTask_LeaveOverworld
+        0x02055409,   // sub_02055408: CallTask_RestoreOverworld, then the map name and CallTask_FadeFromBlack
+        0x0201A911, 0x0201A9C5, 3, 0x47, 0x30000,   // Heap_Create / Heap_Destroy: HEAP_ID_EVOLUTION in HEAP_ID_3
+        0x02075A7D, 0x02075D3D, 0x02075D4D,         // sub_02075A7C (the evolution), sub_02075D3C (done), sub_02075D4C (free)
+        0x02074645,   // Party_GetMonByIndex
+        0x0206E541,   // GetMonData
+        0x02070E35,   // GetMonEvolution
+        0x02028EA9, 0x02088289, 0x0202A635, 0x0207879D, 0x0202CF55, 0,   // Save_PlayerData_GetOptionsAddr, sub_02088288,
+        // Save_Pokedex_Get, Save_Bag_Get, Save_GameStats_Get; no Poketch
+        0x02005FA1, 0x02005EB5, 0x3F3, 0x02004AD9, 0x02055165,   // Sound_Stop, StopBGM(SEQ_GS_SHINKA), Sound_SetScene,
+        // FieldBGM_PlayEffectiveForMapHeader
+        0x20,
+        0, 6, 76,
+        1, 4,         // EVOCTX_TRADE; the trade's flags
+    },
+    {
+        {0x02074904, 0x21024B01}, {0x020504F0, 0x1C05B570}, {0x020553B0, 0x49024B01}, {0x02055408, 0x49024B01},
+        {0x0201A910, 0x2304B508}, {0x0201A9C4, 0x1C04B510}, {0x02075A7C, 0xB089B5F0}, {0x02075D3C, 0x78003067},
+        {0x02075D4C, 0x1C04B510}, {0x02074644, 0x1C05B538}, {0x0206E540, 0x1C05B570}, {0x02070E34, 0xB091B5F0},
+        {0x02028EA8, 0x21014B01}, {0x02088288, 0x47702001}, {0x0202A634, 0x21064B01}, {0x0207879C, 0x21034B01},
+        {0x0202CF54, 0x21104B01}, {0x02005FA0, 0x2010B538}, {0x02005EB4, 0x1C05B538}, {0x02004AD8, 0x1C05B538},
+        {0x02055164, 0x1C05B570},
+    },
+};
+
+const EvoFns* evoFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 1: return &PLATINUM_EVO;
+    case 2: return &HEARTGOLD_EVO;
+    default: return nullptr;
+    }
+}
+
+static_assert(PK_NDS_EVO_ADDR >= PK_NDS_JOB + sizeof(PkNdsJob), "the evolution helper runs into the job block");
+static_assert(PK_NDS_EVO_ADDR + sizeof(PK_NDS_EVO_CODE) <= PK_NDS_EVO_ARGS, "the evolution helper runs into its arguments");
+static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo) <= PK_NDS_SCRIPT_ADDR, "the evolution helper's arguments run into the scripts");
+
 // The helpers' code ends before their arguments, and the arguments before the ITCM does.
 static_assert(sizeof(PK_NDS_ITEM_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM_ADDR, "Gen 4's bag helper runs into its arguments");
 static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into its arguments");
@@ -917,6 +1000,31 @@ int pk_nds_call_action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, i
         int answer = o.add(PK_NDS_ITEM_ADDR, PK_NDS_ITEM_ARGS);
         o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, out));
         if (answer != PK_NDS_ITEM_RESULT) return 0;
+        break;
+    }
+    case PK_NDS_ACTION_TRADE_EVO: {
+        const EvoFns* ev = evoFnsFor(game);
+        if (!ev) return 0;
+        for (const auto& c : ev->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsEvo req = ev->evo;
+        req.fieldSystem = fs;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        req.state = PK_NDS_EVO_IDLE;   // the field is free here, so none of ours is playing
+        u8 have[sizeof(PK_NDS_EVO_CODE)];
+        itcmRead(mem, PK_NDS_EVO_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_EVO_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_EVO_ADDR, PK_NDS_EVO_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_EVO_ARGS, &req, sizeof(req));
+        int sd = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offSaveData);
+        int party = o.add(ev->getParty, Ops::res(sd));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo, saveData), Ops::res(sd));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo, party), Ops::res(party));
+        int answer = o.add(PK_NDS_EVO_ADDR, PK_NDS_EVO_ARGS);
+        for (u32 i = 0; i < 6; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) (offsetof(PkNdsEvo, targets) + 4 * i));
+        if (answer != PK_NDS_EVO_RESULT) return 0;
         break;
     }
     default:

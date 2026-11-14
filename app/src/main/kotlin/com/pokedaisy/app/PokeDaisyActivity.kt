@@ -788,15 +788,43 @@ class PokeDaisyActivity : Activity() {
             com.pokedaisy.app.companion.data.withdrawFromBox(fields, fns, box, slot, boxPersonality, busy, calls)
         }
 
-        override fun canTradeEvolve() = Prefs(this@PokeDaisyActivity).tradeEvolutions && tradeEvoFns() != null
+        override fun canTradeEvolve() = Prefs(this@PokeDaisyActivity).tradeEvolutions && (tradeEvoFns() != null || dsTradeEvo())
+
+        /** The DS games' TRADE EVOLUTIONS ([com.pokedaisy.app.companion.data.DsTradeEvo]): a job, the game's own rules. */
+        private fun dsTradeEvo() = dsTradeEvoKnown() && dsCalls()
 
         override fun tradeEvolveTargets(done: (Map<Long, Int>) -> Unit) {
+            if (dsTradeEvo()) {
+                if (!Prefs(this@PokeDaisyActivity).tradeEvolutions) return done(emptyMap())
+                val party = telemetry.snapshot.value.party
+                var out = emptyMap<Long, Int>()
+                return dsAction(MgbaCore.NDS_ACTION_TRADE_EVO, com.pokedaisy.app.companion.data.DsTradeEvo.args(
+                    com.pokedaisy.app.companion.data.DsTradeEvo.CHECK, 0, 0, party.size), ran = { res ->
+                    out = res?.let { com.pokedaisy.app.companion.data.DsTradeEvo.targets(it, party) } ?: emptyMap()
+                    com.pokedaisy.app.companion.data.ItemUseResult.USED
+                }) { done(out) }
+            }
             val evo = tradeEvoFns()
             if (evo == null || !Prefs(this@PokeDaisyActivity).tradeEvolutions) return done(emptyMap())
             onGame(emptyMap(), done) { s, calls, _ -> com.pokedaisy.app.companion.data.tradeEvolveTargets(s.fns, evo, calls) }
         }
 
         override fun tradeEvolve(slot: Int, personality: Long, done: (com.pokedaisy.app.companion.data.TradeEvoResult) -> Unit) {
+            if (dsTradeEvo()) {
+                if (!Prefs(this@PokeDaisyActivity).tradeEvolutions) return done(com.pokedaisy.app.companion.data.TradeEvoResult.FAILED)
+                var r = com.pokedaisy.app.companion.data.TradeEvoResult.NOT_NOW
+                // The job runs only on the free field (a menu, text or battle: NOT_NOW), and the scene then takes both screens.
+                return dsAction(MgbaCore.NDS_ACTION_TRADE_EVO, com.pokedaisy.app.companion.data.DsTradeEvo.args(
+                    com.pokedaisy.app.companion.data.DsTradeEvo.START, slot, personality, telemetry.snapshot.value.party.size), ran = { res ->
+                    r = res?.getOrNull(com.pokedaisy.app.companion.data.DsTradeEvo.RESULT)?.let { com.pokedaisy.app.companion.data.DsTradeEvo.result(it) }
+                        ?: com.pokedaisy.app.companion.data.TradeEvoResult.FAILED
+                    com.pokedaisy.app.companion.data.ItemUseResult.USED
+                }) { o ->
+                    if (o.result == com.pokedaisy.app.companion.data.ItemUseResult.FAILED) r = com.pokedaisy.app.companion.data.TradeEvoResult.FAILED
+                    if (r == com.pokedaisy.app.companion.data.TradeEvoResult.EVOLVING) closeCompanionWindow()
+                    done(r)
+                }
+            }
             val evo = tradeEvoFns()
             if (evo == null || !Prefs(this@PokeDaisyActivity).tradeEvolutions) return done(com.pokedaisy.app.companion.data.TradeEvoResult.FAILED)
             // Only from the field the player walks on: the scene takes the screen, then CB2_ReturnToField brings the field back.
@@ -1577,6 +1605,11 @@ class PokeDaisyActivity : Activity() {
     @Volatile private var dsBagCart = false
     /** ... and it's Black / White / Black 2 / White 2 (USE by DsBag's effects). */
     @Volatile private var dsBagGen5 = false
+    /** A DS cart TRADE EVOLUTIONS was proved on (companion/data/DsTradeEvo.kt): US Platinum, HeartGold, SoulSilver. */
+    @Volatile private var dsEvoCart = false
+
+    /** TRADE EVOLUTIONS on the loaded DS game: a proved cart on melonDS (DSperate has no job calls). */
+    private fun dsTradeEvoKnown() = dsEvoCart && romIsNds && !dsperate
 
     /**
      * Where the battle POKéMON pane's switch finds the party menu: retail
@@ -1783,7 +1816,7 @@ class PokeDaisyActivity : Activity() {
             romIsNds && ::engine.isInitialized && engine.fieldState and MgbaCore.FIELD_KNOWN != 0
         override val tradeEvolutions get() = Prefs(this@PokeDaisyActivity).tradeEvolutions
         override fun setTradeEvolutions(on: Boolean) { Prefs(this@PokeDaisyActivity).tradeEvolutions = on }
-        override val tradeEvolutionsSupported get() = tradeEvoFns() != null
+        override val tradeEvolutionsSupported get() = tradeEvoFns() != null || dsTradeEvoKnown()
         override val flightArea get() = Prefs(this@PokeDaisyActivity).flightArea
         override fun setFlightArea(mode: com.pokedaisy.app.companion.FlightAreaMode) {
             Prefs(this@PokeDaisyActivity).flightAreaId = mode.id
@@ -2575,6 +2608,8 @@ class PokeDaisyActivity : Activity() {
             !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
                 com.pokedaisy.app.companion.data.Black2Redux.matches(r))
         dsBagGen5 = dsBagCart && com.pokedaisy.app.companion.data.DsBag.gen5(ndsCode)
+        dsEvoCart = nds && com.pokedaisy.app.companion.data.DsTradeEvo.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
+            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r))
         dsWildRates = if (!nds) null else if (romOrigin) {
             // Its tables are read in the background (NdsArt.prefetch); the core may start first, so read them here then.
             { (com.pokedaisy.app.companion.data.OriginHeartGold.data ?: com.pokedaisy.app.companion.data.NdsArt.readOrigin(r))?.wildRates ?: IntArray(0) }
