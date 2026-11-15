@@ -538,6 +538,8 @@ void pk_ndsd_set_wild_off(bool off)
     if (d) d->wildOff = off;
 }
 
+void pk_ndsd_set_hm_free(bool) {}   // melonDS only (its code hooks); DSperate shows the row N/A
+
 void pk_ndsd_set_keep_start_menu(bool on)
 {
     if (d) d->keepStartMenu = on;

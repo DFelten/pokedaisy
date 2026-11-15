@@ -17,3 +17,5 @@ int pk_nds_call_ops(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, cons
 int pk_nds_call_script(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, const uint8_t* bytes, uint32_t len);
 void pk_nds_call_itcm_write(const PkNdsCallMemory& mem, uint32_t addr, const void* src, uint32_t len);
 void pk_nds_call_frame(const PkNdsCallMemory& mem, const PkNdsFieldGame* game);
+/** NO HMS NEEDED's hooks in (on) or out: the main RAM words it changed into [changed] (code: a JIT drops its copies). */
+int pk_nds_call_hm_free(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, bool on, uint32_t changed[8]);

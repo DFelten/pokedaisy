@@ -74,7 +74,8 @@ struct Ds {
     bool drawn = true;                       // the last frame was drawn (pk_nds_frame_drawn)
     int fieldBits = 0;                       // the field read after the last frame
     bool wildOff = false;                    // WILD ENCOUNTERS OFF (pk_nds_field.cpp holds the map's rates at 0)
-    bool keepStartMenu = false;              // DS LAYOUT floats the X menu: it comes back after a screen left by touch
+    bool keepStartMenu = false;
+    bool hmFree = false;                     // NO HMS NEEDED (pk_nds_call_hm_free_frame: its hooks in or out)              // DS LAYOUT floats the X menu: it comes back after a screen left by touch
     bool cpuBoost = false;                   // DS CPU BOOST: the ARM9 at twice the DS's clock (setArm9Shift)
     int menuLitFrames = 0;                   // frames this menu screen has been lit (its closing fade comes after)
     int scaleWant = 1;                       // DS RESOLUTION: 1 = the software renderer, 2-8 the GPU's (pk_nds_gl.h)
@@ -331,6 +332,7 @@ void pk_ndsm_run_frame(void)
     ds->audioFrames = nds->SPU.ReadOutput(ds->audio.data(), (int) ds->audio.size() / 2);
     ds->fieldBits = pk_ndsm_field_bits();
     pk_nds_call_frame(nds, ds->field);
+    pk_nds_call_hm_free_frame(nds, ds->field, ds->hmFree);
     if (ds->wide) {
         // The overworld only: the field map on screen with nothing over it (a text box keeps it) - or a battle that's
         // all 3D like it (Black's).
@@ -604,6 +606,11 @@ int pk_ndsm_action_status(int seq)
 void pk_ndsm_set_wild_off(bool off)
 {
     if (ds) ds->wildOff = off;
+}
+
+void pk_ndsm_set_hm_free(bool on)
+{
+    if (ds) ds->hmFree = on;
 }
 
 void pk_ndsm_set_keep_start_menu(bool on)

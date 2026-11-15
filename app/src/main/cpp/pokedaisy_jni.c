@@ -1686,6 +1686,12 @@ Java_com_pokedaisy_app_MgbaCore_pkNdsKeepStartMenu(JNIEnv* env, jobject thiz, jb
     if (pk_nds_active()) pk_nds_set_keep_start_menu(on == JNI_TRUE);
 }
 
+// NO HMS NEEDED on Platinum / HeartGold / SoulSilver (melonDS): the party move checks' hooks, from the next frame. Emu thread.
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkNdsHmFree(JNIEnv* env, jobject thiz, jboolean on) {
+    if (pk_nds_active()) pk_nds_set_hm_free(on == JNI_TRUE);
+}
+
 // DS LAYOUT's transition hold (EmulatorEngine.dsHold): the two screens' brightness fade (pk_nds_fade). Emu thread, after a frame.
 JNIEXPORT jint JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkNdsFade(JNIEnv* env, jobject thiz) {

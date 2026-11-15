@@ -239,8 +239,8 @@ class PokeDaisyActivity : Activity() {
 
     /** NO HMS NEEDED on the engine, and FLY / FREE FLIGHT / FLASH told whether to ask for the move (HmFree.active). */
     private fun syncHmFree(on: Boolean = Prefs(this).hmFree) {
-        com.pokedaisy.app.companion.data.HmFree.active = on && hmPatch != null
-        if (::engine.isInitialized) engine.setHmFree(hmPatch, on)
+        com.pokedaisy.app.companion.data.HmFree.active = on && (hmPatch != null || dsHmKnown())
+        if (::engine.isInitialized) engine.setHmFree(hmPatch, on, dsHmKnown())
     }
     /** EXPAND's one-time offer is up on the companion ([CompanionSettings.expandOffer]). */
     private val expandOfferUp = androidx.compose.runtime.mutableStateOf(false)
@@ -1514,8 +1514,10 @@ class PokeDaisyActivity : Activity() {
         }
 
         /** The first party Pokémon that knows FLY (not an egg): its slot and the snapshot's personality for it. */
-        private fun dsFlyer(): Pair<Int, Long>? = telemetry.snapshot.value.party.withIndex().firstOrNull { (_, m) ->
-            !m.isEgg && m.moves.any { it.id == com.pokedaisy.app.companion.data.GEN4_MOVE_FLY }
+        private fun dsFlyer(): Pair<Int, Long>? = telemetry.snapshot.value.party.withIndex().let { party ->
+            party.firstOrNull { (_, m) -> !m.isEgg && m.moves.any { it.id == com.pokedaisy.app.companion.data.GEN4_MOVE_FLY } }
+                // NO HMS NEEDED: the first that isn't an egg (the game's FLY check still wants the badge)
+                ?: party.firstOrNull { (_, m) -> !m.isEgg }?.takeIf { com.pokedaisy.app.companion.data.HmFree.active }
         }?.let { (i, m) -> i to m.personality }
 
         /** The game's own FLY check (the party menu's), then which spots are unlocked, as [targets] answers it. */
@@ -1777,6 +1779,12 @@ class PokeDaisyActivity : Activity() {
     /** A DS cart TRADE EVOLUTIONS was proved on (companion/data/DsTradeEvo.kt): US Platinum, HeartGold, SoulSilver, Black, White, Black 2, White 2. */
     @Volatile private var dsEvoCart = false
 
+    /** A DS cart NO HMS NEEDED was proved on (companion/data/DsHmFree.kt). */
+    @Volatile private var dsHmCart = false
+
+    /** NO HMS NEEDED on the loaded DS game: a proved cart on melonDS (its code hooks; DSperate shows the row N/A). */
+    private fun dsHmKnown() = dsHmCart && romIsNds && !dsperate
+
     /** TRADE EVOLUTIONS on the loaded DS game: a proved cart on melonDS (DSperate has no job calls). */
     private fun dsTradeEvoKnown() = dsEvoCart && romIsNds && !dsperate
 
@@ -2022,7 +2030,7 @@ class PokeDaisyActivity : Activity() {
             Prefs(this@PokeDaisyActivity).hmFree = on
             syncHmFree(on)
         }
-        override val hmFreeSupported get() = hmPatch != null
+        override val hmFreeSupported get() = hmPatch != null || dsHmKnown()
         override val expShare get() = com.pokedaisy.app.companion.data.ExpShare.Mode.of(Prefs(this@PokeDaisyActivity).expShare)
         override fun setExpShare(mode: com.pokedaisy.app.companion.data.ExpShare.Mode) {
             if (coopRefuses()) return
@@ -2822,6 +2830,10 @@ class PokeDaisyActivity : Activity() {
             !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
                 com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
         dsBagGen5 = dsBagCart && com.pokedaisy.app.companion.data.DsBag.gen5(ndsCode)
+        dsHmCart = nds && com.pokedaisy.app.companion.data.DsHmFree.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
+            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
+            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
+                com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
         dsEvoCart = nds && com.pokedaisy.app.companion.data.DsTradeEvo.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
             !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
             !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
@@ -3257,7 +3269,7 @@ class PokeDaisyActivity : Activity() {
         e.ndsCpuBoost = p.dsCpuBoost
         e.setReusableTms(tmSites, p.reusableTms)
         e.setInstantText(textPatch, p.instantText)
-        e.setHmFree(hmPatch, p.hmFree)
+        e.setHmFree(hmPatch, p.hmFree, dsHmKnown())
         e.setExpShare(expShareFound, if (expShareFound != null) com.pokedaisy.app.companion.data.ExpShare.Mode.of(p.expShare) else com.pokedaisy.app.companion.data.ExpShare.Mode.OFF)
         e.setLevelCap(levelCapFound, if (levelCapFound != null && p.levelCap) levelCapNow?.level ?: 0 else 0)
         e.setShinyTarget(shinyTarget)
@@ -6330,6 +6342,7 @@ class PokeDaisyActivity : Activity() {
      * field read knows). The engine starts the game on it ([startGame], [restartGame]). */
     private fun pickDsCore() {
         dsperate = romIsNds && Prefs(this).dsCore.runs() == MgbaCore.NDS_CORE_DSPERATE
+        syncHmFree()   // NO HMS NEEDED on a DS cart follows the core (melonDS only)
         if (!romIsNds) return
         wideGame = if (!dsperate && (WideScreen.ndsKnows(romCode, romRev) || romOrigin)) WideScreen.NDS else WideScreen.OFF
         if (::engine.isInitialized) engine.ndsCore = if (dsperate) MgbaCore.NDS_CORE_DSPERATE else MgbaCore.NDS_CORE_MELONDS

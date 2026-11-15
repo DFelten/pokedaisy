@@ -268,6 +268,9 @@ object MgbaCore {
      * closes it then: HeartGold / SoulSilver's menuInputState). Emu thread. */
     external fun pkNdsKeepStartMenu(on: Boolean)
 
+    /** NO HMS NEEDED on Platinum / HeartGold / SoulSilver (melonDS): the party move checks' hooks in or out. Emu thread. */
+    external fun pkNdsHmFree(on: Boolean)
+
     /** A DS game's screens fading by master brightness (towards black or white): the factor 0-16, the top screen's in
      * bits 0-7, the touch screen's in 8-15; 0 = no fade. Emu thread, after [pkRunFrame]. */
     external fun pkNdsFade(): Int

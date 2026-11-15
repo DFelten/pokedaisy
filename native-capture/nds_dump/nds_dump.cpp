@@ -114,6 +114,7 @@ static std::vector<u32> gpuTop(256 * 192), gpuBottom(256 * 192), gpuTopArgb(256 
 static u32 rgbaToArgb(u32 p) { return 0xFF000000u | ((p & 0xFF) << 16) | (p & 0xFF00) | ((p >> 16) & 0xFF); }
 static u32 read32(u32 addr) { return nds->ARM9Read32(addr); }
 static void write32(u32 addr, u32 v) { nds->ARM9Write32(addr, v); }
+static int hmFree = 0;           // hmfree 1: NO HMS NEEDED's hooks in, after every frame (pk_nds_call_hm_free_frame)
 static int wildOff = 0;          // wildoff 1: WILD ENCOUNTERS OFF, the field read run every frame (pk_nds_field.cpp)
 static int battlesSeen = 0;      // battles started since wildoff (the field read's BATTLE bit going on)
 
@@ -301,6 +302,7 @@ static void runFrames(int n, u32 keys)
             if (const PkNdsFieldGame* g = pk_nds_field_game_rom(cart->GetROM(), cart->GetROMLength())) {
                 int bits = pk_nds_field_state(g, read32, write32, wildOff);
                 pk_nds_call_frame(nds, g);
+                pk_nds_call_hm_free_frame(nds, g, hmFree != 0);
                 battle = (bits & PK_NDS_FIELD_BATTLE) != 0;
                 if (battle && !wasBattle) battlesSeen++;
                 wasBattle = battle;
@@ -839,6 +841,11 @@ int main(int argc, char** argv)
                    (int*) &e.pp, (int*) &e.ppAll);
             pk_nds_call_item5_effect(e);
             printf("itemfx set\n");
+            fflush(stdout);
+        } else if (!strcmp(cmd, "hmfree")) {
+            // hmfree 0|1: NO HMS NEEDED (Platinum / HG / SS) from the next frame, as the app sets it
+            hmFree = (int) num(a);
+            printf("hmfree %d\n", hmFree);
             fflush(stdout);
         } else if (!strcmp(cmd, "action")) {
             // action N [A0 A1 A2 A3]: post pk_nds_call's action N (1 = PC) for the next frame, then report when it ran

@@ -31,7 +31,7 @@ LLVM = os.environ.get("LLVM_BIN") or next(
     (d for d in ("/opt/homebrew/opt/llvm/bin", "/usr/bin") if os.path.exists(os.path.join(d, "llvm-objcopy"))), "/usr/bin")
 CODE = [("PK_NDS_HOOK_CODE", "pk_nds_hook.c"), ("PK_NDS_SKILL_CODE", "pk_nds_skill.c"), ("PK_NDS_ITEM_CODE", "pk_nds_item.c"),
         ("PK_NDS_ITEM5_CODE", "pk_nds_item5.c"), ("PK_NDS_EVO_CODE", "pk_nds_evo.c"),
-        ("PK_NDS_EVO5_CODE", "pk_nds_evo5.c")]
+        ("PK_NDS_EVO5_CODE", "pk_nds_evo5.c"), ("PK_NDS_HM_CODE", "pk_nds_hm.c")]
 SCRIPTS = [("PK_NDS_PLATINUM_PC", "platinum_pc.s"), ("PK_NDS_HEARTGOLD_PC", "heartgold_pc.s")]
 
 

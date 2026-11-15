@@ -203,9 +203,13 @@ class EmulatorEngine(
     @Volatile private var hmPatch: com.pokedaisy.app.companion.data.HmFree.Patch? = null
     @Volatile private var hmFree = false
 
-    fun setHmFree(patch: com.pokedaisy.app.companion.data.HmFree.Patch?, on: Boolean) {
+    /** NO HMS NEEDED on a DS cart ([com.pokedaisy.app.companion.data.DsHmFree], melonDS): the core's own hooks. */
+    @Volatile private var dsHmFree = false
+
+    fun setHmFree(patch: com.pokedaisy.app.companion.data.HmFree.Patch?, on: Boolean, ds: Boolean = false) {
         hmPatch = patch
         hmFree = on
+        dsHmFree = ds
         tmPatchDirty = true
     }
 
@@ -2047,6 +2051,7 @@ class EmulatorEngine(
     /** REUSABLE TMS, INSTANT TEXT, NO HMS NEEDED, FULL EXP and LEVEL CAP onto the ROM (emu thread): what's on patched, the rest the file's bytes. */
     private fun applyTmPatch() {
         tmPatchDirty = false
+        if (nds) MgbaCore.pkNdsHmFree(hmFree && dsHmFree)   // NO HMS NEEDED's hooks, from the next frame (DsHmFree)
         MgbaCore.pkRomUnpatch()
         if (!gba) return
         // All or none, each: a ROM that only matched in part would still use TMs up on the other paths, and half a

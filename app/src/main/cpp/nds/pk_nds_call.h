@@ -64,5 +64,8 @@ bool pk_nds_call_results(int seq, uint32_t* out);
 /** After every frame: notices a job that ran and takes out a hook the game hasn't called within a few frames. */
 void pk_nds_call_frame(melonDS::NDS* nds, const PkNdsFieldGame* game);
 
+/** NO HMS NEEDED after every frame: the hooks in while [on] (where the game's own code is), out while not. */
+void pk_nds_call_hm_free_frame(melonDS::NDS* nds, const PkNdsFieldGame* game, bool on);
+
 /** Forget any job (a reset, a state load: the hook went with the old RAM, or is in the new RAM and will run). */
 void pk_nds_call_reset(void);

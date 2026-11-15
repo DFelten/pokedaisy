@@ -297,6 +297,8 @@ The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in t
 
 It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
 
+On the DS it works in the US Platinum, HeartGold and SoulSilver and the English Black, White, Black 2 and White 2, when the game runs on melonDS (`DS CORE`). Walk up to the tree, the rock, the boulder, the water or the waterfall and press A, as above. A move a game lists in its party menu only for a Pokémon that knows it stays that way there; the companion's `FLY` takes anyone.
+
 ## External controllers
 
 Bluetooth and USB controllers (8BitDo, GameSir, Xbox and so on) work, and you can connect one while a game is running without restarting it. A short message on the game screen says when a controller connects or goes away. Its buttons follow `GAME BUTTONS` and `HOTKEYS` like the built-in ones, and diagonals on its D-pad press both directions.

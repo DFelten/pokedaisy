@@ -187,3 +187,29 @@ typedef struct PkNdsJob {
     unsigned int res[PK_NDS_MAX_RESULTS];
     PkNdsOp ops[PK_NDS_MAX_OPS];
 } PkNdsJob;
+
+/** NO HMS NEEDED on Platinum / HeartGold / SoulSilver and Black / White / Black 2 / White 2 (stub/pk_nds_hm.c): its code and arguments at the very top of the
+ * spare ITCM (past the bag helpers' arguments), kept there while the option is on: the game's own party move checks
+ * jump into it (pk_nds.cpp's hmFreeTick). */
+#define PK_NDS_HM_ADDR 0x01FFFC00u
+#define PK_NDS_HM_ARGS 0x01FFFF00u
+
+/** Which routine the hook stands in for (r3, set by the jump). */
+#define PK_NDS_HM_HAS_MOVE 1u      // Party_HasMonWithMove(party, move) (Gen 5: (gameData, move)): a slot, or `none`
+#define PK_NDS_HM_SCRIPT 2u        // ScrCmd_FindPartySlotWithMove(ctx) (Gen 5: (ctx, work)): the slot into its variable, or 6
+
+typedef struct PkNdsHm {
+    unsigned int getCount;       // Party_GetCurrentCount(party)
+    unsigned int getMon;         // Party_GetPokemonBySlotIndex(party, slot)
+    unsigned int getValue;       // Pokemon_GetValue(mon, param, NULL)
+    unsigned int getParty;       // SaveData_GetParty(saveData)
+    unsigned int readHalf;       // ScriptContext_ReadHalfWord(ctx); Gen 5: the work's game data (work)
+    unsigned int getVarPtr;      // FieldSystem_GetVarPointer(fieldSystem, id); Gen 5: the next variable's pointer (ctx, work)
+    unsigned int tryGetVar;      // FieldSystem_TryGetVar(fieldSystem, id); Gen 5: the next value (ctx, work)
+    unsigned int offFieldSystem; // ScriptContext.fieldSystem
+    unsigned int offSaveData;    // FieldSystem.saveData
+    unsigned int pEgg, pMove1;   // MON_DATA_IS_EGG, MON_DATA_MOVE1
+    unsigned int none;           // Party_HasMonWithMove's "nobody" (PARTY_SLOT_NONE; Gen 5's: 6)
+    unsigned int gen5;           // Gen 5's argument shapes (above)
+    unsigned short hms[12];      // the moves anyone may stand in for, 0-terminated
+} PkNdsHm;

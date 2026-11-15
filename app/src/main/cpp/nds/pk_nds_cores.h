@@ -29,6 +29,7 @@
     X(void, item5_effect, (const uint32_t effect[6]), (effect)) \
     X(void, set_wild_off, (bool off), (off)) \
     X(void, set_keep_start_menu, (bool on), (on)) \
+    X(void, set_hm_free, (bool on), (on)) \
     X(void, set_cpu_boost, (bool on), (on)) \
     X(int, set_cheats, (const uint32_t* words, int nWords, const int32_t* lengths, int nCheats), (words, nWords, lengths, nCheats)) \
     X(int, bgm, (void), ()) \

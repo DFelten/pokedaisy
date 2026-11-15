@@ -61,3 +61,12 @@ void pk_nds_call_frame(NDS* nds, const PkNdsFieldGame* game)
 {
     if (nds) pk_nds_call_frame(callMemory(nds), game);
 }
+
+void pk_nds_call_hm_free_frame(NDS* nds, const PkNdsFieldGame* game, bool on)
+{
+    if (!nds) return;
+    uint32_t changed[8];
+    int n = pk_nds_call_hm_free(callMemory(nds), game, on, changed);
+    // the JIT's compiled copies of the code the hooks changed go with it
+    for (int i = 0; i < n; i++) nds->JIT.CheckAndInvalidate<0, ARMJIT_Memory::memregion_MainRAM>(changed[i]);
+}

@@ -625,8 +625,8 @@ static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo) <= PK_NDS_SCRIPT_ADDR, "the evo
 // The helpers' code ends before their arguments, and the arguments before the ITCM does.
 static_assert(sizeof(PK_NDS_ITEM_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM_ADDR, "Gen 4's bag helper runs into its arguments");
 static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into its arguments");
-static_assert(PK_NDS_ITEM_ARGS + sizeof(PkNdsItem5) <= 0x02000000u && PK_NDS_ITEM_ARGS + sizeof(PkNdsItem) <= 0x02000000u,
-              "the bag helpers' arguments run past the ITCM");
+static_assert(PK_NDS_ITEM_ARGS + sizeof(PkNdsItem5) <= PK_NDS_HM_ADDR && PK_NDS_ITEM_ARGS + sizeof(PkNdsItem) <= PK_NDS_HM_ADDR,
+              "the bag helpers' arguments run into NO HMS NEEDED's helper");
 
 struct Pending {
     int seq;
@@ -875,6 +875,185 @@ void scriptJob(Ops& o, const CallFns& f, u32 fs, const PkNdsFieldGame& g)
 }
 
 }   // namespace
+
+// NO HMS NEEDED (stub/pk_nds_hm.c): the game's two party move checks jump into the helper at the top of the ITCM.
+// Each check's routine starts on a word (the jump's ARM half needs it): every one below does. Each
+// hook is the routine's first 16 bytes made a Thumb `bx pc; nop` into ARM `mov r3, #which; ldr pc, [pc, #-4]` and the
+// helper's address; put in only where the routine's own bytes are, taken out only where ours are.
+struct HmSite { u32 addr; u32 which; u32 orig[4]; };
+struct HmFns {
+    PkNdsHm hm;
+    HmSite sites[2];
+    struct { u32 addr, word; } code[7];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1): Party_HasMonWithMove, ScrCmd_FindPartySlotWithMove and what they call.
+const HmFns PLATINUM_HM = {
+    {
+        0x0207A0F9, 0x0207A0FD, 0x02074471, 0x0207A269,   // Party_GetCurrentCount, _GetPokemonBySlotIndex, Pokemon_GetValue,
+        // SaveData_GetParty
+        0x0203E839, 0x0203F119, 0x0203F151,               // ScriptContext_ReadHalfWord, FieldSystem_GetVarPointer / _TryGetVar
+        0x80, 0x0C, 76, 54, 0xFF, 0,                      // ScriptContext.fieldSystem, FieldSystem.saveData; IS_EGG, MOVE1
+        {15, 19, 57, 70, 127, 249, 431, 432, 0},          // CUT, FLY, SURF, STRENGTH, WATERFALL, ROCK SMASH, ROCK CLIMB, DEFOG
+    },
+    {
+        {0x020549A0, PK_NDS_HM_HAS_MOVE, {0x9000B5F8, 0xF0251C0D, 0x1C07FBA7, 0x2F002600}},
+        {0x0204D2D8, PK_NDS_HM_SCRIPT, {0xB082B5F8, 0x1C211C04, 0x68093180, 0xF7F19101}},
+    },
+    {
+        {0x0207A0F8, 0x47706840}, {0x0207A0FC, 0x1C05B538}, {0x02074470, 0x1C05B570}, {0x0207A268, 0x21024B01},
+        {0x0203E838, 0x1C4B6881}, {0x0203F118, 0x1C05B538}, {0x0203F150, 0x1C0CB510},
+    },
+};
+
+// pret/pokeheartgold's xMAP (US; SoulSilver's ARM9 is the same): GetIdxOfFirstPartyMonWithMove, ScrCmd_GetPartySlotWithMove.
+const HmFns HEARTGOLD_HM = {
+    {
+        0x02074641, 0x02074645, 0x0206E541, 0x02074905,   // Party_GetCount, Party_GetMonByIndex, GetMonData, SaveArray_Party_Get
+        0x0203FE2D, 0x02040375, 0x020403AD,               // ScriptReadHalfword, GetVarPointer, FieldSystem_VarGet
+        0x80, 0x0C, 76, 54, 0xFF, 0,
+        {15, 19, 57, 70, 127, 249, 250, 431, 0},          // CUT, FLY, SURF, STRENGTH, WATERFALL, ROCK SMASH, WHIRLPOOL, ROCK CLIMB
+    },
+    {
+        {0x020542E8, PK_NDS_HM_HAS_MOVE, {0x9000B5F8, 0xF0201C0D, 0x1C07F9A7, 0x2F002600}},
+        {0x0204D3CC, PK_NDS_HM_SCRIPT, {0xB082B5F8, 0x1C211C04, 0x68093180, 0xF7F29101}},
+    },
+    {
+        {0x02074640, 0x47706840}, {0x02074644, 0x1C05B538}, {0x0206E540, 0x1C05B570}, {0x02074904, 0x21024B01},
+        {0x0203FE2C, 0x1C4B6881}, {0x02040374, 0x1C05B538}, {0x020403AC, 0x1C0CB510},
+    },
+};
+
+// Black 2 (no decomp; Ghidra on the cart's own code): the field's (gameData, move) check (Surf, Waterfall from the A
+// press) and the script command that writes the slot knowing a move (6: nobody), command 44 of the field scripts' table.
+#define GEN5_HMS {15, 19, 57, 70, 127, 291, 0}   // CUT, FLY, SURF, STRENGTH, WATERFALL, DIVE
+const HmFns BLACK2_HM = {
+    {
+        0x0201FDF9, 0x0201FF09, 0x0201CCF9, 0x0201735D,   // the party's count, its Pokemon, the getter, the game data's party
+        0x02155175, 0x021548E9, 0x02154911,               // the work's game data, the next variable's pointer, the next value
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x02182F14, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6941C0D, 0x9000FA1F, 0xFF6AF69C}},
+        {0x02156860, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFC84F7FE, 0xFD76F6C0}},
+    },
+    {
+        {0x02155174, 0x68806A00}, {0x0201735C, 0x00892165}, {0x021548E8, 0x1C0EB570}, {0x02154910, 0x1C0EB570},
+        {0x0201FDF8, 0x47706840}, {0x0201FF08, 0x300822DC}, {0x0201CCF8, 0x1C05B570},
+    },
+};
+
+// White 2: Black 2's, found again by their code.
+const HmFns WHITE2_HM = {
+    {
+        0x0201FE25, 0x0201FF35, 0x0201CD25, 0x0201735D,
+        0x021551B5, 0x02154929, 0x02154951,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x02182F54, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6941C0D, 0x9000F9FF, 0xFF60F69C}},
+        {0x021568A0, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFC84F7FE, 0xFD56F6C0}},
+    },
+    {
+        {0x021551B4, 0x68806A00}, {0x0201735C, 0x00892165}, {0x02154928, 0x1C0EB570}, {0x02154950, 0x1C0EB570},
+        {0x0201FE24, 0x47706840}, {0x0201FF34, 0x300822DC}, {0x0201CD24, 0x1C05B570},
+    },
+};
+
+// Black and White: Black 2's, found again by their code (the same calls in the same order).
+const HmFns BLACK_HM = {
+    {
+        0x0201AA19, 0x0201AB29, 0x02017E1D, 0x02012935,
+        0x0215A5E5, 0x02159AE9, 0x02159B11,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x0218B630, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6871C0D, 0x9000F97D, 0xF9ECF68F}},
+        {0x0215BAF4, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFD72F7FE, 0xFF18F6B6}},
+    },
+    {
+        {0x0215A5E4, 0x68806A00}, {0x02012934, 0x00892165}, {0x02159AE8, 0x1C0EB570}, {0x02159B10, 0x1C0EB570},
+        {0x0201AA18, 0x47706840}, {0x0201AB28, 0x300822DC}, {0x02017E1C, 0x1C05B570},
+    },
+};
+
+const HmFns WHITE_HM = {
+    {
+        0x0201AA35, 0x0201AB45, 0x02017E39, 0x02012935,
+        0x0215A605, 0x02159B09, 0x02159B31,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x0218B650, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6871C0D, 0x9000F96D, 0xF9EAF68F}},
+        {0x0215BB14, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFD72F7FE, 0xFF08F6B6}},
+    },
+    {
+        {0x0215A604, 0x68806A00}, {0x02012934, 0x00892165}, {0x02159B08, 0x1C0EB570}, {0x02159B30, 0x1C0EB570},
+        {0x0201AA34, 0x47706840}, {0x0201AB44, 0x300822DC}, {0x02017E38, 0x1C05B570},
+    },
+};
+
+static const HmFns* hmFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    if (game->gen == 5) {
+        switch (game->callSet) {
+        case 3: return &BLACK_HM;
+        case 4: return &WHITE_HM;
+        case 5: return &BLACK2_HM;
+        case 6: return &WHITE2_HM;
+        default: return nullptr;
+        }
+    }
+    switch (game->callSet) {   // Gen 4's gen is 0
+    case 1: return &PLATINUM_HM;
+    case 2: return &HEARTGOLD_HM;
+    default: return nullptr;
+    }
+}
+
+bool pk_nds_call_hm_supported(const PkNdsFieldGame* game)
+{
+    return hmFnsFor(game) != nullptr;
+}
+
+int pk_nds_call_hm_free(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, bool on, uint32_t changed[8])
+{
+    const HmFns* h = hmFnsFor(game);
+    if (!h) return 0;
+    for (const auto& c : h->code)
+        if (rd32(mem, c.addr) != c.word) return 0;
+    if (on) {
+        // the helper first, then the jumps into it
+        u8 have[sizeof(PK_NDS_HM_CODE)];
+        itcmRead(mem, PK_NDS_HM_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_HM_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_HM_ADDR, PK_NDS_HM_CODE, sizeof(have));
+        PkNdsHm args;
+        itcmRead(mem, PK_NDS_HM_ARGS, &args, sizeof(args));
+        if (memcmp(&args, &h->hm, sizeof(args))) itcmWrite(mem, PK_NDS_HM_ARGS, &h->hm, sizeof(args));
+    }
+    int n = 0;
+    for (const HmSite& site : h->sites) {
+        const u32 hook[4] = {0x46C04778u, 0xE3A03000u | site.which, 0xE51FF004u, PK_NDS_HM_ADDR};
+        u32 now[4];
+        for (int i = 0; i < 4; i++) now[i] = rd32(mem, site.addr + 4 * i);
+        const u32* from = on ? site.orig : hook;
+        const u32* to = on ? hook : site.orig;
+        if (memcmp(now, from, sizeof(now))) continue;
+        for (int i = 0; i < 4; i++) {
+            mem.write32(mem.context, site.addr + 4 * i, to[i]);
+            changed[n++] = site.addr + 4 * i;
+        }
+    }
+    return n;
+}
+
+static_assert(PK_NDS_HM_ADDR + sizeof(PK_NDS_HM_CODE) <= PK_NDS_HM_ARGS, "NO HMS NEEDED's helper runs into its arguments");
+static_assert(PK_NDS_HM_ARGS + sizeof(PkNdsHm) <= 0x02000000u, "NO HMS NEEDED's arguments run past the ITCM");
 
 bool pk_nds_call_supported(const PkNdsFieldGame* game)
 {
