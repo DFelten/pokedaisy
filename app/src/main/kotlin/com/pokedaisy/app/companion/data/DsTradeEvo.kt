@@ -1,18 +1,23 @@
 package com.pokedaisy.app.companion.data
 
 /**
- * TRADE EVOLUTIONS on Platinum and HeartGold / SoulSilver (pk_nds_call's PK_NDS_ACTION_TRADE_EVO, stub/pk_nds_evo.c):
+ * TRADE EVOLUTIONS on Platinum, HeartGold / SoulSilver (pk_nds_call's PK_NDS_ACTION_TRADE_EVO, stub/pk_nds_evo.c) and
+ * Black / White / Black 2 / White 2 (stub/pk_nds_evo5.c: the scene's proc from a GMEVENT of ours, as the bag's evolution runs it):
  * the game's own trade rules say which party Pokémon would evolve (CHECK: each slot's target, the held item counted), and
  * START plays the game's own evolution scene as its link trade does - the held item an evolution needs used up, the
  * Pokédex entry, a move learned - from a field task that fades the map out and back in around it. Checked headless on the
  * US carts: ONIX with a Metal Coat to STEELIX (its coat gone, the field free after), a stale pick refused.
  *
- * US carts only so far (the other languages' functions aren't mapped); not the hacks (Renegade Platinum keeps the US
- * header, Origin HeartGold has its own engine), nor Black / White (no decomp: their evolution isn't traced).
+ * Black / White / Black 2 / White 2 (USA, Europe) were checked the same way on each cart (ONIX to STEELIX, KADABRA to
+ * ALAKAZAM, an Everstone refused); the pair that evolve by trading for each other never get the button (the partner
+ * given is the Pokémon itself).
+ *
+ * US / English carts only so far (the other languages' functions aren't mapped); not the hacks (Renegade Platinum and
+ * Blaze Black 2 / Volt White 2 Redux keep the retail header, Origin HeartGold has its own engine).
  */
 object DsTradeEvo {
     /** The carts it was checked on: code to revision. */
-    val CARTS = setOf("CPUE" to 1, "IPKE" to 0, "IPGE" to 0)
+    val CARTS = setOf("CPUE" to 1, "IPKE" to 0, "IPGE" to 0, "IRBO" to 0, "IRAO" to 0, "IREO" to 0, "IRDO" to 0)
 
     const val CHECK = 0
     const val START = 1

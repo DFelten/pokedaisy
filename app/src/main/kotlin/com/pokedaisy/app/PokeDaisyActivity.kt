@@ -1774,7 +1774,7 @@ class PokeDaisyActivity : Activity() {
     @Volatile private var dsBagCart = false
     /** ... and it's Black / White / Black 2 / White 2 (USE by DsBag's effects). */
     @Volatile private var dsBagGen5 = false
-    /** A DS cart TRADE EVOLUTIONS was proved on (companion/data/DsTradeEvo.kt): US Platinum, HeartGold, SoulSilver. */
+    /** A DS cart TRADE EVOLUTIONS was proved on (companion/data/DsTradeEvo.kt): US Platinum, HeartGold, SoulSilver, Black, White, Black 2, White 2. */
     @Volatile private var dsEvoCart = false
 
     /** TRADE EVOLUTIONS on the loaded DS game: a proved cart on melonDS (DSperate has no job calls). */
@@ -2823,7 +2823,9 @@ class PokeDaisyActivity : Activity() {
                 com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
         dsBagGen5 = dsBagCart && com.pokedaisy.app.companion.data.DsBag.gen5(ndsCode)
         dsEvoCart = nds && com.pokedaisy.app.companion.data.DsTradeEvo.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
-            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath()))
+            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
+            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
+                com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
         dsWildRates = if (!nds) null else if (romOrigin) {
             // Its tables are read in the background (NdsArt.prefetch); the core may start first, so read them here then.
             { (com.pokedaisy.app.companion.data.OriginHeartGold.data ?: com.pokedaisy.app.companion.data.NdsArt.readOrigin(r.toOkioPath()))?.wildRates ?: IntArray(0) }

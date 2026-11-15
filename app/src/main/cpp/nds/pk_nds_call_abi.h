@@ -159,6 +159,26 @@ typedef struct PkNdsEvo {
     unsigned int targets[6];
 } PkNdsEvo;
 
+/** TRADE EVOLUTIONS on Black / White / Black 2 / White 2 (stub/pk_nds_evo5.c): in PkNdsEvo's place (one game runs at a
+ * time), the same modes and answers. Its event's steps (PkNdsEvo5.state) are the GMEVENT's own seq. */
+typedef struct PkNdsEvo5 {
+    unsigned int createEvent;    // GMEVENT_Create(gs, parent, func, work size)
+    unsigned int setEvent;       // GameSystem_SetEvent(gs, event)
+    unsigned int callChild;      // (event, child): the child runs, then the event again
+    unsigned int fadeOut, endField, startField, fadeIn;   // the field's own child events, as the bag's evolution runs them
+    unsigned int callProc;       // (gs, overlay, proc table, param)
+    unsigned int evoOverlay, evoProc;   // the evolution scene's overlay and proc table
+    unsigned int getValue;       // (mon, param, NULL)
+    unsigned int getEvolution;   // (party, mon, method class, other mon, time, &method, heap)
+    unsigned int heap;           // where the check's scratch is allocated (the events' heap)
+    unsigned int offGameData, offParty, offFieldMap, offProc;   // GameSystem's / GameData's
+    unsigned int pPersonality, pEgg;
+    unsigned int gs, count, mode, slot, personality;   // filled in per job
+    unsigned int target, method;
+    unsigned int scene[5];       // the scene's param: game data, party, target | slot << 16 | method << 24, 1, 0
+    unsigned int targets[6];
+} PkNdsEvo5;
+
 typedef struct PkNdsJob {
     unsigned int seq;    // the host's number for this job
     unsigned int done;   // the hook sets it to seq once the ops ran

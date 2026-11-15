@@ -528,6 +528,96 @@ const EvoFns* evoFnsFor(const PkNdsFieldGame* game)
     }
 }
 
+// TRADE EVOLUTIONS on Gen 5 (stub/pk_nds_evo5.c): the evolution scene's proc as the link trade starts it (its param's
+// method class 1, flags 1 / 0), from a GMEVENT of ours that leaves and comes back to the field as the bag's evolution
+// does. No decomp: the functions from Ghidra on the carts' own code (the trade's and the bag's callers of the scene).
+struct EvoFns5 {
+    PkNdsEvo5 evo;   // the helper's functions and constants; the request filled in per job
+    struct { u32 addr, word; } code[10];
+};
+
+const EvoFns5 BLACK2_EVO = {
+    {
+        0x02016CB5, 0x02016AED, 0x02016D69,   // GMEVENT_Create, GameSystem_SetEvent, the child event call
+        0x021B870D, 0x020193A5, 0x02019495, 0x021B878D,   // fade out, end the field map, start it, fade in
+        0x02016A99, 0x11C, 0x021E7D9C,        // the proc call; the evolution scene's overlay 284 and proc table
+        0x0201CCF9, 0x02020789, 4,            // the Pokémon getter, the evolution check; the events' heap
+        0x1C, 0x194, 0x20, 0xC,               // GameSystem.gameData, GameData's party, GameSystem's field map / proc
+        0, 0x4C,                              // personality, is egg
+    },
+    {
+        {0x02016CB4, 0xB082B5F8}, {0x02016AEC, 0x47706181}, {0x02016D68, 0x69006008}, {0x021B870C, 0xB081B518},
+        {0x020193A4, 0x4A0AB5F8}, {0x02019494, 0x4A0AB5F8}, {0x021B878C, 0xB081B518}, {0x02016A98, 0x6880B508},
+        {0x0201CCF8, 0x1C05B570}, {0x02020788, 0xB093B5F0},
+    },
+};
+
+// White 2: Black 2's functions found again by their code (the field's 0x38 higher), its scene's proc table 0x40 higher.
+const EvoFns5 WHITE2_EVO = {
+    {
+        0x02016CB5, 0x02016AED, 0x02016D69,
+        0x021B8745, 0x020193D1, 0x020194C1, 0x021B87C5,
+        0x02016A99, 0x11C, 0x021E7DDC,
+        0x0201CD25, 0x020207B5, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x02016CB4, 0xB082B5F8}, {0x02016AEC, 0x47706181}, {0x02016D68, 0x69006008}, {0x021B8744, 0xB081B518},
+        {0x020193D0, 0x4A0AB5F8}, {0x020194C0, 0x4A0AB5F8}, {0x021B87C4, 0xB081B518}, {0x02016A98, 0x6880B508},
+        {0x0201CD24, 0x1C05B570}, {0x020207B4, 0xB093B5F0},
+    },
+};
+
+// Black: the same functions in Black's build (its fade out takes no fifth argument), the scene overlay 195's proc.
+const EvoFns5 BLACK_EVO = {
+    {
+        0x020122C1, 0x02012109, 0x02012375,
+        0x021BE8D5, 0x020144DD, 0x020145CD, 0x021BE92D,
+        0x020120B5, 0xC3, 0x02208C40,
+        0x02017E1D, 0x0201B2B1, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x020122C0, 0xB082B5F8}, {0x02012108, 0x47706181}, {0x02012374, 0x69006008}, {0x021BE8D4, 0x2A09B510},
+        {0x020144DC, 0x4A0AB5F8}, {0x020145CC, 0x4A0AB5F8}, {0x021BE92C, 0xB081B518}, {0x020120B4, 0x6880B508},
+        {0x02017E1C, 0x1C05B570}, {0x0201B2B0, 0xB093B5F0},
+    },
+};
+
+// White: Black's, found again by their code (the field's 0x18 higher), its proc table 0x20 higher.
+const EvoFns5 WHITE_EVO = {
+    {
+        0x020122C1, 0x02012109, 0x02012375,
+        0x021BE8ED, 0x020144F9, 0x020145E9, 0x021BE945,
+        0x020120B5, 0xC3, 0x02208C60,
+        0x02017E39, 0x0201B2CD, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x020122C0, 0xB082B5F8}, {0x02012108, 0x47706181}, {0x02012374, 0x69006008}, {0x021BE8EC, 0x2A09B510},
+        {0x020144F8, 0x4A0AB5F8}, {0x020145E8, 0x4A0AB5F8}, {0x021BE944, 0xB081B518}, {0x020120B4, 0x6880B508},
+        {0x02017E38, 0x1C05B570}, {0x0201B2CC, 0xB093B5F0},
+    },
+};
+
+const EvoFns5* evoFns5For(const PkNdsFieldGame* game)
+{
+    if (!game || game->gen != 5) return nullptr;
+    switch (game->callSet) {
+    case 3: return &BLACK_EVO;
+    case 4: return &WHITE_EVO;
+    case 5: return &BLACK2_EVO;
+    case 6: return &WHITE2_EVO;
+    default: return nullptr;
+    }
+}
+
+static_assert(PK_NDS_EVO_ADDR + sizeof(PK_NDS_EVO5_CODE) <= PK_NDS_EVO_ARGS, "the Gen 5 evolution helper runs into its arguments");
+static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo5) <= PK_NDS_SCRIPT_ADDR, "the Gen 5 evolution helper's arguments run into the scripts");
+
 static_assert(PK_NDS_EVO_ADDR >= PK_NDS_JOB + sizeof(PkNdsJob), "the evolution helper runs into the job block");
 static_assert(PK_NDS_EVO_ADDR + sizeof(PK_NDS_EVO_CODE) <= PK_NDS_EVO_ARGS, "the evolution helper runs into its arguments");
 static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo) <= PK_NDS_SCRIPT_ADDR, "the evolution helper's arguments run into the scripts");
@@ -913,6 +1003,28 @@ static int gen5Action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, co
         o.add(PK_NDS_ITEM5_ADDR, PK_NDS_ITEM_ARGS);
         o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem5, out));
         return postGen5(mem, f, gs, o, false);
+    }
+    case PK_NDS_ACTION_TRADE_EVO: {
+        const EvoFns5* ev = evoFns5For(game);
+        if (!ev) return 0;
+        for (const auto& c : ev->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsEvo5 req = ev->evo;
+        req.gs = gs;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        u8 have[sizeof(PK_NDS_EVO5_CODE)];
+        itcmRead(mem, PK_NDS_EVO_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_EVO5_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_EVO_ADDR, PK_NDS_EVO5_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_EVO_ARGS, &req, sizeof(req));
+        // START sets its event itself; its answer at PK_NDS_EVO_RESULT (postGen5's own op first then), the targets after
+        bool starts = req.mode == PK_NDS_EVO_START;
+        for (int i = starts ? 1 : 0; i < PK_NDS_EVO_RESULT; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo5, mode));
+        o.add(PK_NDS_EVO_ADDR, PK_NDS_EVO_ARGS);
+        for (u32 i = 0; i < 6; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) (offsetof(PkNdsEvo5, targets) + 4 * i));
+        return postGen5(mem, f, gs, o, starts);
     }
     default:
         return 0;

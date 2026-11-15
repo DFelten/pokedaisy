@@ -11,6 +11,7 @@
 - stub/pk_nds_item5.c: Gen 5's (its effects from the app, the game's get / set and bag calls), built the same way.
 - stub/pk_nds_evo.c: TRADE EVOLUTIONS on Platinum / HeartGold / SoulSilver (a field task of ours around the game's
   evolution scene), built the same way.
+- stub/pk_nds_evo5.c: the same on Black / White / Black 2 / White 2 (a GMEVENT of ours around the scene's proc).
 - stub/platinum_*.s: field scripts in the game's own script language, assembled with pret/pokeplatinum's own macros
   and make_script_bin.sh in its build image (pokeplatinum-build, the one that builds the retail ROM byte for byte).
 - stub/heartgold_*.s: the same for HeartGold / SoulSilver, with pret/pokeheartgold's macros and makescript.sh (in the
@@ -29,7 +30,8 @@ OUT = os.path.join(ROOT, "app/src/main/cpp/nds/pk_nds_stub_gen.h")
 LLVM = os.environ.get("LLVM_BIN") or next(
     (d for d in ("/opt/homebrew/opt/llvm/bin", "/usr/bin") if os.path.exists(os.path.join(d, "llvm-objcopy"))), "/usr/bin")
 CODE = [("PK_NDS_HOOK_CODE", "pk_nds_hook.c"), ("PK_NDS_SKILL_CODE", "pk_nds_skill.c"), ("PK_NDS_ITEM_CODE", "pk_nds_item.c"),
-        ("PK_NDS_ITEM5_CODE", "pk_nds_item5.c"), ("PK_NDS_EVO_CODE", "pk_nds_evo.c")]
+        ("PK_NDS_ITEM5_CODE", "pk_nds_item5.c"), ("PK_NDS_EVO_CODE", "pk_nds_evo.c"),
+        ("PK_NDS_EVO5_CODE", "pk_nds_evo5.c")]
 SCRIPTS = [("PK_NDS_PLATINUM_PC", "platinum_pc.s"), ("PK_NDS_HEARTGOLD_PC", "heartgold_pc.s")]
 
 

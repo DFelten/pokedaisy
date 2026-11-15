@@ -19,7 +19,12 @@ class DsTradeEvoTest {
         assertFalse(DsTradeEvo.proved("CPUE", 0))
         assertFalse(DsTradeEvo.proved("CPUF", 0))
         assertFalse(DsTradeEvo.proved("IPKD", 0))
-        assertFalse(DsTradeEvo.proved("IREO", 0))
+        assertTrue(DsTradeEvo.proved("IRBO", 0))
+        assertTrue(DsTradeEvo.proved("IRAO", 0))
+        assertTrue(DsTradeEvo.proved("IREO", 0))
+        assertTrue(DsTradeEvo.proved("IRDO", 0))
+        assertFalse(DsTradeEvo.proved("IREO", 1))
+        assertFalse(DsTradeEvo.proved("IRBF", 0))
     }
 
     @Test fun args() {
