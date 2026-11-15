@@ -161,7 +161,7 @@ fun hasEvolutions(t: PokedexTables): Boolean = t.gen4 != null || !t.cartDex && w
 }
 
 fun hasLearnsets(t: PokedexTables, g: GuideTables?): Boolean =
-    t.gen4 != null || !t.cartDex && ((t.expansion?.levelUpOff ?: -1) >= 0 || t.levelUpLearnsets != 0L || (g?.learnsets ?: 0L) != 0L)
+    t.gen4 != null || GbLearnsets.available(t) || !t.cartDex && ((t.expansion?.levelUpOff ?: -1) >= 0 || t.levelUpLearnsets != 0L || (g?.learnsets ?: 0L) != 0L)
 
 fun hasCatchSpots(g: GuideTables?): Boolean = g != null && g.wildHeaders != 0L
 
@@ -524,6 +524,7 @@ object DexDetails {
 
     private fun readLevelUp(t: PokedexTables, g: GuideTables?, species: Int): List<LevelMove>? {
         t.gen4?.let { return Gen4Dex.levelUp(it, species) }
+        if (t.cartDex) return GbLearnsets.levelUp(t, species)
         val x = t.expansion
         fun words(ptr: Long): List<LevelMove> {
             if (!Gfx.inRom(ptr)) return emptyList()
@@ -555,10 +556,11 @@ object DexDetails {
     /** TMs / HMs (vanilla: "TM06" labels) or expansion's teachable list (TMs, HMs and tutors,
      * unlabelled, by name); null = this game's aren't read. */
     fun teachable(t: PokedexTables, g: GuideTables?, species: Int): List<TeachMove>? {
-        if (species <= 0 || t.cartDex && t.gen4 == null) return null
+        if (species <= 0 || t.cartDex && t.gen4 == null && !GbLearnsets.available(t)) return null
         syncMoves(t, g)
         teach[species]?.let { return it }
         t.gen4?.let { return Gen4Dex.machines(it, species)?.also { m -> teach[species] = m } }
+        if (t.cartDex) return runCatching { GbLearnsets.machines(t, species) }.getOrNull()?.also { m -> teach[species] = m }
         return runCatching { readTeachable(t, species) }
             .onFailure { Logs.w("teachable $species failed", it) }
             .getOrNull()?.also { teach[species] = it }
@@ -566,7 +568,7 @@ object DexDetails {
 
     /** Whether [t] reads TMs at all (no ROM read): the page says so when it doesn't. */
     fun hasTeachable(t: PokedexTables): Boolean =
-        t.gen4 != null || !t.cartDex && ((t.expansion?.teachableOff ?: -1) >= 0 || (t.tmhmLearnsets != 0L && t.tmhmMoves != 0L))
+        t.gen4 != null || GbLearnsets.available(t) || !t.cartDex && ((t.expansion?.teachableOff ?: -1) >= 0 || (t.tmhmLearnsets != 0L && t.tmhmMoves != 0L))
 
     private fun readTeachable(t: PokedexTables, species: Int): List<TeachMove>? {
         val x = t.expansion

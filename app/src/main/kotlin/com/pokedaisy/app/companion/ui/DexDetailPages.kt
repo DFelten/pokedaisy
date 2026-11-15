@@ -380,7 +380,9 @@ private fun MoveLine(label: String, move: Int, small: GbaTextMetrics) {
         Modifier.fillMaxWidth().drawBehind { drawRowDivider(OptionColors.divider, u.toPx(), 0f) }.padding(vertical = u * 2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (label.isNotEmpty()) GbaText(label, OptionColors.value, OptionColors.valueShadow, small, Modifier.width(u * 40))
+        // 40 GBA pixels, as wide again as a game's font is drawn larger (Gen 1's 9/7): "LV 13" kept off the name.
+        val labelWidth = u * 40 * com.pokedaisy.app.companion.ui.theme.LocalGameTextScale.current
+        if (label.isNotEmpty()) GbaText(label, OptionColors.value, OptionColors.valueShadow, small, Modifier.width(labelWidth))
         GbaText(info.name, OptionColors.label, OptionColors.labelShadow, small, Modifier.weight(1f))
         typeName(info.type).takeIf { it.isNotEmpty() }?.let { TypeBadge(it, fontSize = 11.sp) }
     }

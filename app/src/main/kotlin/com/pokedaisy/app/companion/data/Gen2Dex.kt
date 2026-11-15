@@ -57,6 +57,8 @@ class Gen2DexTables(
     val polished: IntArray? = null,
     /** Height (a byte, dm) and weight (a word, hg) instead of Crystal's feet x 100 + inches and pounds x 10. */
     val metricBody: Boolean = false,
+    /** EvosAttacksPointers ([GbLearnsets]: learnsets, and with [tmHmMoves] the TMs); null = not mapped (the English carts are). */
+    val evosAttacks: Pair<Int, Int>? = null,
 ) {
     private val dexNumbers: IntArray? = dexOrder?.let { o ->
         IntArray((o.maxOrNull() ?: 0) + 1).also { m -> o.forEachIndexed { i, s -> if (m[s] == 0) m[s] = i + 1 } }
@@ -119,6 +121,7 @@ val GEN2_DEX_CRYSTAL = Gen2DexTables(
     moveDescriptions = 0x0B to 0x4B52,
     firstTm = 0xBF,
     tmItems = gen2TmItemsCrystal,
+    evosAttacks = 0x10 to 0x65B1,
 )
 
 /** Crystal Legacy v1.3.1 (its pokecrystal.sym): its own base data, pages, palettes and text; TM01 is item 0xC1. */
@@ -158,6 +161,7 @@ val GEN2_DEX_GOLD_SILVER = Gen2DexTables(
     tmItems = gen2TmItemsCrystal,
     dexEntryFirstBank = 0x68,
     picBankFixes = 0x14 to 0x5878,
+    evosAttacks = 0x10 to 0x67BD,
 )
 
 /** Johto's 251 by National number (the game's own New / Old dex modes are orderings of the same flags). */

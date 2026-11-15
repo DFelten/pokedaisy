@@ -16,7 +16,8 @@ data class TmLearner(val index: Int, val fit: TmFit, val advice: MoveAdvice?)
  * tab). Reads the ROM (learnsets, gTMHMMoves, the TM compatibility bits), so - like [DexDetails] -
  * it runs on Compose's IO dispatcher and keeps what it worked out for the UI to start from.
  * The advice is for the original games only ([movesAreVanilla]: their TM items are 289..346, their moves' effects known);
- * the DS games ([Gen4DexTables], their learnsets and machines from the cart) get the list alone ([advises] false).
+ * the DS games ([Gen4DexTables], their learnsets and machines from the cart) and the Game Boy ones ([GbLearnsets]) get the
+ * list alone ([advises] false).
  */
 object MoveLearning {
     /** Upcoming level-up moves listed, at most. */
@@ -27,7 +28,7 @@ object MoveLearning {
 
     /** Whether the running game gets the CAN LEARN list at all (no ROM read). */
     fun available(t: PokedexTables?, g: GuideTables?): Boolean =
-        t != null && (t.gen4 != null || movesAreVanilla && (hasLearnsets(t, g) || DexDetails.hasTeachable(t)))
+        t != null && (t.gen4 != null || GbLearnsets.available(t) || movesAreVanilla && (hasLearnsets(t, g) || DexDetails.hasTeachable(t)))
 
     /** Whether its options carry a verdict: the advisor knows only the original games' moves ([moveStats]). */
     val advises: Boolean get() = movesAreVanilla
@@ -37,7 +38,9 @@ object MoveLearning {
 
     /** A DS bag's TMs / HMs ("TM06", "HM01": the item's own name, as the cart spells it) it can learn, in machine order. */
     private fun dsMachines(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>, known: Collection<Int>): List<LearnOption> {
-        val held = bag.map { it.name.uppercase().replace(" ", "") }.filter { MACHINE.matches(it) }.toSet()
+        // By name ("TM06", as the DS carts spell it), or on the Game Boy by the item's id (GbLearnsets.machineLabel).
+        val held = (bag.map { it.name.uppercase().replace(" ", "") } + bag.mapNotNull { GbLearnsets.machineLabel(t, it.itemId) })
+            .filter { MACHINE.matches(it) }.toSet()
         return DexDetails.teachable(t, g, mon.species).orEmpty()
             .filter { it.label in held && it.move !in known }
             .map { LearnOption(it.move, 0, it.label, noAdvice(it.move)) }
