@@ -81,7 +81,7 @@ void pk_nds_item5_effect(const uint32_t effect[6]);
 void pk_nds_set_wild_off(bool off);
 /** DS LAYOUT floats the X menu: it comes back after a menu screen left by touch (the game closes it then). */
 void pk_nds_set_keep_start_menu(bool on);
-/** NO HMS NEEDED (Platinum / HeartGold / SoulSilver, melonDS): the party move checks' hooks in or out, after every frame. */
+/** NO HMS NEEDED (Platinum / HG / SS, Black / White / Black 2 / White 2; melonDS): the party move checks' hooks in or out, after every frame. */
 void pk_nds_set_hm_free(bool on);
 /** DS CPU BOOST: the ARM9 at twice the DS's clock (fewer of a game's own slow frames). Emu thread, between frames. */
 void pk_nds_set_cpu_boost(bool on);
