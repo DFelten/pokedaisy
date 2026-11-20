@@ -31,14 +31,21 @@ object HmFreeGb {
             if (expect.size != value.size) return null
             val at = e.offset.toInt()
             if (at < 0 || rom.size < at + expect.size || !rom.copyOfRange(at, at + expect.size).contentEquals(expect)) return null
-            // pkRomPatch takes 4 bytes a write
+            // A Game Boy cart's patch goes at the tag + its offset, 4 bytes a write (pk_cheats_patch, like GbGamePatches')
             for (i in value.indices step 4) {
                 val n = minOf(4, value.size - i)
-                writes += InstantText.Write(e.offset + i, expect.copyOfRange(i, i + n), value.copyOfRange(i, i + n))
+                writes += InstantText.Write(GbGamePatches.TAG + e.offset + i, expect.copyOfRange(i, i + n), value.copyOfRange(i, i + n))
             }
         }
         return HmFree.Patch(writes)
     }
+
+    /** [find] on the cart at [path] (GameOptions' discovery, off the UI thread). */
+    fun find(path: okio.Path): HmFree.Patch? = runCatching {
+        val bytes = okio.FileSystem.SYSTEM.read(path) { readByteArray() }
+        val sha1 = java.security.MessageDigest.getInstance("SHA-1").digest(bytes).joinToString("") { "%02x".format(it) }
+        find(sha1, bytes)
+    }.getOrNull()
 
     private fun hex(s: String) = ByteArray(s.length / 2) { s.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
 }

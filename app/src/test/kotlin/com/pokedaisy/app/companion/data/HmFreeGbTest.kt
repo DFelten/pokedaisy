@@ -41,7 +41,12 @@ class HmFreeGbTest {
             assertNotNull(name, patch)
             assertTrue(name, patch!!.writes.all { it.value.size in 1..4 && it.expect.size == it.value.size })
             // each write's bytes are the cart's own
-            for (w in patch.writes) assertTrue(name, b.copyOfRange(w.addr.toInt(), w.addr.toInt() + w.expect.size).contentEquals(w.expect))
+            // Each write at the Game Boy tag + its cart offset (GbGamePatches.TAG), over the cart's own bytes.
+            for (w in patch.writes) {
+                assertTrue(name, w.addr >= GbGamePatches.TAG)
+                val off = (w.addr - GbGamePatches.TAG).toInt()
+                assertTrue(name, b.copyOfRange(off, off + w.expect.size).contentEquals(w.expect))
+            }
             checked++
         }
         assumeTrue("no English Game Boy cart on this machine", checked > 0)

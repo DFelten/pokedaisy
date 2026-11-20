@@ -2751,13 +2751,6 @@ class PokeDaisyActivity : Activity() {
             val sha1 = java.security.MessageDigest.getInstance("SHA-1").digest(it).joinToString("") { b -> "%02x".format(b) }
             com.pokedaisy.app.companion.data.Gen1Music.forSha1(sha1)
         }
-        // NO HMS NEEDED on the English carts: our code in a bank's unused end and a jump to it (HmFreeGb; none = N/A).
-        if (gbRom != null && romBlocked == null) {
-            val sha1 = java.security.MessageDigest.getInstance("SHA-1").digest(gbRom).joinToString("") { b -> "%02x".format(b) }
-            hmPatch = com.pokedaisy.app.companion.data.HmFreeGb.find(sha1, gbRom)
-            Log.i("pokedaisy", "no HMs needed: ${if (hmPatch != null) "found (Game Boy)" else "not found"}")
-            syncHmFree()
-        }
         ffMusicRenderer = when {
             gba -> FfMusicRenderer(r, crc, ffMusicCache, clickSound, unlockSound).also { it.start() }
             gen1Music != null -> Gen1MusicRenderer(r, gen1Music!!, ffMusicCache).also { it.start() }
