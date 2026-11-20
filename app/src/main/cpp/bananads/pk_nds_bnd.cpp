@@ -822,6 +822,9 @@ int pk_ndsb_field_bits(void)
 // INSTANT TEXT / REUSABLE TMS's code writes (pk_nds.cpp's, with its JIT invalidation): not here, as on DSperate. The
 // app offers them on melonDS only (PokeDaisyActivity.dsperate), so this just answers no.
 bool pk_ndsb_code_write(uint32_t, const uint8_t*, int) { return false; }
+// The DS bag's USE runs the game's own functions (pk_nds_call.cpp): melonDS only (PokeDaisyActivity.dsCalls), as on
+// DSperate. Every pk_nds_cores.h call must be here, or pk_nds_bnd_load.cpp's dlsym fails and BananaDS doesn't load.
+void pk_ndsb_item5_effect(const uint32_t[6]) {}
 // NO HMS NEEDED's hooks go into melonDS's ITCM (pk_nds.cpp): melonDS only (PokeDaisyActivity.dsHmKnown), as on DSperate.
 // Every pk_nds_cores.h call must be here, or pk_nds_bnd_load.cpp's dlsym fails and BananaDS doesn't load.
 void pk_ndsb_set_hm_free(bool) {}
