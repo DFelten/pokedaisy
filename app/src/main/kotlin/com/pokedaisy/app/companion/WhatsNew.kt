@@ -32,16 +32,33 @@ object WhatsNew {
         return Notes(version, sections)
     }
 
-    /** A hotfix's release (1.5.0.1 -> 1.5.0); any other version itself. */
-    fun releaseOf(version: String): String = version.split('.').let { if (it.size > 3) it.take(3).joinToString(".") else version }
+    /** A hotfix's or a beta's release (1.5.0.1 -> 1.5.0, 1.7.0-rc.2 -> 1.7.0); any other version itself. */
+    fun releaseOf(version: String): String = version.substringBefore('-').split('.').let { if (it.size > 3) it.take(3).joinToString(".") else it.joinToString(".") }
 
     /** Newest first. */
     val RELEASES: List<Notes> by lazy {
         listOf(
+            NOTES_1_6_1,
             NOTES_1_6_0,
             hotfix("1.5.0.1", NOTES_1_5_0, "1.5.0.1 HOTFIX: turning a Samsung Galaxy sideways no longer closes the game."),
         ) + OLDER
     }
+
+    private val NOTES_1_6_1 = Notes(
+        "1.6.1",
+        listOf(
+            Section(
+                FIXES,
+                listOf(
+                    "Normal speed: games no longer stutter at 1x on 120 Hz screens (AYN Thor, Retroid Pocket 6, many phones), and DS games' top screen no longer stays white.",
+                    "Library: your games stay listed after an update, and a long folder scan keeps what it has found if you leave.",
+                    "FLY in Unbound: works with any Pokémon the game's own menu would fly with, even one that doesn't know the move.",
+                    "DS on one screen: SHADERS now reach the battle buttons and messages too.",
+                    "Archives: a .zip with no game inside says so instead of closing the app.",
+                ),
+            ),
+        ),
+    )
 
     private val NOTES_1_6_0 = Notes(
         "1.6.0",
@@ -184,7 +201,9 @@ object WhatsNew {
         ),
     )
 
-    fun notesFor(version: String): Notes? = RELEASES.firstOrNull { it.version == version }
+    /** [version]'s notes; a beta or release candidate shows the notes of the version it's a beta of. */
+    fun notesFor(version: String): Notes? =
+        RELEASES.firstOrNull { it.version == version } ?: RELEASES.firstOrNull { it.version == version.substringBefore('-') }
 
     /**
      * [current]'s notes when they're due: the app was updated (a fresh install has nothing to tell) to a version the
