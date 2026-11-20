@@ -5,6 +5,7 @@
 #include "../../linux/gb_field.h"
 #include "pd_mixer.h"
 #include "../emu/pd_armgba.h"
+#include "../emu/pd_gpsp.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,8 @@
 
 static uint32_t wideSource[PK_WIDE_W * PK_WIDE_H];
 // Two, in turn: the draw thread reads one while the next frame fills the other, with no copy between them.
+// EXPAND's window is at most the top screen (wide_window), and pk_wide's buffers must hold it.
+_Static_assert(PK_WIDE_MAX_VIEW_W >= PD_TOP_W && PK_WIDE_MAX_VIEW_H >= PD_TOP_H, "EXPAND's buffers are smaller than the top screen");
 static uint32_t wideFrames[2][PD_TOP_W * PD_TOP_H];
 static int wideShown;
 static uint32_t overlayPx[PD_TOP_W * PD_TOP_H];
@@ -101,8 +104,9 @@ bool pd_session_write(void* ctx, uint32_t addr, const void* data, size_t len) {
         for (size_t i = 0; i < len; i++) s->core->busWrite8(s->core, addr + (uint32_t) i, ((const uint8_t*) data)[i]);
         return true;
     }
-    // armGBA throws out code it compiled from RAM that changes.
+    // armGBA and gpSP throw out code they compiled from RAM that changes.
     if (pd_armgba_is(s->core)) return pd_armgba_write(addr, data, len);
+    if (pd_gpsp_is(s->core)) return pd_gpsp_write(addr, data, len);
     if (addr >= 0x02000000 && addr - 0x02000000 + len <= s->ewramSize) {
         memcpy(s->ewram + (addr - 0x02000000), data, len);
         return true;
@@ -118,6 +122,7 @@ bool pd_session_write(void* ctx, uint32_t addr, const void* data, size_t len) {
 
 static bool rom_write(struct pd_session* s, uint32_t addr, const uint8_t* data, int len) {
     if (pd_armgba_is(s->core)) return pd_armgba_rom_write(addr, data, (size_t) len);
+    if (pd_gpsp_is(s->core)) return pd_gpsp_rom_write(addr, data, (size_t) len);
     // mGBA (the dev build's switch): its cartridge is plain memory, nothing recompiled.
     if (addr < 0x08000000u || addr - 0x08000000u + (uint32_t) len > s->romSize) return false;
     memcpy((uint8_t*) s->rom + (addr - 0x08000000u), data, (size_t) len);
@@ -245,6 +250,8 @@ bool pd_session_save_state(struct pd_session* s, int slot) {
     pd_mixer_release(s->core); // a state never holds the hook
     if (pd_armgba_is(s->core)) {
         ok = pd_armgba_save_state(path);
+    } else if (pd_gpsp_is(s->core)) {
+        ok = pd_gpsp_save_state(path);
     } else {
         struct VFile* vf = VFileOpen(vfPath, O_CREAT | O_TRUNC | O_RDWR);
         if (!vf) return false;
@@ -275,6 +282,10 @@ static void write_state(struct pd_session* s, const char* vfPath, const char* pa
     if (pd_armgba_is(s->core)) {
         pd_mixer_release(s->core);
         pd_armgba_save_state(path);
+        return;
+    }
+    if (pd_gpsp_is(s->core)) {
+        pd_gpsp_save_state(path);
         return;
     }
     struct VFile* vf = VFileOpen(vfPath, O_CREAT | O_TRUNC | O_RDWR);
@@ -308,6 +319,13 @@ static bool load_state_file(struct pd_session* s, const char* vfPath, const char
         else if (r == PD_ARMGBA_STATE_OTHER_GAME) pd_session_show(s, "THAT STATE IS ANOTHER GAME'S");
         else if (r == PD_ARMGBA_STATE_BAD) pd_session_show(s, "THAT STATE DIDN'T LOAD");
         return r == PD_ARMGBA_STATE_OK;
+    }
+    if (pd_gpsp_is(s->core)) {
+        enum pd_gpsp_state r = pd_gpsp_load_state(path);
+        if (r == PD_GPSP_STATE_FOREIGN) pd_session_show(s, "THAT STATE IS ANOTHER CORE'S");
+        else if (r == PD_GPSP_STATE_OTHER_GAME) pd_session_show(s, "THAT STATE IS ANOTHER GAME'S");
+        else if (r == PD_GPSP_STATE_BAD) pd_session_show(s, "THAT STATE DIDN'T LOAD");
+        return r == PD_GPSP_STATE_OK;
     }
     struct VFile* vf = VFileOpen(vfPath, O_RDONLY);
     if (!vf) return false;
@@ -703,12 +721,13 @@ void pd_session_start(struct pd_session* s, struct mCore* core, const uint32_t* 
     s->host.itemCanGive = pd_items_can_give;
 
     START_MARK("items+boxes");
-    // What the companion shows: read once now (RAM still blank: an empty party), then every PD_SNAPSHOT_EVERY frames.
+    // What the companion shows: read once now, then on its wall-time schedule.
     pd_snapshot_read(&s->shown, &s->game, pd_session_read, s);
     START_MARK("snapshot");
 #undef START_MARK
     s->shown.frame = 0;
     s->frame = 0;
+    pd_refresh_mark(&s->snapshotTimer, s->companionMs);
     s->redraw = true;
 }
 
@@ -928,10 +947,16 @@ void pd_session_run_frame(struct pd_session* s, uint32_t playerKeys, bool last) 
         s->gameKeyFrames--;
     }
     s->core->setKeys(s->core, keys);
-    // Fast-forward's frames that aren't shown: armGBA needn't draw them.
+    // Fast-forward's frames that aren't shown: armGBA and gpSP needn't draw them.
     if (pd_armgba_is(s->core)) pd_armgba_skip_video(!last);
+    else if (pd_gpsp_is(s->core)) {
+        // The plan's undrawn frames, and the drawn one whose picture is collected later.
+        pd_gpsp_skip_video(!last || s->drawPlan == PD_DRAW_SKIP || s->drawPlan == PD_DRAW_SKIP_LAST);
+        if (last && s->drawPlan == PD_DRAW_LATE) pd_gpsp_draw_late();
+    }
     uint64_t start = s->files.clock ? s->files.clock() : 0;
     s->core->runFrame(s->core);
+    if (last && s->drawPlan == PD_DRAW_SKIP_LAST && pd_gpsp_is(s->core)) pd_gpsp_collect();
     uint64_t ran = s->files.clock ? s->files.clock() : 0;
     s->prof.run += ran - start;
     if (s->game.kind != PD_GAME_GB) pk_wide_after_frame(s->core);
@@ -939,8 +964,12 @@ void pd_session_run_frame(struct pd_session* s, uint32_t playerKeys, bool last) 
         pk_rest_note(s->core);
         pd_mixer_frame(s->core);
     }
-    if (s->fieldKnown)
+    bool battleTransition = false;
+    if (s->fieldKnown) {
+        int oldFlags = s->fieldFlags;
         s->fieldFlags = pk_field_state(s->core, s->settings->runIndoors, s->wildSwitch && s->settings->wildOff ? 0 : 100);
+        battleTransition = ((oldFlags ^ s->fieldFlags) & PK_FIELD_BATTLE) != 0;
+    }
     s->framePending = last;
     if (s->flightCfg) {
         // FREE FLIGHT's next step, then its shadow and bird into the finished frame (before EXPAND reads it).
@@ -972,10 +1001,22 @@ void pd_session_run_frame(struct pd_session* s, uint32_t playerKeys, bool last) 
         pd_boxes_read(&s->boxes, &s->game, pd_session_read, s, s->ui.boxShown);
         if (memcmp(&before, &s->boxes, sizeof(before))) s->redraw = true;
     }
-    if ((stateChanged || s->frame % PD_SNAPSHOT_EVERY == 0) && (s->game.kind == PD_GAME_GB || (s->ewram && s->iwram))) {
+    bool urgent = stateChanged || battleTransition || s->snapshotRequested;
+    bool displayRead = s->files.companionIntervalMs
+        ? pd_refresh_due(&s->snapshotTimer, s->companionMs, s->files.companionIntervalMs, urgent)
+        : urgent || s->frame % PD_SNAPSHOT_EVERY == 0;
+    bool trackingRead = s->nuzOn && s->nuzSupported && s->frame % PD_SNAPSHOT_EVERY == 0;
+    if ((displayRead || trackingRead) && (s->game.kind == PD_GAME_GB || (s->ewram && s->iwram))) {
         pd_snapshot_read(&s->snap, &s->game, pd_session_read, s);
+        if (trackingRead || stateChanged || battleTransition || !s->nuzOn) nuz_feed(s);
+        if (!displayRead) {
+            if (s->files.clock) s->prof.snap += s->files.clock() - wideEnd;
+            return;
+        }
+        pd_refresh_mark(&s->snapshotTimer, s->companionMs);
+        s->snapshotRequested = false;
+        if (stateChanged || battleTransition) s->redrawUrgent = true;
         pd_ui_update(&s->ui, &s->snap);
-        nuz_feed(s);
         // Only a change the companion shows is worth a redraw (not the frame counter).
         s->snap.frame = 0;
         if (memcmp(&s->snap, &s->shown, sizeof(s->snap))) {
@@ -993,7 +1034,27 @@ void pd_session_run_frame(struct pd_session* s, uint32_t playerKeys, bool last) 
                 memcpy(seen.bankFlags, s->shown.bankFlags, sizeof(seen.bankFlags));
                 memcpy(seen.bankVars, s->shown.bankVars, sizeof(seen.bankVars));
             }
-            if (s->ui.tab != PD_TAB_CARD) memcpy(seen.gameStats, s->shown.gameStats, sizeof(seen.gameStats));
+            if (s->ui.tab != PD_TAB_CARD) {
+                // The clock and the card's own reads tick on by themselves: only the CARD shows them.
+                memcpy(seen.gameStats, s->shown.gameStats, sizeof(seen.gameStats));
+                seen.playHours = s->shown.playHours;
+                seen.playMinutes = s->shown.playMinutes;
+                seen.battlePoints = s->shown.battlePoints;
+                memcpy(seen.museumWinners, s->shown.museumWinners, sizeof(seen.museumWinners));
+                memcpy(seen.cardFlags, s->shown.cardFlags, sizeof(seen.cardFlags));
+                memcpy(seen.cardVars, s->shown.cardVars, sizeof(seen.cardVars));
+                seen.cardMagic = s->shown.cardMagic;
+                if (s->ui.tab != PD_TAB_ACHIEVEMENTS) {
+                    memcpy(seen.achievements, s->shown.achievements, sizeof(seen.achievements));
+                    seen.frontierRecordHigh = s->shown.frontierRecordHigh;
+                }
+            }
+            // The Pokedex's marks: the DEX, GUIDE's "N of M caught here" and BATTLE's caught ball.
+            if (s->ui.tab != PD_TAB_DEX && s->ui.tab != PD_TAB_GUIDE && s->ui.tab != PD_TAB_BATTLE) {
+                memcpy(seen.dexSeen, s->shown.dexSeen, sizeof(seen.dexSeen));
+                memcpy(seen.dexCaught, s->shown.dexCaught, sizeof(seen.dexCaught));
+            }
+            if (s->ui.tab != PD_TAB_GUIDE) seen.hour = s->shown.hour;
             if (memcmp(&seen, &s->shown, sizeof(seen))) s->redraw = true;
             s->shown = s->snap;
         }
@@ -1818,6 +1879,7 @@ static void overlay_update(struct pd_session* s) {
 }
 
 void pd_session_tick(struct pd_session* s, const struct pd_input* in, unsigned ms) {
+    s->companionMs += ms;
     quick_items(s);
     bool menuWasOpen = s->quickOpen;
     if (in->quickMenu) {
@@ -1850,6 +1912,12 @@ void pd_session_tick(struct pd_session* s, const struct pd_input* in, unsigned m
     s->speedDebt += quarter;
     int count = s->speedDebt / 4;
     s->speedDebt %= 4;
+    // At 1x the plan is the loop's last frame's: catching up runs its frames undrawn before it, as ever.
+    s->drawPlan = count == 1 && quarter == 4 ? in->drawPlan : PD_DRAW_NOW;
+    if (count == 1 && quarter == 4 && in->catchUp > 0) {
+        count += in->catchUp;
+        s->catchUpFrames += (unsigned) in->catchUp;
+    }
     for (int i = 0; i < count; i++) pd_session_run_frame(s, keys, i == count - 1);
     field_jobs(s);
     item_jobs(s);
@@ -1876,8 +1944,11 @@ void pd_session_draw(struct pd_session* s, struct pd_canvas* bottom) {
         pd_ui_warm(&s->ui, bottom, &s->game);
         s->uiWarm = true;
     }
-    pd_ui_draw(&s->ui, bottom, &s->game, &s->shown, &s->host);
+    if (!s->redraw && s->redrawScroll) pd_ui_draw_scrolled(&s->ui, bottom, &s->game, &s->shown, &s->host);
+    else pd_ui_draw(&s->ui, bottom, &s->game, &s->shown, &s->host);
     s->redraw = false;
+    s->redrawScroll = false;
+    s->redrawUrgent = false;
 }
 
 bool pd_session_action(struct pd_session* s, enum pd_action action) {
