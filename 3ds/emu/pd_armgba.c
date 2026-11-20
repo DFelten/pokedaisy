@@ -5,6 +5,7 @@
 #include "pd_armgba_internal.h"
 
 #include <stdarg.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -110,7 +111,7 @@ static const char* option_value(const char* key) {
         { "armgba_player1_saves", "retroarch" },
         { "armgba_video_threads", "1" },
     };
-    if (!strcmp(key, "armgba_threaded_video")) return E.host.threaded ? "enabled" : "disabled";
+    if (!strcmp(key, "armgba_threaded_video")) return !E.host.threaded ? "disabled" : E.host.lateVideo ? "one frame late" : "enabled";
     if (!strcmp(key, "armgba_threaded_audio")) return "disabled";
     for (size_t i = 0; i < sizeof(FIXED) / sizeof(*FIXED); i++)
         if (!strcmp(key, FIXED[i].key)) return FIXED[i].value;
@@ -336,12 +337,25 @@ static uint8_t* read_file(const char* path, size_t* size) {
 }
 
 // The whole file to a new one first, then over the old: a crash or a full card can't leave half a save.
+// The file's bytes copied into one heap buffer and written at once: handed the save memory itself, the 3DS's file
+// system took 4.1 s for a 128 KB save (the game stood still); from the heap the same write takes ~45 ms. (setvbuf
+// isn't enough: newlib's fwrite skips the buffer for data at least its size, a save without a clock trailer.)
+static bool write_from_heap(FILE* f, const uint8_t* a, size_t aLen, const uint8_t* b, size_t bLen) {
+    uint8_t* copy = malloc(aLen + bLen);
+    if (!copy) return fwrite(a, 1, aLen, f) == aLen && (!bLen || fwrite(b, 1, bLen, f) == bLen);
+    memcpy(copy, a, aLen);
+    if (bLen) memcpy(copy + aLen, b, bLen);
+    bool ok = fwrite(copy, 1, aLen + bLen, f) == aLen + bLen;
+    free(copy);
+    return ok;
+}
+
 static bool write_file(const char* path, const uint8_t* a, size_t aLen, const uint8_t* b, size_t bLen) {
     char temp[1100];
     snprintf(temp, sizeof(temp), "%s.tmp", path);
     FILE* f = fopen(temp, "wb");
     if (!f) return false;
-    bool ok = fwrite(a, 1, aLen, f) == aLen && (!bLen || fwrite(b, 1, bLen, f) == bLen);
+    bool ok = write_from_heap(f, a, aLen, b, bLen);
     ok = fclose(f) == 0 && ok;
     if (!ok) {
         remove(temp);
@@ -394,8 +408,10 @@ static bool write_save(void) {
         trailer[7] = gba->gpio.rtc.control;
         put64(trailer + 8, (uint64_t) time(NULL));
     }
+    uint64_t t0 = load_ms();
     bool ok = write_file(E.savePath, gba->savedata.storage, size, trailer, clock ? sizeof(trailer) : 0);
-    emu_log(ok ? "save: wrote %s" : "save: COULDN'T WRITE %s", E.savePath);
+    unsigned took = (unsigned) (load_ms() - t0);
+    emu_log(ok ? "save: wrote %s (%u bytes, %u ms)" : "save: COULDN'T WRITE %s (%u bytes, %u ms)", E.savePath, (unsigned) size, took);
     if (ok) {
         E.savePending = false;
         E.saveQuiet = 0;
@@ -542,6 +558,20 @@ void pd_armgba_jit_counts(uint32_t out[4]) {
 }
 #endif
 
+void pd_armgba_cache_get(struct pd_armgba_cache* out) {
+    memset(out, 0, sizeof(*out));
+#if defined(__3DS__)
+    if (!E.loaded) return;
+    struct JitCounts c;
+    jitCounts(&c);
+    out->codeUsedKiB = c.codeUsed >> 10;
+    out->codeSizeKiB = c.codeSize >> 10;
+    out->compiled = (unsigned) c.compiled;
+    out->fullFlushes = (unsigned) c.fullFlushes[1];
+    out->askedFlushes = (unsigned) c.fullFlushes[0];
+#endif
+}
+
 // armGBA's Fast Flash Saves (savedataSkipFlashTimer): the two routines return at once, found by their code and only
 // when each is in the ROM once. A game without them is left as it is.
 bool pd_armgba_fast_flash_saves(long* start, long* stop) {
@@ -582,7 +612,7 @@ bool ag_load(const char* romPath, const char* savePath, const struct ag_host* ho
     uint64_t t0 = load_ms();
     FILE* f = fopen(romPath, "rb");
     if (!f) {
-        snprintf(error, errorLen, "can't open the game");
+        snprintf(error, errorLen, "can't open %s (%s)", romPath, strerror(errno));
         return false;
     }
     fseek(f, 0, SEEK_END);
@@ -601,13 +631,26 @@ bool ag_load(const char* romPath, const char* savePath, const struct ag_host* ho
 #else
     uint8_t* rom = malloc((size_t) length);
 #endif
-    if (!rom || fread(rom, 1, (size_t) length, f) != (size_t) length) {
+    if (!rom) {
+        fclose(f);
+#if defined(__3DS__)
+        snprintf(error, errorLen, "no %lu KiB buffer for a %ld KiB game (%s)", (unsigned long) (bufferSize >> 10), length >> 10,
+                 hosts ? "the app's 32 MB game buffer wasn't reserved at start" : "malloc failed");
+#else
+        snprintf(error, errorLen, "no memory for a %ld KiB game", length >> 10);
+#endif
+        return false;
+    }
+    size_t got = fread(rom, 1, (size_t) length, f);
+    if (got != (size_t) length) {
+        int err = ferror(f) ? errno : 0;
         fclose(f);
 #if defined(__3DS__)
         if (!hosts)
 #endif
         free(rom);
-        snprintf(error, errorLen, "no memory for the game (%ld KiB), or it couldn't be read", length >> 10);
+        snprintf(error, errorLen, "read %lu of the game's %ld KiB from the SD card (%s)", (unsigned long) (got >> 10), length >> 10,
+                 err ? strerror(err) : "ended early");
         return false;
     }
     fclose(f);
@@ -639,7 +682,8 @@ bool ag_load(const char* romPath, const char* savePath, const struct ag_host* ho
     if (!ok || !gba) {
         if (ok) retro_unload_game();
         retro_deinit();
-        snprintf(error, errorLen, "armGBA couldn't start it");
+        snprintf(error, errorLen, "armGBA couldn't start it (retro_load_game %s, %ld KiB game)", ok ? "ok, no machine" : "failed",
+                 length >> 10);
         return false;
     }
     E.loaded = true;
