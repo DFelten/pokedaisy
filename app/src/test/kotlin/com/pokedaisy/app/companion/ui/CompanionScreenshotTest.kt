@@ -562,7 +562,7 @@ open class CompanionScreenshotTest {
             if (rom.isFile && com.pokedaisy.app.companion.data.NdsArt.extractTo(rom.toOkioPath(), dir.toOkioPath())) com.pokedaisy.app.companion.data.NdsArt.dir = dir.toOkioPath()
             val t = com.pokedaisy.app.companion.data.readGen5Telemetry(FixtureMemoryReader.load("black2"), com.pokedaisy.app.companion.data.GEN5_BLACK2)
             val v = buildSnapshotView(t).copy(game = GameKind.BLACK2)
-            v.party.forEach { m -> m.iconAsset?.let { GameArt.get(paparazzi.context, it) } }
+            v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
             val tables = v.pokedex?.tables ?: return
             val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
             snapshot { AppTheme { MonDetailScreen(v.party, 0, {}, {}, learn = ctx, initialLearnPick = 0) } }
