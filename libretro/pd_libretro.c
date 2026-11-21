@@ -727,6 +727,9 @@ static uint32_t *compPx;
 static int compW, compH;               // this window's picture (companion_window)
 static struct pd_companion compReply;  // the host's last answer: the mouse over the window
 static bool compTouchWas, compDimHeld;
+// The frontend's own settings in the companion's SETTINGS (PD_ENV_FRONT_ROWS): its rows, and a row pressed for it.
+static struct pd_front_rows frontRows;
+static int frontPress = -1;
 static int hudNativePct; // SIZE the picture goes over the box for: 100 the whole box, 50 its four corners
 static uint32_t *hudPixels;
 static uint32_t hudDrawnKey;
@@ -1868,6 +1871,28 @@ RETRO_API void retro_run(void) {
   }
   if (!touchDown && !companion)
     compDimHeld = compTouchWas = false;
+  // The frontend's rows for SETTINGS, the row pressed last frame handed over; its menu's SETTINGS opens the companion there.
+  if (realEnv) {
+    frontRows.press = frontPress;
+    frontRows.count = 0;
+    frontRows.open_settings = 0;
+    frontPress = -1;
+    if (!realEnv(PD_ENV_FRONT_ROWS, &frontRows))
+      frontRows.count = 0;
+    host.frontCount = frontRows.count < 8 ? frontRows.count : 8;
+    for (int i = 0; i < host.frontCount; i++) {
+      host.frontLabels[i] = frontRows.label[i];
+      host.frontValues[i] = frontRows.value[i];
+    }
+    if (frontRows.open_settings) {
+      companion = true;
+      quickOpen = flyList = repelList = hudFocus = false;
+      ui.tab = PD_TAB_SETTINGS;
+      ui.overlay = PD_OVERLAY_NONE;
+      ui.settingsToFront = 3;
+      focusId = HIT_SETTING + SETTING_FRONT;
+    }
+  }
   bool wasCompanion = companion;
   if (down(companionBtn) && !hudFocus) {
     companion = !companion;
@@ -2251,6 +2276,9 @@ RETRO_API void retro_run(void) {
       }
     }
     switch (pd_ui_take_action(&ui)) {
+    case PD_ACTION_FRONT_ROW: // the frontend's row: handed to it with the next frame's PD_ENV_FRONT_ROWS
+      frontPress = ui.frontRow;
+      break;
     case PD_ACTION_ITEM_PICK:
       if (polishedActions && polished_potion(ui.itemId) && !ui.itemGive) {
         const char *why = pd_field_input_reason(game.sha1, pd_lr_read_memory, core);

@@ -213,7 +213,22 @@ void DsCompanionUi::build_order(){
     if(settings.aspect != PD_ASPECT_ORIGINAL){order.push_back(Zoom);order.push_back(AutoZoom);}
   }
   for(const Row row:defaultOrder)if(row!=Layout)order.push_back(row);
+  for(int i=0;i<frontCount;++i)order.push_back(Row(Rows+i));
   if(std::find(order.begin(),order.end(),setting)==order.end())setting=hasExpand?Aspect:Layout;
+}
+void DsCompanionUi::set_front_rows(int count,const char (*labels)[24],const char (*values)[24]){
+  count=std::clamp(count,0,FrontMax);
+  bool changed=count!=frontCount;
+  frontCount=count;
+  for(int i=0;i<count;++i){
+    if(frontLabel[i]!=labels[i])changed=true;
+    frontLabel[i]=labels[i];frontValue[i]=values[i];
+  }
+  if(changed)build_order();
+}
+void DsCompanionUi::open_front_rows(){
+  frame.tab=PD_TAB_SETTINGS;frame.overlay=PD_OVERLAY_NONE;picker=-1;
+  if(frontCount>0)setting=Rows;
 }
 void DsCompanionUi::draw_settings(pd_canvas* c){
   const auto& s=*snapshot;
@@ -224,11 +239,16 @@ void DsCompanionUi::draw_settings(pd_canvas* c){
     (settings.tabBar & dsTabs)==dsTabs?"NONE HIDDEN":"OPEN",hudButtonNames[settings.hudBtn],hudSizeNames[value(HudSize)],
     settings.aspect==PD_ASPECT_ORIGINAL?"ORIGINAL":"EXPAND",zoomNames[std::clamp(settings.zoom,0,3)],settings.autoZoom?"ON":"OFF"};
   constexpr int infoCount=3;
-  pd_option_row rows[Rows+infoCount]={{"PLACE",s.valid?ds_place(s.map,s.game):"-"},
+  pd_option_row rows[Rows+FrontMax+infoCount]={{"PLACE",s.valid?ds_place(s.map,s.game):"-"},
     {"MONEY",money},{"HOST","PokeDaisy core"}};
   int n=infoCount;
   for(const int row:order){
     if(row==setting)options.optionSelected=n;
+    if(row>=Rows){ // the frontend's own: a page of its own where it has no value
+      const int f=row-Rows;
+      rows[n++]={frontLabel[f].c_str(),frontValue[f].empty()?">":frontValue[f].c_str()};
+      continue;
+    }
     rows[n++]={labels[row],values[row]};
   }
   pd_option_source source{"SETTINGS",rows,n,infoCount};
@@ -578,6 +598,7 @@ bool DsCompanionUi::control(unsigned pressed){
 // window. A tap on the row does the same.
 void DsCompanionUi::activate_setting(){
   error.clear();
+  if(setting>=Rows){frontPressed=setting-Rows;return;} // the frontend acts on it (PD_ENV_FRONT_ROWS)
   if(setting==Hud){
     frame.overlay=PD_OVERLAY_HUD;
     choice=0;

@@ -819,6 +819,20 @@ void overlay_companion_native(pd_companion* msg)
 
 void overlay_companion_reply(const pd_companion& reply) { compReply = reply; }
 
+int overlay_front_press() { return shell.take_front_press(); }
+
+void overlay_front_rows(const pd_front_rows& rows)
+{
+    shell.set_front_rows(rows.count, rows.label, rows.value);
+    if (rows.open_settings) {
+        companionShown = true;
+        quickShown = flyPicker = repelPicker = false;
+        hudFocus = -1;
+        shell.open_front_rows();
+        refresh();
+    }
+}
+
 void overlay_reset()
 {
     companionShown = quickShown = false;

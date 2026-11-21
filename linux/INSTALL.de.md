@@ -113,7 +113,7 @@ Lade die neuere Zip-Datei herunter und entpacke sie über den alten Ordner (bei 
 - **Permission denied beim Starten:** Das Entpackprogramm hat dem Programm die Ausführungsrechte genommen. Führe im Ordner `chmod +x pokedaisy-linux` aus.
 - **Ein Fehler, der `GLIBC_2.35` oder `libSDL2` nennt:** Dein Linux ist älter, als PokeDaisy braucht, oder SDL2 ist nicht installiert. Installiere SDL2 aus deiner Distribution (unter Ubuntu `sudo apt install libsdl2-2.0-0`) oder probiere ein neueres System.
 - **Ein Spiel fehlt in der Liste:** Es muss direkt in `roms` liegen (nicht in einem Ordner darin), entpackt sein und auf `.gba`, `.gb`, `.gbc` oder `.nds` enden.
-- **A und B sind vertauscht:** Öffne das Menü (START und SELECT zusammen, oder die Guide- oder Menu-Taste) und stelle `A/B BUTTONS` auf `SWAPPED`.
+- **A und B sind vertauscht:** Öffne das Menü (START und SELECT zusammen, oder die Guide- oder Menu-Taste), wähle `SETTINGS` und stelle `A/B BUTTONS` auf `SWAPPED`.
 - **Meine Speicherdatei wurde nicht geladen:** Sie braucht den ganzen Dateinamen der ROM mit `.sav` dahinter, in `saves`. Sieh in `saves/pokedaisy-backups` nach einer älteren Kopie.
 - **Der Controller tut nichts:** SDL kennt ihn noch nicht. Lege eine `gamecontrollerdb.txt` mit seiner Belegung in den Datenordner (neben `roms`).
 

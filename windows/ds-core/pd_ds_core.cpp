@@ -590,6 +590,16 @@ RETRO_API void retro_run(void)
     frameNo++;
     compose_layout();
     if (poll_cb) poll_cb();
+    // The frontend's settings in the companion's SETTINGS, the row pressed last frame handed to it.
+    if (env_cb) {
+        pd_front_rows front {};
+        front.press = overlay_front_press();
+        if (env_cb(PD_ENV_FRONT_ROWS, &front)) {
+            overlay_front_rows(front);
+            // The A that picked the host menu's SETTINGS is still down: not a press on the row the companion opens at.
+            if (front.open_settings) lastInputMask = read_input_mask();
+        }
+    }
     // The overlay first: L2 opens the companion (a tap toggles it, held for a moment it opens the quick menu), and while
     // it shows it takes the pad, so the game doesn't walk away underneath it.
     const uint32_t heldInput = read_input_mask();

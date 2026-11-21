@@ -13,6 +13,16 @@ struct DsCompanionUi {
   // A host whose picture can EXPAND (the Windows core): its SETTINGS gain ASPECT, ZOOM and AUTO ZOOM IN, and it lays the
   // game out for settings.aspect / settings.zoom (the app's SETTINGS > SCREEN). Off: the DS layouts alone.
   bool hasExpand=false;
+  // The frontend's own settings (the desktop host's A/B BUTTONS, FF SPEED, KEYBOARD ...: PD_ENV_FRONT_ROWS), at the end of
+  // SETTINGS as rows Rows + i, so every setting is in one place. set_front_rows each frame; a press is taken by
+  // take_front_press (-1 none) and handed back to the frontend; open_front_rows puts SETTINGS on the first of them.
+  static constexpr int FrontMax=8;
+  int frontCount=0;
+  std::string frontLabel[FrontMax], frontValue[FrontMax];
+  int frontPressed=-1;
+  void set_front_rows(int count,const char (*labels)[24],const char (*values)[24]);
+  int take_front_press(){const int r=frontPressed;frontPressed=-1;return r;}
+  void open_front_rows();
   std::vector<Row> order; // settingsOrder: the list shown, ASPECT / ZOOM / AUTO ZOOM IN first when hasExpand
   void build_order();
   pd_ui frame{}, options{};

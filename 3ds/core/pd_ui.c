@@ -709,6 +709,9 @@ static void act(struct pd_ui* ui, int id) {
     } else if (id == HIT_SETTING + SETTING_AUTO_ZOOM) {
         ui->settings->autoZoom = !ui->settings->autoZoom;
         ui->action = PD_ACTION_SETTINGS_CHANGED;
+    } else if (id >= HIT_SETTING + SETTING_FRONT && id < HIT_SETTING + SETTING_FRONT_END) {
+        ui->frontRow = id - (HIT_SETTING + SETTING_FRONT);
+        ui->action = PD_ACTION_FRONT_ROW;
     } else if (id == HIT_SETTING + SETTING_ZOOM) {
         ui->overlay = PD_OVERLAY_PICK_ZOOM;
     } else if (id >= HIT_SETTING && id <= HIT_SETTING + SETTING_ASPECT) {

@@ -258,12 +258,12 @@ other core, won't load.
 The program uses your controller's layout: the button on the right acts as the game's A and the one at the bottom
 as B, as on a Nintendo controller. On ROCKNIX the buttons follow their labels instead, so the button marked A is A,
 as long as the firmware's controller layout is Nintendo (its default). If that feels backwards on your device, set
-`A/B BUTTONS` to `SWAPPED` in the menu. If you set `A/B BUTTONS` to `SWAPPED` on ROCKNIX with an earlier version to
+`A/B BUTTONS` to `SWAPPED` in `SETTINGS`. If you set `A/B BUTTONS` to `SWAPPED` on ROCKNIX with an earlier version to
 get A on the button marked A, set it back to `NORMAL`. Controllers can be plugged in or pulled out while you play.
 
 On a keyboard: arrows move, Z is A, X is B, Enter is START, Backspace is SELECT, Q and E are L and R, Tab is X and F
 is Y. Hold Space to fast forward and R to rewind, F2 saves a state, F4 loads it, and Escape opens the menu. Every one
-of those keys can be changed in the menu's `KEYBOARD` page, or in the game list's `SETTINGS` > `KEYBOARD` before you start a game. A mouse or a touch screen reaches the companion and the HUD:
+of those keys can be changed in `SETTINGS` > `KEYBOARD`, or in the game list's `SETTINGS` > `KEYBOARD` before you start a game. A mouse or a touch screen reaches the companion and the HUD:
 clicking a tab, the gear, a row or a button presses it, as `ENTER` on it would.
 
 The companion and the quick menu work as in the cores everywhere: X opens the [companion](companion.md), L3 opens the
@@ -314,13 +314,20 @@ pauses while it's open.
 | --- | --- |
 | `RESUME` | Back to the game. |
 | `SAVE STATE`, `LOAD STATE` | One save state for the game. `LOAD STATE` asks first. Game Boy Advance states made before this version don't load. |
-| `HOTKEYS` | Buttons for fast-forward, rewind and states (below). |
-| `KEYBOARD` | Which key does what (below). |
-| `REWIND` | `ON` keeps the last 20 seconds or so to rewind through. |
-| `FF SPEED` | How fast fast-forward goes: `MAX`, or 2x to 8x. |
-| `LCD FILTER` | A screen texture like a handheld's. |
-| `A/B BUTTONS` | `NORMAL` or `SWAPPED`, for devices whose A and B are the other way round. |
+| `SETTINGS` | Opens the companion's `SETTINGS`, at the program's own rows (below). |
 | `QUIT` | Leave the game (`QUIT TO GAME LIST` when you picked it from the list). It asks first. |
+
+Every setting is in one place, the companion's `SETTINGS`: the companion's own rows first, then the program's,
+under a line:
+
+| Row | What it does |
+| --- | --- |
+| `A/B BUTTONS` | `NORMAL` or `SWAPPED`, for devices whose A and B are the other way round. |
+| `FF SPEED` | How fast fast-forward goes: `MAX`, or 2x to 8x. |
+| `REWIND` | `ON` keeps the last 20 seconds or so to rewind through. |
+| `LCD FILTER` | A screen texture like a handheld's. |
+| `KEYBOARD` | Which key does what (below). Opens its page over the game; B goes back to `SETTINGS`. |
+| `HOTKEYS` | Buttons for fast-forward, rewind and states (below). Opens its page the same way. |
 
 ### Hotkeys
 

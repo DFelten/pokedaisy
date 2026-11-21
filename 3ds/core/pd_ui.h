@@ -173,6 +173,7 @@ enum pd_action {
     PD_ACTION_TRADE_EVOLVE, // the summary's EVOLVE (TRADE EVOS): party slot ui.summarySlot evolves as a trade would
     PD_ACTION_NUZLOCKE_TOGGLE, // SETTINGS' NUZLOCKE / the tab's TURN ON: this game's tracking on or off
     PD_ACTION_NUZLOCKE_EDIT,   // the NUZLOCKE tab changed the run: ui.nuzEdit / nuzEditArg
+    PD_ACTION_FRONT_ROW,       // one of the frontend's own rows (pd_host_info.front*) was pressed: ui.frontRow
 };
 
 // A party slot in USE / GIVE's pick: dimmed, or which of its moves it would help.
@@ -217,6 +218,11 @@ struct pd_host_info {
     char stateWhen[24]; // when it was made, shown beside LOAD STATE
     bool fullSettings;  // Optional: SETTINGS' groups and the rows the 3DS has
     bool wildSupported, fieldSupported; // WILD ENCOUNTERS / the field read works on this game
+    // Optional: the frontend's own settings (the Linux / Windows host's A/B BUTTONS, FF SPEED, KEYBOARD ...: PD_ENV_FRONT_ROWS),
+    // drawn in SETTINGS under a line of their own so every setting is in one place. A value "" = a row that opens a page.
+    int frontCount;
+    const char* frontLabels[8];
+    const char* frontValues[8];
     bool hasCoreRows;    // the compact list adds AUTO-RUN (with fieldSupported), DARK MODE and RESET SETTINGS (the libretro cores)
     int batteryPct;     // -1 = unknown
     bool charging;      // the battery is charging (a bolt by it)
@@ -552,6 +558,8 @@ struct pd_ui {
     struct pd_settings* settings;
     enum pd_action action;
     int actionSlot;
+    int frontRow;           // PD_ACTION_FRONT_ROW's row
+    int settingsToFront;    // SETTINGS draws left that scroll to the frontend's rows (the host menu's SETTINGS opened it)
 
     bool touching, dragging, touchScroll;
     int touchX0, touchY0, touchLastY;

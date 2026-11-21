@@ -415,6 +415,25 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     }
     snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
     setting(ui, c, ix, &y, iw, SETTING_TAB_BAR, "TAB BAR", buf);
+    // The frontend's own settings (the desktop host's controls, sound and keys), under a line: one SETTINGS for everything.
+    if (host && host->frontCount > 0) {
+        if (full) group(c, ix, &y, "CONTROLS");
+        else {
+            y += 3;
+            pd_fill(c, ix, y, iw, 1, PD_DIVIDER);
+            y += 4;
+        }
+        if (ui->settingsToFront) { // brought here from the host's menu: these rows at the top of the list, the cursor on them
+            // A few draws running (opening the tab can reset the scroll after the first); the list's end can stop it short.
+            ui->settingsNavId = HIT_SETTING + SETTING_FRONT;
+            ui->settingsToFront--;
+            ui->settingsScroll += y - listTop;
+            if (ui->settingsScroll < 0) ui->settingsScroll = 0;
+        }
+        for (int i = 0; i < host->frontCount && i < 8; i++)
+            setting(ui, c, ix, &y, iw, (enum setting_row) (SETTING_FRONT + i), host->frontLabels[i],
+                    host->frontValues[i] && *host->frontValues[i] ? host->frontValues[i] : ">");
+    }
     // The app's APP group: LANGUAGE last (above HELP there). The short list keeps it under the game's own rows.
     if (full) {
         group(c, ix, &y, "APP");

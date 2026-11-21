@@ -47,6 +47,22 @@ struct pd_companion {
   int ptr_x, ptr_y, ptr_inside, ptr_down, ptr_valid;
 };
 
+/* The host's own settings in the companion's SETTINGS, so a player has one place for all of them (the host's menu then
+ * keeps RESUME / SAVE / LOAD / SETTINGS / QUIT). The core calls it every frame: the host fills the rows (A/B BUTTONS,
+ * FF SPEED, ...) with their values, acts on [press] (a row's index, set by the core; -1 none) after the core's frame -
+ * a value flips or steps, KEYBOARD / HOTKEYS open the host's own page over the game - and sets [open_settings] once
+ * when its menu's SETTINGS was picked: the core then opens the companion on SETTINGS at these rows. A frontend without
+ * the command: the companion shows no such rows. [data] is a pd_front_rows. */
+#define PD_ENV_FRONT_ROWS 0x20005
+#define PD_FRONT_ROWS_MAX 8
+struct pd_front_rows {
+  int press;                            /* in: the row the player pressed this frame, -1 none */
+  int count;                            /* out: the rows */
+  char label[PD_FRONT_ROWS_MAX][24];
+  char value[PD_FRONT_ROWS_MAX][24];    /* "" = a row that opens a page */
+  int open_settings;                    /* out: 1 once, when the host's menu asked for the companion's SETTINGS */
+};
+
 /* Where the host puts the companion's picture in a ow x oh window: the largest whole scale that keeps it within 88% of the
  * window's height and 97% of its width (at least 1), centred. Shared, so the core sizes the picture (pd_companion_size)
  * for exactly the scale the host draws it at. Returns the scale. */

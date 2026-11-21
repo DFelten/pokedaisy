@@ -1321,6 +1321,23 @@ RETRO_API void retro_unload_game(){ds_unload_game();pd_ds::clear();}
 RETRO_API void retro_run(){
   if(!nds)return;
   input_poll_cb();
+  // The frontend's settings in the companion's SETTINGS (PD_ENV_FRONT_ROWS), the row pressed last frame handed to it; its
+  // menu's SETTINGS opens the companion there.
+  if(pd_ds::environment){
+    pd_front_rows front{};
+    front.press=pd_ds::shell.take_front_press();
+    if(pd_ds::environment(PD_ENV_FRONT_ROWS,&front)){
+      pd_ds::shell.set_front_rows(front.count,front.label,front.value);
+      if(front.open_settings){
+        pd_ds::refresh();
+        pd_ds::companion=true;pd_ds::quickOpen=false;pd_ds::clear_hud_focus();
+        pd_ds::shell.open_front_rows();
+        // The A that picked the host menu's SETTINGS is still down: not a press on the row the companion opens at.
+        pd_ds::old_buttons=0;
+        for(unsigned id=0;id<16;++id)if(pd_ds::input(0,RETRO_DEVICE_JOYPAD,0,id))pd_ds::old_buttons|=1u<<id;
+      }
+    }
+  }
   const unsigned previous=pd_ds::old_buttons;
   const bool menuWasOpen=pd_ds::companion || pd_ds::quickOpen || pd_ds::hudCursor>=0;
   pd_ds::controls();
