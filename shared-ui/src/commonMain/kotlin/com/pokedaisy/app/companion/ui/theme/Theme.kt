@@ -89,7 +89,7 @@ const val DAISY_THEME_ID = 8
 val isDaisyTheme: Boolean get() = AppColors.theme.hue == null && !AppColors.theme.darkPage && !AppColors.theme.rainbow
 
 /** The theme stored as [id], or the default for an unknown one. */
-fun themeById(id: Int): ThemeSpec = (APP_THEMES + SEASONAL_THEMES).firstOrNull { it.id == id } ?: APP_THEMES.first()
+fun themeById(id: Int): ThemeSpec = (APP_THEMES + SEASONAL_THEMES + CustomLook.themes).firstOrNull { it.id == id } ?: APP_THEMES.first()
 
 /** The default and the themes that are always there. Ids 0-7 were the old game-named themes (FireRed, LeafGreen,
  * Emerald, Ruby, Sapphire, Platinum, HeartGold, SoulSilver): Prefs reads them as the default now, so never reuse them. */
@@ -194,7 +194,7 @@ val SEASONAL_THEMES = listOf(
 
 /** The themes the THEME row offers on [date]: every one that's always there, then the limited ones in their window. */
 fun availableThemes(date: kotlinx.datetime.LocalDate = ThemeClock.today()): List<ThemeSpec> =
-    APP_THEMES + SEASONAL_THEMES.filter { it.season!!.windowOn(date) != null }
+    APP_THEMES + SEASONAL_THEMES.filter { it.season!!.windowOn(date) != null } + CustomLook.themes
 
 /** A limited-time theme's window around [date] (null: not a limited one, or not now). */
 fun ThemeSpec.windowOn(date: kotlinx.datetime.LocalDate = ThemeClock.today()): ClosedRange<kotlinx.datetime.LocalDate>? = season?.windowOn(date)
@@ -246,8 +246,16 @@ fun loadTheme() {
  * so a pick redraws the top screen and the Screen-2 companion (a Presentation in the same process) at once.
  */
 object AppColors {
-    var theme by mutableStateOf(APP_THEMES[0])
+    /** The THEME the player picked (both screens' THEME rows show this one). */
+    var chosen by mutableStateOf(APP_THEMES[0])
         private set
+
+    /** The theme drawn now: [chosen], but while a game runs with IN GAME on GAME COLORS the default, so nothing of the
+     * theme reaches the companion or the HUD there (the user's call, 2026-11-20: the game's colours, or the default where a
+     * game has none, never a mix with the theme). */
+    val theme: ThemeSpec
+        get() = if (com.pokedaisy.app.companion.ui.OptionColors.inGame && com.pokedaisy.app.companion.ui.CompanionSkins.enabled) daisy else chosen
+    private val daisy by lazy { APP_THEMES.first { it.id == DAISY_THEME_ID } }
 
     val bgTop = Color(0xFF3AA890)
     val bgBottom = Color(0xFF2C7868)
@@ -260,8 +268,8 @@ object AppColors {
     val slotFrame = Color(0xFF206858)
     val slotInner = Color(0xFF90E0D0)
 
-    val currentThemeId: Int get() = theme.id
-    fun applyTheme(spec: ThemeSpec) { theme = spec }
+    val currentThemeId: Int get() = chosen.id
+    fun applyTheme(spec: ThemeSpec) { chosen = spec }
 
     // Cream window ("Text box"): fill + double frame. Constant across themes.
     val panel = Color(0xFFF8F8F0)
@@ -293,10 +301,14 @@ object AppColors {
     // picked" stay apart; the screens' chosen items now mostly use the white cursor row.
     // Monomyth's party backdrop is that orange too (the ring vanished on it): there it's a deep blue, which reads on the
     // orange, its teal slots and the white windows.
+    // Under a THEME the ring takes the colour opposite the theme's on the colour wheel (the user's call, 2026-11-19), at the
+    // default orange's strength: the default's orange is PokeDaisy blue's opposite already, so each theme's ring stands out
+    // against its own windows and solid tabs the way the orange does against the blue.
     val focusRing: Color get() =
         if (com.pokedaisy.app.companion.ui.OptionColors.inGame &&
             com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.MONOMYTH
-        ) Color(0xFF1F4FC8) else Color(0xFFFFB238)
+        ) Color(0xFF1F4FC8)
+        else (com.pokedaisy.app.companion.ui.CompanionSkins.gameHue ?: theme.hue)?.let { hslColor(it + 180f, 1f, 0.61f) } ?: Color(0xFFFFB238)
 
     val statusSlp = Color(0xFF8A8A8A)
     val statusPsn = Color(0xFFA259D9)
@@ -367,7 +379,7 @@ fun pixelFontFamily(): FontFamily {
     // SETTINGS > FONT: another font everywhere (a game's skin and a Game Boy game's own font included); PIXEL keeps the
     // game's: its skin's font (CompanionSkin: Pokemon X's sans-serif), else a Game Boy game's own, else Pixel Operator.
     val font = AppFonts.current
-    if (!font.pixel) return remember(font) { font.family() }
+    if (!font.pixel) return remember(font, AppFonts.custom) { font.family() }
     com.pokedaisy.app.companion.ui.CompanionSkins.current.font?.let { return it }
     LocalGameFont.current?.let { return it }
     // Pixel Operator (or PIXEL SMALL over it) + its Japanese / Korean fallbacks (PixelTypeface.kt), one per process.
@@ -444,6 +456,7 @@ fun AppTheme(content: @Composable () -> Unit) {
         runCatching { loadTheme() }
         runCatching { DarkMode.load() }
         runCatching { AppFonts.load() }
+        runCatching { AppViews.load() }
     }
     // AUTO dark mode follows the device's.
     val systemDark = isSystemInDarkTheme()

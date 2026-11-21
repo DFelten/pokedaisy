@@ -151,6 +151,8 @@ fun PokeTransferScreen(
                     if (warn) OptionColors.valueShadow else OptionColors.onBackdropShadow, small, Modifier.weight(1f), maxLines = 2)
                 OptionButton(tk("TRANSFER"), m, onClick = { state.transfer() }, emphasis = true,
                     enabled = link == null && n == PokeTransfer.COUNT && !saving)
+                // Names under the sprites, or the sprites alone and larger (hidden at first): one switch for every box grid.
+                if (iconsGen4 != null || iconsGen5 != null) MonNamesButton(m)
                 OptionButton(tk("UNDO ALL"), m, onClick = { state.undoAll() }, enabled = state.changed && !saving)
                 OptionButton(tk("SAVE"), m, onClick = { state.confirmSave = true }, emphasis = true, enabled = state.changed && !saving)
             }

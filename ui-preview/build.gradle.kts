@@ -127,8 +127,12 @@ tasks.register<JavaExec>("render") {
     systemProperty("dark", (project.findProperty("dark") as String?) ?: "")
     // -Pstyle=CLASSIC: every screen in FireRed's OPTION look instead of SUMMARY MINT (UiStyle).
     systemProperty("style", (project.findProperty("style") as String?) ?: "")
+    // -Pview=MODERN: every screen in VIEW MODERN (AppView), its font with it.
+    systemProperty("view", (project.findProperty("view") as String?) ?: "")
     // -Pfont=SMOOTH: every screen in that FONT (AppFont).
     systemProperty("font", (project.findProperty("font") as String?) ?: "")
+    // -PfontSize=LARGE: every screen at that FONT SIZE (AppFontSize).
+    systemProperty("fontSize", (project.findProperty("fontSize") as String?) ?: "")
     // -Ptheme=CHERRY: every screen in that THEME (its English name; limited-time ones too, whatever the date).
     systemProperty("theme", (project.findProperty("theme") as String?) ?: "")
     systemProperty("appVersion", (project.findProperty("appVersion") as String?) ?: "")

@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.layout
 
 /** A short label on a pill of the style's section colour (battle INFO's YOU / FOE, SUGGESTIONS' 1ST / 2ND / 3RD). */
 @Composable

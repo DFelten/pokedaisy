@@ -54,6 +54,33 @@ interface ThemeStore {
     var appFont: Int
         get() = AppFont.DEFAULT.ordinal
         set(value) {}
+    /** An [AppFontSize.ordinal]; a store that keeps none has the default. */
+    var fontSize: Int
+        get() = AppFontSize.DEFAULT.ordinal
+        set(value) {}
+    /** FONT SIZE > MORE SIZES' size in percent ([AppFonts.customPercent]). */
+    var fontSizePercent: Int
+        get() = 100
+        set(value) {}
+    /** The added font worn ([AppFonts.custom]): its file's name in [CustomLook]'s fonts folder; "" = none. */
+    var customFont: String
+        get() = ""
+        set(value) {}
+    /** MY LOOK > APP BACKGROUND / COMPANION BACKGROUND: a [LookBackground.ordinal] each. */
+    var appBackground: Int
+        get() = 0
+        set(value) {}
+    var companionBackground: Int
+        get() = 0
+        set(value) {}
+    /** The font RETRO had before MODERN put its own on ([AppViews.set]). */
+    var appFontRetro: Int
+        get() = AppFont.DEFAULT.ordinal
+        set(value) {}
+    /** An [AppView.ordinal]; a store that keeps none has the default. */
+    var appView: Int
+        get() = AppView.DEFAULT.ordinal
+        set(value) {}
 
     companion object {
         @kotlin.concurrent.Volatile var current: ThemeStore? = null

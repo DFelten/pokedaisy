@@ -272,8 +272,8 @@ pixel, so there its text was as large for the screen as on a GBA): `LocalTextSte
    `WideCompanionScreenshotTest` re-runs all of them at the top screen's 1920x1080 (where SWAP SCREENS puts
    the companion; density 2.0, the closest bucket layoutlib has). Wide-screen rules so far: `PartyGrid` goes
    to 3 columns past 2.0:1 (1.6 caught the Duo Lite's 4:3 grid, ~1.56-1.75) (a measuring `Layout` - BoxWithConstraints composed the slots late and FireRed's
-   icons missed the frame), and the MAP fills the tab only while that stretches it <= 1.2x
-   (`MAX_MAP_STRETCH`; the Thor's bottom is ~1.16), else it keeps its shape, centred, buttons with it. Add a
+   icons missed the frame), and the MAP never stretches (2026-11-20, the user's call):
+   it keeps its shape, as big as fits, centred, buttons with it. Add a
    test when adding a screen. Paparazzi is on **1.3.5** (Kotlin 2.4.21, Compose BOM
    2025.03.01 = Compose 1.7.8) — the last release on compileSdk 34's layoutlib; 2.x, Compose 1.8+ and a Kotlin past
    2.4 need compileSdk 35+ and a newer AGP first (Kotlin 2.4's lowest AGP is our 8.5.2). Library/Settings (top screen)
@@ -298,6 +298,51 @@ to a THEME's hue, `Color.rehued`; `uiStylePalette`'s SUMMARY MINT keeps the samp
 TOOLS, Settings, every tool: `LibraryHeaderBar`, `ToolHeader`) and Settings HOME's footer (`AppAboutBar`) are full-width bands on the
 screen's edges; a panel's title inside a window is a band across its top (`PanelHeader`, `LocalWindowInset`). The library header drops
 HELP and narrows its buttons when they'd cut POKéDAISY short (`compactActions`).
+**VIEW: RETRO / MODERN** (2026-11-19, the user's call; SCREEN > VIEW on both screens, Android only, `AppViews` / `AppView` in
+`theme/AppView.kt`, `Prefs.appView`, NEW tag `APP_VIEW`; asked once on the Library, `AppViewIntro`, before the other one-time windows,
+KEEP MY CURRENT LOOK = RETRO): RETRO is everything below. MODERN (after X / Y and later games) is `UiStyle.MODERN`'s palette under
+`CompanionSkins.MODERN`, everywhere (a 3DS game's own smooth skin still wins in game): smooth corners `radiusScale`d, hairline frames
+(`frameScale` in `inPx`), soft drop shadows (`drawSoftShadow`), gradient keys, no text shadows, `AppFont.MODERN` (Nunito 600 / 800, OFL,
+cut to Latin; put on with the view, RETRO's font kept in `Prefs.appFontRetro`), bold = the font's weight. Its own pieces where a screen
+draws its own: `ModernLook.kt` (`modernView`, `ModernBackdrop`, `ModernPartySlot`, HP bar, status chip; the party after Sword / Shield's screen, 2026-11-20: `PartyGrid` in MODERN lays the six out as a column of pills on the accent's slanted band (a short companion or a narrow one: two columns of three, no stage, each pill's level beside its HP bar), `drawModernPartyWindow`, the cursor's pill dark with a chevron, and `ModernPartyStage` beside them - the cursor's front picture from `LocalPartyDex`, its types - past `MODERN_STAGE_ASPECT`; tags on a pill's top edge, `modernBadgeRoom`), `ModernIcons.kt` (`ModernGlyph`:
+our own drawings, a glyph or a gradient tile; `forPixel` swaps `PixelIcon` / `ShadowedPixelIcon`'s one-colour drawings), the library's
+pills, rail, header icons, covers (`CategoryArt`), tags (`GameTagBox`), `PlatinumButton` / `ButtonLabel`, the bag (`ModernBag`). The game's
+own art stays (region map, card, icons). Both views: the top screen's header is a band along the screen's top edge (`LibraryHeaderBar`,
+`AppPageTitle(docked)`); RETRO's library list is one window, a row a part of it (`LocalListSegment`), MODERN's cards apart. A new screen
+that draws its own look: check `modernView`. ui-preview `-Pview=MODERN`, `modern-icons`, `library-view-intro*`.
+**The look settings apply everywhere** (2026-11-20, the user's call after VIEW IN GAME / COMPANION LOOK confused players): VIEW, THEME,
+FONT and DARK MODE are the same on both screens, in a game or not; the only in-game difference is LOOK > IN GAME (`inGameRow`,
+`CompanionSkins.enabled`, `Prefs.gameLook`): GAME COLORS = `CompanionSkins.gameSkin` (the running game's) gives `gameHue`, the
+companion's colours in either view (RETRO: `themedStylePalette` at that hue, uncalmed; MODERN: `SkinColors.inTheme`), its HUD the
+game's style (`gameHud`), a 3DS game its own smooth skin; MY THEME = the Library's look. A row that can't act right now says why in
+its grey line (`fontSubtitle`, VIEW on a 3DS game) rather than doing nothing silently; THEME is greyed out in a game on GAME COLORS
+(`themeInGameOff`): `AppColors.theme` is then the default (`AppColors.chosen` is the pick), so nothing of a theme reaches a game's
+screens, and Unbound gets its colour from `GAME_HUES` (its own palette in RETRO). FONT TYPE (was FONT; its pick-list draws each name
+in itself, `fontOption`) and FONT SIZE (`AppFontSize` SMALL / MEDIUM / LARGE, `Prefs.fontSize`, a factor in `rememberGbaTextMetrics`,
+NEW tag `FONT_SIZE`); THEME's pick-list shows each theme's colours (`themeSwatch`). FONT SIZE's MORE SIZES (`AppFontSize.CUSTOM`, `AppFonts.customPercent`, `Prefs.fontSizePercent`, NEW tag `MORE_FONT_SIZES`): a
+slider 50% to 200% (`fontSizeSlider`), opened straight from the pick (both screens set `selector = null` *before* `onPick`, so an onPick can
+open the next pop-up). **MY LOOK** (2026-11-21, the user's request; top-screen Settings > LOOK, `Screen.MY_LOOK`, NEW tag `MY_LOOK`;
+`theme/CustomLook.kt`, files under `files/look/`): APP BACKGROUND / COMPANION BACKGROUND (`LookBackground`, a picture scaled by
+`LookPictures` on Android, drawn by `PictureBackdrop` from `AppBackdrop` / `GameBackdrop`; the companion's SETTINGS gets COMPANION
+BACKGROUND once a picture exists), themes from a JSON file (`CustomThemes.parse`: only `name` + `color` needed, the rest worked out;
+ids from 1000, in `themeById` / `availableThemes`; the format is in docs/manual/screen.md) and TTF / OTF fonts (`CustomFont`, worn as
+`AppFont.CUSTOM` + `AppFonts.custom`, sized by the file's OS/2 cap height, `FontFileInfo`). A label's font in a pick-list is a
+`FontChoice` (an `AppFont` or a `CustomFont`). ui-preview: `withMyLook()`, `demoLookPicture()` (drawn in code: never a real photo or a
+third-party font), `settings-my-look*`, `library-my-look*`, `$g-party-my-look`. RETRO's SUMMARY MINT build wears MODERN's own blues (`retroStylePalette`,
+the user's call: the same colours in both views; its list frame band 2 px) and **a THEME moves the whole
+style to its hue** (`themedStylePalette`: `rehued` shifts the style's own colour family, SUMMARY MINT's greens / MODERN's blues, keeping
+saturation and lightness; `themed` then leaves colours already in the theme's hue alone) - before, themes only tinted the greys and
+changed little. Library pieces the launcher drives with its own cursor are `keyDrivenFocus()` (`LocalKeyDriven`): never two cursors.
+A tab tap leaves its first row in `FocusJump`, taken by the next D-pad key (a focus request in touch mode does nothing; `leaveTouchMode`). A pop-up opened by a tap (`OptionOverlay`) leaves its current choice there the same way (LibraryActivity provides an `OverlayStack`
+and takes it). Top-screen Settings: L / R step the group tabs (`GroupStep`, `LocalGroupStep`). A pick-list's current choice is
+`OptionLine(marker)`, a drawn cursor at the row's end (never a typed ◀).
+Money and counts are `groupedNumber` (the language's thousands mark). Logos are `AppLogo` (smooth in MODERN). Settings' footer is
+`AppAboutBar`, docked full width. GAME PATHS (`LibraryPathMode`): the file's name under a game's only where two names match.
+Quick views reorder by a long press and a drag (`QuickViewPills(onReorder)`, `Prefs.libraryViewOrder`, `LibraryPreferences.orderViews`).
+Panels' titles are `PanelHeader` (a solid band filling an `OptionListWindow`'s top out to the frame as drawn and rounded with its fill,
+`LocalWindowInset` = `WindowEdge`; keep it outside a scrolling column, whose clip cuts off what reaches over its top); box grids are
+`BoxHeader` + round placeholders (`MonCell`), after the newer games'. Every tool's title is `ToolHeader` (the app's header band, full width, the
+tool's icon). Greens and yellows are calmed when a theme moves a palette (`rehued`).
 **The menus' look is SUMMARY MINT** (2026-11-12, the user's pick of eight looks tried; `theme/UiStyle.kt`, `UiStyles`,
 `OptionColors.style`): the OPTION pieces below drawn over a `UiStylePalette` - Emerald's summary pages (sampled headless): a teal
 header joined to a mint list window (`OptionTitleWindow(joined)`, `WindowGap`), green section bands (`StyledGroupTitle`), banded
@@ -363,8 +408,11 @@ sets once), sampled headless off each game's menus (nds_dump / menu-shots); pixe
 `SkinColors.button*` = OptionButton's own face (HG's orange, Black's plates); `flatFaces` = one-colour buttons (FR / LG, Emerald, R / S, Platinum: HG's two tones clashed there); `darkToo = false` = a light skin gives way to the app's dark
 windows in DARK MODE (`activeColors`). `CompanionSkin.hud` (`SkinHud`) is HUD > LOOK **GAME** (the new default; GLASS for a game without
 one, `FieldHudLook.resolved`): drawn by WINDOW's paths with the skin's panels (`drawRingedBox`: rings round a see-through fill),
-`hudSelected` its cursor colour. SCREEN > COMPANION LOOK GAME / CLASSIC, under THEME on both screens (`Prefs.gameLook`, `CompanionSkins.enabled`, `gameLookRow`):
-CLASSIC turns them all off, X / Y included. `GameSkinsScreenshotTest` / `GameSkinsHudScreenshotTest` render every one.
+`hudSelected` its cursor colour. LOOK > IN GAME GAME COLORS / MY THEME, under THEME on both screens (`Prefs.gameLook`, `CompanionSkins.enabled`, `inGameRow`; it
+replaced COMPANION LOOK and VIEW IN GAME): MY THEME turns them all off, X / Y included. **GAME COLORS keeps the app's own menus in the
+game's colour** (2026-11-19 / 20, the user's calls: GAME looked like the old windows; FireRed is its HUD's gold, not its name's red):
+`CompanionSkins.gameHue` = `hueOf(skin)`, the most chromatic colour of the skin's HUD, so companion and HUD always agree; the skin's
+window colours and buttons give way, `tint()` / values / the focus ring follow it; the skin's corners and the HUD stay. The 3DS games' smooth skins are untouched. `GameSkinsScreenshotTest` / `GameSkinsHudScreenshotTest` render every one.
 **SETTINGS' group tabs sit outside the card** (both screens, the user's call): `RailedWindow` leaves the window to the `GroupedRows` inside, which draws it round the list alone, the `TabRail` on the backdrop beside it.
 **Buttons are HeartGold's two-tone (2026-11-05, the user's call)**: every companion button is a face in two colours with two soft lines between them (`drawTwoTone`, GbaText.kt): `PlatinumButton` (a thick dark outline, a thin white ring, `fill` over `frame`) and, through `drawLayeredBox(twoTone = true)`, `OptionButton`, the tab chips, SETTINGS' group chips, the DEX's sections, MORE's tiles and the bag's PC and sort; the quick menu's tiles (`quickTileFace`) add a thick outline. The BATTLE tab takes HeartGold's layout by proportion (`ActionButtons`' `ds`: a DS pixel from the pane's width, so a tall pane leaves room rather than stretching the buttons), `BattlePlaceholder`'s four move places behind FIGHT, and its move cards (`hgMovePanel`); RUN stays whole, not cut by the screen's edge as in the game.
 **DARK MODE** (SETTINGS on either screen, SCREEN group; `Prefs.darkMode` OFF default / ON / AUTO = the device's uiMode;
@@ -1268,8 +1316,13 @@ denser try was too small to tap - the user's call), **ordered by how often they'
 what you flip while playing first, set-once setup last, LANGUAGE just above HELP at the very end): companion = (GAME: PLAYS
 AS) / FF / SPEED / GAMEPLAY (WILD ENCOUNTERS, AUTO-RUN, RUN INDOORS, CHEATS) / SCREEN / COMPANION / CONTROLS / APP (LANGUAGE,
 HELP), ending in CLOSE GAME / RESTART GAME (under a `Separator`); the top-screen Settings uses the same `GroupedRows` /
-`SettingRow` (`companion/ui/SettingRows.kt`) with FF / SPEED / SCREEN / LIBRARY / ONLINE / CONTROLS / APP. A new row goes
-where its frequency puts it, in the same place on both screens. Set-once rows of a busy group go on a sub-page whose row stays
+`SettingRow` (`companion/ui/SettingRows.kt`). **Groups since 2026-11-19 (the user's call)**: FF / SPEED, SOUND, GAMEPLAY, GAME RULES,
+GAME SCREEN, ON THE GAME, SCREENS, DS, LOOK, BATTLE, COMPANION, ACHIEVEMENTS, LIBRARY, CONTROLS, CO-OP, APP (MAKEOVER first): each
+screen builds its rows where it always did and `regroupSettings` places them by `SETTINGS_GROUPS` (labels in order; an unlisted
+row stays in its old group, SCREEN's going to GAME SCREEN, ONLINE's to ACHIEVEMENTS). A new row: its label in `SETTINGS_GROUPS`
+where its frequency puts it, the same on both screens. Groups can share a tab (`SETTINGS_TABS`: GAMEPLAY's covers GAME RULES and GAME
+SCREEN, the user's call), each keeping its title in the list; BATTLE and QUALITY OF LIFE are pages (`SETTINGS_PAGES`, the companion's
+`Page.BATTLE` / `Page.QOL`), their rows replaced on HOME by one row that opens them (QUALITY OF LIFE's says how many are on). Set-once rows of a busy group go on a sub-page whose row stays
 in that group: FF / SPEED > SPEED OPTIONS (SCENE SPEEDS - companion only - FF MODE, FF MUSIC; `Page.SPEED` / `Screen.SPEED`) and
 SCREEN > DISPLAY OPTIONS (STATUS BAR, SHADERS, OVERLAY, an upright phone's COMPANION; `Page.DISPLAY` / `Screen.DISPLAY`). SHADERS
 opens from DISPLAY OPTIONS, so BACK returns there (`Page.parent`, SettingsActivity's `goBack`). A row that opens a page of its own (not a pick-list) sets
@@ -2627,7 +2680,7 @@ fit the screen's height and two fit across it (`screenSize`, measured by the lib
 `contentPadding`; the RECENTLY PLAYED row bleeds past it, `bleedHorizontally`), so cards slide off the screen instead of
 being cut at an inner box. D-pad focus (`gbaFocusRing`) is a ring flush inside the element's own outline (pass the frame's real corner radius: the
 library cards 2u, OptionButton 3u - a rounder ring let the frame's corners show), layout untouched - a border +
-padding shrank the focused item - in a bright orange (`AppColors.focusRing`, the user's call; it was cyan).
+padding shrank the focused item - in a bright orange (`AppColors.focusRing`, the user's call; it was cyan), under a THEME the colour opposite its hue (2026-11-19).
 D-pad in the library: focusing a RECENTLY PLAYED tile brings the whole section (its title too) into view, and UP from
 the games' top row (those tiles, else the first list row / grid row 0) goes to the header's leftmost button
 (`toHeader`, a `focusProperties { up }` on those cards - the lazy list's top row had nowhere to go). ui-preview can't

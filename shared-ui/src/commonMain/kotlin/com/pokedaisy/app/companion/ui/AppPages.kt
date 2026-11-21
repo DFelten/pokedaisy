@@ -1,5 +1,6 @@
 package com.pokedaisy.app.companion.ui
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
@@ -251,6 +252,7 @@ fun AppSettingsHome(
             placeholder = tr("SEARCH SETTINGS (e.g. KEY BINDINGS)"),
             leadingIcon = PixelIcons.search,
         )
+        // The search sits close over its list (the user's call: a whole side margin read as two parts).
         Spacer(Modifier.height(m.u * 4))
         RailedWindow(m, Modifier.fillMaxWidth().weight(1f), rail = shown.isNotEmpty()) {
             if (shown.isEmpty()) {
@@ -268,6 +270,9 @@ fun AppSettingsHome(
     }
 }
 
+/** The room between a top-screen page's header, search box, list and footer: its side margin. */
+val PAGE_GAP = 16.dp
+
 /** Application title chrome, shared by global settings on both platforms. */
 @Composable
 fun AppPageTitle(title: String, m: GbaTextMetrics, onBack: (() -> Unit)? = null,
@@ -284,7 +289,7 @@ fun AppPageTitle(title: String, m: GbaTextMetrics, onBack: (() -> Unit)? = null,
     }
     if (home) {
         OptionTitleWindow("POKéDAISY", m,
-            leading = { PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight)) }) {
+            leading = { AppLogo(Modifier.size(m.lineHeight)) }) {
             Spacer(Modifier.width(m.u * 4))
             OptionButton(null, m, onClick = onHelp, icon = LibraryIcons.HelpOutline, contentDescription = tr("Help"))
         }
@@ -302,7 +307,7 @@ object AppLinks {
 
 /**
  * Settings HOME's footer docked to the screen's bottom edge, as wide as Settings: the version and the links on a band a
- * little tinted toward the header, a line along its top.
+ * little tinted toward the header (more there than the page, less than the header), a line along its top.
  */
 @Composable
 fun AppAboutBar(version: String, m: GbaTextMetrics, onOpenUrl: (String) -> Unit) {
@@ -312,8 +317,12 @@ fun AppAboutBar(version: String, m: GbaTextMetrics, onOpenUrl: (String) -> Unit)
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
             .drawBehind {
+                // The header's own shadow (LibraryHeaderBar's), cast up over the page: MODERN's soft one, RETRO its frame line.
+                val px = u.toPx()
+                if (modernView) for (i in 1..4) drawRect(Color(0x101B2A55), androidx.compose.ui.geometry.Offset(0f, -i * px * 0.8f), androidx.compose.ui.geometry.Size(size.width, i * px * 0.8f))
                 drawRect(androidx.compose.ui.graphics.lerp(OptionColors.titleFill, OptionColors.headerFill, if (OptionColors.dark) 0.18f else 0.12f))
-                drawRect(OptionColors.headerLayers.first().first, size = androidx.compose.ui.geometry.Size(size.width, u.toPx()))
+                val line = if (modernView) 1.dp.toPx() else u.toPx()
+                drawRect(if (modernView) OptionColors.divider else OptionColors.headerLayers.first().first, size = androidx.compose.ui.geometry.Size(size.width, line))
             }
             .padding(horizontal = 16.dp + u * 4, vertical = u * 8),
     ) {

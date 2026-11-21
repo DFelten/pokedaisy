@@ -1,5 +1,7 @@
 package com.pokedaisy.app.companion.ui
 
+import com.pokedaisy.app.companion.data.isN3ds
+
 import com.pokedaisy.app.companion.data.LockedMap
 import com.pokedaisy.app.companion.i18n.tr
 import androidx.compose.foundation.Canvas
@@ -11,6 +13,8 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.draw.drawBehind
+import com.pokedaisy.app.companion.ui.theme.DarkMode
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -142,8 +146,19 @@ fun PartyGrid(
     // SWAP SCREENS), where two stretched each slot to twice its width. Decided
     // while measuring, not with BoxWithConstraints: that composes the slots
     // late, and FireRed's icons missed the first frame.
+    // VIEW MODERN: the Switch games' party, a column of pills on a coloured band, the cursor's Pokémon on a stage beside
+    // them when there's room (MODERN_STAGE_ASPECT).
+    // A small screen (a short companion: the RG DS) or a narrow one gets the pills as a grid of two columns, no stage.
+    val modern = modernView && !activeGame.isN3ds
+    val accent = OptionColors.value
+    val paper = OptionColors.listFill
+    val dark = DarkMode.on
+    val smallScreen = LocalShortCompanion.current
+    fun staged(w: Float, h: Float) = !smallScreen && w / h >= MODERN_STAGE_ASPECT
     Layout(
-        modifier = modifier,
+        modifier = if (!modern) modifier else modifier.drawBehind {
+            drawModernPartyWindow(if (staged(size.width, size.height)) MODERN_LIST_SHARE else 1f, accent, paper, dark)
+        },
         content = {
             slots.forEachIndexed { i, mon ->
                 val isSelected = (if (dropOn >= 0) i == dropOn else if (focused >= 0) i == focused else i == selected) && mon != null
@@ -179,18 +194,57 @@ fun PartyGrid(
                         .focusStart(i == selected && mon != null)
                         .onFocusChanged { if (it.hasFocus) focused = i else if (focused == i) focused = -1 },
                 ) {
-                    if (gameStyle != null) {
+                    if (modernView && !activeGame.isN3ds) {
+                        ModernPartySlot(mon, selected = isSelected, onClick = onClick, modifier = Modifier.fillMaxSize(), sound = sound)
+                    } else if (gameStyle != null) {
                         GbaPartySlot(gameStyle, mon, selected = isSelected, onClick = onClick, modifier = Modifier.fillMaxSize(), sound = sound)
                     } else {
                         PartySlot(palette, mon, selected = isSelected, onClick = onClick, modifier = Modifier.fillMaxSize(), sound = sound)
                     }
-                    if (mon != null) badge(mon)
+                    if (mon != null) {
+                        // On a pill, its tags sit inside the pill's right end.
+                        if (modern) Box(Modifier.matchParentSize().modernBadgeRoom()) { badge(mon) } else badge(mon)
+                    }
                 }
+            }
+            if (modern && !smallScreen) {
+                val shown = (if (dropOn >= 0) dropOn else if (focused >= 0) focused else selected).takeIf { slots.getOrNull(it) != null } ?: 0
+                ModernPartyStage(slots.getOrNull(shown))
             }
         },
     ) { measurables, constraints ->
         val w = constraints.maxWidth
         val h = constraints.maxHeight
+        if (modern) {
+            // Six rows down the list; the stage (the last child) right of it when it's wide enough. Without the stage
+            // two columns of three (the user's call: a small screen gets the grid, no picture), one column when a pill
+            // would be too short for its name.
+            val staged = staged(w.toFloat(), h.toFloat())
+            val pad = (minOf(w, h) * 0.03f).toInt()
+            val listW = if (staged) (w * MODERN_LIST_SHARE).toInt() else w
+            val inner = h - 2 * pad
+            val cols = if (!staged && (listW - pad * 2) / 2f >= inner / 3f * MODERN_GRID_MIN_ASPECT) 2 else 1
+            val rows = (PARTY_MAX + cols - 1) / cols
+            // A grid's rows no taller than a pill can use: the spare height is shared out round them.
+            val rowH = if (cols == 1) inner / rows.toFloat() else minOf(inner / rows.toFloat(), (listW - pad * 2) / 2f / 2.9f)
+            val top = pad + (inner - rowH * rows) / 2f
+            fun edge(i: Int) = (top + rowH * i).toInt()
+            val colW = (listW - pad * 2) / cols
+            val slotMeasurables = if (smallScreen) measurables else measurables.dropLast(1)
+            val slotPlaces = slotMeasurables.mapIndexed { i, mm ->
+                val r = if (cols == 1) i else i / cols
+                mm.measure(Constraints.fixed(colW, edge(r + 1) - edge(r)))
+            }
+            val stage = if (staged && !smallScreen) measurables.last().measure(Constraints.fixed(w - listW, h)) else null
+            return@Layout layout(w, h) {
+                slotPlaces.forEachIndexed { i, p ->
+                    val r = if (cols == 1) i else i / cols
+                    val c = if (cols == 1) 0 else i % cols
+                    p.place(pad / 2 + c * colW, edge(r))
+                }
+                stage?.place(listW, 0)
+            }
+        }
         val cols = if (w.toFloat() / h > WIDE_PARTY_ASPECT) 3 else 2
         val rows = (measurables.size + cols - 1) / cols
         // Whole pixels, the remainder spread over the first columns / rows like weights do.
@@ -221,6 +275,9 @@ fun PartyGrid(
  * and the Thor's 1920x1080 top screen 2.2+.
  */
 private const val WIDE_PARTY_ASPECT = 2.0f
+
+/** VIEW MODERN's grid (no stage): a column must be at least this many times as wide as a row is tall for two columns. */
+private const val MODERN_GRID_MIN_ASPECT = 2.0f
 
 /** A [PartyGrid] slot that can't be picked: as faint as a disabled battle button. */
 private const val DIMMED_SLOT_ALPHA = 0.45f

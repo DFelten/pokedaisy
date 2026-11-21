@@ -44,20 +44,34 @@ fun Color.themed(hue: Float, wash: Float): Color {
 
 /**
  * A palette colour moved to [to]'s hue, its saturation and lightness kept, when its own hue is in [from] (a menu style's
- * family: the retro palette's blues); greys and colours outside it (the foe's reds, the cursor's pink) stay. How a THEME
- * recolours a whole style rather than only its greys.
+ * family: SUMMARY MINT's greens and teals, MODERN's blues); greys and colours outside it (the foe's reds, the cursor's
+ * pink) stay. How a THEME, and RETRO's blue default, recolour a whole style rather than only its greys.
  */
 fun Color.rehued(from: ClosedFloatingPointRange<Float>, to: Float, calmed: Boolean = true): Color {
     if (alpha == 0f) return this
     val (h, s, l) = hsl(red, green, blue)
     if (s < 0.04f || h !in from) return this
-    // Greens and yellows read far brighter than a blue at the same saturation and lightness: calmer there, the strong
-    // colours a little darker too.
+    // Greens and yellows read far brighter than a blue at the same saturation and lightness (MINT and FOREST glared in
+    // MODERN): calmer there, the strong colours a little darker too. A game's own colour ([calmed] false) stays as it is.
     val calm = if (calmed && to in 45f..175f) 0.6f else 1f
     val s2 = if (s > 0.35f) s * calm else s
     val l2 = if (calm < 1f && s > 0.35f && l in 0.45f..0.9f) l - 0.06f else l
     val (r, g, b) = rgb(to, s2, l2)
     return Color(r, g, b, alpha)
+}
+
+/** [rehued] for callers that have their own `rehued` in scope. */
+object ThemeHue {
+    fun Color.rehue(from: ClosedFloatingPointRange<Float>, to: Float): Color = rehued(from, to)
+}
+
+/** [c]'s hue, 0-360. */
+fun hueOf(c: Color): Float = hsl(c.red, c.green, c.blue).first
+
+/** A colour from its hue (0-360), saturation and lightness (0-1). */
+fun hslColor(h: Float, s: Float, l: Float): Color {
+    val (r, g, b) = rgb(((h % 360f) + 360f) % 360f, s, l)
+    return Color(r, g, b)
 }
 
 /** A theme's backdrop colour at night (DaisyBackdrop's blobs): its hue kept, as a dim glow on the dark page. */

@@ -73,13 +73,19 @@ The gear opens the companion's SETTINGS, laid out like FireRed's OPTION screen. 
 
 The first two rows change how this list looks, on both screens: `DESCRIPTIONS` hides the grey line under each setting, and `GROUP TABS` hides the group buttons beside the list, for a wider one. Both are `SHOWN` until you hide them.
 
-The options come in groups, the ones you change while playing first:
+The options come in groups, the ones you change while playing first. With `GROUP TABS` on, some groups share a tab: `GAMEPLAY`'s covers `GAME SCREEN` too, `SCREENS`' covers `ON THE GAME` and `DS`, `COMPANION`'s covers `ACHIEVEMENTS`.
 
 - **MAKEOVER**: `PLAYER LOOK`, `RIVAL LOOK`, `TEXT LOOK`, `FOLLOWER`, `FLY ON`, `RIDE ON` and `DAY AND NIGHT`, fresh looks for your game. It sits at the top in a blue frame of its own, and only shows in a game it works in. See [MAKEOVER](#makeover) below.
 - **FF / SPEED**: `FF`, `FF SPEED`, `GAME SPEED`, `REWIND` and `SPEED OPTIONS` (a page with `SCENE SPEEDS`, `FF MODE` and `FF MUSIC`). See [Fast-forward](fast-forward.md).
+- **SOUND**: `GAME VOLUME`, `MUTE GAME` and `AUDIO EFFECTS`. See [Fast-forward](fast-forward.md#game-volume-and-mute-sound).
 - **GAMEPLAY**: `QUALITY OF LIFE`, `FLY STYLE`, `FLIGHT AREA`, `NUZLOCKE` and `CHEATS`. `QUALITY OF LIFE` opens a page of the helpers that save you time, its row saying how many you've changed from the game's own way: `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON`. See [Controls](controls.md), [Party](party.md#trade-evolutions), [Bag](bag.md), [Nuzlocke](nuzlocke.md) and [Cheats](cheats.md).
-- **SCREEN**: `ASPECT`, `HUD`, `DISPLAY OPTIONS` (a page with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION`), `THEME`, `DARK MODE`, `FONT`, `FPS / CPU` and, depending on your device, `HIDE BATTLE MENU`, `BATTLE BUTTONS`, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS` or `SINGLE SCREEN`. See [Screen and display](screen.md).
-- **COMPANION**: `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `ONE-TAP MOVES`, `LAST BALL`, `BATTLE STYLE`, `FOE IVS`, `BATTLE FOCUS`, `TAB BAR`, `CLICK SOUND`, `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS`, `PROGRESS POPUPS`, `ITEM POPUPS` and `TWEAKS`.
+- **GAME SCREEN**: `ASPECT`, `ZOOM`, `AUTO ZOOM IN`, `LOOK AROUND`, `DISPLAY OPTIONS` (a page with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION`) and `FPS / CPU`. See [Screen and display](screen.md).
+- **ON THE GAME**: `HUD` and, depending on your device, `BATTLE BUTTONS` or `HIDE BATTLE MENU`. See [HUD](hud.md) and [Battle](battle.md).
+- **SCREENS**: depending on your device, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS`, `SINGLE SCREEN`, `FOLD LAYOUT` and `TABLETOP CONTROLS`. See [Devices](devices.md).
+- **DS**: while a DS game runs, `DS LAYOUT` or `DS TOUCH SCREEN`, `DS RESOLUTION`, `DS CPU BOOST` and `DS CORE`. See [Devices](devices.md) and [Screen and display](screen.md).
+- **LOOK**: `VIEW`, `THEME`, `IN GAME`, `DARK MODE`, `FONT TYPE`, `FONT SIZE` and, once you've added a picture under the top screen's `MY LOOK`, `COMPANION BACKGROUND`. See [Screen and display](screen.md).
+- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
+- **ACHIEVEMENTS**: `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS` and `PROGRESS POPUPS`. See [Achievements](achievements.md).
 - **CONTROLS**: `GAME BUTTONS`, `HOTKEYS`, `QUICK MENU` and `TOUCH CONTROLS`. See [Controls](controls.md).
 - **APP**: `TIPS`, `LANGUAGE` and `HELP` (this manual).
 

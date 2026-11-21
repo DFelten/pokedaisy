@@ -245,7 +245,7 @@ fun FeatureTipCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // The helper: the PokeDaisy flower, two lines and a bit tall.
-            PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight * 2.4f))
+            AppLogo(Modifier.size(m.lineHeight * 2.4f))
             Spacer(Modifier.width(u * 8))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

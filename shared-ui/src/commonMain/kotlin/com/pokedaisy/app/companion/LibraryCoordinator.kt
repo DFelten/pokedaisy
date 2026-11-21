@@ -12,6 +12,8 @@ class LibraryActions(
     val add: () -> Unit, val refresh: () -> Unit, val search: () -> Unit, val sort: () -> Unit,
     val toggleGrid: () -> Unit, val help: () -> Unit, val query: (String) -> Unit,
     val view: (LibraryView) -> Unit, val section: (LibrarySection) -> Unit,
+    /** The quick views dragged into a new order (a long press on a pill, then a drag). */
+    val reorderViews: (List<LibraryView>) -> Unit = {},
 )
 
 /** Library navigation and preference actions. A native Settings launcher keeps its own screen lifecycle;
@@ -70,5 +72,9 @@ class LibraryCoordinator(
     fun actions(add: () -> Unit, refresh: () -> Unit) = LibraryActions(
         add = add, refresh = refresh, search = ::openSearch, sort = ::openSort,
         toggleGrid = ::toggleGrid, help = ::help, query = ::search,
-        view = ::selectView, section = ::selectSection)
+        view = ::selectView, section = ::selectSection, reorderViews = ::reorderViews)
+    fun reorderViews(order: List<LibraryView>) {
+        preferences().setViewOrder(order)
+        changed(Change.VIEW)
+    }
 }

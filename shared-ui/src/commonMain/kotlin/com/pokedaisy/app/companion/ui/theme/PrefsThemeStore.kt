@@ -7,5 +7,12 @@ class PrefsThemeStore(prefs: Prefs) : ThemeStore {
     override var appTheme by prefs::appTheme
     override var themeBeforeSeasonal by prefs::themeBeforeSeasonal
     override var appFont by prefs::appFont
+    override var appFontRetro by prefs::appFontRetro
+    override var fontSize by prefs::fontSize
+    override var fontSizePercent by prefs::fontSizePercent
+    override var customFont by prefs::customFont
+    override var appBackground by prefs::appBackground
+    override var companionBackground by prefs::companionBackground
+    override var appView by prefs::appView
     override var darkMode by prefs::darkMode
 }

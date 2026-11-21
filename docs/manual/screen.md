@@ -3,12 +3,12 @@ title: Screen, aspect and shaders
 summary: Change how the game sits on the top screen and how it looks, from widescreen EXPAND to LCD and CRT filters, frames, themes and dark mode.
 section: player
 order: 3
-keywords: [ds resolution, internal resolution, upscaling, hd, sharper 3d, jagged, lag, slow device, input delay, light companion, widescreen, fullscreen, 16:9, 3:2, ratio, bezel, border, frame, crt, lcd, scanlines, xbrz, scalefx, upscale, unlit, backlight, pixel transparency, night, appearance, framerate, fps, performance, graphics, look, theme, themes, colour scheme, color scheme, skin, holiday, seasonal, christmas, halloween, easter, lunar new year, valentine, cherry, rainbow]
+keywords: [ds resolution, internal resolution, upscaling, hd, sharper 3d, jagged, lag, slow device, input delay, light companion, widescreen, fullscreen, 16:9, 3:2, ratio, bezel, border, frame, crt, lcd, scanlines, xbrz, scalefx, upscale, unlit, backlight, pixel transparency, night, appearance, framerate, fps, performance, graphics, look, theme, themes, colour scheme, color scheme, skin, holiday, seasonal, christmas, halloween, easter, lunar new year, valentine, cherry, rainbow, custom theme, my look, wallpaper, background picture, photo, own font, ttf, otf, text size, bigger text]
 ---
 
 The top screen is wider than a GBA, so there's a choice to make about the space around the game. You can keep the GBA's own shape, stretch it, or let PokeDaisy draw more of the world into the gaps. On top of that you can run the picture through a filter, put a frame around it and give the app's windows a theme or a dark look.
 
-Everything on this page is in the `SCREEN` group of Settings, on both screens: the top screen's Settings (from the library) and the companion's `SETTINGS` tab. `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION` are on its `DISPLAY OPTIONS` page. A change made on the companion shows on the game straight away.
+Everything on this page is on both screens: the top screen's Settings (from the library) and the companion's `SETTINGS` tab. `ASPECT`, the zoom and `FPS / CPU` are in the `GAME SCREEN` group, with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION` on its `DISPLAY OPTIONS` page. The DS games' settings are in the `DS` group, and `VIEW`, `THEME`, `IN GAME`, `DARK MODE`, `FONT TYPE` and `FONT SIZE` in the `LOOK` group (with `MY LOOK` on the top screen and `COMPANION BACKGROUND` on the companion). A change made on the companion shows on the game straight away.
 
 ## Aspect: how the game fills the screen
 
@@ -49,9 +49,9 @@ In a game that doesn't support it yet, `EXPAND` shows as `ORIGINAL` and the comp
 
 ### Zoom and looking around
 
-With `EXPAND` on, the `ZOOM` hotkey steps the view out so you see further around you. It's R3 (clicking the right stick) by default, or `C` on a keyboard; you can move it to any button under `HOTKEYS` (see [Controls](controls.md)). No right stick? Pick the zoom from a list in the companion's Settings: `ZOOM`, in the `SCREEN` group, while a game is running. Battles, conversations and menus ease back in by themselves, so text is never tiny. Each game keeps the zoom you picked: open it again and, once you're back on the field, the view eases out to it. If you'd rather keep your zoom through conversations and signs, turn `AUTO ZOOM IN` off in Settings; battles and the game's menu screens, like the party, the bag or the Pokédex, still ease in.
+With `EXPAND` on, the `ZOOM` hotkey steps the view out so you see further around you. It's R3 (clicking the right stick) by default, or `C` on a keyboard; you can move it to any button under `HOTKEYS` (see [Controls](controls.md)). No right stick? Pick the zoom from a list in the companion's Settings: `ZOOM`, in the `GAME SCREEN` group, while a game is running. Battles, conversations and menus ease back in by themselves, so text is never tiny. Each game keeps the zoom you picked: open it again and, once you're back on the field, the view eases out to it. If you'd rather keep your zoom through conversations and signs, turn `AUTO ZOOM IN` off in Settings; battles and the game's menu screens, like the party, the bag or the Pokédex, still ease in.
 
-The **right stick** looks around (turn off `LOOK AROUND` in the `SCREEN` group if you'd rather it didn't). Push it and the view moves; let go and it stays put until you walk, then glides back to you. Hold it while you walk and the camera looks ahead in that direction, keeping your character on screen.
+The **right stick** looks around (turn off `LOOK AROUND` in the `GAME SCREEN` group if you'd rather it didn't). Push it and the view moves; let go and it stays put until you walk, then glides back to you. Hold it while you walk and the camera looks ahead in that direction, keeping your character on screen.
 
 ## DS core: DS games on weaker devices
 
@@ -189,6 +189,21 @@ Imported overlays are listed under `IMPORTED`. Tap one to use it, or use `REMOVE
 
 Overlays are switched off on a phone held upright, where the game sits across the top. With `STRETCH`, the game fills the overlay's screen area.
 
+## View: retro or modern
+
+`VIEW` changes the look of the whole app on both screens at once: the library, `TOOLS`, Settings and the companion while you play. A tap on the row switches between the two:
+
+- `RETRO` (the default): the pixel look, with pixel corners, pixel icons and pixel letters.
+- `MODERN`: smooth and round, like the newer games. White cards with soft shadows, a blue bar along the top, rounded buttons and tags, and drawn icons in coloured tiles.
+
+`MODERN` also puts on its own rounded letters (`MODERN` in `FONT TYPE`). Going back to `RETRO` gives you the font you had before. You can still pick any `FONT TYPE` in either view.
+
+`VIEW`, `THEME`, `DARK MODE`, `FONT TYPE` and `FONT SIZE` work the same everywhere, on both screens, in a game or not, and you can change each one from either screen. The only thing that changes while you play is the colors, and `IN GAME` decides that (see [In game: the game's colors](#in-game-the-games-colors)).
+
+The first time you open the library after the update, a window shows both views side by side. Tap one to put it on, or `KEEP MY CURRENT LOOK` to stay as you are.
+
+The game's own art stays as the game draws it in both views: the region map, the trainer card and the Pokémon icons. In `MODERN`, the party, the bag and the type tags are drawn in the modern style instead of the game's: the party as the newer games set it out, a column of rounded bars beside a large picture of the Pokémon under the cursor.
+
 ## Dark mode
 
 `DARK MODE` turns the app's white and grey windows into dark slate ones with light text, on both screens at once. Nice at night or in a dim room. Each tap on the row moves to the next choice, so you see each one right away:
@@ -201,24 +216,30 @@ The game's own art stays as it is: party slots, the map, the trainer card and ba
 
 ## Font
 
-`FONT` sets the letters the app is written in, on both screens at once. Pick it in the top screen's Settings or in the companion's SETTINGS, under SCREEN:
+`FONT TYPE` sets the letters the app is written in, on both screens at once. Pick it in the top screen's Settings or in the companion's SETTINGS, under `LOOK`; the list shows each one in its own letters:
 
 - `PIXEL SMALL` (the default): small, crisp pixel letters, a little shorter and narrower than `PIXEL`, so more fits on a line. A Game Boy game shows its own letters while it runs.
 - `PIXEL`: the taller pixel letters the app used before.
+- `MODERN`: rounded letters that go with the `MODERN` view (it puts them on by itself).
 - `SMOOTH`: soft, rounded letters that are easy to read on any screen.
 - `SMOOTH BOLD`: the same letters, heavier, closer to the games' thick menu text.
 - `SYSTEM`: your device's own font.
+- Any font you added under `MY LOOK`, by its file's name (see [Your own fonts](#your-own-fonts)).
 
 The game's own art keeps its pixel letters: type tags, party slots and the trainer card stay as the game draws them.
 
+`FONT SIZE`, right under it, makes the app's text a size smaller or bigger: `SMALL`, `MEDIUM` (the default) or `LARGE`. The spacing around the text stays the same, so `LARGE` fits less on a screen. The pixel letters stay sharp at every size.
+
+For a size in between, or bigger or smaller still, pick `MORE SIZES`: a slider opens, from 50% to 200% of `MEDIUM` in steps of 5%, and the text changes size as you move it. The row then shows the size you set, like `120%`. The pixel letters grow in whole pixels, so a few steps in a row can look the same with them; the smooth fonts change with every step.
+
 ## Theme
 
-`THEME` gives the whole app a colour scheme: the library, Settings, setup and the companion while you play, on both screens at once. It works like `DARK MODE`: the windows take the theme's colour, the values in the lists take its accent, and the backdrop behind them gets its own colours. You can pick it in the top screen's Settings or in the companion's SETTINGS, under SCREEN, and use it with `DARK MODE` on or off.
+`THEME` gives the whole app a colour scheme: the library, Settings, setup and the companion while you play, on both screens at once. It works like `DARK MODE`: the windows take the theme's colour, the values in the lists take its accent, and the backdrop behind them gets its own colours. You can pick it in the top screen's Settings or in the companion's SETTINGS, under `LOOK`, and use it with `DARK MODE` on or off.
 
 - `POKéDAISY` (the default): the classic white and grey windows over the website's light page with soft blobs and floating logos.
-- `CHERRY`, `RAINBOW`, `OCEAN`, `MINT`, `LAVENDER`, `SUNSET`, `FOREST` and `LEMON`: always there. `CHERRY` floats blossoms over the library, and `RAINBOW` keeps the usual windows but fills the tabs and buttons with the colours of the rainbow.
+- `CHERRY`, `RAINBOW`, `OCEAN`, `MINT`, `LAVENDER`, `SUNSET`, `FOREST` and `LEMON`: always there. The list shows each theme's colours beside its name. `CHERRY` floats blossoms over the library, and `RAINBOW` keeps the usual windows but fills the tabs and buttons with the colours of the rainbow.
 
-The game's own art stays as it is: party slots, the map, the trainer card and type colours keep the game's look. Behind them, the game's backdrop takes a soft wash of the theme's colour.
+The game's own art stays as it is: party slots, the map, the trainer card and type colours keep the game's look. Behind them, the game's backdrop takes a soft wash of the theme's colour. While you play with `IN GAME` on `GAME COLORS` (the default), the theme stays out of the game's screens and `THEME` is greyed out in the companion; see [In game: the game's colors](#in-game-the-games-colors).
 
 ![The library in the CHERRY theme: pink windows over a light pink backdrop with blossoms](shots/library-theme-cherry.png)
 
@@ -234,30 +255,66 @@ The dates follow your device's calendar. If two holidays overlap (`LUNAR NEW YEA
 
 ![The window for a holiday theme: its picture, its name, the last day it's available, NO THANKS and TRY IT](shots/library-seasonal-popup.png)
 
+## My look: your own backgrounds, themes and fonts
+
+`MY LOOK`, in the top screen's Settings under `LOOK`, is where you add your own touches: a picture behind the app and the companion, a theme you made, a font you like. Each one shows on both screens as soon as you add it, and stays until you remove it here.
+
+### Backgrounds
+
+`APP BACKGROUND` puts a picture behind the library and the top screen's Settings. `COMPANION BACKGROUND` puts one behind the companion's tabs, in every game, in place of the game's own backdrop. For each, `CHOOSE A PICTURE` opens your device's file picker; any PNG, JPEG or WebP works, and the app keeps a copy sized for your screen, so you can delete or move the original. The picture fills the screen and is cropped to fit.
+
+The list also has `DEFAULT` (the look's own backdrop), `MY PICTURE` (back to your picture after trying `DEFAULT`) and `REMOVE PICTURE`. The companion's can use `SAME AS APP`, so one picture covers both. While you play, the companion's `SETTINGS` has `COMPANION BACKGROUND` too, under `LOOK`, once you've added a picture.
+
+The windows stay as they are over your picture, so the text keeps reading well. In `DARK MODE` the picture is dimmed like the game's backdrops.
+
+### Your own themes
+
+A theme is a small text file ending in `.json`. `ADD A THEME` opens the file picker; the theme goes on at once and joins the `THEME` list with its colours beside its name. `REMOVE A THEME` takes one off the list.
+
+The smallest theme is a name and one colour: `{ "name": "MIDNIGHT", "color": "#3D6FE0" }`. The app works out the rest from that colour: the windows' tint, the values, the backdrop and its glows. Anything else you write in the file wins over what it would work out:
+
+| Field | What it sets | If you leave it out |
+| --- | --- | --- |
+| `name` | The theme's name in the `THEME` list (20 letters at most). | Needed. |
+| `color` | The theme's colour, as `#RRGGBB`: the values in the lists, and the hue the windows take. | Needed. |
+| `tint` | How much the windows take the colour, from `0` (plain grey) to `1`. | `0.5` |
+| `darkColor` | The values' colour in `DARK MODE`. | A lighter `color`. |
+| `page` | The colour of the backdrop behind the library and Settings. | A very light `color`. |
+| `darkPage` | `true` for a dark backdrop with white text, even in light mode. | `false` |
+| `glows` | Two to five colours that drift over the backdrop, like `["#FFC2D4", "#C4DAFF"]`. | Three shades of `color`. |
+| `gameTint` | A colour laid over the game's backdrop in the companion, or `null` for none. | A light `color`. |
+
+Each field goes between the braces, with a comma between two fields: `{ "name": "NIGHT SKY", "color": "#3D6FE0", "darkPage": true }`. If something in the file isn't right, the app says what (a missing name, a colour it can't read) and keeps your current theme. Themes are plain files, so you can share them with friends.
+
+### Your own fonts
+
+`ADD A FONT` takes a TrueType or OpenType file (`.ttf` or `.otf`, up to 10 MB). The font goes on at once and joins the `FONT TYPE` list under its file's name, drawn in its own letters. The app sizes it so its capital letters are as tall as the other fonts', so the screens still fit. Letters the font doesn't have (Japanese or Korean, say) come from the pixel font. `REMOVE A FONT` takes one off; if you were using it, the app goes back to `PIXEL SMALL`.
+
 ## FPS / CPU
 
 `FPS / CPU` shows a small readout in the game's top-left corner: how many frames the game ran in the last second and how much of the CPU PokeDaisy is using. It should read about 60 at normal speed.
 
 Tap the readout to open a longer panel with frame times, late frames, the screen's refresh and pacing, audio underruns, battery temperature, thermal state and memory. It's useful when a game feels choppy; see [Troubleshooting](troubleshooting.md#the-game-feels-choppy-or-the-device-runs-hot).
 
-## Game look
+## In game: the game's colors
 
-`COMPANION LOOK`, right under `THEME`, picks how the companion and the HUD look in a game. On `GAME` (the default), they take on the style of the game you're playing, from the colors of its own menus:
+`IN GAME`, right under `THEME`, picks the colors while you play. On `GAME COLORS` (the default), the companion keeps your `VIEW` and font but wears the game's colors in place of your theme, the same colors as the game's own menus and the HUD over the game, and the HUD takes on the game's own windows:
 
 | Game | Companion | HUD |
 | --- | --- | --- |
-| HeartGold, SoulSilver | Grey blue windows with a dark line, red values, orange buttons | The green menu window, with a red cursor |
-| Platinum | White windows in a brown wooden frame, cream lists | Dark slate panels with a silver line |
-| Black, White | Navy windows with a cyan rim, charcoal lists and buttons | Navy panels with a cyan rim and a magenta cursor |
-| Black 2, White 2 | Violet windows with a white rim, teal values | Violet panels with a pink cursor |
-| FireRed, LeafGreen | The bag's cream list in its gold frame | The bag's window |
-| Emerald | The bag's cream list in its steel blue frame | The bag's window |
-| Ruby, Sapphire | Emerald's frame with their bag's warmer peach list | The bag's window |
-| X, Y | Smooth green windows and a rounded font | Their own buttons and panels |
+| FireRed, LeafGreen | Gold | The bag's window |
+| Emerald | The yellow of its bag's band | The bag's window |
+| Ruby, Sapphire | Orange | The bag's window |
+| HeartGold, SoulSilver | Green | The green menu window, with a red cursor |
+| Platinum | Blue | Dark slate panels with a silver line |
+| Black, White | Teal | Navy panels with a cyan rim and a magenta cursor |
+| Black 2, White 2 | Violet | Violet panels with a pink cursor |
+| Unbound | Its own purple and gold | The app's own |
+| X, Y | Their own smooth green windows and rounded font | Their own buttons and panels |
 
-Hacks that run on one of these games wear its look. Other games keep the app's own look. Your theme and `DARK MODE` still apply around them: in dark mode the light looks give way to the app's dark windows, while Black and White's darker looks stay as they are.
+Hacks that run on one of these games wear its colors. Other games get the app's own blue, never your theme: on `GAME COLORS` the theme stays out of every game's screens, so `THEME` is greyed out in the companion while you play. Your theme is still there for the library and the top screen's Settings. `DARK MODE` still turns the windows dark.
 
-Pick `CLASSIC` to keep the app's own look in every game, X and Y included. The HUD's own `LOOK` setting picks `GAME` for the game's style or one of the app's looks; see [HUD](hud.md).
+Pick `MY THEME` to keep your theme while you play too, in every game, X and Y included: the companion then looks just like the library. The HUD's own `LOOK` setting picks `GAME` for the game's style or one of the app's looks; see [HUD](hud.md).
 
 ## Light companion for slow devices
 

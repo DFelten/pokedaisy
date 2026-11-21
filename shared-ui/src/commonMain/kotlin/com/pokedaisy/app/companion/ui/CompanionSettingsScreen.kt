@@ -63,7 +63,7 @@ val STATUS_BAR_PLACES = listOf(tk("OFF"), tk("GAME"), tk("COMPANION"))
 
 fun statusBarLabel(on: Boolean, onCompanion: Boolean) = STATUS_BAR_PLACES[if (!on) 0 else if (onCompanion) 2 else 1]
 
-internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), QOL(tk("QUALITY OF LIFE")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
+internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), BATTLE(tk("BATTLE")), QOL(tk("QUALITY OF LIFE")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
 
 /** Where BACK from a page goes: SHADERS opens from DISPLAY OPTIONS, the rest from HOME. */
 internal val Page.parent: Page get() = when (this) {
@@ -171,7 +171,8 @@ fun CompanionSettingsScreen(
                         }
                     }
                 }
-                WindowGap(m)
+                // Room under the title in every style (the user's call: the tabs and the list sat right on it).
+                Spacer(Modifier.height(m.u * 4))
             }
             // While a row waits for keys: what to press (the game's screen asks for them too), CLEAR / CANCEL for a touch.
             if (capture != null && capturing != null && (page == Page.BUTTONS || page == Page.HOTKEYS)) {
@@ -205,9 +206,9 @@ fun CompanionSettingsScreen(
                             opensPage = true, labelBadge = settings.gamePickBadge) { onPlaysAs() })
                     }.orEmpty() + homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
                         { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
-                        // QUALITY OF LIFE's page where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
-                        .let { if (settings.shownRows == null) withQolPage(it) { page = Page.QOL } else it }
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
+                        // The groups and pages where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
+                        .let { rows -> if (settings.shownRows == null) regroupSettings(rows) { name -> page = if (name == BATTLE_PAGE) Page.BATTLE else Page.QOL } else rows }
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> COMPANION_TABS.map { id ->
                         val shown = id in settings.companionTabs
@@ -317,6 +318,12 @@ fun CompanionSettingsScreen(
                         feel = settings::feelVibration,
                         buttons = settings.touchButtons, xyBadge = settings.touchXyBadge,
                     ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
+                    // BATTLE and QUALITY OF LIFE: HOME's own rows, on a page of their own (SETTINGS_PAGES).
+                    Page.BATTLE, Page.QOL -> settingsPageRows(
+                        homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
+                            { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } }),
+                        if (page == Page.BATTLE) BATTLE_PAGE else QOL_PAGE,
+                    ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.SPEED -> speedRows(settings, { tick++ }, { selector = it }) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.OVERLAYS -> overlayChoiceRows(settings.overlayChoices, settings.overlay, removingOverlays,
                         pick = { settings.setOverlay(it); tick++ }, remove = { id, label ->
@@ -333,9 +340,6 @@ fun CompanionSettingsScreen(
                         }
                     Page.DISPLAY -> displayRows(settings, { tick++ }, { page = it }, { selector = it })
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
-                    Page.QOL -> qolRows(homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
-                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })) +
-                        SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.CHEATS -> cheatRows(settings, changed = { tick++ }, removing = removingCheats,
                         onAdd = { page = Page.CHEAT_ADD },
                         onImport = { settings.importCheats { result -> cheatNotice = cheatImportNotice(result); tick++ } },
@@ -475,7 +479,7 @@ fun CompanionSettingsScreen(
         selector?.takeIf { it.tiles }?.let { sel ->
             PlayerLookPicker(
                 sel.title, settings?.playerLookOwn, sel.options.drop(1), sel.current.takeIf { it != sel.options.first() }, m,
-                onPick = { sel.onPick(it ?: sel.options.first()); selector = null; tick++ },
+                onPick = { selector = null; sel.onPick(it ?: sel.options.first()); tick++ },
                 onDismiss = { selector = null },
                 label = { settings?.playerLookLabel(it) ?: it },
             )
@@ -483,7 +487,7 @@ fun CompanionSettingsScreen(
         selector?.takeIf { it.dsLayouts }?.let { sel ->
             DsLayoutPicker(
                 com.pokedaisy.app.companion.DsLayout.entries.firstOrNull { it.label == sel.current } ?: com.pokedaisy.app.companion.DsLayout.ONE_SCREEN, m,
-                onPick = { sel.onPick(it.label); selector = null; tick++ },
+                onPick = { selector = null; sel.onPick(it.label); tick++ },
                 onDismiss = { selector = null },
             )
         }
@@ -495,9 +499,9 @@ fun CompanionSettingsScreen(
         selector?.takeIf { !it.tiles && !it.dsLayouts && it.slider == null }?.let { sel ->
             OptionSelector(
                 sel.title, sel.options, sel.current, { it }, m,
-                onPick = { sel.onPick(it); selector = null; tick++ },
+                onPick = { selector = null; sel.onPick(it); tick++ },
                 onDismiss = { selector = null },
-                badge = sel.badge, note = sel.note,
+                badge = sel.badge, note = sel.note, labelFont = sel.font, labelIcon = sel.icon,
             )
         }
         overlayNotice?.let { (title, message) ->
@@ -572,6 +576,9 @@ private class Selector(
     val dsLayouts: Boolean = false,
     /** A slider setting's pop-up ([OptionSliderPopup]) instead of a list: its value and slider, read fresh on each change. */
     val slider: (() -> Pair<String, SettingSlider>)? = null,
+    /** An option's label in its own font (FONT TYPE), and a picture before it (THEME's colours). */
+    val font: (String) -> com.pokedaisy.app.companion.ui.theme.FontChoice? = { null },
+    val icon: (String) -> (@androidx.compose.runtime.Composable () -> Unit)? = { null },
     val onPick: (String) -> Unit,
 )
 
@@ -595,38 +602,6 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
         if (r.header) skipping = r.requiresGameSupport
         !skipping && r.setting !in blockedSettings
     }
-}
-
-/**
- * GAMEPLAY's helpers (the user's call, 2026-11-22: a page of their own, not a long run of switches on HOME), in this
- * order: their rows are built where they always were ([homeRows]) and moved here.
- */
-private val QOL_ROWS = listOf(
-    "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
-)
-
-/** A QOL row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
-private val QOL_UNUSED = mapOf(
-    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
-)
-
-/** QUALITY OF LIFE's rows, out of HOME's, in [QOL_ROWS]' order. */
-private fun qolRows(rows: List<SettingRow>): List<SettingRow> =
-    rows.filter { !it.header && it.label in QOL_ROWS }.sortedBy { QOL_ROWS.indexOf(it.label) }
-
-/** HOME with the QOL rows taken out and one QUALITY OF LIFE row where the first was ("3 ON"), opening their page. */
-private fun withQolPage(rows: List<SettingRow>, open: () -> Unit): List<SettingRow> {
-    val members = qolRows(rows)
-    if (members.isEmpty()) return rows
-    val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
-    val opener = SettingRow(
-        tk("QUALITY OF LIFE"), tr("{0} ON", on), opensPage = true, subtitle = "Helpers that save you time",
-        labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },
-    ) { open() }
-    val at = rows.indexOfFirst { !it.header && it.label in QOL_ROWS }
-    return rows.filterIndexed { i, r -> i < at || r.header || r.label !in QOL_ROWS }
-        .let { kept -> kept.take(at) + opener + kept.drop(at) }
 }
 
 /** [rows] cut to the settings in [shown], with the titles of the groups that still have one. */
@@ -1065,20 +1040,24 @@ private fun homeRows(
             tk("SINGLE SCREEN"), onOff(s.singleScreen), subtitle = "Second screen free; companion over the game",
             labelBadge = NewFeatures.badge(NewFeatures.SINGLE_SCREEN),
         ) { s.setSingleScreen(!s.singleScreen); changed() }.takeIf { s.hasSecondScreen },
+        // The whole app's look, RETRO or MODERN (its font with it), both screens at once.
+        viewRow(changed),
         // The app's and the companion's colours (the limited-time themes only in their dates): both screens at once.
         com.pokedaisy.app.companion.ui.theme.availableThemes().let { themes ->
-            val now = com.pokedaisy.app.companion.ui.theme.AppColors.theme
+            val now = com.pokedaisy.app.companion.ui.theme.AppColors.chosen
             SettingRow(
-                tk("THEME"), now.label, setting = SharedSetting.THEME, labelBadge = NewFeatures.badge(NewFeatures.THEMES),
+                tk("THEME"), now.label, setting = SharedSetting.THEME, labelBadge = NewFeatures.badge(NewFeatures.THEMES), subtitle = themeSubtitle(),
+                enabled = !themeInGameOff(),
             ) {
                 select(Selector(
                     tk("THEME"), themes.map { it.label }, now.label,
                     badge = { l -> tk("LIMITED").takeIf { themes.firstOrNull { it.label == l }?.season != null } },
+                    icon = ::themeSwatch,
                 ) { l -> themes.firstOrNull { it.label == l }?.let { s.setAppTheme(it.id); com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(it) } })
             }
         },
-        // The game's own look on the companion and the HUD where it has one (CompanionSkins), or the app's classic one.
-        gameLookRow(changed),
+        // The game's colours on the companion and its style on the HUD while it runs, or the theme (CompanionSkins).
+        inGameRow(changed),
         // OFF / ON / AUTO (the device's), cycled on a tap so each look shows at once: both screens switch together.
         SettingRow(tk("DARK MODE"), DarkMode.setting.label, setting = SharedSetting.DARK_MODE) {
             val pick = DarkMode.setting.next()
@@ -1087,15 +1066,49 @@ private fun homeRows(
             changed()
         },
         // The app's text: the pixel font or a smooth one, both screens at once.
-        com.pokedaisy.app.companion.ui.theme.AppFonts.current.let { now ->
-            SettingRow(tk("FONT"), now.label, subtitle = "Pixel letters or smooth ones", labelBadge = NewFeatures.badge(NewFeatures.PIXEL_SMALL)) {
-                select(Selector(tk("FONT"), com.pokedaisy.app.companion.ui.theme.AppFont.menu.map { it.label }, now.label) { l ->
-                    com.pokedaisy.app.companion.ui.theme.AppFont.entries.firstOrNull { it.label == l }?.let {
-                        com.pokedaisy.app.companion.ui.theme.AppFonts.setting = it
-                        s.setAppFont(it.ordinal)
-                    }
+        com.pokedaisy.app.companion.ui.theme.AppFonts.currentLabel.let { now ->
+            SettingRow(tk("FONT TYPE"), now, subtitle = fontSubtitle(), labelBadge = NewFeatures.badge(NewFeatures.PIXEL_SMALL)) {
+                select(Selector(tk("FONT TYPE"), com.pokedaisy.app.companion.ui.theme.AppFonts.menu().map { it.label }, now, font = ::fontOption) { l ->
+                    if (com.pokedaisy.app.companion.ui.theme.AppFonts.pick(l)) changed()
                 })
             }
+        },
+        // The app's text a size down or up, both screens at once.
+        com.pokedaisy.app.companion.ui.theme.AppFonts.size.let { now ->
+            SettingRow(
+                tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFonts.sizeLabel, subtitle = "The app's text smaller or bigger",
+                labelBadge = NewFeatures.badge(NewFeatures.FONT_SIZE) ?: NewFeatures.badge(NewFeatures.MORE_FONT_SIZES),
+            ) {
+                select(Selector(tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.map { it.label }, now.label,
+                    badge = { l -> NewFeatures.badge(NewFeatures.MORE_FONT_SIZES).takeIf { l == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM.label } },
+                ) { l ->
+                    val size = com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.firstOrNull { it.label == l } ?: return@Selector
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.changeSize(size)
+                    // MORE SIZES: its slider at once, the text resizing as it moves.
+                    if (size == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM) select(Selector(tk("MORE SIZES"), emptyList(), "", slider = {
+                        fontSizeLabel() to fontSizeSlider()
+                    }) {})
+                    changed()
+                })
+            }
+        },
+        // MY LOOK's picture behind the companion (pictures are chosen on the top screen): only once there's one.
+        com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+            val bg = look.companionBackground
+            val choices = listOfNotNull(
+                com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT.takeIf { true },
+                com.pokedaisy.app.companion.ui.theme.LookBackground.PICTURE.takeIf { look.hasPicture(true) },
+                com.pokedaisy.app.companion.ui.theme.LookBackground.SAME_AS_APP.takeIf { look.hasPicture(false) },
+            )
+            SettingRow(
+                tk("COMPANION BACKGROUND"), bg.label, subtitle = "Your picture behind the tabs (MY LOOK)",
+                labelBadge = NewFeatures.badge(NewFeatures.MY_LOOK),
+            ) {
+                select(Selector(tk("COMPANION BACKGROUND"), choices.map { it.label }, bg.label) { l ->
+                    choices.firstOrNull { it.label == l }?.let { look.setBackground(true, it) }
+                    changed()
+                })
+            }.takeIf { choices.size > 1 }
         },
         // The game's frames per second and the app's CPU share, in the game's corner.
         SettingRow(tk("FPS / CPU"), onOff(s.showPerformance), setting = SharedSetting.FPS_CPU, labelBadge = s.performanceBadge,

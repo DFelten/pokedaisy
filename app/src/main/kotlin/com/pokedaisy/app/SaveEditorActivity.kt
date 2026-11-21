@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -99,7 +100,7 @@ class SaveEditorActivity : ComponentActivity() {
     private var page by mutableStateOf<Page>(Page.Loading)
     private var saving by mutableStateOf(false)
     /** TRADE's pick-list: the other games with a save it can read. */
-    private var partners by mutableStateOf<List<Pair<File, String>>?>(null)
+    private var partners by mutableStateOf<List<Triple<File, String, String?>>?>(null)
     /** TRADE SAVES: the first game's pick-list, before any game is open. */
     private var firstPick by mutableStateOf<List<Pair<File, String>>?>(null)
     /** TRADE SAVES (TOOLS): the trade alone - its first game is read for it, not opened in the editor. */
@@ -234,6 +235,7 @@ class SaveEditorActivity : ComponentActivity() {
         Thread {
             val a = open(gen4Rom)
             val b = openGen5(gen5Rom)
+            loadIcons(gen4Rom); loadIcons(gen5Rom)
             runOnUiThread {
                 page = if (a is Opened && b is OpenedGen5) {
                     transferFromEditor = back
@@ -670,13 +672,35 @@ class SaveEditorActivity : ComponentActivity() {
 
     /** TRADE: the library's other games whose saves the editor can read. */
     private fun pickPartner() {
+        val from = tradeFrom?.rom ?: rom
         Thread {
-            val list = readableGames(except = rom, with = rom)
+            // Every game with a save it reads, the ones of another generation too (greyed out, saying why), after the
+            // ones that can trade (the user's call: show why a game isn't there rather than leave it out).
+            val list = readableGames(except = from, gen5 = true)
+                .map { (file, name) -> Triple(file, name, cantTradeReason(from, file)) }
+                .sortedBy { it.third != null }
             runOnUiThread {
                 if (list.isEmpty()) Toast.makeText(this, tr("No other game here has a save the save editor can read"), Toast.LENGTH_LONG).show()
                 else partners = list
             }
         }.start()
+    }
+
+    /** Why [b] can't trade with [a] (null: it can): trades stay inside a generation, as in the games. */
+    private fun cantTradeReason(a: File?, b: File): String? {
+        fun gen(f: File) = when {
+            SaveFileEdits.isGen5(f) -> 5
+            SaveFileEdits.isDsEditable(f) -> 4
+            else -> 3
+        }
+        val ga = a?.let(::gen) ?: return null
+        val gb = gen(b)
+        if (ga == gb) return null
+        return when (setOf(ga, gb)) {
+            setOf(3, 4) -> tr("Another generation: PAL PARK moves Pokémon from GBA to DS")
+            setOf(4, 5) -> tr("Another generation: POKé TRANSFER moves Pokémon on")
+            else -> tr("Another generation: these games can't trade")
+        }
     }
 
     private fun startTrade(
@@ -758,10 +782,16 @@ class SaveEditorActivity : ComponentActivity() {
                         else -> leaveTransfer()
                     }
                 }
-                com.pokedaisy.app.companion.ui.PokeTransferScreen(s, m, onBack = { leaveTransfer() }, onSave = { saveTransfer(p) }, saving = saving)
+                com.pokedaisy.app.companion.ui.PokeTransferScreen(s, m, onBack = { leaveTransfer() }, onSave = { saveTransfer(p) }, saving = saving,
+                    iconsGen4 = icons[p.gen4.rom.absolutePath], iconsGen5 = icons[p.gen5.rom.absolutePath],
+                )
             }
-            Page.Loading -> MessagePage(tr("Reading the save…"), m)
-            Page.Picking -> MessagePage("", m)
+            Page.Loading -> MessagePage(tr("Reading the save…"), m, loading = true)
+            // Picking: a pick-list over the title, or (while the library's saves are still being read, which takes a while
+            // with many games) the rocking ball and a line saying so.
+            Page.Picking -> if (listOf(partners, firstPick, editPick, palFromPick, palToPick, transferFromPick, transferToPick).all { it == null })
+                MessagePage(tr("Looking at your games' saves…"), m, loading = true)
+                else MessagePage("", m)
             is Page.Message -> MessagePage(p.text, m)
         }
         firstPick?.let { list ->
@@ -810,7 +840,8 @@ class SaveEditorActivity : ComponentActivity() {
         partners?.let { list ->
             OptionSelector(
                 tk("TRADE WITH"), list.indices.toList(), -1, { list[it].second }, m,
-                onPick = { partners = null; startTrade(list[it].first, pickA = collectionTradePick); collectionTradePick = null },
+                onPick = { if (list[it].third == null) { partners = null; startTrade(list[it].first, pickA = collectionTradePick); collectionTradePick = null } },
+                enabled = { list[it].third == null }, subtitle = { list[it].third },
                 onDismiss = {
                     partners = null
                     if (collectionOnly) { tradeFrom = null; collectionTradePick = null } else if (tradeOnly) { tradeFrom = null; pickFirst() }
@@ -820,7 +851,7 @@ class SaveEditorActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun MessagePage(text: String, m: com.pokedaisy.app.companion.ui.GbaTextMetrics) {
+    private fun MessagePage(text: String, m: com.pokedaisy.app.companion.ui.GbaTextMetrics, loading: Boolean = false) {
         BackHandler { finish() }
         Box(Modifier.fillMaxSize()) {
             AppBackdrop()
@@ -829,7 +860,13 @@ class SaveEditorActivity : ComponentActivity() {
                 Spacer(Modifier.height(m.u * 4))
                 // A pick-list over it (Picking): the title alone.
                 if (text.isNotEmpty()) OptionListWindow(m, Modifier.fillMaxWidth()) {
-                    GbaText(text, OptionColors.label, OptionColors.labelShadow, m, maxLines = Int.MAX_VALUE, modifier = Modifier.padding(m.u * 4))
+                    androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        // The app's "working on it": the rocking ball, while saves are read.
+                        if (loading) com.pokedaisy.app.companion.ui.RockingPokeBall(
+                            Modifier.padding(start = m.u * 4).size(m.lineHeight * 1.4f),
+                        )
+                        GbaText(text, OptionColors.label, OptionColors.labelShadow, m, maxLines = Int.MAX_VALUE, modifier = Modifier.padding(m.u * 4))
+                    }
                 }
             }
         }

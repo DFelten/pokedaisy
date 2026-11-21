@@ -1056,7 +1056,7 @@ fun palPark(setup: com.pokedaisy.app.companion.ui.PalParkState.() -> Unit = {}):
 fun transfer(setup: com.pokedaisy.app.companion.ui.PokeTransferState.() -> Unit = {}): () -> (@Composable () -> Unit) = {
     val state = transferDemo().apply(setup)
     val content: @Composable () -> Unit = { com.pokedaisy.app.companion.ui.SaveEditorText {
-        com.pokedaisy.app.companion.ui.PokeTransferScreen(state, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(), onBack = {}, onSave = {})
+        com.pokedaisy.app.companion.ui.PokeTransferScreen(state, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(), onBack = {}, onSave = {}, iconsGen4 = demoIcons, iconsGen5 = demoIcons)
     } }
     content
 }
@@ -1146,10 +1146,53 @@ fun seasonalLibrary(label: String) = run {
     LibraryActivity().apply { seasonalTheme = t }
 }
 
+/**
+ * MY LOOK with things added, for its shots: two themes from files (MIDNIGHT worn when [wearTheme]), a font (the app's own
+ * Nunito under another name, standing in for a player's), and with [picture] a drawn landscape behind the app ([companion]:
+ * behind the companion too). No third-party picture or font is ever used here.
+ */
+fun withMyLook(picture: Boolean = false, companion: Boolean = false, wearTheme: Boolean = false, wearFont: Boolean = false) {
+    val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+    val midnight = look.addTheme("""{ "name": "MIDNIGHT", "color": "#3D6FE0", "glows": ["#C4DAFF", "#FFD6E8", "#D6F0FF"] }""")
+    look.addTheme("""{ "name": "PEACH", "color": "#E8743C" }""")
+    val font = look.addFont("Rounded Demo.ttf", File("fonts/Nunito-ExtraBold.ttf").readBytes())
+    if (wearTheme) { Prefs(android.content.Context()).appTheme = midnight.id; com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(midnight) }
+    if (wearFont) com.pokedaisy.app.companion.ui.theme.AppFonts.wear(font)
+    if (picture) {
+        look.previewApp = demoLookPicture()
+        look.setBackground(false, com.pokedaisy.app.companion.ui.theme.LookBackground.PICTURE)
+    }
+    if (companion) {
+        look.previewCompanion = demoLookPicture()
+        look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.SAME_AS_APP)
+    }
+}
+
+/** A landscape drawn in code (a dusk sky, a sun, two rows of hills): MY LOOK's stand-in for a player's photo. */
+fun demoLookPicture(w: Int = 1280, h: Int = 720): androidx.compose.ui.graphics.ImageBitmap {
+    val px = IntArray(w * h)
+    fun mix(a: Int, b: Int, t: Float): Int {
+        fun ch(s: Int) = (((a shr s) and 0xFF) * (1 - t) + ((b shr s) and 0xFF) * t).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+    val sunX = w * 0.68f; val sunY = h * 0.5f; val sunR = h * 0.16f
+    for (y in 0 until h) for (x in 0 until w) {
+        var c = mix(0xFF8C78D0.toInt(), 0xFFFFCDA0.toInt(), (y.toFloat() / (h * 0.72f)).coerceIn(0f, 1f))
+        val d = kotlin.math.hypot(x - sunX, y - sunY)
+        if (d < sunR) c = mix(c, 0xFFFFF2C8.toInt(), 0.9f) else if (d < sunR * 2.2f) c = mix(c, 0xFFFFE8B8.toInt(), 0.35f * (1 - (d - sunR) / (sunR * 1.2f)).coerceIn(0f, 1f))
+        val far = h * (0.66f + 0.06f * kotlin.math.sin(x / (w * 0.13f)))
+        val near = h * (0.8f + 0.07f * kotlin.math.sin(x / (w * 0.21f) + 1.7f))
+        if (y > far) c = mix(0xFF5E8F9E.toInt(), 0xFF4A7686.toInt(), ((y - far) / (h - far)).coerceIn(0f, 1f))
+        if (y > near) c = mix(0xFF3F6B5E.toInt(), 0xFF2C5046.toInt(), ((y - near) / (h - near)).coerceIn(0f, 1f))
+        px[y * w + x] = c
+    }
+    return com.pokedaisy.app.companion.ui.imageBitmapOf(px, w, h)
+}
+
 /** The activity [activity] made last (a shot's action presses its keys). */
 var lastActivity: androidx.activity.ComponentActivity? = null
 
-fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIntro: Boolean = false, make: () -> androidx.activity.ComponentActivity): () -> (@Composable () -> Unit) = {
+fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIntro: Boolean = false, viewIntro: Boolean = false, make: () -> androidx.activity.ComponentActivity): () -> (@Composable () -> Unit) = {
     val ctx = android.content.Context()
     val roms = File(ctx.filesDir, "roms").apply { mkdirs() }
     // Dump-style file names, as players have them; firered-hack stays unrecognised (a hack it doesn't know).
@@ -1180,6 +1223,8 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
     prefs.expandIntroSeen = !expandIntro
     // BATTLE STYLE's one-time pick, likewise.
     prefs.battleStyleAsked = !battleStyleIntro
+    // VIEW's one-time pick, likewise.
+    prefs.appViewAsked = !viewIntro
     prefs.battleStyle = 0
     // The classic library, no ScreenScraper popup: the launcher / popup shots turn them on in their make().
     prefs.dualScreenLauncher = false
@@ -1195,6 +1240,18 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
     prefs.savesDirOverride = null
     prefs.gameAspect = com.pokedaisy.app.companion.GameAspect.ORIGINAL
     prefs.statusBar = false
+    // MY LOOK: nothing added (no themes, fonts or pictures of the player's); a shot that wants some calls withMyLook().
+    File(ctx.filesDir, "look").deleteRecursively()
+    com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+        look.dir = okio.Path.Companion.run { File(ctx.filesDir, "look").toOkioPath() }
+        look.load()
+        look.setBackground(false, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
+        look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
+        look.previewApp = null; look.previewCompanion = null
+    }
+    if (com.pokedaisy.app.companion.ui.theme.AppFonts.setting == com.pokedaisy.app.companion.ui.theme.AppFont.CUSTOM) {
+        com.pokedaisy.app.companion.ui.theme.AppFonts.set(com.pokedaisy.app.companion.ui.theme.AppFont.DEFAULT)
+    }
     // The default theme (PokéDaisy, or -Ptheme's); a shot that wants another sets it in its make().
     wearPreviewTheme(previewTheme)
     // No limited-time theme's popup over the library shots: only the shots that want one.
@@ -1551,6 +1608,18 @@ fun main(args: Array<String>) {
     com.pokedaisy.app.companion.ui.SettingsLook.lazyHome = false
     // -Pdark=true: DARK MODE on for every shot.
     if (System.getProperty("dark") == "true") com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
+    // -Pview=MODERN: VIEW MODERN for every shot, its font with it (unless -Pfont names another).
+    System.getProperty("view").orEmpty().takeIf { it.isNotBlank() }?.let {
+        val view = com.pokedaisy.app.companion.ui.theme.AppView.valueOf(it)
+        com.pokedaisy.app.companion.ui.theme.AppViews.override = view
+        if (view == com.pokedaisy.app.companion.ui.theme.AppView.MODERN) {
+            com.pokedaisy.app.companion.ui.theme.AppFonts.override = com.pokedaisy.app.companion.ui.theme.AppFont.MODERN
+        }
+    }
+    // -PfontSize=LARGE: that FONT SIZE for every shot.
+    System.getProperty("fontSize").orEmpty().takeIf { it.isNotBlank() }?.let {
+        com.pokedaisy.app.companion.ui.theme.AppFonts.sizeOverride = com.pokedaisy.app.companion.ui.theme.AppFontSize.valueOf(it)
+    }
     // -Pfont=SMOOTH: that FONT for every shot.
     System.getProperty("font").orEmpty().takeIf { it.isNotBlank() }?.let {
         com.pokedaisy.app.companion.ui.theme.AppFonts.override = com.pokedaisy.app.companion.ui.theme.AppFont.valueOf(it)
@@ -1661,6 +1730,11 @@ fun main(args: Array<String>) {
     ) else emptyList()
     val all = real + listOf(
         Shot("$g-party", bw, bh, bd, companion("PARTY")),
+        // MY LOOK's picture behind the companion (COMPANION BACKGROUND), in place of the game's backdrop.
+        Shot("$g-party-my-look", bw, bh, bd, run {
+            val c = companion("PARTY")
+            ({ com.pokedaisy.app.companion.ui.theme.CustomLook.previewCompanion = demoLookPicture(); c() })
+        }),
         // BOXES: the PC's box screen (FireRed's art from -Prom / the decomp build), a summary, the box list, the next box.
         Shot("$g-boxes", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot)),
         Shot("$g-boxes-detail", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot, items = true)) {
@@ -2148,6 +2222,14 @@ fun main(args: Array<String>) {
         },
         // GAME BUTTONS' subtitle, further down the list.
         Shot("$g-settings-subtitles", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("TWEAKS").performScrollTo() },
+        // GAMEPLAY's QUALITY OF LIFE row (how many are on), its page, and BATTLE's page (SETTINGS_PAGES).
+        Shot("$g-settings-qol-row", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("QUALITY OF LIFE").performScrollTo() },
+        Shot("$g-settings-qol", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-battle", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("How the BATTLE tab helps you", substring = true).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         Shot("$g-settings-ffmusic", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("SPEED OPTIONS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick); onAllNodesWithText("FF MUSIC").onFirst().performScrollTo().performClick() },
         // ASPECT's pick-list: WIDE tagged NOT YET (the preview's settings know no game).
         Shot("$g-settings-aspect", bw, bh, bd, companion("SETTINGS")) {
@@ -2462,6 +2544,15 @@ fun main(args: Array<String>) {
             }
         }),
         Shot("library-list", tw, th, td, activity { LibraryActivity() }),
+        // A quick view held and dragged: RECENT carried two places right, past GBA and HACKS (QuickViewPills' onReorder).
+        Shot("library-views-dragged", tw, th, td, activity { LibraryActivity() }) {
+            onNodeWithText("RECENT", substring = true).performTouchInput {
+                down(center)
+                advanceEventTime(900)
+                repeat(30) { moveBy(androidx.compose.ui.geometry.Offset(14f, 0f)); advanceEventTime(16) }
+                up()
+            }
+        },
         // The quick views (pills over the games): ALL, FAVORITES, RECENT, one per console the library holds and HACKS,
         // each in its colour; the open one striped like the console's cover art.
         Shot("library-views", tw, th, td, activity { platformLibrary(); LibraryActivity() }),
@@ -2716,6 +2807,20 @@ fun main(args: Array<String>) {
         // Picks are set on the state (Emerald's KADABRA is its 4th, MEW its 6th; FireRed's box 1 has slot 22 free).
         Shot("trade", tw, th, td, trade()),
         Shot("trade-send", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }),
+        // TRADE WITH: the other games, the ones of another generation greyed out with why (SaveEditorActivity.pickPartner).
+        Shot("trade-with", tw, th, td, {
+            val c: @Composable () -> Unit = {
+                com.pokedaisy.app.companion.ui.AppBackdrop()
+                val games = listOf("Pokémon Emerald" to null, "Pokémon LeafGreen" to null,
+                    "Pokémon HeartGold" to "Another generation: PAL PARK moves Pokémon from GBA to DS",
+                    "Pokémon Black" to "Another generation: these games can't trade")
+                com.pokedaisy.app.companion.ui.OptionSelector(
+                    "TRADE WITH", games.indices.toList(), -1, { games[it].first }, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(),
+                    onPick = {}, onDismiss = {}, enabled = { games[it].second == null }, subtitle = { games[it].second },
+                )
+            }
+            c
+        }),
         Shot("trade-evolve", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }) { onNodeWithText("SEND").performClick() },
         Shot("trade-evolved", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }) {
             onNodeWithText("SEND").performClick(); onNodeWithText("EVOLVE").performClick()
@@ -2737,6 +2842,10 @@ fun main(args: Array<String>) {
         // COLLECTION: the three made-up saves' Pokémon in one list; by level, one game, a search; a Pokémon's choices.
         Shot("collection", tw, th, td, collection()),
         Shot("collection-level", tw, th, td, collection { sort = com.pokedaisy.app.companion.data.save.SaveCollection.Sort.LEVEL }),
+        // VIEW: a grid of sprites (names hidden, then shown) and cards.
+        Shot("collection-grid", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.GRID }),
+        Shot("collection-grid-names", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.GRID }) { onNodeWithText("NAMES").performClick() },
+        Shot("collection-cards", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.CARDS }),
         Shot("collection-search", tw, th, td, collection { query = "tr" }),
         Shot("collection-game", tw, th, td, collection()) { onNodeWithText("ALL GAMES").performClick() },
         Shot("collection-picked", tw, th, td, collection { picked = shown().first { it.palParkable } }),
@@ -2756,6 +2865,12 @@ fun main(args: Array<String>) {
         Shot("pc-boxes-missing-phone", 1080, 2400, 2.625f, pcBoxes(missing = true)) { onNodeWithText("TRAINER").performClick(); onNodeWithText("MISSING").performClick() },
         Shot("library-expand-intro", tw, th, td, activity(expandIntro = true) { LibraryActivity() }),
         Shot("library-battle-style", tw, th, td, activity(battleStyleIntro = true) { LibraryActivity() }),
+        // VIEW's one-time pick: the two looks drawn side by side (Thor, RG DS, a phone upright).
+        Shot("library-view-intro", tw, th, td, activity(viewIntro = true) { LibraryActivity() }),
+        Shot("library-view-intro-rgds", 640, 480, 1.5f, activity(viewIntro = true) { LibraryActivity() }),
+        Shot("library-view-intro-phone", 1080, 2400, 2.625f, activity(viewIntro = true) { LibraryActivity() }),
+        // The modern icons, every one as a tile and as a glyph.
+        Shot("modern-icons", 1240, 1080, 2.625f, { { ModernIconSheet() } }),
         // Picking GEN 5 closes it and saves the choice.
         Shot("library-battle-style-picked", tw, th, td, activity(battleStyleIntro = true) { LibraryActivity() }) {
             onNodeWithText("GEN 5").performClick()
@@ -3384,6 +3499,29 @@ fun main(args: Array<String>) {
         Shot("overlay-imported", tw, th, 1f, overlayView(OverlayChoice.Imported("wood-frame"), tw, th)),
         Shot("overlay-imported-stretch", tw, th, 1f, overlayView(OverlayChoice.Imported("wood-frame"), tw, th, stretch = true)),
         Shot("settings-theme", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("THEME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        // FONT TYPE's pick-list (each name in its own letters) and FONT SIZE's.
+        Shot("settings-font-type", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        Shot("settings-font-size", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("FONT SIZE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        // FONT SIZE > MORE SIZES: its slider pop-up.
+        Shot("settings-font-more", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("FONT SIZE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("MORE SIZES").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        // MY LOOK: empty, then with two themes and a font added and a picture behind the app (MIDNIGHT and the font worn).
+        Shot("settings-my-look", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-my-look-added", tw, th, td, activity { withMyLook(picture = true); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-theme-custom", tw, th, td, activity { withMyLook(wearTheme = true); SettingsActivity() }) {
+            onNodeWithText("THEME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-font-custom", tw, th, td, activity { withMyLook(wearFont = true); SettingsActivity() }) {
+            onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("library-my-look", tw, th, td, activity { withMyLook(picture = true, wearTheme = true); LibraryActivity() }),
+        Shot("library-my-look-modern", tw, th, td, activity { withMyLook(picture = true); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }),
         // THEME: a few themes on the Library and Settings (the rest with -Ptheme), and a limited-time one's popup.
         Shot("library-theme-cherry", tw, th, td, activity { themedLibrary("CHERRY") }),
         Shot("library-theme-rainbow", tw, th, td, activity { themedLibrary("RAINBOW") }),
@@ -3742,5 +3880,24 @@ fun DsBattlePreview(dsGame: GameKind, state: Int) {
             ) else drawRect(androidx.compose.ui.graphics.Color(0xFF7FB0A0), picture.topLeft, picture.size)
         }
         com.pokedaisy.app.companion.ui.DsBattleMenu(snap, menu, FakeBattleInput(false), picture, shown = true, gameFills = wide != null)
+    }
+}
+
+/** Every [com.pokedaisy.app.companion.ui.ModernGlyph]: its tile over its glyph, its name under them. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun ModernIconSheet() {
+    androidx.compose.foundation.layout.FlowRow(
+        androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFFF3F6FD)).padding(12.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+    ) {
+        for (g in com.pokedaisy.app.companion.ui.ModernGlyph.entries) {
+            androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                if (g.top != androidx.compose.ui.graphics.Color.Unspecified) com.pokedaisy.app.companion.ui.ModernTile(g, androidx.compose.ui.Modifier.size(52.dp))
+                com.pokedaisy.app.companion.ui.ModernIcon(g, androidx.compose.ui.graphics.Color(0xFF232B40), androidx.compose.ui.Modifier.size(28.dp))
+                androidx.compose.material3.Text(g.name, fontSize = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp))
+            }
+        }
     }
 }

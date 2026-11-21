@@ -13,6 +13,7 @@ internal class LegacyLibraryStore(read: () -> String?, private val save: (String
         "library_view_mode" -> JsonPrimitive(if ((json["grid"] as? JsonPrimitive)?.booleanOrNull != false) 1 else 0)
         "library_sort" -> json["sort"] as? JsonPrimitive
         "library_view" -> json["view"] as? JsonPrimitive
+        "library_view_order" -> json["viewOrder"] as? JsonPrimitive
         "favorite_roms" -> JsonPrimitive(JsonArray(strings(json["favorites"]).map(::JsonPrimitive)).toString())
         "last_rom" -> json["last"] as? JsonPrimitive
         "recent_roms" -> JsonPrimitive((json["recent"] as? JsonArray ?: JsonArray(
@@ -25,7 +26,7 @@ internal class LegacyLibraryStore(read: () -> String?, private val save: (String
             else -> null
         }
     }
-    override fun keys(): Set<String> = setOf("library_view_mode", "library_sort", "library_view", "favorite_roms", "last_rom", "recent_roms") +
+    override fun keys(): Set<String> = setOf("library_view_mode", "library_sort", "library_view", "library_view_order", "favorite_roms", "last_rom", "recent_roms") +
         dates("played").keys.map { "played_$it" } +
         (json["names"] as? JsonObject).orEmpty().keys.map { "romname_$it" }
     override fun contains(key: String) = value(key) != null
@@ -40,6 +41,7 @@ internal class LegacyLibraryStore(read: () -> String?, private val save: (String
             "library_view_mode" -> updated["grid"] = JsonPrimitive(value == 1)
             "library_sort" -> updated["sort"] = JsonPrimitive(value as Int)
             "library_view" -> updated["view"] = JsonPrimitive(value as Int)
+            "library_view_order" -> updated["viewOrder"] = JsonPrimitive(value as String)
             "favorite_roms", "recent_roms" -> updated[if (key == "favorite_roms") "favorites" else "recent"] =
                 Json.parseToJsonElement(value as String)
             "last_rom" -> if (value == null) updated.remove("last") else updated["last"] = JsonPrimitive(value as String)

@@ -1,5 +1,6 @@
 package com.pokedaisy.app.companion.ui
 
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -82,7 +83,15 @@ private fun ToolCard(tool: LibraryTool, m: GbaTextMetrics, small: GbaTextMetrics
         Modifier
             .fillMaxWidth()
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
-            .drawBehind { drawLayeredBox(OptionColors.titleLayers.inPx(u.toPx()), if (focused) OptionColors.rowSelected else OptionColors.titleFill, radius = 3 * u.toPx()) }
+            .drawBehind {
+                val px = u.toPx()
+                drawLayeredBox(OptionColors.titleLayers.inPx(px), if (focused) OptionColors.rowSelected else OptionColors.titleFill, radius = 3 * px)
+                // RETRO: the tool's colour down the card's left edge, inside its frame (a little colour, still pixel art).
+                if (!modernView) ModernGlyph.forTool(tool.id)?.let { g ->
+                    val frame = OptionColors.titleLayers.sumOf { it.second } * px
+                    drawRect(g.low, androidx.compose.ui.geometry.Offset(frame, frame + 2 * px), androidx.compose.ui.geometry.Size(2 * px, size.height - 2 * frame - 4 * px))
+                }
+            }
             .keyDrivenFocus()
             .soundClickable(interactionSource = interaction, indication = null, onClick = tool.open)
             .semantics { contentDescription = label }
@@ -90,19 +99,24 @@ private fun ToolCard(tool: LibraryTool, m: GbaTextMetrics, small: GbaTextMetrics
         verticalAlignment = Alignment.Top,
     ) {
         // The icon on the card itself, no well round it, at the rail's grain (not two GBA pixels an icon pixel: the user's call).
-        ToolIcons.of(tool.id)?.let { icon ->
+        // MODERN: the tool's own app-icon tile.
+        if (modernView) ModernGlyph.forTool(tool.id)?.let { g ->
+            ModernTile(g, Modifier.size(u * if (short) SHORT_ICON else TOOL_ICON))
+            Spacer(Modifier.width(u * if (short) 4 else 6))
+        } else ToolIcons.of(tool.id)?.let { icon ->
             PixelArt(icon.bitmap, icon.palette, Modifier.size(u * if (short) SHORT_ICON else TOOL_ICON))
             Spacer(Modifier.width(u * if (short) 4 else 6))
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GbaText(label, OptionColors.label, OptionColors.labelShadow, m)
+                // The list's smaller text, the blurb a step under it (the rows' size read too loud: the user's call).
+                GbaText(label, OptionColors.label, OptionColors.labelShadow, small, bold = modernView)
                 tool.newBadge?.let {
-                    OptionBadge(it, m, Modifier.padding(start = u * 6), fill = OptionColors.newBadge)
+                    OptionBadge(it, small, Modifier.padding(start = u * 4), fill = OptionColors.newBadge)
                 }
             }
             Spacer(Modifier.height(u * 2))
-            GbaText(tr(tool.blurb), OptionColors.muted, OptionColors.mutedShadow, small, maxLines = 2)
+            GbaText(tr(tool.blurb), OptionColors.muted, OptionColors.mutedShadow, rememberGbaTextMetrics(0.85f), maxLines = 2)
         }
     }
 }
@@ -134,7 +148,18 @@ fun LibraryNav(
             NavItem(s, s == open, m, small, badge = toolsBadge && s == LibrarySection.TOOLS, weighted, cursor = s == cursor) { onPick(s) }
         }
     }
-    val frame = Modifier.drawBehind {
+    val frame = if (modernView) Modifier.drawBehind {
+        // MODERN: a white panel, a hairline and a soft shadow on the side facing the page.
+        drawRect(OptionColors.listFill)
+        val line = OptionColors.divider
+        if (vertical) {
+            for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Size(i * 1.5f, size.height))
+            drawRect(line, androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), 0f), androidx.compose.ui.geometry.Size(1.dp.toPx(), size.height))
+        } else {
+            for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(0f, -i * 1.5f), androidx.compose.ui.geometry.Size(size.width, i * 1.5f))
+            drawRect(line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
+        }
+    } else Modifier.drawBehind {
         drawLayeredBox(
             OptionColors.listLayers.inPx(u.toPx()), OptionColors.listFill, radius = 0f,
             openLeft = true, openTop = vertical, openBottom = true, openRight = !vertical,
@@ -169,6 +194,7 @@ private fun NavItem(
     val interaction = remember { MutableInteractionSource() }
     val focused = interaction.collectIsFocusedAsState().value || cursor
     val label = tr(section.label)
+    if (modernView) { ModernNavItem(section, on, m, small, badge, modifier, focused, interaction, label, onClick); return }
     val short = LocalShortScreen.current
     Box(
         modifier
@@ -202,6 +228,45 @@ private fun NavItem(
         if (badge) Box(
             Modifier.align(Alignment.TopEnd).size(u * if (short) 4 else 5)
                 .drawBehind { drawPixelRoundRect(OptionColors.newBadge, radius = size.width / 2, step = u.toPx()) },
+        )
+    }
+}
+
+/** MODERN's rail item: its glyph over its name, the open one's glyph in a pale blue pill and both in blue. */
+@Composable
+private fun ModernNavItem(
+    section: LibrarySection, on: Boolean, m: GbaTextMetrics, small: GbaTextMetrics, badge: Boolean, modifier: Modifier,
+    focused: Boolean, interaction: MutableInteractionSource, label: String, onClick: () -> Unit,
+) {
+    val u = m.u
+    val accent = OptionColors.value
+    Box(
+        modifier
+            .gbaFocusRing(focused, androidx.compose.foundation.shape.RoundedCornerShape(u * 6))
+            .keyDrivenFocus()
+            .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .semantics { contentDescription = label }
+            .padding(vertical = u * 4, horizontal = u * 3),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val glyph = when (section) {
+                LibrarySection.GAMES -> ModernGlyph.GAMES
+                LibrarySection.TOOLS -> ModernGlyph.TOOLS
+                LibrarySection.SETTINGS -> ModernGlyph.SETTINGS
+            }
+            Box(
+                Modifier.size(u * NAV_ICON * 1.5f, u * NAV_ICON * 0.95f).drawBehind {
+                    if (on) drawRoundRect(OptionColors.rowSelected, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f))
+                },
+                contentAlignment = Alignment.Center,
+            ) { ModernIcon(glyph, if (on) accent else OptionColors.muted, Modifier.size(u * NAV_ICON * 0.68f)) }
+            Spacer(Modifier.height(u * 3))
+            GbaText(label, if (on) accent else OptionColors.muted, Color.Transparent, small, bold = true)
+        }
+        if (badge) Box(
+            Modifier.align(Alignment.TopEnd).size(u * 5)
+                .drawBehind { drawCircle(OptionColors.newBadge) },
         )
     }
 }
@@ -688,7 +753,9 @@ fun ToolHeader(
     LibraryHeaderBar(
         title, big, onBack = onBack, logo = false,
         leading = toolId?.let { id -> {
-            ToolIcons.of(id)?.let { PixelArt(it.bitmap, it.palette, Modifier.size(big.lineHeight * 1.15f)) }
+            val size = big.lineHeight * 1.15f
+            if (modernView) ModernGlyph.forTool(id)?.let { ModernTile(it, Modifier.size(size)) }
+            else ToolIcons.of(id)?.let { PixelArt(it.bitmap, it.palette, Modifier.size(size)) }
         } },
         modifier = Modifier.layout { measurable, constraints ->
             val extra = margin.roundToPx()

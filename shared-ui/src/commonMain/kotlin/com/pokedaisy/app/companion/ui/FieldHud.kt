@@ -278,7 +278,7 @@ internal val LocalHudLook = staticCompositionLocalOf { FieldHudLook.GLASS }
 internal val FieldHudLook.glass get() = this == FieldHudLook.GLASS || this == FieldHudLook.WHITE_GLASS
 
 /** The running game's HUD palette (its [CompanionSkin.hud]); null for a game without one. */
-internal val gameHud: SkinHud? get() = CompanionSkins.current.hud
+internal val gameHud: SkinHud? get() = CompanionSkins.current.hud ?: CompanionSkins.gameSkin.hud
 
 /** LOOK as drawn: GAME is the game's own HUD where its skin has one, else GLASS (a hack in the app's look). */
 internal fun FieldHudLook.resolved(): FieldHudLook = if (this == FieldHudLook.GAME && gameHud == null) FieldHudLook.GLASS else this
@@ -1544,7 +1544,7 @@ private fun HudMapPanel(snapshot: SnapshotView, m: GbaTextMetrics, fly: FlyActio
                 if (glass) GlassTitle(tk("MAP"), gameCase(snapshot.location.mapSecName), titleM, onClose)
                 else OptionTitleWindow(tk("MAP"), titleM, trailing = gameCase(snapshot.location.mapSecName), onBack = onClose)
                 // MapScreen draws its own frame: no window around it.
-                Box(Modifier.width(mapW).height(mapW / aspect)) { MapScreen(snapshot, fly = fly, keepShape = true) }
+                Box(Modifier.width(mapW).height(mapW / aspect)) { MapScreen(snapshot, fly = fly) }
             }
         }
     }

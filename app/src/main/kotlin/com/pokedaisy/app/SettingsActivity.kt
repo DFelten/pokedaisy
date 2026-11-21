@@ -136,7 +136,7 @@ import okio.source
  */
 class SettingsActivity : ComponentActivity() {
 
-    private enum class Screen { HOME, SPEED, DISPLAY, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, BACKUPS, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
+    private enum class Screen { HOME, SPEED, DISPLAY, MY_LOOK, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, BACKUPS, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
 
     private lateinit var prefs: Prefs
     private var screen by mutableStateOf(Screen.HOME)
@@ -169,6 +169,8 @@ class SettingsActivity : ComponentActivity() {
 
     /** The pop-ups open over Settings (pick-lists, confirms): B / BACK closes the newest, the focus goes back to its row. */
     private val overlays = com.pokedaisy.app.companion.ui.OverlayStack()
+    /** The group tabs' L / R ([com.pokedaisy.app.companion.ui.GroupStep]). */
+    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** B / BACK closed a pop-up: its key up is the pop-up's too (or Android's BACK would follow and leave Settings). */
     private var backTaken = false
 
@@ -221,8 +223,6 @@ class SettingsActivity : ComponentActivity() {
     /** After focusing a tapped thing: true when something on the page took it (else HOME's first row should). */
     private fun homeHasFocusAfterTap(): Boolean = screen != Screen.HOME || homeHasFocus || window.currentFocus?.hasFocus() == true
 
-    /** L / R's way to the HOME list's group tabs. */
-    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** This screen's width / height - the top screen's, for the ASPECT preview. */
     private var screenAspect by mutableFloatStateOf(16f / 9f)
 
@@ -376,6 +376,7 @@ class SettingsActivity : ComponentActivity() {
                         Screen.HOME -> tk("SETTINGS")
                         Screen.SPEED -> tk("SPEED OPTIONS")
                         Screen.DISPLAY -> tk("DISPLAY OPTIONS")
+                        Screen.MY_LOOK -> tk("MY LOOK")
                         Screen.HOTKEYS -> tk("HOTKEYS")
                         Screen.CONTROLS -> tk("GAME BUTTONS")
                         Screen.SHADERS -> tk("SHADERS")
@@ -414,6 +415,7 @@ class SettingsActivity : ComponentActivity() {
                     Screen.HOME -> HomeScreen(m)
                     Screen.SPEED -> SubRowsScreen(m) { speedRows() }
                     Screen.DISPLAY -> SubRowsScreen(m) { displayRows() }
+                    Screen.MY_LOOK -> SubRowsScreen(m) { myLookRows() }
                     Screen.HOTKEYS -> HotkeysScreen(m, small)
                     Screen.CONTROLS -> ControlsScreen(m, small)
                     Screen.SHADERS -> ShadersScreen(m)
@@ -457,9 +459,9 @@ class SettingsActivity : ComponentActivity() {
             selector?.takeIf { it.slider == null }?.let { sel ->
                 OptionSelector(
                     sel.title, sel.options, sel.current, { it }, m,
-                    onPick = { sel.onPick(it); selector = null; revision++ },
+                    onPick = { selector = null; sel.onPick(it); revision++ },
                     onDismiss = { selector = null },
-                    badge = sel.badge,
+                    badge = sel.badge, labelFont = sel.font, labelIcon = sel.icon,
                 )
             }
 
@@ -604,6 +606,16 @@ class SettingsActivity : ComponentActivity() {
                 )
             }
 
+            lookNotice?.let { (title, message) ->
+                OptionConfirm(title, message, tk("OK"), m, onConfirm = { lookNotice = null }, onDismiss = { lookNotice = null }, cancelLabel = null)
+            }
+            lookRemoving?.let { (title, label, action) ->
+                OptionConfirm(
+                    title = title, message = label, confirmLabel = tk("REMOVE"), m = m,
+                    onDismiss = { lookRemoving = null },
+                    onConfirm = { lookRemoving = null; action(); revision++ },
+                )
+            }
             removingOverlay?.let { (id, label) ->
                 OptionConfirm(
                     title = tk("REMOVE OVERLAY?"),
@@ -694,6 +706,9 @@ class SettingsActivity : ComponentActivity() {
         /** A slider setting's pop-up ([com.pokedaisy.app.companion.ui.OptionSliderPopup]) instead of a list: its value and
          *  slider, read fresh on each change. */
         val slider: (() -> Pair<String, com.pokedaisy.app.companion.ui.SettingSlider>)? = null,
+        /** An option's label in its own font (FONT TYPE), and a picture before it (THEME's colours). */
+        val font: (String) -> com.pokedaisy.app.companion.ui.theme.FontChoice? = { null },
+        val icon: (String) -> (@androidx.compose.runtime.Composable () -> Unit)? = { null },
         val onPick: (String) -> Unit,
     )
 
@@ -735,6 +750,142 @@ class SettingsActivity : ComponentActivity() {
     )
 
     /** DISPLAY OPTIONS: what's around the game (the status bar, the shaders, an overlay) and an upright phone's companion. */
+    // ---- MY LOOK ----------------------------------------------------------
+
+    /** MY LOOK's notice (title, message): what was added, or why not. */
+    private var lookNotice by mutableStateOf<Pair<String, String>?>(null)
+    /** MY LOOK's REMOVE confirm: its title, the thing's name, what removing does. */
+    private var lookRemoving by mutableStateOf<Triple<String, String, () -> Unit>?>(null)
+    /** Which picture CHOOSE A PICTURE is picking: the companion's (true) or the app's. */
+    private var lookPictureFor = false
+    private val pickLookPicture = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { importLookPicture(it, lookPictureFor) } }
+    private val pickLookTheme = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::importLookTheme) }
+    private val pickLookFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::importLookFont) }
+
+    /** A picked file's bytes, at most [max] (a bigger one: null), and its name. */
+    private fun readPicked(uri: Uri, max: Int): Pair<String, ByteArray?> {
+        val name = runCatching {
+            contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            }
+        }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: ""
+        val bytes = runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val out = java.io.ByteArrayOutputStream()
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    if (out.size() > max) return@use null
+                }
+                out.toByteArray()
+            }
+        }.getOrNull()
+        return name to bytes
+    }
+
+    /** CHOOSE A PICTURE: the picked image scaled to the screen's longer side (2560 px at most) and kept as a JPEG. */
+    private fun importLookPicture(uri: Uri, companion: Boolean) {
+        Thread {
+            val result = runCatching { LookPictures.scaled(this, uri) }
+            runOnUiThread {
+                result.mapCatching { com.pokedaisy.app.companion.ui.theme.CustomLook.setPicture(companion, it) }
+                    .onSuccess { lookNotice = tk("PICTURE SET") to if (companion) tr("It's behind the companion now.") else tr("It's behind the app's pages now.") }
+                    .onFailure { lookNotice = tk("NOT A PICTURE") to lookReason(it) }
+                revision++
+            }
+        }.start()
+    }
+
+    /** ADD A THEME: a theme file (.json, docs/manual/screen.md's format), worn at once. */
+    private fun importLookTheme(uri: Uri) {
+        Thread {
+            val (_, bytes) = readPicked(uri, 64 * 1024)
+            runOnUiThread {
+                runCatching {
+                    com.pokedaisy.app.companion.ui.theme.CustomLook.addTheme(bytes?.decodeToString() ?: throw com.pokedaisy.app.companion.ui.theme.LookImportError("That file is too big for a theme"))
+                }.onSuccess {
+                    com.pokedaisy.app.companion.ui.theme.pickTheme(it)
+                    lookNotice = tk("THEME ADDED") to tr("{0} is on. Pick it again any time under THEME.", it.label)
+                }.onFailure { lookNotice = tk("NOT A THEME") to lookReason(it) }
+                revision++
+            }
+        }.start()
+    }
+
+    /** ADD A FONT: a TTF / OTF file, worn at once. */
+    private fun importLookFont(uri: Uri) {
+        Thread {
+            val (name, bytes) = readPicked(uri, 10 * 1024 * 1024)
+            runOnUiThread {
+                runCatching {
+                    com.pokedaisy.app.companion.ui.theme.CustomLook.addFont(name, bytes ?: throw com.pokedaisy.app.companion.ui.theme.LookImportError("That font is too big (10 MB at most)"))
+                }.onSuccess {
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.wear(it)
+                    lookNotice = tk("FONT ADDED") to tr("{0} is on. Pick it again any time under FONT TYPE.", it.label)
+                }.onFailure { lookNotice = tk("NOT A FONT") to lookReason(it) }
+                revision++
+            }
+        }.start()
+    }
+
+    private fun lookReason(e: Throwable): String =
+        if (e is com.pokedaisy.app.companion.ui.theme.LookImportError) tr(e.en, e.arg ?: "") else tr("That file couldn't be read.")
+
+    /** MY LOOK's rows: the two backgrounds, the player's themes and fonts. */
+    private fun myLookRows(): List<SettingRow> {
+        val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+        fun backgroundRow(companion: Boolean): SettingRow {
+            val now = if (companion) look.companionBackground else look.appBackground
+            val label = if (companion) tk("COMPANION BACKGROUND") else tk("APP BACKGROUND")
+            return SettingRow(
+                label, now.label,
+                subtitle = if (companion) "Behind the companion's tabs, in a game too" else "Behind the library and settings",
+            ) {
+                val has = look.hasPicture(companion)
+                val options = listOfNotNull(
+                    com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT.label,
+                    com.pokedaisy.app.companion.ui.theme.LookBackground.PICTURE.label.takeIf { has },
+                    com.pokedaisy.app.companion.ui.theme.LookBackground.SAME_AS_APP.label.takeIf { companion && look.hasPicture(false) },
+                    tk("CHOOSE A PICTURE"),
+                    tk("REMOVE PICTURE").takeIf { has },
+                )
+                selector = Selector(label, options, now.label) { l ->
+                    when (l) {
+                        tk("CHOOSE A PICTURE") -> { lookPictureFor = companion; pickLookPicture.launch(arrayOf("image/*")) }
+                        tk("REMOVE PICTURE") -> lookRemoving = Triple(tk("REMOVE PICTURE?"), tr(label), { look.removePicture(companion) })
+                        else -> com.pokedaisy.app.companion.ui.theme.LookBackground.entries.firstOrNull { it.label == l }?.let { look.setBackground(companion, it) }
+                    }
+                    revision++
+                }
+            }
+        }
+        return listOfNotNull(
+            groupTitle(tk("BACKGROUNDS")),
+            backgroundRow(false),
+            backgroundRow(true),
+            groupTitle(tk("THEMES")),
+            SettingRow(tk("ADD A THEME"), null, subtitle = "A theme file (.json): HELP has the format") {
+                pickLookTheme.launch(arrayOf("application/json", "text/*", "application/octet-stream"))
+            },
+            SettingRow(tk("REMOVE A THEME"), null, subtitle = tr("{0} added", look.themes.size)) {
+                selector = Selector(tk("REMOVE A THEME"), look.themes.map { it.label }, "", icon = { com.pokedaisy.app.companion.ui.themeSwatch(it) }) { l ->
+                    look.themes.firstOrNull { it.label == l }?.let { t -> lookRemoving = Triple(tk("REMOVE THEME?"), t.label, { look.removeTheme(t) }) }
+                }
+            }.takeIf { look.themes.isNotEmpty() },
+            groupTitle(tk("FONTS")),
+            SettingRow(tk("ADD A FONT"), null, subtitle = "A TTF or OTF font file") {
+                pickLookFont.launch(arrayOf("font/ttf", "font/otf", "font/sfnt", "application/x-font-ttf", "application/x-font-otf", "application/vnd.ms-opentype", "application/octet-stream"))
+            },
+            SettingRow(tk("REMOVE A FONT"), null, subtitle = tr("{0} added", look.fonts.size)) {
+                selector = Selector(tk("REMOVE A FONT"), look.fonts.map { it.label }, "", font = { com.pokedaisy.app.companion.ui.fontOption(it) }) { l ->
+                    look.fonts.firstOrNull { it.label == l }?.let { f -> lookRemoving = Triple(tk("REMOVE FONT?"), f.label, { look.removeFont(f) }) }
+                }
+            }.takeIf { look.fonts.isNotEmpty() },
+        )
+    }
+
     private fun displayRows(): List<SettingRow> {
         fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
         return listOfNotNull(
@@ -776,7 +927,7 @@ class SettingsActivity : ComponentActivity() {
         val themes = com.pokedaisy.app.companion.ui.theme.availableThemes()
         fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
         // The same groups and order as the bottom screen's SETTINGS where they overlap; first how this list looks.
-        val rows = com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
+        val rows = com.pokedaisy.app.companion.ui.regroupSettings(com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
             groupTitle(tk("FF / SPEED")),
             SettingRow(tk("FF SPEED"), rateLabel(prefs.ffMaxSpeed)) {
                 selector = Selector(tk("FF SPEED"), rateLabels, rateLabel(prefs.ffMaxSpeed)) {
@@ -935,38 +1086,66 @@ class SettingsActivity : ComponentActivity() {
                 prefs.singleScreen = !prefs.singleScreen
                 revision++
             }.takeIf { hasSecondScreen },
+            // The whole app's look, RETRO or MODERN (its font with it), both screens at once.
+            com.pokedaisy.app.companion.ui.viewRow { revision++ },
             // Changes the colors immediately, everywhere - the companion screen too.
             SettingRow(
-                tk("THEME"), AppColors.theme.label,
+                tk("THEME"), AppColors.chosen.label,
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEMES),
             ) {
                 selector = Selector(
-                    tk("THEME"), themes.map { it.label }, AppColors.theme.label,
+                    tk("THEME"), themes.map { it.label }, AppColors.chosen.label,
                     badge = { l -> tk("LIMITED").takeIf { themes.firstOrNull { it.label == l }?.season != null } },
+                    icon = { com.pokedaisy.app.companion.ui.themeSwatch(it) },
                 ) { l -> themes.firstOrNull { it.label == l }?.let { com.pokedaisy.app.companion.ui.theme.pickTheme(it) } }
             },
-            // The game's own look on the companion and the HUD where it has one (CompanionSkins), or the app's classic one.
-            com.pokedaisy.app.companion.ui.gameLookRow { revision++ },
+            // The game's colours on the companion and its style on the HUD while it runs, or the theme (CompanionSkins).
+            com.pokedaisy.app.companion.ui.inGameRow { revision++ },
             // OFF / ON / AUTO (the device's), cycled on a tap so each look shows at once: both screens switch together.
             SettingRow(tk("DARK MODE"), DarkMode.setting.label) {
                 DarkMode.set(DarkMode.setting.next())
                 revision++
             },
-            // The app's text: the pixel font or a smooth one, both screens at once.
+            // The app's text: the pixel font or a smooth one (each drawn in itself), both screens at once.
             SettingRow(
-                tk("FONT"), com.pokedaisy.app.companion.ui.theme.AppFonts.current.label, subtitle = "Pixel letters or smooth ones",
+                tk("FONT TYPE"), com.pokedaisy.app.companion.ui.theme.AppFonts.currentLabel, subtitle = com.pokedaisy.app.companion.ui.fontSubtitle(),
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.PIXEL_SMALL),
             ) {
                 selector = Selector(
-                    tk("FONT"), com.pokedaisy.app.companion.ui.theme.AppFont.menu.map { it.label },
-                    com.pokedaisy.app.companion.ui.theme.AppFonts.current.label,
+                    tk("FONT TYPE"), com.pokedaisy.app.companion.ui.theme.AppFonts.menu().map { it.label },
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.currentLabel,
+                    font = { com.pokedaisy.app.companion.ui.fontOption(it) },
+                ) { l -> if (com.pokedaisy.app.companion.ui.theme.AppFonts.pick(l)) revision++ }
+            },
+            // The app's text a size down or up, both screens at once.
+            SettingRow(
+                tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFonts.sizeLabel, subtitle = "The app's text smaller or bigger",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.FONT_SIZE)
+                    ?: com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MORE_FONT_SIZES),
+            ) {
+                selector = Selector(
+                    tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.map { it.label },
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.size.label,
+                    badge = { l ->
+                        com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MORE_FONT_SIZES)
+                            .takeIf { l == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM.label }
+                    },
                 ) { l ->
-                    com.pokedaisy.app.companion.ui.theme.AppFont.entries.firstOrNull { it.label == l }?.let {
-                        com.pokedaisy.app.companion.ui.theme.AppFonts.set(it)
+                    com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.firstOrNull { it.label == l }?.let {
+                        com.pokedaisy.app.companion.ui.theme.AppFonts.changeSize(it)
+                        // MORE SIZES: its slider at once, the text resizing as it moves.
+                        if (it == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM) selector = Selector(tk("MORE SIZES"), emptyList(), "", slider = {
+                            com.pokedaisy.app.companion.ui.fontSizeLabel() to com.pokedaisy.app.companion.ui.fontSizeSlider { revision++ }
+                        }) {}
                         revision++
                     }
                 }
             },
+            // The player's own themes, fonts and background pictures.
+            SettingRow(
+                tk("MY LOOK"), null, subtitle = "Your own themes, fonts and backgrounds", opensPage = true,
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MY_LOOK),
+            ) { screen = Screen.MY_LOOK },
             // The game's frames per second and the app's CPU share, in the game's corner.
             SettingRow(tk("FPS / CPU"), onOff(prefs.showPerformance), subtitle = "Speed and CPU use in the game's corner") {
                 prefs.showPerformance = !prefs.showPerformance
@@ -1080,7 +1259,7 @@ class SettingsActivity : ComponentActivity() {
             ) { openUrl(Discord.URL) },
             // The manual (docs/manual, served by the website), readable offline once fetched.
             SettingRow(tk("HELP"), null, opensPage = true) { screen = Screen.HELP },
-        )
+        ))
         // Search: every row whose name, value or keywords (SETTING_KEYWORDS: "rebind", "keybinds"...) match.
         // D-pad focus starts on the first setting (it used to land on the search box first), once per visit to Settings;
         // B / BACK in the search box comes back there too.

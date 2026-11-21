@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -47,6 +51,9 @@ class CollectionState {
     var picked by mutableStateOf<SaveCollection.Item?>(null)
     var pickingGame by mutableStateOf(false)
     var pickingSort by mutableStateOf(false)
+    /** LIST (a row each), GRID (sprites in a grid) or CARDS (a card each with everything about it). */
+    var view by mutableStateOf(CollectionView.LIST)
+    var pickingView by mutableStateOf(false)
 
     fun load(read: List<TradeSide>, gathered: List<SaveCollection.Item> = SaveCollection.gather(read)) {
         sides = read
@@ -117,6 +124,7 @@ fun CollectionScreen(
                     )
                     OptionButton(tk("SHINY"), m, onClick = { state.shinyOnly = !state.shinyOnly }, emphasis = state.shinyOnly)
                     OptionButton(sortLabel(state.sort), m, onClick = { state.pickingSort = true })
+                    OptionButton(viewLabel(state.view), m, onClick = { state.pickingView = true })
                 }
                 if (narrow) Column(verticalArrangement = Arrangement.spacedBy(m.u * 4)) {
                     search(Modifier.fillMaxWidth())
@@ -129,11 +137,13 @@ fun CollectionScreen(
             Spacer(Modifier.height(m.u * 4))
             OptionListWindow(m, Modifier.weight(1f).fillMaxWidth()) {
                 when {
-                    sides == null -> CollectionMessage(tr("Reading your saves…"), m)
+                    sides == null -> CollectionMessage(tr("Reading your saves…"), m, loading = true)
                     sides.isEmpty() -> CollectionMessage(tr("No game here has a save the save editor can read yet."), m)
                     shown.isEmpty() -> CollectionMessage(tr("No Pokémon like that in your saves."), m)
+                    state.view != CollectionView.LIST -> CollectionTiles(shown, sides, state.view, m, small, icons) { state.picked = it }
                     else -> LazyColumn(Modifier.fillMaxSize()) {
-                        items(shown, key = { "${it.source}:${it.at}" }) { item ->
+                        items(shown.size, key = { "${shown[it].source}:${shown[it].at}" }) { index ->
+                            val item = shown[index]
                             val side = sides[item.source]
                             val mon = item.mon
                             val name = monLabel(mon)
@@ -145,7 +155,7 @@ fun CollectionScreen(
                             }
                             OptionLine(
                                 label, if (mon.isEgg) null else tr("Lv{0}", item.level), selected = false, m,
-                                height = rowHeight, labelWeight = 0.75f, divider = true,
+                                height = rowHeight, labelWeight = 0.75f, divider = true, stripe = index % 2 == 1,
                                 valueBadge = if (mon.isShiny && !mon.isEgg) tk("SHINY") else null,
                                 subtitle = "${side.label} · ${whereIn(item, side)}",
                                 leading = icons(item.source)?.let { loader -> @Composable { BoxMonIcon(loader, mon, m.rowHeight) } },
@@ -158,8 +168,11 @@ fun CollectionScreen(
                 Spacer(Modifier.height(m.u * 3))
                 val hint = if (onPalPark != null) tr("{0} shown · tap one to open its save, trade it or send it to Pal Park", shown.size)
                     else tr("{0} shown · tap one to open its save or trade it", shown.size)
-                GbaText(hint,
-                    OptionColors.onBackdrop, OptionColors.onBackdropShadow, small, maxLines = 2)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    GbaText(hint, OptionColors.onBackdrop, OptionColors.onBackdropShadow, small, Modifier.weight(1f), maxLines = 2)
+                    // GRID: names under the sprites or not, like the other box grids.
+                    if (state.view == CollectionView.GRID) MonNamesButton(m)
+                }
             }
         }
 
@@ -191,11 +204,98 @@ fun CollectionScreen(
                 onPick = { state.game = it; state.pickingGame = false }, onDismiss = { state.pickingGame = false },
             )
         }
+        if (state.pickingView) {
+            OptionSelector(
+                tk("VIEW"), CollectionView.entries, state.view, ::viewLabel, m,
+                onPick = { state.view = it; state.pickingView = false }, onDismiss = { state.pickingView = false },
+            )
+        }
         if (state.pickingSort) {
             OptionSelector(
                 tk("SORT"), SaveCollection.Sort.entries, state.sort, ::sortLabel, m,
                 onPick = { state.sort = it; state.pickingSort = false }, onDismiss = { state.pickingSort = false },
             )
+        }
+    }
+}
+
+/** How COLLECTION lays its Pokémon out. */
+enum class CollectionView { LIST, GRID, CARDS }
+
+private fun viewLabel(v: CollectionView): String = when (v) {
+    CollectionView.LIST -> tk("LIST")
+    CollectionView.GRID -> tk("GRID")
+    CollectionView.CARDS -> tk("CARDS")
+}
+
+/**
+ * GRID and CARDS: GRID a tile each - the sprite as large as the tile lets it be, its level in the corner, its name under it
+ * (each game's own sprite: a Pokémon looks as its own game draws it); CARDS a wider card each - the sprite beside its name,
+ * species, level, game and where it is in that save.
+ */
+@Composable
+private fun CollectionTiles(
+    shown: List<SaveCollection.Item>, sides: List<TradeSide>, view: CollectionView, m: GbaTextMetrics, small: GbaTextMetrics,
+    icons: (Int) -> MonIconLoader?, onPick: (SaveCollection.Item) -> Unit,
+) {
+    val cards = view == CollectionView.CARDS
+    val u = m.u
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+        androidx.compose.foundation.lazy.grid.GridCells.Adaptive(if (cards) 260.dp else 96.dp),
+        Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(u * 3),
+        verticalArrangement = Arrangement.spacedBy(u * 3),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(u * 2),
+    ) {
+        items(shown.size, key = { "${shown[it].source}:${shown[it].at}" }) { i ->
+            val item = shown[i]
+            val mon = item.mon
+            val side = sides[item.source]
+            val loader = icons(item.source)
+            val level = if (mon.isEgg) "" else tr("Lv{0}", item.level)
+            val shiny = mon.isShiny && !mon.isEgg
+            Box(
+                Modifier
+                    .then(if (cards) Modifier else Modifier.aspectRatio(0.86f))
+                    .collectionCard(u)
+                    .soundClickable { onPick(item) }
+                    .padding(u * 3),
+            ) {
+                if (cards) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(m.lineHeight * 3), contentAlignment = Alignment.Center) {
+                        loader?.let { BoxMonIcon(it, mon, m.lineHeight * 3) }
+                    }
+                    Spacer(Modifier.width(u * 4))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            GbaText(monLabel(mon), OptionColors.label, OptionColors.labelShadow, m, Modifier.weight(1f, fill = false), bold = modernView)
+                            if (shiny) PixelIcon(PixelIcons.sparkle, OptionColors.favorite, Modifier.padding(start = u * 2).size(m.lineHeight * 0.7f))
+                        }
+                        val species = if (mon.isEgg) null else speciesLabel(mon.species, mon.game)
+                        GbaText(
+                            listOfNotNull(
+                                item.national.takeIf { it > 0 && !mon.isEgg }?.let { "No.${it.toString().padStart(3, '0')}" },
+                                species?.takeIf { it != monLabel(mon) }, level.ifEmpty { null },
+                            ).joinToString(" · "),
+                            OptionColors.value, OptionColors.valueShadow, small,
+                        )
+                        GbaText("${side.label} · ${whereIn(item, side)}", OptionColors.muted, OptionColors.mutedShadow, small)
+                    }
+                } else BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val names = MonCellNames.shown
+                    val sprite = (if (names) maxHeight - small.lineHeight else maxHeight).coerceAtMost(maxWidth)
+                    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            loader?.let { BoxMonIcon(it, mon, sprite) }
+                        }
+                        if (names) GbaText(monLabel(mon), OptionColors.label, OptionColors.labelShadow, small)
+                    }
+                    Column(Modifier.align(Alignment.TopEnd), horizontalAlignment = Alignment.End) {
+                        if (level.isNotEmpty()) GbaText(level, OptionColors.value, OptionColors.valueShadow, small)
+                        if (shiny) PixelIcon(PixelIcons.sparkle, OptionColors.favorite, Modifier.size(small.lineHeight * 0.7f))
+                    }
+                }
+            }
         }
     }
 }
@@ -212,9 +312,16 @@ private fun whereIn(item: SaveCollection.Item, side: TradeSide): String = when (
     is MonRef.Pc -> side.editor.data.boxName(at.at.box).trim().ifEmpty { "BOX ${at.at.box + 1}" }
 }
 
+/** A tile / card: the title window's paper in its frame, like the editor's slots. */
+private fun Modifier.collectionCard(u: androidx.compose.ui.unit.Dp): Modifier = drawBehind {
+    drawLayeredBox(OptionColors.titleLayers.inPx(u.toPx()), OptionColors.titleFill, radius = 3 * u.toPx())
+}
+
 @Composable
-private fun CollectionMessage(text: String, m: GbaTextMetrics) {
-    Box(Modifier.fillMaxWidth().padding(m.u * 4)) {
+private fun CollectionMessage(text: String, m: GbaTextMetrics, loading: Boolean = false) {
+    Row(Modifier.fillMaxWidth().padding(m.u * 4), verticalAlignment = Alignment.CenterVertically) {
+        // The app's "working on it", while every save is read (a big library takes a while).
+        if (loading) RockingPokeBall(Modifier.padding(end = m.u * 4).size(m.lineHeight * 1.4f))
         GbaText(text, OptionColors.label, OptionColors.labelShadow, m, maxLines = Int.MAX_VALUE)
     }
 }

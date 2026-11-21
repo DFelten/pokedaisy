@@ -180,6 +180,37 @@ open class CompanionScreenshotTest {
 
     @Test fun party() = tab("PARTY")
 
+    /** VIEW MODERN's party, after the Switch games': the list on its band, the lead on the stage. */
+    @Test fun partyModern() = modern {
+        snapshot { CompanionScreen(SampleCompanion.snapshot.copy(pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") }
+    }
+
+    /** VIEW MODERN with six: hurt, an egg, fainted, statuses. */
+    @Test fun partyModernFull() = modern {
+        listOf(16, 25, 7, 10).forEach { PokedexSource.reader?.let { _ -> PokedexSource.frontSprite(POKEDEX_FIRERED_REV1, it); DecompIconSource.get(it) } }
+        DecompIconSource.get(412)
+        snapshot { CompanionScreen(SampleCompanion.snapshot.copy(party = modernParty, pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") }
+    }
+
+    /** VIEW MODERN's party in DARK MODE. */
+    @Test fun partyModernDark() = modern {
+        com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
+        try { snapshot { CompanionScreen(SampleCompanion.snapshot.copy(party = modernParty, pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") } }
+        finally { com.pokedaisy.app.companion.ui.theme.DarkMode.override = null }
+    }
+
+    /** VIEW MODERN's party list inside the summary's SWITCH and the bag's USE pick. */
+    @Test fun partyModernSwitch() = modern { partyDetailSwitch() }
+    @Test fun partyModernItemPick() = modern { itemsUsePick() }
+
+    private val modernParty get() = pickParty.map { it.copy(iconAsset = spriteAsset("pokemon", if (it.isEgg) 412 else it.species)) }
+    private val modernDex get() = com.pokedaisy.app.companion.data.PokedexState(POKEDEX_FIRERED_REV1, seen = setOf(4, 16), caught = setOf(4, 16), national = false)
+
+    private fun modern(run: () -> Unit) {
+        com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN
+        try { run() } finally { com.pokedaisy.app.companion.ui.theme.AppViews.override = null }
+    }
+
     /** PARTY before the player is in the game (the title screen: GameStart): the game's empty slots, PRESS START. */
     @Test fun waiting() {
         GameStart.waiting = true

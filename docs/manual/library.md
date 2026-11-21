@@ -69,6 +69,8 @@ The console views and `HACKS` use the same colours as the covers of games withou
 
 The library remembers the view you picked, also after you close the app. A view that has nothing yet tells you how to fill it.
 
+Want them in another order? Hold a quick view until it lifts, then drag it left or right and let go. The library keeps your order.
+
 ## Adding games
 
 There are three ways to get games into the library. Use whichever suits you; they mix fine. A ROM hack that comes as a patch is made into a game with [Patch a ROM hack](#patch-a-rom-hack).

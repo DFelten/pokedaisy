@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
  */
 enum class UiStyle(val label: String) {
     CLASSIC("CLASSIC"), SUMMARY_MINT("SUMMARY MINT"),
+    /** VIEW MODERN's build ([AppViews]): white cards, a blue header, soft sections, gradient keys. */
+    MODERN("MODERN"),
 }
 
 object UiStyles {
@@ -25,7 +27,7 @@ object UiStyles {
     /** ui-preview / screenshot tests: this look whatever the setting. */
     var override: UiStyle? = null
 
-    val current: UiStyle get() = override ?: setting
+    val current: UiStyle get() = if (AppViews.modern) UiStyle.MODERN else override ?: setting
 }
 
 /**
@@ -105,12 +107,15 @@ class KeyColors(
 /** The blues of [retroStylePalette]: what a THEME's hue moves. */
 internal val RETRO_FAMILY = 195f..250f
 
+/** VIEW MODERN's blues: the same family as RETRO's (one PokeDaisy blue in both views). */
+internal val MODERN_FAMILY = RETRO_FAMILY
+
 private val themedPalettes = HashMap<List<Any?>, UiStylePalette?>()
 
 /**
  * [style]'s palette in a THEME's [hue] (null: POKéDAISY, the default): SUMMARY MINT drawn in PokeDaisy's blues
- * ([retroStylePalette], the user's call 2026-11-22), a theme with a hue moving them to it. Cached: OptionColors asks on
- * every colour.
+ * ([retroStylePalette], the user's call 2026-11-22), VIEW MODERN's in its own ([modernStylePalette]), a theme with a hue
+ * moving either to it. Cached: OptionColors asks on every colour.
  */
 fun themedStylePalette(style: UiStyle, dark: Boolean, hue: Float?, calmed: Boolean = true): UiStylePalette? =
     themedPalettes.getOrPut(listOf(style, dark, hue, calmed)) {
@@ -118,6 +123,7 @@ fun themedStylePalette(style: UiStyle, dark: Boolean, hue: Float?, calmed: Boole
         when {
             base == null -> null
             style == UiStyle.SUMMARY_MINT -> retroStylePalette(dark).let { if (hue == null) it else it.rehued(RETRO_FAMILY, hue, calmed) }
+            style == UiStyle.MODERN && hue != null -> base.rehued(MODERN_FAMILY, hue, calmed)
             else -> base
         }
     }
@@ -136,6 +142,7 @@ private fun UiStylePalette.rehued(from: ClosedFloatingPointRange<Float>, to: Flo
 
 fun uiStylePalette(style: UiStyle, dark: Boolean): UiStylePalette? = when (style) {
     UiStyle.CLASSIC -> null
+    UiStyle.MODERN -> modernStylePalette(dark)
     UiStyle.SUMMARY_MINT -> if (!dark) UiStylePalette(
         titleFill = Color(0xFF318C73), titleText = Color(0xFFFFFFFF), titleShadow = Color(0xFF006B63),
         titleLayers = listOf(Color(0xFF00524A) to 1, Color(0xFF9CDEA5) to 1),
@@ -267,6 +274,72 @@ fun unboundStylePalette(dark: Boolean): UiStylePalette = if (!dark) UiStylePalet
     foeCells = CellColors(
         line = Color(0xFF7A3A4A), a = Color(0xFF2A1E22), b = Color(0xFF34252A),
         head = Color(0xFF7E3A4C), headText = Color(0xFFFFFFFF), headShadow = Color(0xFF2A0E16),
+    ),
+)
+
+/** VIEW MODERN's menus (after Pokemon X / Y): PokeDaisy's blue header, white cards with a pale band every other row, soft
+ * blue section bands with blue words, white keys on a pale edge, the open tab a blue key; the foe in coral. */
+fun modernStylePalette(dark: Boolean): UiStylePalette = if (!dark) UiStylePalette(
+    titleFill = Color(0xFF3D6FE0), titleText = Color(0xFFFFFFFF), titleShadow = Color.Transparent,
+    titleLayers = listOf(Color(0xFF3463D2) to 1),
+    listFill = Color(0xFFFFFFFF),
+    listLayers = listOf(Color(0xFFD5DCEA) to 1),
+    stripe = Color(0xFFF5F7FC), rule = null, selected = Color(0xFFE5EDFF),
+    label = Color(0xFF232B40), labelShadow = Color.Transparent,
+    sectionFill = Color(0xFF5A86EA), sectionText = Color(0xFFFFFFFF), sectionShadow = Color.Transparent,
+    arrow = Color(0xFF3D6FE0),
+    separatorDark = Color(0xFFE1E7F1), separatorLight = Color(0xFFFFFFFF), well = Color(0xFFF0F3F9),
+    button = KeyColors(
+        outline = Color(0xFFCCD5E6), face = Color(0xFFFFFFFF), low = Color(0xFFEDF1F8), depth = Color(0xFFD6DDEB),
+        text = Color(0xFF232B40), shadow = Color.Transparent,
+    ),
+    tab = KeyColors(
+        outline = Color(0xFFD5DCEA), face = Color(0xFFFFFFFF), low = Color(0xFFF1F4FA), depth = Color(0xFFDCE2EE),
+        text = Color(0xFF4A5470), shadow = Color.Transparent,
+    ),
+    tabOpen = KeyColors(
+        outline = Color(0xFF2F5BC8), face = Color(0xFF5585EE), low = Color(0xFF3463D6), depth = Color(0xFF2449B0),
+        text = Color(0xFFFFFFFF), shadow = Color.Transparent, pressed = true,
+    ),
+    foeFill = Color(0xFFE2574C), foeShadow = Color(0xFFA8342B),
+    cells = CellColors(
+        line = Color(0xFFE1E7F1), a = Color(0xFFFFFFFF), b = Color(0xFFF5F7FC),
+        head = Color(0xFF3D6FE0), headText = Color(0xFFFFFFFF), headShadow = Color.Transparent,
+    ),
+    foeCells = CellColors(
+        line = Color(0xFFF2DDDA), a = Color(0xFFFFFFFF), b = Color(0xFFFDF5F4),
+        head = Color(0xFFE2574C), headText = Color(0xFFFFFFFF), headShadow = Color.Transparent,
+    ),
+) else UiStylePalette(
+    titleFill = Color(0xFF3560D0), titleText = Color(0xFFFFFFFF), titleShadow = Color.Transparent,
+    titleLayers = listOf(Color(0xFF2A4FB0) to 1),
+    listFill = Color(0xFF1C2333),
+    listLayers = listOf(Color(0xFF333D55) to 1),
+    stripe = Color(0xFF20283A), rule = null, selected = Color(0xFF2B3A62),
+    label = Color(0xFFE8ECF5), labelShadow = Color.Transparent,
+    sectionFill = Color(0xFF2F55B8), sectionText = Color(0xFFFFFFFF), sectionShadow = Color.Transparent,
+    arrow = Color(0xFF8AAEFF),
+    separatorDark = Color(0xFF2E374C), separatorLight = Color(0xFF1C2333), well = Color(0xFF232B3E),
+    button = KeyColors(
+        outline = Color(0xFF3A4560), face = Color(0xFF2E3850), low = Color(0xFF262F44), depth = Color(0xFF151B28),
+        text = Color(0xFFE8ECF5), shadow = Color.Transparent,
+    ),
+    tab = KeyColors(
+        outline = Color(0xFF333D55), face = Color(0xFF283147), low = Color(0xFF222A3D), depth = Color(0xFF151B28),
+        text = Color(0xFFB8C2D8), shadow = Color.Transparent,
+    ),
+    tabOpen = KeyColors(
+        outline = Color(0xFF2A4FB0), face = Color(0xFF5585EE), low = Color(0xFF3463D6), depth = Color(0xFF1A3A90),
+        text = Color(0xFFFFFFFF), shadow = Color.Transparent, pressed = true,
+    ),
+    foeFill = Color(0xFFC9483E), foeShadow = Color(0xFF5A1A14),
+    cells = CellColors(
+        line = Color(0xFF2E374C), a = Color(0xFF1C2333), b = Color(0xFF212A3C),
+        head = Color(0xFF3560D0), headText = Color(0xFFFFFFFF), headShadow = Color.Transparent,
+    ),
+    foeCells = CellColors(
+        line = Color(0xFF4A2E30), a = Color(0xFF241D24), b = Color(0xFF2A2128),
+        head = Color(0xFFC9483E), headText = Color(0xFFFFFFFF), headShadow = Color.Transparent,
     ),
 )
 

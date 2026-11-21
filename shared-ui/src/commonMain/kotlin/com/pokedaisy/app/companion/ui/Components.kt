@@ -73,7 +73,8 @@ private fun rememberTypeTags(): androidx.compose.ui.graphics.ImageBitmap? {
 
 @Composable
 fun TypeBadge(type: String, modifier: Modifier = Modifier, fontSize: TextUnit = 12.sp) {
-    val tags = rememberTypeTags()
+    // VIEW MODERN: always the drawn tag (rounded there), never the ROM's pixel one.
+    val tags = if (modernView) null else rememberTypeTags()
     val tile = TYPE_TAG_TILES[type]
     if (tags != null && tile != null) {
         // Whole pixels of the tag per GBA pixel, as large as the words the badge would have had.
@@ -136,14 +137,16 @@ internal fun GameTagBox(
         modifier = modifier
             .height(height)
             .widthIn(min = u * minWidth)
-            .background(color, NotchedShape(u))
+            // VIEW MODERN: a rounded tag (no pixel notches), bold letters in its middle.
+            .background(color, if (modernView) androidx.compose.foundation.shape.RoundedCornerShape(u * 3.5f) else NotchedShape(u))
             .padding(horizontal = u * 4),
         contentAlignment = Alignment.Center,
     ) {
         // The line is taller than a small tag (16 font pixels to the box's 12 GBA ones): laid out whole, centred over it, then
         // a font pixel up - the game's letters sit above the middle (two pixels over them, three under with the shadow).
         GbaText(text, textColor, shadow, m,
-            Modifier.wrapContentHeight(unbounded = true).offset { androidx.compose.ui.unit.IntOffset(0, -f) }, maxLines = 1)
+            Modifier.wrapContentHeight(unbounded = true).offset { androidx.compose.ui.unit.IntOffset(0, if (modernView) 0 else -f) }, maxLines = 1,
+            bold = modernView)
     }
 }
 

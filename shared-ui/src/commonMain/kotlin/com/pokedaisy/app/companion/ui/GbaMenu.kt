@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -70,6 +71,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import com.pokedaisy.app.companion.data.GameKind
 import com.pokedaisy.app.companion.data.isN3ds
@@ -106,7 +108,18 @@ object OptionColors {
     internal val gen1 get() = inGame && activeGame.isGameBoyGame
 
     /** A game's skin's own palette ([CompanionSkins.current]), or null: OptionColors' own. */
-    private val sk: SkinColors? get() = CompanionSkins.current.activeColors
+    private val sk: SkinColors? get() = CompanionSkins.current.activeColors?.let { colors ->
+        val modernSkin = CompanionSkins.current === CompanionSkins.MODERN
+        val game = CompanionSkins.gameHue
+        // IN GAME GAME COLORS in RETRO: the style palette in the game's hue (below), not the game skin's old windows.
+        if (game != null && !modernSkin) return@let null
+        // VIEW MODERN follows the game's colours there, else the THEME, like the menu style does; a 3DS game's own skin
+        // keeps its colours.
+        val t = AppColors.theme
+        val hue = game ?: t.hue
+        if (hue == null || !modernSkin) colors
+        else colors.inTheme(hue, gameValue ?: if (dark) t.valueNight else t.value)
+    }
 
     /** A game's screens are up (PokeDaisyActivity resumed); Compose state, so the look follows at once. */
     var inGame: Boolean
@@ -145,24 +158,36 @@ object OptionColors {
     private fun c(light: Long, dark: Long) = Color(if (this.dark) dark else light)
 
     /** THEME (ThemeSpec): a window's colour in the theme's hue, the way [c] gives dark mode's twin. */
-    fun tint(color: Color): Color = AppColors.theme.let { t -> t.hue?.let { color.themed(it, t.wash) } ?: color }
+    fun tint(color: Color): Color = gameTint?.let { color.themed(it, GAME_WASH) }
+        ?: AppColors.theme.let { t -> t.hue?.let { color.themed(it, t.wash) } ?: color }
     private fun w(light: Long, dark: Long) = tint(c(light, dark))
-    private val plainTheme get() = AppColors.theme.hue == null
+    /** How much of the game's hue the greys take under IN GAME GAME COLORS (a theme's own, about). */
+    private const val GAME_WASH = 0.5f
+    private val plainTheme get() = AppColors.theme.hue == null && gameTint == null
 
     /** The menus' build (MENU STYLE, [com.pokedaisy.app.companion.ui.theme.UiStyle]); null = CLASSIC, and always on the
      * Game Boy games, which keep their own windows. */
     val style: com.pokedaisy.app.companion.ui.theme.UiStylePalette?
         // A game's skin (GAME LOOK: the 3DS games' own look) and the Game Boy games' windows keep theirs.
-        get() = if (gen1 || sk != null) null else {
+        // VIEW MODERN's skin sets the windows and leaves the build (keys, sections, cells) to UiStyle.MODERN's palette.
+        get() = if (gen1 || (sk != null && CompanionSkins.current !== CompanionSkins.MODERN)) null else run {
             val current = com.pokedaisy.app.companion.ui.theme.UiStyles.current
-            // Unbound wears SUMMARY MINT in its own purple and gold (the user's call), while it's the game that's up.
-            val unbound = current == com.pokedaisy.app.companion.ui.theme.UiStyle.SUMMARY_MINT &&
-                activeGame == com.pokedaisy.app.companion.data.GameKind.UNBOUND &&
-                (inGame || com.pokedaisy.app.companion.ui.theme.UiStyles.override != null)
-            if (unbound) com.pokedaisy.app.companion.ui.theme.unboundStylePalette(dark)
-            // PokeDaisy's blues (retroStylePalette), moved to a THEME's hue.
-            else com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, AppColors.theme.hue)
+            val gameHue = CompanionSkins.gameHue
+            when {
+                // Unbound wears SUMMARY MINT in its own purple and gold (the user's call), while it's the game that's up.
+                unboundRetro -> com.pokedaisy.app.companion.ui.theme.unboundStylePalette(dark)
+                // IN GAME GAME COLORS: the app's menus in the game's colours.
+                gameHue != null -> com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, gameHue, calmed = false)
+                else -> com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, AppColors.theme.hue)
+            }
         }
+    /** Unbound's own SUMMARY MINT palette is up (RETRO, its game on GAME COLORS, or a preview of it). */
+    private val unboundRetro: Boolean get() =
+        com.pokedaisy.app.companion.ui.theme.UiStyles.current == com.pokedaisy.app.companion.ui.theme.UiStyle.SUMMARY_MINT &&
+            activeGame == com.pokedaisy.app.companion.data.GameKind.UNBOUND &&
+            ((inGame && CompanionSkins.enabled) || com.pokedaisy.app.companion.ui.theme.UiStyles.override != null)
+    /** The game's hue for the windows' tint and values; none under Unbound's own palette, which has its colours already. */
+    private val gameTint: Float? get() = CompanionSkins.gameHue?.takeUnless { unboundRetro }
     /** A MENU STYLE joins its windows edge to edge: a title strip straight on its list, tabs on the window's side. */
     val joined get() = style != null
     private fun List<Pair<Color, Int>>.tinted() = map { (color, width) -> tint(color) to width }
@@ -193,6 +218,8 @@ object OptionColors {
     val listFill get() = sk?.listFill ?: (if (gen1) G1_PAPER else style?.let { tint(it.listFill) } ?: w(0xFFE0DFDF, 0xFF1D2128))
     /** A picture's well inside a window: [listFill] in CLASSIC (its windows are white), the style's own well otherwise. */
     val well get() = style?.let { tint(it.well) } ?: listFill
+    /** Every other row of a long list (pick-lists, COLLECTION): the style's band, else a touch of the label's colour. */
+    val rowStripe get() = style?.stripe?.let { tint(it) } ?: androidx.compose.ui.graphics.lerp(listFill, label, if (dark) 0.06f else 0.04f)
     /** The cursor row (Gen 1 marks it with its ▶; here a light grey band, a lighter slate in dark). */
     val rowSelected get() = sk?.rowSelected ?: (if (gen1) (if (activeGame.isRedBlue) c(0xFFE6D6E6, 0xFF3A3A3A) else c(0xFFDCDCDC, 0xFF3A3A3A))
         else style?.let { tint(it.selected) } ?: w(0xFFFFFFFF, 0xFF353C49))
@@ -200,9 +227,15 @@ object OptionColors {
     val labelShadow get() = sk?.labelShadow ?: (if (gen1) Color.Transparent else style?.let { tint(it.labelShadow) } ?: w(0xFFBCBBB4, 0xFF3A404B))
     /** FireRed's red; a theme's own colour (THEME). */
     val value get() = sk?.value ?: (if (gen1) G1_INK else if (plainTheme) c(0xFFCB0707, 0xFFFF6A5C)
-        else AppColors.theme.let { if (dark) it.valueNight else it.value })
+        else gameValue ?: AppColors.theme.let { if (dark) it.valueNight else it.value })
     val valueShadow get() = sk?.valueShadow ?: (if (gen1) Color.Transparent else if (plainTheme) c(0xFFE0A564, 0xFF6E2A22)
-        else AppColors.theme.let { if (dark) lerp(it.valueNight, Color.Black, 0.62f) else lerp(it.value, Color.White, 0.6f) })
+        else (gameValue ?: AppColors.theme.let { if (dark) it.valueNight else it.value }).let {
+            if (dark) lerp(it, Color.Black, 0.62f) else lerp(it, Color.White, 0.6f)
+        })
+    /** IN GAME GAME COLORS' values ([CompanionSkins.gameHue]): a deep colour of the game's hue (light in dark mode). */
+    private val gameValue: Color? get() = gameTint?.let {
+        if (dark) com.pokedaisy.app.companion.ui.theme.hslColor(it, 0.9f, 0.68f) else com.pokedaisy.app.companion.ui.theme.hslColor(it, 0.85f, 0.38f)
+    }
     /** Something done in the game went through: FireRed's stdpal_0 green (TEXT_COLOR_GREEN). */
     val success get() = if (gen1) G1_INK else c(0xFF209C08, 0xFF6BD65A)
     /** The party menu's field moves (FLY, CUT...): TEXT_COLOR_BLUE on LIGHT_BLUE, FireRed's stdpal_0. */
@@ -217,8 +250,11 @@ object OptionColors {
     val featureText get() = if (gen1) G1_PAPER else fieldMove
     val featureShadow get() = if (gen1) Color.Transparent else fieldMoveShadow
     /** Secondary text (paths, timestamps, hints) - lighter than [label] (dimmer in dark). */
-    val muted get() = sk?.muted ?: (if (gen1) c(0xFF787878, 0xFF9A9A9A) else w(0xFF8C8C94, 0xFF8F95A3))
-    val mutedShadow get() = sk?.mutedShadow ?: (if (gen1) Color.Transparent else w(0xFFD6D6D6, 0xFF2C313A))
+    // Grey text: a theme's hue only lightly (at full wash a mid grey read as coloured ink: red descriptions in CHERRY).
+    private fun soft(light: Long, dark: Long) = gameTint?.let { c(light, dark).themed(it, GAME_WASH * 0.3f) }
+        ?: AppColors.theme.let { t -> t.hue?.let { c(light, dark).themed(it, t.wash * 0.3f) } ?: c(light, dark) }
+    val muted get() = sk?.muted ?: (if (gen1) c(0xFF787878, 0xFF9A9A9A) else soft(0xFF8C8C94, 0xFF8F95A3))
+    val mutedShadow get() = sk?.mutedShadow ?: (if (gen1) Color.Transparent else soft(0xFFD6D6D6, 0xFF2C313A))
     /** The dark outer line of [listLayers], for frames drawn around images. */
     val frameDark get() = sk?.frameDark ?: (if (gen1) c(0xFF181818, 0xFF000000) else w(0xFF293131, 0xFF050608))
     val frameLight get() = sk?.frameLight ?: (if (gen1) G1_PAPER else w(0xFF8C8CCE, 0xFF6F6FB8))
@@ -478,8 +514,8 @@ fun OptionListWindow(
                 vertical = u * (frame + 2 + margin),
             ),
     ) {
-        // How far the content sits in from the frame as drawn, and the fill's corner there: a [PanelHeader] reaches back
-        // over it, to the frame, and rounds with it.
+        // How far the content sits in from the frame as drawn (VIEW MODERN's hairlines are thinner than the frame's GBA
+        // pixels), and the fill's corner there: a [PanelHeader] reaches back over it, to the frame, and rounds with it.
         val density = androidx.compose.ui.platform.LocalDensity.current
         val edge = with(density) {
             val drawn = layers.inPx(u.toPx()).sumOf { it.second.toDouble() }.toFloat()
@@ -494,7 +530,7 @@ fun OptionListWindow(
 }
 
 /** An [OptionListWindow]'s inside, in px: from its content to the frame's inner edge (each side, the top), and the fill's
- * corner radius there. */
+ * corner radius there (before a smooth skin's scale, like the window's own). */
 class WindowEdge(val side: Float, val top: Float, val radius: Float)
 
 /** The [WindowEdge] of the [OptionListWindow] around this content; null outside one. */
@@ -544,6 +580,8 @@ fun OptionLine(
     marker: Boolean = false,
     /** The games' ▶ cursor beside the row while it's selected, in any look (SETTINGS' lists; else a menu style's own). */
     cursorArrow: Boolean = false,
+    /** The label in this font (FONT TYPE's pick-list), else the app's. */
+    labelFont: com.pokedaisy.app.companion.ui.theme.FontChoice? = null,
     onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -571,7 +609,7 @@ fun OptionLine(
                 Modifier.background(
                     when {
                         lit -> OptionColors.rowSelected
-                        stripe && style?.stripe != null -> OptionColors.tint(style.stripe)
+                        stripe -> OptionColors.rowStripe
                         else -> Color.Transparent
                     },
                 ),
@@ -595,6 +633,13 @@ fun OptionLine(
                     val px = m.u.toPx()
                     val mid = ((size.height - bottomPadding.toPx() - subtitleLine.toPx()) / px / 2).toInt()
                     val ink = style?.arrow?.let { OptionColors.tint(it) } ?: OptionColors.label
+                    if (modernView) {
+                        // VIEW MODERN: a smooth pointer, not pixel steps.
+                        val cy = (mid + 0.5f) * px
+                        drawPath(androidx.compose.ui.graphics.Path().apply {
+                            moveTo(2 * px, cy - 3.5f * px); lineTo(6 * px, cy); lineTo(2 * px, cy + 3.5f * px); close()
+                        }, ink)
+                    } else
                     for (i in 0..3) drawRect(ink, Offset((2 + i) * px, (mid - 3 + i) * px), Size(px, (7 - 2 * i) * px))
                 } else Modifier,
             )
@@ -609,7 +654,7 @@ fun OptionLine(
                     labelIcon?.let { Box(Modifier.size(labelIconSize ?: m.lineHeight)) { it() }; Spacer(Modifier.width(m.u * 4)) }
                     val labelColor = if (enabled) OptionColors.label else OptionColors.muted
                     val labelShadow = if (enabled) OptionColors.labelShadow else OptionColors.mutedShadow
-                    GbaText(tr(label), labelColor, labelShadow, m)
+                    GbaText(tr(label), labelColor, labelShadow, m, font = labelFont)
                     labelBadge?.let {
                         // NEW (a just-shipped feature, companion.NewFeatures) in the Library's green; anything else red.
                         val new = it == com.pokedaisy.app.companion.NewFeatures.NEW_TAG
@@ -680,7 +725,10 @@ private const val SLIDER_MAX = 110
 @Composable
 fun subtitleMetrics(m: GbaTextMetrics): GbaTextMetrics =
     // [DenseText] took the main text down to 1x: the subtitles stay there too (0.8 of it was two screen pixels a font pixel).
-    rememberGbaTextMetrics(if (LocalDenseText.current) maxOf(1f, 0.8f * m.fontPixel / m.px) else 0.8f * m.fontPixel / m.px, gameScaled = false)
+    // [m] already carries FONT SIZE's factor, which rememberGbaTextMetrics would add again: taken back out here.
+    (com.pokedaisy.app.companion.ui.theme.AppFonts.currentSize.factor).let { f ->
+        rememberGbaTextMetrics(if (LocalDenseText.current) maxOf(1f, 0.8f * m.fontPixel / m.px) / f else 0.8f * m.fontPixel / m.px / f, gameScaled = false)
+    }
 
 /**
  * A small tag on a row (NEW on a just-shipped feature, BETA, the library's NOT SUPPORTED): white on [fill] (the value red by
@@ -782,7 +830,9 @@ fun OptionButton(
     val colors = if (!rainbow || !enabled || labelColors != null || frameLayers != null) null else OptionColors.rainbow(rainbowSlot)
     // A game's skin's own buttons (HeartGold's orange, Black's charcoal plates), where it has them and nothing above asks
     // for another look.
-    val skin = CompanionSkins.current.activeColors?.takeIf { colors == null && labelColors == null && frameLayers == null && it.buttonFill != null }
+    val skin = CompanionSkins.current.activeColors?.takeIf {
+        colors == null && labelColors == null && frameLayers == null && it.buttonFill != null && CompanionSkins.gameHue == null
+    }
     // Else a style's key (a face standing on an edge), unless the button has colours of its own.
     val key = if (colors != null || frameLayers != null || skin != null) null else OptionColors.buttonKey
     val fg = when {
@@ -1010,15 +1060,29 @@ fun <T> OptionSelector(
     badge: (T) -> String? = { null },
     /** A few words above the options in the subtitles' grey (SHINY ODDS' disclaimer), or null. */
     note: String? = null,
+    /** False greys an option out (TRADE's games that can't trade with the first one); it can't be picked. */
+    enabled: (T) -> Boolean = { true },
+    /** A grey line under an option's label (why it's greyed out), or null. */
+    subtitle: (T) -> String? = { null },
+    /** An option's label in its own font (FONT TYPE), else the app's. */
+    labelFont: (T) -> com.pokedaisy.app.companion.ui.theme.FontChoice? = { null },
+    /** A small picture before an option's label (THEME's colours), a line high. */
+    labelIcon: (T) -> (@Composable () -> Unit)? = { null },
 ) {
-    OptionOverlay(onDismiss, Modifier.widthIn(max = 480.dp)) {
+    // The options a step smaller than the title, in rows at least a little taller than a line needs, the window at least
+    // this wide (the user's call: the pick-lists read big and cramped).
+    val smallOm = rememberGbaTextMetrics(1f)
+    OptionOverlay(onDismiss, Modifier.widthIn(min = 360.dp, max = 480.dp)) {
         BoxWithConstraints {
             // Fit every option + CANCEL on screen when there's room (title
             // window, gap and list frame take ~40u, a note about two lines), else scroll.
             val u = m.u
             val noteRoom = if (note != null) subtitleMetrics(m).lineHeight * 2 + u * 8 else 0.dp
             val room = if (maxHeight == Dp.Infinity) m.rowHeight * 20 else maxHeight - u * 40 - m.lineHeight - noteRoom
-            val rowHeight = (room / (options.size + 1)).coerceIn(m.rowHeight, m.rowHeight * 1.3f)
+            val rowHeight = (room / (options.size + 1)).coerceIn(m.rowHeight * 1.12f, m.rowHeight * 1.35f)
+            // A full list (rows at their least, so it scrolls) reads in the title's size: a step down was too small there.
+            val full = room / (options.size + 1) <= m.rowHeight * 1.12f
+            val om = if (full) m else smallOm
             // The D-pad's row (index, options.size = CANCEL): while it's on another one, the current choice keeps
             // its marker but not the white, so one row is lit.
             var focusedRow by remember { mutableStateOf(-1) }
@@ -1036,13 +1100,16 @@ fun <T> OptionSelector(
                         options.forEachIndexed { i, opt ->
                             val on = opt == selected
                             OptionLine(
-                                label(opt), null, selected = on && (focusedRow < 0 || focusedRow == i), m, marker = on,
-                                height = rowHeight, labelWeight = 0.85f, divider = true, labelBadge = badge(opt),
+                                label(opt), null, selected = on && (focusedRow < 0 || focusedRow == i), om, marker = on,
+                                height = if (subtitle(opt) != null) rowHeight + subtitleMetrics(om).lineHeight else rowHeight,
+                                labelWeight = 0.85f, divider = true, labelBadge = badge(opt), stripe = i % 2 == 1,
+                                enabled = enabled(opt), subtitle = subtitle(opt), labelFont = labelFont(opt),
+                                labelIcon = labelIcon(opt),
                                 onFocus = { focusedRow = i },
                             ) { onPick(opt) }
                         }
                         OptionLine(
-                            tk("CANCEL"), null, selected = false, m, height = rowHeight,
+                            tk("CANCEL"), null, selected = false, om, height = rowHeight,
                             onFocus = { focusedRow = options.size }, onClick = onDismiss,
                         )
                     }
@@ -1095,6 +1162,10 @@ fun OptionConfirm(
 /** A game's party-menu background, pixel-scaled to fill (see [rememberGameBackground]). */
 @Composable
 fun GameBackdrop(game: GameKind, modifier: Modifier = Modifier.fillMaxSize()) {
+    // MY LOOK > COMPANION BACKGROUND: the player's picture, whatever the game.
+    com.pokedaisy.app.companion.ui.theme.rememberLookPicture(companion = true)?.let { PictureBackdrop(it, modifier); return }
+    // VIEW MODERN: its own page, but a 3DS game keeps its own (its smooth skin is the game's).
+    if (modernView && !game.isN3ds) { ModernBackdrop(modifier); return }
     // Dark mode: the game's art at night, under a blue-black scrim (Gen 1's white nearly all the way).
     val scrim = OptionColors.backdropScrim.let { if (it > 0f && game.isGameBoyGame) 0.9f else it }
     // THEME: the art multiplied by the theme's wash first (its darks stay, its lights take the colour).
@@ -1145,6 +1216,25 @@ fun GameBackdrop(game: GameKind, modifier: Modifier = Modifier.fillMaxSize()) {
     }
 }
 
+/**
+ * The player's picture behind a screen (MY LOOK): it fills the screen, cropped to its shape and smoothly scaled; DARK MODE
+ * dims it under the backdrops' night scrim so the windows over it still read as they do on the game's art.
+ */
+@Composable
+fun PictureBackdrop(picture: ImageBitmap, modifier: Modifier = Modifier.fillMaxSize()) {
+    val scrim = OptionColors.backdropScrim
+    Canvas(modifier) {
+        val k = maxOf(size.width / picture.width, size.height / picture.height)
+        val w = (picture.width * k).roundToInt()
+        val h = (picture.height * k).roundToInt()
+        drawImage(
+            picture, dstOffset = IntOffset(((size.width - w) / 2f).roundToInt(), ((size.height - h) / 2f).roundToInt()),
+            dstSize = IntSize(w, h), filterQuality = FilterQuality.Medium,
+        )
+        if (scrim > 0f) drawRect(NIGHT.copy(alpha = scrim))
+    }
+}
+
 /** HeartGold / SoulSilver's party screen background (headless capture). */
 private val HGSS_BACKDROP = Color(0xFF8ADBDB)
 
@@ -1159,6 +1249,10 @@ fun AppBackdrop(
     /** The theme's floating logos or pictures (the Library). */
     logos: Boolean = false,
 ) {
+    // MY LOOK's pictures: the app's behind the top screen's pages, the companion's while a game's backdrop isn't known yet.
+    com.pokedaisy.app.companion.ui.theme.rememberLookPicture(companion = OptionColors.inGame)?.let { PictureBackdrop(it); return }
+    // VIEW MODERN: its own page everywhere.
+    if (modernView) { ModernBackdrop(); return }
     if (!OptionColors.inGame) {
         DaisyBackdrop(logos)
         return

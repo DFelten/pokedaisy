@@ -29,6 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.semantics.contentDescription
@@ -308,6 +311,8 @@ fun PcBoxesScreen(
                     OptionButton(tk("CANCEL"), m, onClick = { state.moving = null })
                 } else {
                     if (onTrade != null && !state.changed) OptionButton(tk("TRADE"), m, onClick = onTrade, enabled = !saving)
+                    // Names under the sprites, or the sprites alone and larger (hidden at first): one switch for every box grid.
+                    if (icons != null) MonNamesButton(m)
                     OptionButton(tk("UNDO ALL"), m, onClick = { state.undoAll() }, enabled = state.changed && !saving)
                     OptionButton(tk("SAVE"), m, onClick = { state.confirmSave = true }, emphasis = true, enabled = state.changed && !saving)
                 }
@@ -520,16 +525,13 @@ internal fun BoxGrid(
         Column(Modifier.fillMaxSize()) {
             title?.let { PanelHeader(it, cell) }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(m.u * 4)) {
-                OptionButton(null, m, onClick = { onBox((box + data.boxCount - 1) % data.boxCount) },
-                    pixelIcon = PixelIcons.cursorLeft, modifier = Modifier.semantics { contentDescription = tr("Previous box") })
-                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    GbaText(boxName.ifBlank { "BOX ${box + 1}" }, OptionColors.label, OptionColors.labelShadow, m)
-                }
-                OptionButton(null, m, onClick = { onBox((box + 1) % data.boxCount) },
-                    pixelIcon = PixelIcons.cursorRight, modifier = Modifier.semantics { contentDescription = tr("Next box") })
+                BoxHeader(
+                    boxName.ifBlank { "BOX ${box + 1}" }, m, Modifier.weight(1f),
+                    onPrev = { onBox((box + data.boxCount - 1) % data.boxCount) }, onNext = { onBox((box + 1) % data.boxCount) },
+                )
                 tools?.invoke()
             }
-            Spacer(Modifier.height(cell.u * 2))
+            Spacer(Modifier.height(cell.u * 4))
             Column(Modifier.weight(1f).fillMaxWidth()) {
                 for (row in 0 until 5) Row(Modifier.weight(1f).fillMaxWidth()) {
                     for (col in 0 until 6) {
@@ -545,6 +547,83 @@ internal fun BoxGrid(
     }
 }
 
+/** The box's colour band (the section colour, lightened over the paper) and the pill's own white. */
+private val boxBand: Color get() = androidx.compose.ui.graphics.lerp(OptionColors.listFill, OptionColors.style?.let { OptionColors.tint(it.sectionFill) } ?: OptionColors.headerFill, 0.42f)
+private val boxAccent: Color get() = OptionColors.style?.let { OptionColors.tint(it.sectionFill) } ?: OptionColors.headerFill
+
+/** [BoxGrid]'s header: an arrow button, the box's name in a pill on the band with a pointer under it, an arrow button. */
+@Composable
+private fun BoxHeader(name: String, m: GbaTextMetrics, modifier: Modifier, onPrev: () -> Unit, onNext: () -> Unit) {
+    val u = m.u
+    val modern = modernView
+    val band = boxBand
+    val accent = boxAccent
+    val paper = OptionColors.listFill
+    Row(
+        modifier.height(m.rowHeight * 1.1f)
+            .drawBehind {
+                val r = if (modern) size.height / 2f else 3 * u.toPx()
+                if (modern) drawRoundRect(band, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
+                else drawPixelRoundRect(band, radius = r, step = u.toPx())
+            }
+            .padding(horizontal = u * 2, vertical = u * 2),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(u * 3),
+    ) {
+        BoxArrow(left = true, m, accent, paper, onPrev, Modifier.semantics { contentDescription = tr("Previous box") })
+        Box(
+            Modifier.weight(1f).fillMaxHeight()
+                .drawBehind {
+                    val px = u.toPx()
+                    val r = if (modern) size.height / 2f else 3 * px
+                    if (modern) {
+                        drawRoundRect(paper, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
+                        drawRoundRect(OptionColors.divider, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                    } else {
+                        drawPixelRoundRect(OptionColors.listLayers.first().first, radius = r, step = px)
+                        drawPixelRoundRect(paper, Offset(px, px), Size(size.width - 2 * px, size.height - 2 * px), (r - px).coerceAtLeast(0f), px)
+                    }
+                    // The pointer under the pill's middle, into the box.
+                    val w = 6 * px
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(size.width / 2f - w, size.height - px); lineTo(size.width / 2f + w, size.height - px)
+                        lineTo(size.width / 2f, size.height + w * 0.9f); close()
+                    }
+                    drawPath(path, accent)
+                },
+            contentAlignment = Alignment.Center,
+        ) { GbaText(name, OptionColors.label, OptionColors.labelShadow, m, maxLines = 1) }
+        BoxArrow(left = false, m, accent, paper, onNext, Modifier.semantics { contentDescription = tr("Next box") })
+    }
+}
+
+/** One of [BoxHeader]'s arrow buttons: a rounded key in the paper's white with the arrow in the band's colour. */
+@Composable
+private fun BoxArrow(left: Boolean, m: GbaTextMetrics, accent: Color, paper: Color, onClick: () -> Unit, modifier: Modifier) {
+    val u = m.u
+    val modern = modernView
+    val noRipple = remember { MutableInteractionSource() }
+    val focused by noRipple.collectIsFocusedAsState()
+    Box(
+        modifier.fillMaxHeight().aspectRatio(1.3f)
+            .gbaFocusRing(focused, if (modern) androidx.compose.foundation.shape.CircleShape else PixelRoundedShape(u * 3))
+            .drawBehind {
+                val px = u.toPx()
+                val r = if (modern) size.height / 2f else 3 * px
+                if (modern) drawRoundRect(paper, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
+                else {
+                    drawPixelRoundRect(OptionColors.listLayers.first().first, radius = r, step = px)
+                    drawPixelRoundRect(paper, Offset(px, px), Size(size.width - 2 * px, size.height - 2 * px), (r - px).coerceAtLeast(0f), px)
+                }
+            }
+            .soundClickable(interactionSource = noRipple, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        val icon = if (left) PixelIcons.cursorLeft else PixelIcons.cursorRight
+        PixelIcon(icon, accent, Modifier.size(m.lineHeight * 0.8f))
+    }
+}
+
 /** A Pokémon's party icon from [loader], first frame, pixel-scaled to [size]. An egg is the egg's icon. */
 @Composable
 internal fun BoxMonIcon(loader: MonIconLoader, mon: SaveMon, size: Dp) {
@@ -556,6 +635,18 @@ internal fun BoxMonIcon(loader: MonIconLoader, mon: SaveMon, size: Dp) {
     Box(Modifier.size(size)) {
         bmp?.let { Image(it, contentDescription = null, modifier = Modifier.size(size), filterQuality = FilterQuality.None) }
     }
+}
+
+/** Every save tool's slots ([MonCell]): the Pokémon's names under their sprites, or not (the default, so the sprites are
+ * larger). Compose state, one switch for all of them while the app runs. */
+object MonCellNames {
+    var shown by androidx.compose.runtime.mutableStateOf(false)
+}
+
+/** NAMES: shows or hides the names under the sprites in every box grid ([MonCellNames]). */
+@Composable
+internal fun MonNamesButton(m: GbaTextMetrics) {
+    OptionButton(tk("NAMES"), m, onClick = { MonCellNames.shown = !MonCellNames.shown }, emphasis = MonCellNames.shown)
 }
 
 /**
@@ -578,13 +669,36 @@ internal fun MonCell(
             .focusStart(selected)
             .gbaFocusRing(focused, PixelRoundedShape(u * 2))
             .drawBehind {
-                val r = 2 * u.toPx()
+                // No cell frames (the newer games' boxes): each slot a soft round placeholder under its Pokémon (an empty
+                // one just the placeholder), red while a MOVE / trade looks for a place, the picked one ringed in red.
+                val px = u.toPx()
+                val r = 2 * px
+                val d = minOf(size.width, size.height) * 0.78f
+                val c = Offset(size.width / 2f, size.height / 2f)
+                val well = androidx.compose.ui.graphics.lerp(OptionColors.listFill, boxAccent, if (mon != null) 0.12f else 0.18f)
                 when {
-                    mon != null -> drawPixelRoundRect(OptionColors.titleFill, radius = r)
-                    target -> drawPixelRoundFrame(OptionColors.value.copy(alpha = 0.6f), Offset.Zero, size, r, u.toPx())
-                    else -> drawPixelRoundFrame(OptionColors.divider, Offset.Zero, size, r, u.toPx())
+                    target -> drawCircle(OptionColors.value.copy(alpha = 0.22f), d / 2f, c)
+                    // No rim: a solid disc whose last part fades out (the user's call: a soft edge, not the blurry glow of
+                    // the first try, so the fade is only the outer fifth).
+                    modernView -> drawCircle(
+                        androidx.compose.ui.graphics.Brush.radialGradient(
+                            0f to well, 0.8f to well, 1f to well.copy(alpha = 0f), center = c, radius = d / 2f,
+                        ),
+                        d / 2f, c,
+                    )
+                    else -> {
+                        // RETRO: a stepped disc in whole pixels, its colour flat, softened by a ring a pixel wider at half
+                        // its strength.
+                        val side = (d / px).toInt().coerceAtLeast(4) * px
+                        val outer = side + 2 * px
+                        drawPixelRoundRect(well.copy(alpha = well.alpha * 0.45f), Offset(c.x - outer / 2f, c.y - outer / 2f), Size(outer, outer), outer / 2f, px)
+                        drawPixelRoundRect(well, Offset(c.x - side / 2f, c.y - side / 2f), Size(side, side), side / 2f, px)
+                    }
                 }
-                if (selected) drawPixelRoundFrame(OptionColors.value, Offset.Zero, size, r, 1.5f * u.toPx())
+                if (selected) {
+                    if (modernView) drawRoundRect(OptionColors.value, cornerRadius = androidx.compose.ui.geometry.CornerRadius(6 * px), style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f * px))
+                    else drawPixelRoundFrame(OptionColors.value, Offset.Zero, size, r, 1.5f * px)
+                }
             }
             .soundClickable(interactionSource = noRipple, indication = null, onClick = onClick)
             .padding(horizontal = u * 2, vertical = u * 2),
@@ -592,7 +706,15 @@ internal fun MonCell(
     ) {
         if (mon == null) return@Box
         val level = if (mon.isBadEgg || mon.isEgg) "" else "Lv${partyLevel ?: mon.level}"
-        if (withIcon) BoxWithConstraints {
+        if (withIcon && !MonCellNames.shown) BoxWithConstraints(Modifier.fillMaxSize()) {
+            // Names hidden: the sprite as large as the slot lets it be, the level and shiny star in its top-right corner.
+            val iconSize = minOf(maxHeight, maxWidth).coerceAtLeast(m.lineHeight)
+            Box(Modifier.align(Alignment.Center)) { BoxMonIcon(icons!!, mon, iconSize) }
+            Column(Modifier.align(Alignment.TopEnd), horizontalAlignment = Alignment.End) {
+                if (level.isNotEmpty()) GbaText(level, OptionColors.value, OptionColors.valueShadow, m)
+                if (mon.isShiny && !mon.isEgg) PixelIcon(PixelIcons.sparkle, OptionColors.favorite, Modifier.size(m.lineHeight * 0.7f))
+            }
+        } else if (withIcon) BoxWithConstraints {
             // The icon with its level beside it, the name under both; the icon takes what the name's line leaves
             // (up to 2 lines' height: 2x on the Thor).
             val iconSize = (maxHeight - m.lineHeight).coerceIn(m.lineHeight, m.lineHeight * 2)

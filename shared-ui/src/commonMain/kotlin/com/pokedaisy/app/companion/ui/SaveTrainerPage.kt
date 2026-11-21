@@ -59,12 +59,14 @@ private fun TrainerWindow(state: PcBoxesState, bag: TrainerBagEditor, gen3: Gen3
             // The header outside the scroll: it reaches over the window's top edge, which a scroll would cut off.
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             OptionLine(tk("NAME"), data.trainerName, selected = false, m, labelWeight = 0.5f, divider = true) {}
-            OptionLine(tk("ID No."), id5(data.trainerId), selected = false, m, labelWeight = 0.5f, divider = true) {}
-            bag.playTime?.let { OptionLine(tk("TIME"), it, selected = false, m, labelWeight = 0.5f, divider = true) {} }
-            OptionLine(tk("MONEY"), "¥${bag.money}", selected = false, m, labelWeight = 0.5f, divider = gen3 != null, chevron = true) {
+            OptionLine(tk("ID No."), id5(data.trainerId), selected = false, m, labelWeight = 0.5f, divider = true, stripe = true) {}
+            // Every other row banded (TIME is there only on some games).
+            var band = true
+            bag.playTime?.let { band = false; OptionLine(tk("TIME"), it, selected = false, m, labelWeight = 0.5f, divider = true) {} }
+            OptionLine(tk("MONEY"), "¥" + com.pokedaisy.app.companion.i18n.groupedNumber(bag.money.toLong()), selected = false, m, labelWeight = 0.5f, divider = gen3 != null, chevron = true, stripe = !band) {
                 state.editing = PcBoxesState.Editing.Money
             }
-            if (gen3 != null) OptionLine(tk("COINS"), "${gen3.coins}", selected = false, m, labelWeight = 0.5f, chevron = true) {
+            if (gen3 != null) OptionLine(tk("COINS"), com.pokedaisy.app.companion.i18n.groupedNumber(gen3.coins.toLong()), selected = false, m, labelWeight = 0.5f, chevron = true, stripe = band) {
                 state.editing = PcBoxesState.Editing.Coins
             }
                     }
@@ -81,7 +83,7 @@ private fun DexWindow(state: PcBoxesState, bag: TrainerBagEditor, m: GbaTextMetr
             c.regionLabel?.let {
                 OptionLine(tk(it), tr("{0} SEEN · {1} CAUGHT", c.regionalSeen, c.regionalCaught), selected = false, m, labelWeight = 0.3f, divider = true) {}
             }
-            OptionLine(tk("NATIONAL"), tr("{0} SEEN · {1} CAUGHT", c.seen, c.caught), selected = false, m, labelWeight = 0.3f) {}
+            OptionLine(tk("NATIONAL"), tr("{0} SEEN · {1} CAUGHT", c.seen, c.caught), selected = false, m, labelWeight = 0.3f, stripe = c.regionLabel != null) {}
             Row(Modifier.fillMaxWidth().padding(m.u * 3), horizontalArrangement = Arrangement.spacedBy(m.u * 3)) {
                 for ((label, kind) in listOf(
                     tk("ADD MINE") to PcBoxesState.DexAction.REGISTER_OWNED,
@@ -111,7 +113,7 @@ private fun EventsWindow(state: PcBoxesState, data: Gen3SaveData, m: GbaTextMetr
                     bagItemLabel(ev.item),
                     when (st) { Gen3Event.State.AVAILABLE -> tk("GET"); Gen3Event.State.HAS -> tk("IN BAG"); Gen3Event.State.DONE -> tk("USED") },
                     selected = false, m, labelWeight = 0.62f, divider = i < events.lastIndex, chevron = st == Gen3Event.State.AVAILABLE,
-                    enabled = st == Gen3Event.State.AVAILABLE,
+                    enabled = st == Gen3Event.State.AVAILABLE, stripe = i % 2 == 1,
                 ) { state.editing = PcBoxesState.Editing.Event(ev) }
             }
             events.firstOrNull()?.let {

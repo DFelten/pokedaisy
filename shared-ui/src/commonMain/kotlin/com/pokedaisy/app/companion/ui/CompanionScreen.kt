@@ -179,6 +179,7 @@ fun CompanionScreen(
     CompanionScreenSize {
     CompositionLocalProvider(
         LocalHgssBag provides remember { HgssBagState() },
+        LocalPartyDex provides snapshot.pokedex?.tables,
         LocalCompanionBack provides back, LocalCompanionKeys provides keys, LocalClickSound provides clickSound, LocalGameSilent provides gameSilent,
         LocalGameFont provides gameFont,
         LocalGameTextScale provides if (gameFont != null) gameTextScale(snapshot.game) else 1f,

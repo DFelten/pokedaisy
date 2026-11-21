@@ -72,7 +72,7 @@ Play for a while and it fills in. If you'd rather always hear something, set `FF
 
 ## The game feels choppy or the device runs hot
 
-Turn on `FPS / CPU` (Settings, `SCREEN` group) to see what's going on. At normal speed it should read about 60. Tap the readout for more detail, including late frames, audio underruns, battery temperature and whether the device is throttling.
+Turn on `FPS / CPU` (Settings, `GAME SCREEN` group) to see what's going on. At normal speed it should read about 60. Tap the readout for more detail, including late frames, audio underruns, battery temperature and whether the device is throttling.
 
 If it's below 60 or stutters:
 
@@ -87,7 +87,7 @@ If it reads 60 but movement still looks uneven, look at the `SCREEN` line in the
 
 If it stays on `TIMER`, tell us your device on the [feedback page](https://pokedaisy.com/feedback/) along with what the line says.
 
-If the picture runs fine but your buttons react late, for example nothing happens for a moment after `FIGHT`, set `LIGHT COMPANION` to `ON` (Settings, `SCREEN` group, `DISPLAY OPTIONS`). See [Light companion](screen.md#light-companion-for-slow-devices).
+If the picture runs fine but your buttons react late, for example nothing happens for a moment after `FIGHT`, set `LIGHT COMPANION` to `ON` (Settings, `GAME SCREEN` group, `DISPLAY OPTIONS`). See [Light companion](screen.md#light-companion-for-slow-devices).
 
 ## Achievements won't unlock
 
@@ -112,7 +112,7 @@ You can always get the newest version by hand from the [releases page](https://g
 
 ## The companion is on the wrong screen
 
-On a device whose main display is the bottom one, the game ends up on the bottom and the companion on top. Turn on `SWAP SCREENS` (Settings, `SCREEN` group, on either screen) and they trade places. See [Devices](devices.md).
+On a device whose main display is the bottom one, the game ends up on the bottom and the companion on top. Turn on `SWAP SCREENS` (Settings, `SCREENS` group, on either screen) and they trade places. See [Devices](devices.md).
 
 If the companion has disappeared from its screen entirely, you may have tapped `CLOSE COMPANION`. Tap the game, then press BACK to bring it back.
 

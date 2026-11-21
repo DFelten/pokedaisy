@@ -44,7 +44,7 @@ fun WhatsNewWindow(
     val scroll = rememberScrollState()
     OptionOverlay(onClose, Modifier.widthIn(max = 760.dp)) {
         Column {
-            OptionTitleWindow("WHAT'S NEW", m, leading = { PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight)) }) {
+            OptionTitleWindow("WHAT'S NEW", m, leading = { AppLogo(Modifier.size(m.lineHeight)) }) {
                 OptionBadge("v${notes.version}", m)
             }
             Spacer(Modifier.height(u * 4))
