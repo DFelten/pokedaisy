@@ -15,6 +15,10 @@ class PrefsThemeStore(prefs: Prefs) : ThemeStore {
     override var companionBackground by prefs::companionBackground
     override var sideBars by prefs::sideBars
     override var tabIcons by prefs::tabIcons
+    override var tabBarPlace by prefs::tabBarPlace
+    override var tabBarCompact by prefs::tabBarCompact
+    override var menuBarPlace by prefs::menuBarPlace
+    override var menuBarCompact by prefs::menuBarCompact
     override var appView by prefs::appView
     override var darkMode by prefs::darkMode
 }

@@ -138,11 +138,14 @@ fun LibraryNav(
     top: Dp = 0.dp,
     /** The dual-screen launcher's cursor on the rail (its keys move it, not Compose focus), or null. */
     cursor: LibrarySection? = null,
+    /** MENU BAR's other edge: the rail down the right ([vertical]), the bar along the top (else). */
+    far: Boolean = false,
     onPick: (LibrarySection) -> Unit,
 ) {
     val u = m.u
-    // A short screen (the RG DS): the icons alone, smaller, so the rail is a strip and the games get the width.
-    val short = LocalShortScreen.current
+    // A short screen (the RG DS), or MENU BAR SIZE COMPACT: the icons alone, smaller, so the rail is a strip and the games
+    // get the width.
+    val short = LocalShortScreen.current || com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarCompact
     val items = @Composable { weighted: Modifier ->
         for (s in LibrarySection.entries) {
             NavItem(s, s == open, m, small, badge = toolsBadge && s == LibrarySection.TOOLS, weighted, cursor = s == cursor) { onPick(s) }
@@ -152,17 +155,32 @@ fun LibraryNav(
         // MODERN: a white panel, a hairline and a soft shadow on the side facing the page.
         drawRect(OptionColors.listFill)
         val line = OptionColors.divider
-        if (vertical) {
-            for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Size(i * 1.5f, size.height))
-            drawRect(line, androidx.compose.ui.geometry.Offset(size.width - 1.dp.toPx(), 0f), androidx.compose.ui.geometry.Size(1.dp.toPx(), size.height))
-        } else {
-            for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(0f, -i * 1.5f), androidx.compose.ui.geometry.Size(size.width, i * 1.5f))
-            drawRect(line, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx()))
+        val hair = 1.dp.toPx()
+        // The shadow and hairline on the side facing the page (the rail's right, or its left down the right edge; the bar's
+        // top, or its bottom along the top).
+        when {
+            vertical && !far -> {
+                for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(size.width, 0f), androidx.compose.ui.geometry.Size(i * 1.5f, size.height))
+                drawRect(line, androidx.compose.ui.geometry.Offset(size.width - hair, 0f), androidx.compose.ui.geometry.Size(hair, size.height))
+            }
+            vertical -> {
+                for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(-i * 1.5f, 0f), androidx.compose.ui.geometry.Size(i * 1.5f, size.height))
+                drawRect(line, size = androidx.compose.ui.geometry.Size(hair, size.height))
+            }
+            !far -> {
+                for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(0f, -i * 1.5f), androidx.compose.ui.geometry.Size(size.width, i * 1.5f))
+                drawRect(line, size = androidx.compose.ui.geometry.Size(size.width, hair))
+            }
+            else -> {
+                for (i in 1..4) drawRect(Color(0x0C1B2A55), androidx.compose.ui.geometry.Offset(0f, size.height), androidx.compose.ui.geometry.Size(size.width, i * 1.5f))
+                drawRect(line, androidx.compose.ui.geometry.Offset(0f, size.height - hair), androidx.compose.ui.geometry.Size(size.width, hair))
+            }
         }
     } else Modifier.drawBehind {
         drawLayeredBox(
             OptionColors.listLayers.inPx(u.toPx()), OptionColors.listFill, radius = 0f,
-            openLeft = true, openTop = vertical, openBottom = true, openRight = !vertical,
+            // Framed only on the side facing the page.
+            openLeft = !(vertical && far), openRight = !(vertical && !far), openTop = !(!vertical && !far), openBottom = !(!vertical && far),
         )
     }
     if (vertical) {
@@ -170,14 +188,15 @@ fun LibraryNav(
         // wider in dp than ui-preview's 2.5), at least NAV_RAIL_ITEM.
         Column(
             modifier.fillMaxHeight().width(IntrinsicSize.Max).then(frame)
-                .padding(start = u * (if (short) 3 else 5), end = u * (if (short) 6 else 10), top = top, bottom = u * 5),
+                .padding(start = u * (if (far) (if (short) 6 else 10) else if (short) 3 else 5), end = u * (if (far) (if (short) 3 else 5) else if (short) 6 else 10), top = top, bottom = u * 5),
             verticalArrangement = Arrangement.spacedBy(u * if (short) 3 else 4),
         ) {
             items(Modifier.widthIn(min = if (short) 0.dp else NAV_RAIL_ITEM).fillMaxWidth())
         }
     } else {
         Row(
-            modifier.fillMaxWidth().then(frame).padding(start = u * 5, end = u * 5, top = u * (if (short) 6 else 10), bottom = u * (if (short) 3 else 5)),
+            modifier.fillMaxWidth().then(frame).padding(start = u * 5, end = u * 5,
+                top = u * (if (far) (if (short) 3 else 5) else if (short) 6 else 10), bottom = u * (if (far) (if (short) 6 else 10) else if (short) 3 else 5)),
             horizontalArrangement = Arrangement.spacedBy(u * 4),
         ) {
             items(Modifier.weight(1f))
@@ -195,7 +214,8 @@ private fun NavItem(
     val focused = interaction.collectIsFocusedAsState().value || cursor
     val label = tr(section.label)
     if (modernView) { ModernNavItem(section, on, m, small, badge, modifier, focused, interaction, label, onClick); return }
-    val short = LocalShortScreen.current
+    // A short screen or MENU BAR SIZE COMPACT: the icon alone.
+    val short = LocalShortScreen.current || com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarCompact
     Box(
         modifier
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
@@ -220,7 +240,9 @@ private fun NavItem(
             }
             // Finer than the label's GBA pixel (PixelArt keeps whole screen pixels per icon pixel): a 32-pixel drawing, not a
             // blown-up 9-pixel glyph.
-            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * if (short) SHORT_ICON else NAV_ICON))
+            // A short screen's own small size; COMPACT elsewhere: two thirds of the usual (no name under it).
+            val iconSize = if (LocalShortScreen.current) SHORT_ICON else if (short) COMPACT_ICON else NAV_ICON
+            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * iconSize))
             // No room for the names on a short screen; the icons say it (the open one sits in the white block).
             if (!short) Spacer(Modifier.height(u * 3))
             if (!short) GbaText(label, if (on) OptionColors.value else OptionColors.label, if (on) OptionColors.valueShadow else OptionColors.labelShadow, small, bold = gameBoldLabels())
@@ -261,8 +283,10 @@ private fun ModernNavItem(
                 },
                 contentAlignment = Alignment.Center,
             ) { ModernIcon(glyph, if (on) accent else OptionColors.muted, Modifier.size(u * NAV_ICON * 0.68f)) }
-            Spacer(Modifier.height(u * 3))
-            GbaText(label, if (on) accent else OptionColors.muted, Color.Transparent, small, bold = true)
+            if (!com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarCompact) {
+                Spacer(Modifier.height(u * 3))
+                GbaText(label, if (on) accent else OptionColors.muted, Color.Transparent, small, bold = true)
+            }
         }
         if (badge) Box(
             Modifier.align(Alignment.TopEnd).size(u * 5)
@@ -276,6 +300,9 @@ private val TOOL_CARD_MIN: Dp = 300.dp
 
 /** The rail's / bar's icons, in GBA pixels (their 32 pixels a whole screen pixel or two each). */
 private const val NAV_ICON = 36
+
+/** MENU BAR SIZE COMPACT's icons (not a short screen), in GBA pixels. */
+private const val COMPACT_ICON = 24
 
 /** The rail's and tool cards' icons on a short screen ([LocalShortScreen]), in GBA pixels: the 32-pixel drawings a screen
  * pixel each on the RG DS. */

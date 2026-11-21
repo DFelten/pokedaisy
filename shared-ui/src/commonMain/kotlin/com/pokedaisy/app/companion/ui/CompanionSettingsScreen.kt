@@ -217,6 +217,22 @@ fun CompanionSettingsScreen(
                             com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeTabIcons(!it.tabIcons) }
                             tick++
                         },
+                        // POSITION: a pick-list (four places); SIZE flips NORMAL / COMPACT.
+                        com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+                            SettingRow(tk("POSITION"), tk(look.tabBarPlace.label), labelBadge = NewFeatures.badge(NewFeatures.TAB_BAR_PLACE),
+                                subtitle = "Along the bottom or the top, or down one side") {
+                                val places = com.pokedaisy.app.companion.ui.theme.TabBarPlace.entries
+                                selector = Selector(tk("POSITION"), places.map { it.label }, look.tabBarPlace.label) { l ->
+                                    places.firstOrNull { it.label == l }?.let { look.changeTabBar(place = it) }
+                                    tick++
+                                }
+                            }
+                        },
+                        SettingRow(tk("SIZE"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.tabBarCompact) tk("COMPACT") else tk("NORMAL"),
+                            labelBadge = NewFeatures.badge(NewFeatures.TAB_BAR_PLACE), subtitle = "COMPACT: lower tabs, smaller words") {
+                            com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeTabBar(compact = !it.tabBarCompact) }
+                            tick++
+                        },
                         groupTitle(tk("TABS")),
                     ) + COMPANION_TABS.map { id ->
                         val shown = id in settings.companionTabs

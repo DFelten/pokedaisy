@@ -117,8 +117,14 @@ private val themedPalettes = HashMap<List<Any?>, UiStylePalette?>()
  * ([retroStylePalette], the user's call 2026-11-22), VIEW MODERN's in its own ([modernStylePalette]), a theme with a hue
  * moving either to it. Cached: OptionColors asks on every colour.
  */
-fun themedStylePalette(style: UiStyle, dark: Boolean, hue: Float?, calmed: Boolean = true): UiStylePalette? =
-    themedPalettes.getOrPut(listOf(style, dark, hue, calmed)) {
+fun themedStylePalette(style: UiStyle, dark: Boolean, hue: Float?, calmed: Boolean = true, accent: Float? = null): UiStylePalette? =
+    themedPalettes.getOrPut(listOf(style, dark, hue, calmed, accent)) {
+        // A theme's second colour (EDIT THEME > SECOND COLOR): its bands, keys and tabs in that hue, the windows in the first.
+        if (accent != null && hue != null) {
+            val windows = themedStylePalette(style, dark, hue, calmed) ?: return@getOrPut null
+            val bands = themedStylePalette(style, dark, accent, calmed) ?: return@getOrPut windows
+            return@getOrPut windows.withBands(bands)
+        }
         val base = uiStylePalette(style, dark)
         when {
             base == null -> null
@@ -127,6 +133,14 @@ fun themedStylePalette(style: UiStyle, dark: Boolean, hue: Float?, calmed: Boole
             else -> base
         }
     }
+
+/** This palette with [from]'s title band, section bands, buttons and tabs. */
+private fun UiStylePalette.withBands(from: UiStylePalette) = UiStylePalette(
+    from.titleFill, from.titleText, from.titleShadow, from.titleLayers,
+    listFill, listLayers, stripe, rule, selected, label, labelShadow,
+    from.sectionFill, from.sectionText, from.sectionShadow, arrow, separatorDark, separatorLight, well,
+    from.button, from.tab, from.tabOpen, foeFill, foeShadow, cells, foeCells,
+)
 
 private fun UiStylePalette.rehued(from: ClosedFloatingPointRange<Float>, to: Float, calmed: Boolean = true): UiStylePalette {
     fun Color.r() = rehued(from, to, calmed)

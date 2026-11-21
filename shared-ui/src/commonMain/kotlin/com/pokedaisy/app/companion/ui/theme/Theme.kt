@@ -80,6 +80,11 @@ data class ThemeSpec(
     val rainbow: Boolean = false,
     /** A limited-time theme: offered only in its [Season]'s window. */
     val season: Season? = null,
+    /** The windows' text (a theme the player made: EDIT THEME > TEXT COLOR), light mode's and dark mode's; null = the look's. */
+    val text: Color? = null,
+    val textNight: Color? = null,
+    /** A second colour's hue (EDIT THEME > SECOND COLOR): the title and section bands, buttons and tabs; null = [hue]. */
+    val accentHue: Float? = null,
 )
 
 /** [ThemeSpec.id] of the PokéDaisy theme, the default: FireRed's OPTION windows over the website's backdrop. */

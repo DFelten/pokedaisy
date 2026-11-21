@@ -39,7 +39,7 @@ In `CARTRIDGES`, `CAROUSEL` and `SPOTLIGHT` one game is in front: tap another (o
 
 ## Games, tools and settings
 
-Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. They stay on screen whichever one is open, and the page beside them changes. On a small screen, like the RG DS's, they show their icons alone (the controller, the toolbox and the gear) and the rest of the library packs in tighter: a lower header, smaller covers, one line per game, so more of your games fit.
+Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. `MENU BAR` in Settings (the `LOOK` group) puts them where you like: `AUTO` (that way), `LEFT`, `RIGHT`, `TOP` (under the header) or `BOTTOM`, and `MENU BAR SIZE` `COMPACT` shows their icons alone, smaller. The dual-screen launcher keeps them on the left or the bottom, where its buttons reach them. They stay on screen whichever one is open, and the page beside them changes. On a small screen, like the RG DS's, they show their icons alone (the controller, the toolbox and the gear) and the rest of the library packs in tighter: a lower header, smaller covers, one line per game, so more of your games fit.
 
 - `GAMES` is your library, the games and the quick views over them.
 - `TOOLS` shows, in the games' place, what PokeDaisy can do with your games besides playing them. Tap one to open it. Its header has only the help button, since sorting and adding are for your games.

@@ -178,7 +178,7 @@ object OptionColors {
                 unboundRetro -> com.pokedaisy.app.companion.ui.theme.unboundStylePalette(dark)
                 // IN GAME GAME COLORS: the app's menus in the game's colours.
                 gameHue != null -> com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, gameHue, calmed = false)
-                else -> com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, AppColors.theme.hue)
+                else -> com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, AppColors.theme.hue, accent = AppColors.theme.accentHue)
             }
         }
     /** Unbound's own SUMMARY MINT palette is up (RETRO, its game on GAME COLORS, or a preview of it). */
@@ -223,8 +223,13 @@ object OptionColors {
     /** The cursor row (Gen 1 marks it with its ▶; here a light grey band, a lighter slate in dark). */
     val rowSelected get() = sk?.rowSelected ?: (if (gen1) (if (activeGame.isRedBlue) c(0xFFE6D6E6, 0xFF3A3A3A) else c(0xFFDCDCDC, 0xFF3A3A3A))
         else style?.let { tint(it.selected) } ?: w(0xFFFFFFFF, 0xFF353C49))
-    val label get() = sk?.label ?: (if (gen1) G1_INK else style?.let { tint(it.label) } ?: w(0xFF575656, 0xFFCDD1D9))
-    val labelShadow get() = sk?.labelShadow ?: (if (gen1) Color.Transparent else style?.let { tint(it.labelShadow) } ?: w(0xFFBCBBB4, 0xFF3A404B))
+    val label get() = sk?.label ?: (if (gen1) G1_INK else themeText ?: style?.let { tint(it.label) } ?: w(0xFF575656, 0xFFCDD1D9))
+    val labelShadow get() = sk?.labelShadow ?: (if (gen1) Color.Transparent else themeText?.let { t ->
+        // Under the text toward the window, as the look's own shadow is: lighter in light mode, darker at night.
+        if (dark) lerp(t, Color.Black, 0.72f) else lerp(t, Color.White, 0.68f)
+    } ?: style?.let { tint(it.labelShadow) } ?: w(0xFFBCBBB4, 0xFF3A404B))
+    /** A theme's own text colour (EDIT THEME > TEXT COLOR) for this mode; none in a game on GAME COLORS ([AppColors.theme]). */
+    private val themeText: Color? get() = AppColors.theme.let { if (dark) it.textNight else it.text }
     /** FireRed's red; a theme's own colour (THEME). */
     val value get() = sk?.value ?: (if (gen1) G1_INK else if (plainTheme) c(0xFFCB0707, 0xFFFF6A5C)
         else gameValue ?: AppColors.theme.let { if (dark) it.valueNight else it.value })

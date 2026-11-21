@@ -540,12 +540,15 @@ fun companion(
     lock: com.pokedaisy.app.companion.coop.lock.CoopLockUi? = null,
     dsperate: Boolean = false,
     partyStorage: Boolean = false,
-    /** TAB BAR > SHOW AS ICONS. */
+    /** TAB BAR > SHOW AS ICONS, POSITION, SIZE COMPACT. */
     tabIcons: Boolean = false,
+    tabPlace: com.pokedaisy.app.companion.ui.theme.TabBarPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM,
+    tabCompact: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
     com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons)
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabBar(tabPlace, tabCompact)
     DeviceBattery.status.value = battery
     val sv = snap()
     val back = com.pokedaisy.app.companion.ui.CompanionBack().also { previewBack = it }
@@ -1259,6 +1262,8 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
         look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
         look.changeSideBars(com.pokedaisy.app.companion.ui.theme.SideBars.DEFAULT)
         look.changeTabIcons(false)
+        look.changeTabBar(com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM, false)
+        look.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.AUTO, false)
         look.previewApp = null; look.previewCompanion = null; look.previewBars = null
     }
     if (com.pokedaisy.app.companion.ui.theme.AppFonts.setting == com.pokedaisy.app.companion.ui.theme.AppFont.CUSTOM) {
@@ -1749,6 +1754,10 @@ fun main(args: Array<String>) {
         }),
         // TAB BAR > SHOW AS ICONS: the tabs as their icons (RETRO's pixel tiles; -Pview=MODERN for the glyphs).
         Shot("$g-party-tab-icons", bw, bh, bd, companion("PARTY", tabIcons = true)),
+        // TAB BAR > POSITION / SIZE: a rail down the left with icons, the top bar compact, a rail on the right with names.
+        Shot("$g-party-tabs-left", bw, bh, bd, companion("PARTY", tabIcons = true, tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT)),
+        Shot("$g-party-tabs-top-compact", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP, tabCompact = true)),
+        Shot("$g-party-tabs-right", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.RIGHT)),
         // BOXES: the PC's box screen (FireRed's art from -Prom / the decomp build), a summary, the box list, the next box.
         Shot("$g-boxes", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot)),
         Shot("$g-boxes-detail", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot, items = true)) {
@@ -3535,6 +3544,20 @@ fun main(args: Array<String>) {
             onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("library-my-look", tw, th, td, activity { withMyLook(picture = true, wearTheme = true); LibraryActivity() }),
+        // MENU BAR: GAMES / TOOLS / SETTINGS down the right, along the top compact; Settings' HOME with it on the right.
+        Shot("library-menu-right", tw, th, td, activity { com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.RIGHT); LibraryActivity() }),
+        Shot("library-menu-top-compact", tw, th, td, activity { com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.TOP, compact = true); LibraryActivity() }),
+        Shot("library-menu-compact-modern", tw, th, td, activity {
+            com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(compact = true)
+            com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity()
+        }),
+        // A theme of two colours with its own text colour (EDIT THEME's TEXT COLOR / SECOND COLOR), worn on Settings.
+        Shot("settings-theme-two-colors", tw, th, td, activity {
+            val t = com.pokedaisy.app.companion.ui.theme.ThemeFiles.import(mapOf("theme.json" to
+                """{ "name": "SUNSET", "color": "#8A4FD0", "secondColor": "#E8743C", "textColor": "#1F2E5C" }""".encodeToByteArray()))
+            com.pokedaisy.app.companion.ui.theme.pickTheme(t)
+            SettingsActivity()
+        }),
         // LIBRARY VIEW: its pick-list, then the three immersive views (CARTRIDGES, CAROUSEL, SPOTLIGHT), RETRO and MODERN.
         Shot("library-view-pick", tw, th, td, activity { platformLibrary(); LibraryActivity() }) {
             onNodeWithContentDescription("Library view").performClick()

@@ -314,6 +314,10 @@ object NewFeatures {
     const val SIDE_BARS = "side_bars"
     /** TAB BAR > SHOW AS: the companion's tabs as icons. */
     const val TAB_ICONS = "tab_icons"
+    /** TAB BAR > POSITION / SIZE and the library's MENU BAR / MENU BAR SIZE. */
+    const val TAB_BAR_PLACE = "tab_bar_place"
+    /** EDIT THEME > TEXT COLOR / SECOND COLOR. */
+    const val THEME_COLORS = "theme_colors"
     /** HUD > LAYOUT's MY LAYOUT: the HUD's parts placed by hand (EDIT LAYOUT), several layouts kept. */
     const val HUD_EDITOR = "hud_editor"
     /** TOUCH CONTROLS > LAYOUT: several custom layouts kept. */
@@ -413,6 +417,7 @@ object NewFeatures {
         QUICK_TOUCH, APP_FONT, PIXEL_SMALL, FONT_SIZE, APP_VIEW, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
+        TAB_BAR_PLACE, THEME_COLORS,
     )
 
     private const val DAYS = 7

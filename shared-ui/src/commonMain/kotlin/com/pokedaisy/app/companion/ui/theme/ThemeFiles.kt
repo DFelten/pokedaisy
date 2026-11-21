@@ -39,19 +39,28 @@ data class ThemeDraft(
     /** `"gameTint": null`: nothing over a game's backdrop. */
     val noGameTint: Boolean = false,
     val fontFile: String? = null,
+    /** The windows' text, light mode's (`textColor`) and dark mode's (`darkTextColor`, else a light one of its hue). */
+    val textColor: Color? = null,
+    val darkTextColor: Color? = null,
+    /** A second colour (`secondColor`): the bands, buttons and tabs, and a glow of the backdrop. */
+    val secondColor: Color? = null,
 ) {
     /** The theme this draft gives, as [id]. */
     fun spec(id: Int): ThemeSpec {
         val hue = hueOf(color)
         val page = page ?: if (darkPage) hslColor(hue, 0.35f, 0.12f) else hslColor(hue, 0.6f, 0.97f)
+        // The glows: the colour's own and two beside it, or the second colour's for one of those.
+        val second = secondColor?.let(::hueOf)
         val glows = glows?.take(5)?.takeIf { it.size >= 2 }
-            ?: if (darkPage) listOf(hslColor(hue, 0.5f, 0.28f), hslColor(hue + 50f, 0.45f, 0.26f), hslColor(hue - 50f, 0.45f, 0.24f))
-            else listOf(hslColor(hue, 0.85f, 0.86f), hslColor(hue + 40f, 0.85f, 0.88f), hslColor(hue - 40f, 0.8f, 0.87f))
+            ?: if (darkPage) listOf(hslColor(hue, 0.5f, 0.28f), hslColor(second ?: (hue + 50f), 0.45f, 0.26f), hslColor(hue - 50f, 0.45f, 0.24f))
+            else listOf(hslColor(hue, 0.85f, 0.86f), hslColor(second ?: (hue + 40f), 0.85f, 0.88f), hslColor(hue - 40f, 0.8f, 0.87f))
         return ThemeSpec(
             id = id, label = name, hue = hue, wash = tint.coerceIn(0f, 1f),
             value = color, valueNight = darkColor ?: brighter(color),
             page = page, blobs = glows, darkPage = darkPage,
             gameWash = if (noGameTint) null else gameTint ?: hslColor(hue, 0.8f, 0.9f),
+            text = textColor, textNight = darkTextColor ?: textColor?.let(::nightText),
+            accentHue = second,
         )
     }
 
@@ -68,6 +77,9 @@ data class ThemeDraft(
         page?.let { m["page"] = JsonPrimitive(hex(it)) }
         glows?.let { g -> m["glows"] = JsonArray(g.map { JsonPrimitive(hex(it)) }) }
         if (noGameTint) m["gameTint"] = JsonNull else gameTint?.let { m["gameTint"] = JsonPrimitive(hex(it)) }
+        textColor?.let { m["textColor"] = JsonPrimitive(hex(it)) }
+        darkTextColor?.let { m["darkTextColor"] = JsonPrimitive(hex(it)) }
+        secondColor?.let { m["secondColor"] = JsonPrimitive(hex(it)) }
         withFont?.let { m[fontKey] = JsonPrimitive(it) }
         return JsonObject(m).toString()
     }
@@ -93,6 +105,9 @@ data class ThemeDraft(
                 gameTint = if (root["gameTint"] is JsonNull) null else root.color("gameTint"),
                 noGameTint = root["gameTint"] is JsonNull,
                 fontFile = root.string("fontFile")?.takeIf { it.isNotBlank() && '/' !in it && '\\' !in it },
+                textColor = root.color("textColor"),
+                darkTextColor = root.color("darkTextColor"),
+                secondColor = root.color("secondColor"),
             )
         }
 
@@ -114,6 +129,9 @@ data class ThemeDraft(
             val raw = string(key) ?: return null
             return CustomThemes.parseColor(raw) ?: throw LookImportError("\"{0}\" isn't a color like #3D6FE0", key)
         }
+
+        /** Text of [c]'s hue light enough for DARK MODE's slate windows. */
+        private fun nightText(c: Color): Color = hslColor(hueOf(c), 0.35f, 0.84f)
 
         /** A colour light enough for values on DARK MODE's slate windows. */
         private fun brighter(c: Color): Color {

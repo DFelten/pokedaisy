@@ -3,7 +3,7 @@ title: The companion at a glance
 summary: What the bottom screen shows, how the tab bar works, and what the companion's SETTINGS tab holds.
 section: companion
 order: 1
-keywords: [bottom screen, second screen, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup, tab icons, icons instead of names, icon tabs]
+keywords: [bottom screen, second screen, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup, tab icons, icons instead of names, icon tabs, tab bar position, tabs on top, tabs on the side, side tabs, compact tabs, smaller tabs]
 ---
 
 The companion is everything on the bottom screen while a game runs. It reads your game as you play, so your party, bag, location and battles are always up to date without opening a single menu on the top screen. Its party and bag screens are drawn in the game's own style: FireRed's party screen in FireRed, Emerald's in Emerald, and each supported hack's own look where it has one. Everything else takes its look from the Gen 3 summary pages: a teal title strip on a mint window, green section bands, keys for tabs and buttons (the open tab sits pressed in), and facts set out in ruled boxes. In Unbound the same menus wear Unbound's own purple and gold.
@@ -36,7 +36,7 @@ Up to five tabs fit next to the gear. To pick them, open SETTINGS and tap `TAB B
 
 Your choice is shared by every game. A tab the running game doesn't have shows `N/A` and keeps its setting for the games that do.
 
-At the top of that page, `SHOW AS` picks how the tabs look: `NAMES` (the default) or `ICONS`, each tab its picture instead of its word: the same pictures as on `MORE` (in `VIEW` `MODERN`, its smooth ones), in the tab's colours. The gear and `MORE` are icons either way.
+At the top of that page, `POSITION` puts the bar along the `BOTTOM` (the default) or the `TOP`, or makes it a rail down the `LEFT` or `RIGHT` side, which leaves the tabs the screen's full height. `SIZE` `COMPACT` makes the tabs lower, with smaller words, for more room above them. `SHOW AS` picks how the tabs look: `NAMES` (the default) or `ICONS`, each tab its picture instead of its word: the same pictures as on `MORE` (in `VIEW` `MODERN`, its smooth ones), in the tab's colours. The gear and `MORE` are icons either way.
 
 ![The TAB BAR page in the companion's SETTINGS, listing each tab as SHOWN or HIDDEN](shots/companion-settings-tabs.png "SETTINGS > TAB BAR")
 

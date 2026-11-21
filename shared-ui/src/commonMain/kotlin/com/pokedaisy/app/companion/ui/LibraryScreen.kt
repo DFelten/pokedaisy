@@ -346,18 +346,19 @@ fun LibraryFrame(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val wide = maxWidth >= maxHeight
+        // MENU BAR: AUTO = down the left of a wide screen, along the bottom of a tall one; or the side the player picked.
+        val place = com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarPlace.on(maxWidth >= maxHeight)
         AppBackdrop(logos = true)
         Row(Modifier.fillMaxSize()) {
-            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
+            if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.LEFT) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                if (showHeader) {
-                    LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
-                    Spacer(Modifier.height(headerGap))
-                }
+                if (showHeader) LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
+                if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.TOP) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, far = true, onPick = onSection)
+                if (showHeader) Spacer(Modifier.height(headerGap))
                 content()
-                if (!wide) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, onPick = onSection)
+                if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.BOTTOM) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, onPick = onSection)
             }
+            if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.RIGHT) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, far = true, onPick = onSection)
         }
         overlays()
     }

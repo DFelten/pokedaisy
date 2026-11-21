@@ -345,7 +345,11 @@ one, never writes over another) and HUD (`FieldHudStyle.customs` / `custom`, `Hu
 `HudEditor` over the game from the companion's HUD > EDIT LAYOUT, `CustomHudLayout`). LIBRARY VIEW (`LibraryLayout`, `Prefs.libraryViewMode`
 by ordinal: LIST / GRID / CARTRIDGES / CAROUSEL / SPOTLIGHT; the header's view button opens its pick-list): the immersive three are
 `LibraryShowcaseView` over the host's `LibraryShowcase` (cover, ScreenScraper's fanart / wheel, facts, menu); our own cartridge drawings,
-never a console maker's art. **ScreenScraper is on for players** (2026-11-23: `featureFlag("screenScraper", default = true)`; its row's words
+never a console maker's art. Theme colours past the one (the user's call, 2026-11-23): TEXT COLOR (`ThemeSpec.text` / `textNight`,
+`OptionColors.label` / `labelShadow` take it) and SECOND COLOR (`ThemeSpec.accentHue`: `themedStylePalette(accent)` gives the title / section
+bands, buttons and tabs that hue, `withBands`). Bars (same day): the companion's TAB BAR > POSITION (`TabBarPlace`: BOTTOM / TOP / a side rail,
+`sideRail` in CompanionScreen) and SIZE COMPACT (`LocalTabBarCompact`), the library's / Settings' MENU BAR (`MenuBarPlace`, `LibraryNav(far)`)
+and MENU BAR SIZE COMPACT (icons alone); the dual-screen launcher keeps its rail where its keys reach it. **ScreenScraper is on for players** (2026-11-23: `featureFlag("screenScraper", default = true)`; its row's words
 are back in `SETTING_KEYWORDS`, the manual has "Game media from ScreenScraper"). RETRO's SUMMARY MINT build wears MODERN's own blues (`retroStylePalette`,
 the user's call: the same colours in both views; its list frame band 2 px) and **a THEME moves the whole
 style to its hue** (`themedStylePalette`: `rehued` shifts the style's own colour family, SUMMARY MINT's greens / MODERN's blues, keeping

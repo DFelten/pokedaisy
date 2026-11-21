@@ -106,6 +106,14 @@ class CustomLookTest {
         assertTrue(red.darkPage)
         assertEquals("#D23A3A", ThemeDraft.hex(red.color))
         assertNull(ThemeDraft.cleanName("  |  "))
+        // TEXT COLOR / SECOND COLOR: kept in the file; dark mode's text worked out from the light one; the second colour's hue.
+        val two = ThemeDraft.of("""{ "name": "Sunset", "color": "#8A4FD0", "secondColor": "#E8743C", "textColor": "#1F2E5C" }""")
+        assertEquals(two, ThemeDraft.of(two.toJson()))
+        val spec = two.spec(1000)
+        assertEquals(Color(0xFF1F2E5C), spec.text)
+        assertTrue(spec.textNight!!.red > 0.6f)
+        assertEquals(hueOf(Color(0xFFE8743C)), spec.accentHue!!, 0.01f)
+        assertNull(d.spec(1000).accentHue)
     }
 
     /** A theme pack in and out: its font goes among the fonts and comes back out with it; a name it can't hold is refused. */

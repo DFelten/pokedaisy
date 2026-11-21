@@ -2,6 +2,7 @@ package com.pokedaisy.app
 
 import com.pokedaisy.app.companion.ui.theme.LookBackground
 import com.pokedaisy.app.companion.ui.theme.LookSlot
+import com.pokedaisy.app.companion.ui.theme.MenuBarPlace
 import com.pokedaisy.app.companion.DsCore
 import com.pokedaisy.app.companion.OverlayImport
 import com.pokedaisy.app.companion.OverlayImportSession
@@ -359,19 +360,25 @@ class SettingsActivity : ComponentActivity() {
             AppBackdrop(logos = tab)
             // The window's own shape from the first frame (rootSize starts as a guess: an upright phone showed the rail
             // for a frame before its bar).
-            val wide = maxWidth >= maxHeight
-            Row(Modifier.fillMaxSize()) {
-            if (tab && wide) LibraryLook { nm, ns ->
+            // MENU BAR: where the library has GAMES / TOOLS / SETTINGS, here too.
+            val place = com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarPlace.on(maxWidth >= maxHeight)
+            @androidx.compose.runtime.Composable
+            fun menuBar(vertical: Boolean, far: Boolean) = LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
-                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = true, nm, ns, toolsBadge = toolsNew,
-                    top = com.pokedaisy.app.companion.ui.libraryMargin, onPick = ::pickSection,
+                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = vertical, nm, ns, toolsBadge = toolsNew,
+                    top = if (vertical) com.pokedaisy.app.companion.ui.libraryMargin else 0.dp, far = far, onPick = ::pickSection,
                 )
             }
+            Row(Modifier.fillMaxSize()) {
+            if (tab && place == MenuBarPlace.LEFT) menuBar(vertical = true, far = false)
             Column(Modifier.weight(1f).fillMaxHeight()) {
             // The header along the screen's top edge and HOME's footer along its bottom, both full width (the library's
             // and TOOLS' look); the page between them keeps its margins.
-                if (tab && screen == Screen.HOME) LibraryLook { nm, _ ->
-                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
+                if (tab && screen == Screen.HOME) {
+                    LibraryLook { nm, _ ->
+                        com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
+                    }
+                    if (place == MenuBarPlace.TOP) menuBar(vertical = false, far = true)
                 } else {
                 com.pokedaisy.app.companion.ui.AppPageTitle(
                     title = when (screen) {
@@ -447,12 +454,9 @@ class SettingsActivity : ComponentActivity() {
                 }
             }
             if (screen == Screen.HOME) com.pokedaisy.app.companion.ui.AppAboutBar(BuildConfig.VERSION_NAME, m, ::openUrl)
-            if (tab && !wide) LibraryLook { nm, ns ->
-                com.pokedaisy.app.companion.ui.LibraryNav(
-                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = false, nm, ns, toolsBadge = toolsNew, onPick = ::pickSection,
-                )
+            if (tab && place == MenuBarPlace.BOTTOM) menuBar(vertical = false, far = false)
             }
-            }
+            if (tab && place == MenuBarPlace.RIGHT) menuBar(vertical = true, far = true)
             }
 
             selector?.slider?.let { read ->
@@ -1004,6 +1008,34 @@ class SettingsActivity : ComponentActivity() {
             colorSlider("SATURATION", sat, 0..100, 5) { draft.recolored(com.pokedaisy.app.companion.ui.theme.hslColor(h.toFloat(), it / 100f, light / 100f)) },
             colorSlider("LIGHTNESS", light, 15..85, 5) { draft.recolored(com.pokedaisy.app.companion.ui.theme.hslColor(h.toFloat(), sat / 100f, it / 100f)) },
             colorSlider("WINDOW TINT", (draft.tint * 100).toInt(), 0..100, 10) { draft.copy(tint = it / 100f) },
+            // The windows' text: the look's own (AUTO), or a dark one of the ready ones (dark mode gets a light twin of it).
+            SettingRow(
+                tk("TEXT COLOR"), draft.textColor?.let { c -> TEXT_PRESETS.firstOrNull { it.second == c }?.first } ?: tk("AUTO"),
+                labelIcon = draft.textColor?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) },
+                subtitle = "The words in the windows", labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEME_COLORS),
+            ) {
+                val options = listOf(tk("AUTO"), tk("THEME COLOR")) + TEXT_PRESETS.map { it.first }
+                selector = Selector(tk("TEXT COLOR"), options, "", icon = { name ->
+                    TEXT_PRESETS.firstOrNull { it.first == name }?.second?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) }
+                        ?: if (name == tk("THEME COLOR")) com.pokedaisy.app.companion.ui.colorSwatch(themeTextOf(draft.color)) else null
+                }) { l ->
+                    save(when (l) {
+                        tk("AUTO") -> draft.copy(textColor = null, darkTextColor = null)
+                        tk("THEME COLOR") -> draft.copy(textColor = themeTextOf(draft.color), darkTextColor = null)
+                        else -> draft.copy(textColor = TEXT_PRESETS.first { it.first == l }.second, darkTextColor = null)
+                    })
+                }
+            },
+            // A second colour for the bands, buttons and tabs (and a glow of the backdrop); the windows keep COLOR's.
+            SettingRow(
+                tk("SECOND COLOR"), draft.secondColor?.let { c -> presets.firstOrNull { it.second == c }?.first ?: com.pokedaisy.app.companion.ui.theme.ThemeDraft.hex(c) } ?: tk("SAME AS COLOR"),
+                labelIcon = draft.secondColor?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) },
+                subtitle = "The bands, buttons and tabs", labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEME_COLORS),
+            ) {
+                selector = Selector(tk("SECOND COLOR"), listOf(tk("SAME AS COLOR")) + presets.map { it.first }, "", icon = { name ->
+                    presets.firstOrNull { it.first == name }?.second?.let { c -> com.pokedaisy.app.companion.ui.colorSwatch(c) }
+                }) { l -> save(draft.copy(secondColor = presets.firstOrNull { it.first == l }?.second, glows = null)) }
+            },
             SettingRow(tk("PAGE"), if (draft.darkPage) tk("DARK") else tk("LIGHT"), subtitle = "The backdrop behind the library and settings") {
                 save(draft.copy(darkPage = !draft.darkPage, page = null, glows = null))
             },
@@ -1296,6 +1328,22 @@ class SettingsActivity : ComponentActivity() {
                 tk("MY LOOK"), null, subtitle = "Your own themes, fonts and backgrounds", opensPage = true,
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MY_LOOK),
             ) { screen = Screen.MY_LOOK },
+            // MENU BAR / MENU BAR SIZE: the library's GAMES / TOOLS / SETTINGS (here too) on any side, or icons alone.
+            com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+                SettingRow(tk("MENU BAR"), tk(look.menuBarPlace.label), subtitle = "Where GAMES, TOOLS and SETTINGS sit",
+                    labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.TAB_BAR_PLACE)) {
+                    selector = Selector(tk("MENU BAR"), MenuBarPlace.entries.map { it.label }, look.menuBarPlace.label) { l ->
+                        MenuBarPlace.entries.firstOrNull { it.label == l }?.let { look.changeMenuBar(place = it) }
+                        revision++
+                    }
+                }
+            },
+            SettingRow(tk("MENU BAR SIZE"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarCompact) tk("COMPACT") else tk("NORMAL"),
+                subtitle = "COMPACT: the icons alone",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.TAB_BAR_PLACE)) {
+                com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeMenuBar(compact = !it.menuBarCompact) }
+                revision++
+            },
             // The game's frames per second and the app's CPU share, in the game's corner.
             SettingRow(tk("FPS / CPU"), onOff(prefs.showPerformance), subtitle = "Speed and CPU use in the game's corner") {
                 prefs.showPerformance = !prefs.showPerformance
@@ -2574,3 +2622,14 @@ private val THEME_PRESETS = listOf(
     "YELLOW" to 0xFFE0B020, "ORANGE" to 0xFFE8743C, "RED" to 0xFFD23A3A, "PINK" to 0xFFE0508C, "PURPLE" to 0xFF8A4FD0,
     "INDIGO" to 0xFF4F4FB8, "BROWN" to 0xFF8E5E3A, "GREY" to 0xFF6E7681,
 ).map { (n, c) -> tk(n) to androidx.compose.ui.graphics.Color(c) }
+
+/** EDIT THEME > TEXT COLOR's ready colours: dark enough to read on the light windows (dark mode takes a light twin). */
+private val TEXT_PRESETS = listOf(
+    "CHARCOAL" to 0xFF2E2E36, "SLATE" to 0xFF3C4A5C, "NAVY" to 0xFF1F2E5C, "FOREST" to 0xFF1F4A2E,
+    "WINE" to 0xFF5C1F2E, "PLUM" to 0xFF4A2A5C, "COCOA" to 0xFF4A3426,
+).map { (n, c) -> tk(n) to androidx.compose.ui.graphics.Color(c) }
+
+/** TEXT COLOR's THEME COLOR: the theme's colour, deep enough to read as text. */
+private fun themeTextOf(c: androidx.compose.ui.graphics.Color) = com.pokedaisy.app.companion.ui.theme.hslColor(
+    com.pokedaisy.app.companion.ui.theme.hueOf(c), 0.55f, 0.28f,
+)

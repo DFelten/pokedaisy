@@ -1054,6 +1054,21 @@ class Prefs(
         get() = p.getInt("side_bars", 0)
         set(v) = p.edit().putInt("side_bars", v).apply()
 
+    /** TAB BAR > POSITION / SIZE (the companion's: a TabBarPlace ordinal, compact) and MENU BAR / MENU BAR SIZE (the
+     * library's GAMES / TOOLS / SETTINGS: a MenuBarPlace ordinal, compact). */
+    var tabBarPlace: Int
+        get() = p.getInt("tab_bar_place", 0)
+        set(v) = p.edit().putInt("tab_bar_place", v).apply()
+    var tabBarCompact: Boolean
+        get() = p.getBoolean("tab_bar_compact", false)
+        set(v) = p.edit().putBoolean("tab_bar_compact", v).apply()
+    var menuBarPlace: Int
+        get() = p.getInt("menu_bar_place", 0)
+        set(v) = p.edit().putInt("menu_bar_place", v).apply()
+    var menuBarCompact: Boolean
+        get() = p.getBoolean("menu_bar_compact", false)
+        set(v) = p.edit().putBoolean("menu_bar_compact", v).apply()
+
     /** COMPANION > TAB BAR's SHOW AS: false = the tabs' names, true = their icons. */
     var tabIcons: Boolean
         get() = p.getBoolean("tab_icons", false)

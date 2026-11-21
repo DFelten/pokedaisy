@@ -124,6 +124,8 @@ val FLAGGED_SETTING_KEYWORDS: Map<String, String> = mapOf(
  * itself is matched in the language on screen too.
  */
 val SETTING_KEYWORDS: Map<String, String> = mapOf(
+    "MENU BAR" to "games tools settings rail nav navigation bar sidebar side bar position move left right top bottom",
+    "MENU BAR SIZE" to "compact smaller icons only rail nav navigation",
     "ScreenScraper" to "scraper scraping media artwork art box art boxart covers screenshots logos wheel fanart videos synopsis",
     "SIDE BARS" to "black bars letterbox pillarbox blurred bars blur borders sides background beside the game",
     "SHOW AS" to "tab icons icons instead of names tab names",
@@ -267,7 +269,7 @@ val SETTINGS_GROUPS: List<Pair<String, List<String>>> = listOf(
     "ON THE GAME" to listOf("HUD", "BATTLE BUTTONS", "HIDE BATTLE MENU"),
     "SCREENS" to listOf("COMPANION VIEW", "COMPANION BUTTON", "SWAP SCREENS", "SINGLE SCREEN", "FOLD LAYOUT", "TABLETOP CONTROLS"),
     "DS" to listOf("DS LAYOUT", "DS TOUCH SCREEN", "DS RESOLUTION", "DS CPU BOOST", "DS CORE"),
-    "LOOK" to listOf("VIEW", "THEME", "IN GAME", "DARK MODE", "FONT TYPE", "FONT SIZE", "MY LOOK", "COMPANION BACKGROUND"),
+    "LOOK" to listOf("VIEW", "THEME", "IN GAME", "DARK MODE", "FONT TYPE", "FONT SIZE", "MY LOOK", "MENU BAR", "MENU BAR SIZE", "COMPANION BACKGROUND"),
     "BATTLE" to listOf(
         "BATTLE INFO", "BATTLE HINTS", "BATTLE VIEW", "BATTLE STYLE", "ONE-TAP MOVES", "LAST BALL", "FOE IVS", "BATTLE FOCUS",
     ),
@@ -1047,7 +1049,7 @@ fun themeSwatch(label: String): (@androidx.compose.runtime.Composable () -> Unit
     val colors = if (spec.rainbow) listOf(Color(0xFFE83838), Color(0xFF40B048), Color(0xFF3C88E0))
     else {
         val band = com.pokedaisy.app.companion.ui.theme.themedStylePalette(
-            com.pokedaisy.app.companion.ui.theme.UiStyle.SUMMARY_MINT, false, spec.hue,
+            com.pokedaisy.app.companion.ui.theme.UiStyle.SUMMARY_MINT, false, spec.hue, accent = spec.accentHue,
         )?.titleFill ?: Color(0xFF3D6FE0)
         listOf(band, spec.blobs.firstOrNull() ?: spec.page, spec.value)
     }

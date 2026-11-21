@@ -47,6 +47,31 @@ enum class SideBars(val label: String) {
     }
 }
 
+/** TAB BAR > POSITION: where the companion's tab bar sits (the user's call, 2026-11-23), stored by [ordinal]. */
+enum class TabBarPlace(val label: String) {
+    BOTTOM("BOTTOM"), TOP("TOP"), LEFT("LEFT"), RIGHT("RIGHT");
+
+    val side get() = this == LEFT || this == RIGHT
+
+    companion object {
+        fun of(i: Int): TabBarPlace = entries.getOrNull(i) ?: BOTTOM
+    }
+}
+
+/** MENU BAR: where the library's GAMES / TOOLS / SETTINGS sit; AUTO = down the left of a wide screen, along the bottom of a
+ * tall one. Stored by [ordinal]. */
+enum class MenuBarPlace(val label: String) {
+    AUTO("AUTO"), LEFT("LEFT"), RIGHT("RIGHT"), TOP("TOP"), BOTTOM("BOTTOM");
+
+    /** Where it goes on a screen [wide] or not. */
+    fun on(wide: Boolean): MenuBarPlace = if (this == AUTO) (if (wide) LEFT else BOTTOM) else this
+    val side get() = this == LEFT || this == RIGHT
+
+    companion object {
+        fun of(i: Int): MenuBarPlace = entries.getOrNull(i) ?: AUTO
+    }
+}
+
 /** A place a picture of the look goes: the player's own (MY LOOK) or a theme's, a file `<base>.<kind>` each. */
 enum class LookSlot(val base: String, val label: String) {
     APP("app-background", "APP BACKGROUND"),
@@ -112,6 +137,15 @@ object CustomLook {
     /** TAB BAR > SHOW AS ICONS; Compose state. */
     var tabIcons by mutableStateOf(false)
         private set
+    /** TAB BAR > POSITION / SIZE, MENU BAR / MENU BAR SIZE; Compose state. */
+    var tabBarPlace by mutableStateOf(TabBarPlace.BOTTOM)
+        private set
+    var tabBarCompact by mutableStateOf(false)
+        private set
+    var menuBarPlace by mutableStateOf(MenuBarPlace.AUTO)
+        private set
+    var menuBarCompact by mutableStateOf(false)
+        private set
 
     /** Previews / screenshot tests: these pictures whatever is kept. */
     var previewApp: ImageBitmap? = null
@@ -133,6 +167,22 @@ object CustomLook {
         companionBackground = LookBackground.of(store?.companionBackground ?: 0)
         sideBars = SideBars.of(store?.sideBars ?: 0)
         tabIcons = store?.tabIcons ?: false
+        tabBarPlace = TabBarPlace.of(store?.tabBarPlace ?: 0)
+        tabBarCompact = store?.tabBarCompact ?: false
+        menuBarPlace = MenuBarPlace.of(store?.menuBarPlace ?: 0)
+        menuBarCompact = store?.menuBarCompact ?: false
+    }
+
+    fun changeTabBar(place: TabBarPlace = tabBarPlace, compact: Boolean = tabBarCompact) {
+        ThemeStore.current?.tabBarPlace = place.ordinal
+        ThemeStore.current?.tabBarCompact = compact
+        tabBarPlace = place; tabBarCompact = compact
+    }
+
+    fun changeMenuBar(place: MenuBarPlace = menuBarPlace, compact: Boolean = menuBarCompact) {
+        ThemeStore.current?.menuBarPlace = place.ordinal
+        ThemeStore.current?.menuBarCompact = compact
+        menuBarPlace = place; menuBarCompact = compact
     }
 
     /** The [LookSlot] pictures in [folder]. */

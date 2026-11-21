@@ -268,6 +268,8 @@ The dates follow your device's calendar. If two holidays overlap (`LUNAR NEW YEA
 | `NAME` | Its name in the `THEME` list (20 letters at most). |
 | `COLOR` | Its colour: pick a ready one, or set it with `HUE`, `SATURATION` and `LIGHTNESS` below. The windows' tint, the values, the backdrop and its glows all follow it. |
 | `WINDOW TINT` | How much the windows take the colour, from 0 (plain grey) to 100. |
+| `TEXT COLOR` | The words in the windows: `AUTO` (the look's own grey), `THEME COLOR` (a deep shade of the theme's colour) or a ready dark one. In `DARK MODE` the words take a light shade of the same colour. |
+| `SECOND COLOR` | A second colour for the title and group bands, the buttons and the tabs, and one of the backdrop's glows; the windows and the values keep `COLOR`. `SAME AS COLOR` (the default) uses one colour for everything. |
 | `PAGE` | `LIGHT` or `DARK`: the backdrop behind the library and Settings (`DARK` writes white text on it). |
 | `FONT` | A font that goes on with the theme: `NONE`, one of your fonts, or `ADD A FONT`. |
 | `APP BACKGROUND`, `COMPANION BACKGROUND` | Pictures that come with the theme: behind the app and behind the companion. |
@@ -294,6 +296,9 @@ A theme file is text you can write yourself too. The smallest one is a name and 
 | `darkPage` | `true` for a dark backdrop with white text, even in light mode. | `false` |
 | `glows` | Two to five colours that drift over the backdrop, like `["#FFC2D4", "#C4DAFF"]`. | Three shades of `color`. |
 | `gameTint` | A colour laid over the game's backdrop in the companion, or `null` for none. | A light `color`. |
+| `textColor` | The words in the windows. | The look's own grey. |
+| `darkTextColor` | The words in `DARK MODE`. | A light `textColor`. |
+| `secondColor` | The bands, buttons and tabs (and a glow), with the windows in `color`. | `color` for everything. |
 
 Each field goes between the braces, with a comma between two fields. In a `.zip`, that file is named `theme.json`, and it can sit beside a font named `font.ttf` (or `font.otf`) and pictures named `app-background`, `companion-background`, `bar-left` and `bar-right`, each ending in `.png`, `.jpg`, `.webp` or `.gif`. Nothing else is taken. If something in a file isn't right, the app says what and keeps your current theme.
 

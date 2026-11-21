@@ -118,6 +118,8 @@ The `SHADERS` page:
 | `DARK MODE` | **`OFF`**, `ON`, `AUTO` | Dark windows on both screens. `AUTO` follows the device. | [Screen](screen.md) |
 | `FONT TYPE` | **`PIXEL SMALL`**, `PIXEL`, `MODERN`, `SMOOTH`, `SMOOTH BOLD`, `SYSTEM`, and the fonts you added | The app's letters on both screens: pixel art or smooth ones. The list shows each in its own letters. | [Screen](screen.md#font) |
 | `FONT SIZE` | `SMALL`, **`MEDIUM`**, `LARGE`, `MORE SIZES` (50% to 200%) | The app's text a size smaller or bigger, on both screens. | [Screen](screen.md#font) |
+| `MENU BAR` | **`AUTO`**, `LEFT`, `RIGHT`, `TOP`, `BOTTOM` | Where the library's and Settings' `GAMES`, `TOOLS` and `SETTINGS` sit. | [Library](library.md#games-tools-and-settings) |
+| `MENU BAR SIZE` | **`NORMAL`**, `COMPACT` | `COMPACT`: their icons alone, smaller. | [Library](library.md#games-tools-and-settings) |
 | `MY LOOK` | a page | Your own themes (`CREATE A THEME`, each theme's page with `EXPORT`, `ADD A THEME` for a shared one), backgrounds (`APP BACKGROUND`, `COMPANION BACKGROUND`, still or moving), side bars (`SIDE BARS`, `LEFT BAR`, `RIGHT BAR`) and fonts. | [Screen](screen.md#my-look-your-own-backgrounds-themes-and-fonts) |
 
 ### Achievements
@@ -319,7 +321,7 @@ The `DISPLAY OPTIONS` page:
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
-| `TAB BAR` | **5 tabs** (a page) | `SHOW AS` (**`NAMES`**, `ICONS`: each tab its picture), then which tabs sit next to the gear: up to 5, `SHOWN` or `HIDDEN`. By default `PARTY`, `DEX`, `MAP`, `BAG` and `GUIDE`. A tab the game doesn't have gives its place to another of the game's tabs. The rest open from `MORE`, left of the gear. | [The companion](companion.md) |
+| `TAB BAR` | **5 tabs** (a page) | `POSITION` (**`BOTTOM`**, `TOP`, `LEFT`, `RIGHT`), `SIZE` (**`NORMAL`**, `COMPACT`), `SHOW AS` (**`NAMES`**, `ICONS`: each tab its picture), then which tabs sit next to the gear: up to 5, `SHOWN` or `HIDDEN`. By default `PARTY`, `DEX`, `MAP`, `BAG` and `GUIDE`. A tab the game doesn't have gives its place to another of the game's tabs. The rest open from `MORE`, left of the gear. | [The companion](companion.md) |
 | `CLICK SOUND` | **`ON`**, `OFF` | The game's own menu click on every companion button. | [The companion](companion.md) |
 | `POKéMON PICTURES` | **`GAME`**, `DETAILED` | Pokémon Red, Blue, Yellow, Gold, Silver and Crystal only: `DETAILED` shows each Pokémon's own picture instead of the game's shared icons, on the `PARTY` tab and everywhere else the companion and the HUD draw one. | [Party](party.md) |
 | `ITEM POPUPS` | **`ON`**, `OFF` | The `OBTAINED` card over the game when your bag gains an item. | [Bag](bag.md#item-gains) |

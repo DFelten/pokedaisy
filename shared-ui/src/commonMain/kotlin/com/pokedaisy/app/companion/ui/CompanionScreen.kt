@@ -502,13 +502,50 @@ fun CompanionScreen(
                 }
             }
 
+            // TAB BAR > POSITION / SIZE: along the bottom (the default) or the top, or a rail down one side; COMPACT draws it lower.
+            val barPlace = com.pokedaisy.app.companion.ui.theme.CustomLook.tabBarPlace
+            val barCompact = com.pokedaisy.app.companion.ui.theme.CustomLook.tabBarCompact
+            val sideRail: @Composable () -> Unit = {
+                val tight = OptionColors.joined
+                val icons = com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons
+                // As wide as an icon chip with icons; with names, room for the longest (they narrow their letters past it).
+                val railW = if (icons) (if (barCompact) 44.dp else 56.dp) else (if (barCompact) 92.dp else 112.dp)
+                val gap = if (tight) 3.dp else 4.dp
+                CompositionLocalProvider(LocalTabBarCompact provides barCompact) {
+                    Column(
+                        Modifier.fillMaxHeight().width(railW).padding(
+                            start = if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.RIGHT) (if (tight) 4.dp else 8.dp) else 0.dp,
+                            end = if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT) (if (tight) 4.dp else 8.dp) else 0.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(gap),
+                    ) {
+                        tabs.forEachIndexed { i, title ->
+                            val open = { openTab(title) }
+                            val cell = Modifier.fillMaxWidth().weight(1f)
+                            when (title) {
+                                "SETTINGS" -> IconTabChip(PixelIcons.gear, tr("Settings"), selectedIdx == i, open, cell, slot = i, side = true)
+                                "MORE" -> IconTabChip(PixelIcons.more, tr("MORE"), selectedIdx == i, open, cell.testTag("tab-MORE"), slot = i, side = true)
+                                else -> {
+                                    val usable = !snapshot.unsupported || snapshot.blocked != null || title == "ACHIEVEMENTS"
+                                    TabChip(companionTabLabel(title), selectedIdx == i && usable, cell.testTag("tab-$title"), enabled = usable, slot = i, id = title, onClick = open)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             val tabBar: @Composable () -> Unit = {
                 // IntrinsicSize.Min + fillMaxHeight on every chip: the icon-only
                 // SETTINGS chip stretches to the text chips' height.
                 // A style's windows sit closer: the bar a few pixels under them, its chips a pixel apart.
                 val tight = OptionColors.joined
+                val barPad = if (tight) 4.dp else 8.dp
+                CompositionLocalProvider(LocalTabBarCompact provides barCompact) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = if (tight) 4.dp else 8.dp),
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(
+                        top = if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP) 0.dp else barPad,
+                        bottom = if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP) barPad else 0.dp,
+                    ),
                     horizontalArrangement = Arrangement.spacedBy(if (tight) 3.dp else 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -526,6 +563,7 @@ fun CompanionScreen(
                         }
                     }
                     if (shoulderHints > 0f) ShoulderHint("R", shoulderHints) { stepTab(1) }
+                }
                 }
             }
             // A phone upright with no room above the companion: its grip sits in here, over the backdrop.
@@ -596,8 +634,11 @@ fun CompanionScreen(
                 // instead of animating: every pane still sliding out stays composed, and
                 // a run of quick taps stacked up several full tabs at once.
                 val lastSwitch = remember { arrayOfNulls<TimeSource.Monotonic.ValueTimeMark>(1) }
+                if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP) tabBar()
+                Row(Modifier.weight(1f).fillMaxWidth()) {
+                if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT) sideRail()
                 // The tab area, with RetroAchievements' live indicators in its corner.
-                Box(Modifier.weight(1f).fillMaxSize()) {
+                Box(Modifier.weight(1f).fillMaxHeight()) {
                     AnimatedContent(
                         targetState = pane,
                         transitionSpec = {
@@ -949,8 +990,10 @@ fun CompanionScreen(
                     }
                     AchievementIndicators(achievements, Modifier.align(Alignment.BottomEnd).padding(8.dp))
                 }
+                if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.RIGHT) sideRail()
+                }
 
-                Box(
+                if (barPlace == com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM) Box(
                     Modifier.fillMaxWidth().drawBehind {
                         // Out to the screen's edges, under the margin round the bar.
                         if (dock > 0f) {
@@ -1085,8 +1128,13 @@ internal fun companionTabLabel(id: String): String = when (id) {
 private fun rememberTabMetrics(): GbaTextMetrics {
     // A fixed-width game font (Gen 1's 8px letters, condensed): its own size at whole pixels, crisp.
     val wide = LocalGameFont.current != null
-    return rememberGbaTextMetrics(if (wide) 1f else 1.15f, wholePixels = wide)
+    // TAB BAR > SIZE COMPACT: the chips' words a size down.
+    val compact = LocalTabBarCompact.current
+    return rememberGbaTextMetrics(if (wide || compact) 1f else 1.15f, wholePixels = wide)
 }
+
+/** TAB BAR > SIZE COMPACT ([com.pokedaisy.app.companion.ui.theme.CustomLook.tabBarCompact]) round the tab bar's chips. */
+internal val LocalTabBarCompact = androidx.compose.runtime.compositionLocalOf { false }
 
 /** The gear and MORE chips' fixed width (narrower on a short screen, which is narrow too: the text tabs keep their words). */
 internal val SETTINGS_CHIP_WIDTH: androidx.compose.ui.unit.Dp
@@ -1220,8 +1268,8 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
             val tint = if (rainbow != null) rainbow.text else key?.text ?: if (selected) OptionColors.value else OptionColors.label
             TabChipShell(selected, m, modifier.fillMaxHeight().alpha(if (enabled) 1f else 0.4f).semantics { contentDescription = label }, onClick, enabled, rainbow) {
                 // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph in the label's colour, a little larger than a capital.
-                if (glyph != null) ModernIcon(glyph, tint, Modifier.size(m.u * 22))
-                else PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * TabIcons.SIZE))
+                if (glyph != null) ModernIcon(glyph, tint, Modifier.size(m.u * if (LocalTabBarCompact.current) 15 else 22))
+                else PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
             }
             return
         }
@@ -1243,15 +1291,17 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
  * showing only a pixel-art [icon] (the gear, MORE's nine squares) rather than a word. Same
  * height as the text tabs (the tab row stretches it). */
 @Composable
-private fun IconTabChip(icon: List<String>, description: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, slot: Int = 0) {
+private fun IconTabChip(icon: List<String>, description: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, slot: Int = 0, side: Boolean = false) {
     val m = rememberTabMetrics()
     val rainbow = OptionColors.rainbow(slot)
     val key = if (rainbow == null) OptionColors.tabKey(selected) else null
-    TabChipShell(selected, m, modifier.width(SETTINGS_CHIP_WIDTH).fillMaxHeight().semantics { contentDescription = description }, onClick, rainbow = rainbow) {
+    // A side rail's: as wide as the rail (its height its share); the bar's: a fixed width, its height the bar's.
+    val shape = if (side) modifier else modifier.width(SETTINGS_CHIP_WIDTH).fillMaxHeight()
+    TabChipShell(selected, m, shape.semantics { contentDescription = description }, onClick, rainbow = rainbow) {
         PixelIcon(
             icon,
             color = if (rainbow != null) rainbow.text else key?.text ?: if (selected) OptionColors.value else OptionColors.label,
-            modifier = Modifier.size(m.u * 20),
+            modifier = Modifier.size(m.u * if (LocalTabBarCompact.current) 15 else 20),
         )
     }
 }
@@ -1288,7 +1338,8 @@ private fun TabChipShell(
             }
             .soundClickable(interactionSource = noRipple, indication = null, enabled = enabled, onClick = onClick)
             .padding(horizontal = if (LocalGameFont.current != null) u else u * 2)
-            .padding(top = u * (6 + sink), bottom = u * (6 + edge - sink)),
+            // TAB BAR > SIZE COMPACT: half the room above and below the label.
+            .let { val pad = if (LocalTabBarCompact.current) 3 else 6; it.padding(top = u * (pad + sink), bottom = u * (pad + edge - sink)) },
         contentAlignment = Alignment.Center,
     ) { content() }
 }

@@ -81,6 +81,19 @@ interface ThemeStore {
     var tabIcons: Boolean
         get() = false
         set(value) {}
+    /** TAB BAR > POSITION / SIZE and MENU BAR / MENU BAR SIZE ([CustomLook.tabBarPlace] and the rest). */
+    var tabBarPlace: Int
+        get() = 0
+        set(value) {}
+    var tabBarCompact: Boolean
+        get() = false
+        set(value) {}
+    var menuBarPlace: Int
+        get() = 0
+        set(value) {}
+    var menuBarCompact: Boolean
+        get() = false
+        set(value) {}
     /** The font RETRO had before MODERN put its own on ([AppViews.set]). */
     var appFontRetro: Int
         get() = AppFont.DEFAULT.ordinal
