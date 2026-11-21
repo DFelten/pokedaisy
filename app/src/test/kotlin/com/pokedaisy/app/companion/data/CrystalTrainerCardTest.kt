@@ -16,13 +16,15 @@ import java.util.zip.CRC32
  */
 class CrystalTrainerCardTest {
     private val dir = File(File(RETAIL_ROM_DIR).parentFile, "gbc")
-    private fun art(name: String, t: Gen2TrainerCard.Tables): Gen2TrainerCard.Art {
+    /** A cart's card art, or null when the cart isn't on this machine (each language is checked on its own). */
+    private fun art(name: String, t: Gen2TrainerCard.Tables): Gen2TrainerCard.Art? {
         val f = File(dir, name)
-        assumeTrue("$name not on this machine", f.isFile)
+        if (!f.isFile) return null
         return Gen2TrainerCard.parse(Gen2TrainerCard.extract(f.readBytes(), t, 0x3E to 0x4200)) ?: error("no card art")
     }
     private fun english() = art("Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc", Gen2TrainerCard.CRYSTAL_TABLES)
     private fun german() = art("Pokemon - Kristall-Edition (Germany).gbc", Gen2TrainerCard.CRYSTAL_DE_TABLES)
+    private val carts by lazy { listOfNotNull(english()?.let { "en" to it }, german()?.let { "de" to it }) }
 
     private val chris = listOf(0x82, 0x87, 0x91, 0x88, 0x92)
     private fun card(full: Boolean) = TrainerCardInfo(
@@ -47,8 +49,11 @@ class CrystalTrainerCardTest {
 
     @Test
     fun `both pages, every frame - the game's own, pixel for pixel`() {
+        assumeTrue("neither Crystal cart on this machine", carts.isNotEmpty())
+        val pins = mapOf("en" to 0x498BFDDEL, "de" to 0x457395C3L)
         val out = File("build/crystal-card").also { it.mkdirs() }
-        for ((lang, art, pinned) in listOf(Triple("en", english(), 0x498BFDDEL), Triple("de", german(), 0x457395C3L))) {
+        for ((lang, art) in carts) {
+            val pinned = pins.getValue(lang)
             val crc = CRC32()
             for (full in listOf(true, false)) for (page2 in listOf(false, true)) for (phase in 0 until 8) {
                 val img = Gen2TrainerCard.render(art, card(full), page2, phase)
@@ -59,7 +64,7 @@ class CrystalTrainerCardTest {
             assertEquals(lang, pinned, crc.value)
         }
         val shots = System.getenv("CRYSTAL_CARD_SHOTS")?.let(::File) ?: return
-        for ((lang, art) in listOf("en" to english(), "de" to german())) {
+        for ((lang, art) in carts) {
             for (f in shots.listFiles().orEmpty().filter { it.name.startsWith("${lang}_") && "_p" in it.name && it.name.endsWith(".ppm") }) {
                 val ref = readPpm(f)
                 val off = (0 until 8).minOf { ph ->

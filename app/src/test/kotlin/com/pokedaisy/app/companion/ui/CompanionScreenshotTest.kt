@@ -1420,6 +1420,7 @@ open class CompanionScreenshotTest {
     @Test fun silverParty() = crystal("silver", "PARTY", silver = true)
     @Test fun silverDexEntry() = crystal("silver", "DEX", dexEntry = 155, silver = true)
     @Test fun crystalParty() = crystal("crystal", "PARTY")
+    @Test fun crystalCard() = crystal("crystal", "CARD")
     @Test fun crystalPokemonPictures() = crystal("crystal", "PARTY", pokemonPictures = true)
     @Test fun crystalPokemonPicturesDark() {
         DarkMode.override = true
