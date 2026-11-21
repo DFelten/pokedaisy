@@ -32,4 +32,63 @@ struct pd_hud {
   int active;
 };
 
+/* The companion as a window over the running game (the app's COMPANION VIEW > WINDOW on one screen): the core keeps the
+ * game's canvas (dimmed), draws the companion into a picture of its own and asks the host to show it in the middle of the
+ * window at a whole scale of the window's pixels (pd_companion_place). The host answers with the mouse over it, in the
+ * picture's pixels, in the same struct. [data] is a pd_companion; the pixels stay valid until the core's next frame.
+ * active = 0 withdraws it. A frontend without the command: the core keeps its companion filling the canvas. */
+#define PD_ENV_SET_COMPANION 0x20004
+struct pd_companion {
+  const uint32_t *pixels; /* src_w x src_h, XRGB8888 (0xFFRRGGBB), opaque */
+  int src_w, src_h;
+  int active;
+  /* Filled by the host: the mouse in the picture's pixels; inside = over the picture; down = its button held;
+   * valid = the host knows the mouse at all. */
+  int ptr_x, ptr_y, ptr_inside, ptr_down, ptr_valid;
+};
+
+/* Where the host puts the companion's picture in a ow x oh window: the largest whole scale that keeps it within 88% of the
+ * window's height and 97% of its width (at least 1), centred. Shared, so the core sizes the picture (pd_companion_size)
+ * for exactly the scale the host draws it at. Returns the scale. */
+static inline int pd_companion_place(int ow, int oh, int sw, int sh, int *x, int *y, int *w, int *h) {
+  int k = sw > 0 && sh > 0 ? (oh * 88 / 100) / sh : 0, kw = sw > 0 ? (ow * 97 / 100) / sw : 0;
+  if (kw < k)
+    k = kw;
+  if (k < 1)
+    k = 1;
+  *w = sw * k;
+  *h = sh * k;
+  *x = (ow - *w) / 2;
+  *y = (oh - *h) / 2;
+  return k;
+}
+
+/* The companion window's picture for a ow x oh window (Android's companionWindowSize): 88% of the height, at least the
+ * Thor bottom screen's shape and wider on a wider screen (0.78 of the window's aspect, up to 1.4:1), at the largest whole
+ * scale that still leaves it 320 x 240 or more. Returns that scale; 0 = the window can't show a window of the companion at
+ * 2x (a small handheld screen: the companion fills it, as before). [maxW] x [maxH]: the most the core holds. */
+static inline int pd_companion_size(int ow, int oh, int maxW, int maxH, int *sw, int *sh) {
+  if (ow <= 0 || oh <= 0)
+    return 0;
+  int boxH = oh * 88 / 100;
+  int aspect1000 = (int)((long long)ow * 780 / oh); /* 0.78 of the window's aspect, in 1/1000ths */
+  if (aspect1000 < 1148)
+    aspect1000 = 1148;
+  if (aspect1000 > 1400)
+    aspect1000 = 1400;
+  int boxW = boxH * aspect1000 / 1000;
+  if (boxW > ow * 97 / 100)
+    boxW = ow * 97 / 100;
+  int k = boxH / 240;
+  if (boxW / 320 < k)
+    k = boxW / 320;
+  if (k < 2)
+    return 0;
+  while (boxW / k > maxW || boxH / k > maxH) /* more than the core holds: a scale up, a smaller picture */
+    k++;
+  *sw = boxW / k;
+  *sh = boxH / k;
+  return k;
+}
+
 #endif

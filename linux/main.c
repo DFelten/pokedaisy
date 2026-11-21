@@ -339,6 +339,11 @@ static bool pointerHeld; // the left button is down (pointerDown is that, held f
 static int pointerPulse;
 static int wheelSteps;     // the wheel's notches this frame (+ up), for RETRO_DEVICE_MOUSE
 static int mouseWindowX, mouseWindowY; // the pointer over the window, for the library (the cores get it normalised)
+/* A core's companion window (PD_ENV_SET_COMPANION): its picture in the middle of the window at a whole scale. */
+static struct pd_companion compMsg;
+static bool compPending, compActive, compHave;
+static SDL_Texture *compTexture;
+static int compTexW, compTexH;
 static bool libraryClick;              // a left press this frame
 static int libraryWheel;               // wheel notches this frame (+ up)
 
@@ -1074,6 +1079,27 @@ static bool environment(unsigned cmd, void *data) {
       panelMsg = *p;
     return true;
   }
+  case PD_ENV_SET_COMPANION: {
+    struct pd_companion *p = data;
+    if (!p)
+      return true;
+    compPending = p->active && p->pixels && p->src_w > 0 && p->src_h > 0;
+    compHave = true;
+    if (compPending) {
+      compMsg = *p;
+      // The mouse over the picture, where this frame will draw it (the same rule as present_game's).
+      int ow = W, oh = H, x, y, w, h;
+      SDL_GetRendererOutputSize(renderer, &ow, &oh);
+      int k = pd_companion_place(ow, oh, p->src_w, p->src_h, &x, &y, &w, &h);
+      int mx = mouseWindowX - x, my = mouseWindowY - y;
+      p->ptr_inside = mx >= 0 && my >= 0 && mx < w && my < h;
+      p->ptr_x = mx < 0 ? 0 : mx >= w ? p->src_w - 1 : mx / k;
+      p->ptr_y = my < 0 ? 0 : my >= h ? p->src_h - 1 : my / k;
+      p->ptr_down = pointerDown;
+      p->ptr_valid = 1;
+    }
+    return true;
+  }
   case PD_ENV_SET_HUD: {
     const struct pd_hud *h = data;
     hudPending = h && h->active && h->pixels && h->src_w > 0 && h->src_h > 0 && h->w > 0 && h->h > 0;
@@ -1099,6 +1125,9 @@ static bool environment(unsigned cmd, void *data) {
 static void video_refresh(const void *data, unsigned w, unsigned h, size_t pitch) {
   panelActive = panelPending;
   panelPending = false;
+  if (compHave) // a frame the core only repeats keeps the window as it was
+    compActive = compPending;
+  compPending = compHave = false;
   if (hudHave) // a frame the core only repeats keeps the HUD where it was
     hudActive = hudPending;
   hudPending = hudHave = false;
@@ -1292,6 +1321,28 @@ static void present_game(const struct pd_menu *menu) {
     }
   }
   render_lcd();
+  // The core's companion window, after the LCD mask (which is the game's look, not the window's): its own picture over the
+  // dimmed game, at the window's pixels.
+  if (compActive && compMsg.pixels) {
+    if (!compTexture || compTexW != compMsg.src_w || compTexH != compMsg.src_h) {
+      if (compTexture)
+        SDL_DestroyTexture(compTexture);
+      compTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, compMsg.src_w,
+                                      compMsg.src_h);
+      compTexW = compMsg.src_w;
+      compTexH = compMsg.src_h;
+      if (compTexture) {
+        SDL_SetTextureBlendMode(compTexture, SDL_BLENDMODE_NONE);
+        SDL_SetTextureScaleMode(compTexture, SDL_ScaleModeNearest);
+      }
+    }
+    if (compTexture) {
+      SDL_UpdateTexture(compTexture, NULL, compMsg.pixels, compMsg.src_w * 4);
+      SDL_Rect dst;
+      pd_companion_place(ow, oh, compMsg.src_w, compMsg.src_h, &dst.x, &dst.y, &dst.w, &dst.h);
+      SDL_RenderCopy(renderer, compTexture, NULL, &dst);
+    }
+  }
   bool any = false;
   overlay_begin();
   if (menu) {
@@ -2236,6 +2287,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   free(sramCopy.data);
   rewind_clear();
   core.unload_game();
+  compActive = compPending = compHave = false;
   core.deinit();
   dlclose(core.dl);
   memset(&core, 0, sizeof core);

@@ -289,6 +289,15 @@ void ui_fade_rect(struct pd_canvas* c, const uint32_t* before, int x, int y, int
 // A type's colour (AppColors.typeColors), and its badge: returns the width.
 uint32_t ui_type_color(int type);
 int ui_type_badge(struct pd_canvas* c, int x, int y, int type);
+// ui_type_badge for a page drawing another game than ui_game (the DS views' summary): its names and its ROM's tags.
+int ui_type_badge_for(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type);
+// The app's GameTag (Components.kt): one flat colour, a pixel notched from each corner, the text in capitals with the
+// games' #424242 shadow, 12 tall, 4 either side, at least [minW] wide. c NULL = measure. Returns the width.
+#define UI_TAG_H 12
+#define UI_TAG_SHADOW 0x424242u
+int ui_game_tag(struct pd_canvas* c, int x, int y, const char* text, uint32_t fill, uint32_t ink, int minW);
+// A type tag with its multiplier inside ("GROUND 2x"), TypeBadgeWithLabel's: always drawn (the ROM's tag has no room).
+int ui_matchup_tag(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type, int pct);
 
 // The lists' caught / seen mark: a Poké Ball, or a grey one.
 void ui_ball(struct pd_canvas* c, int x, int y, bool caught);

@@ -937,14 +937,13 @@ static int chips_of(struct pd_canvas* c, const char* heading, int t1, int t2, in
         char label[12];
         snprintf(label, sizeof(label), "%.3s", pd_type_name(ui_game, t));
         for (char* q = label; *q; q++) if (*q >= 'a' && *q <= 'z') *q = (char) (*q - 32);
-        int cw = pd_text_width(label) + 6;
+        int cw = ui_game_tag(NULL, 0, 0, label, 0, 0, 0);
         if (cx + cw > x + w) {
             cx = x;
             y += 14;
             if (y + 13 > bottom) return y;
         }
-        pd_round_rect(c, cx, y + 1, cw, 12, 1, ui_type_color(t));
-        pd_text(c, cx + 3, y - 1, label, 0xFFFFFF, PD_NO_SHADOW);
+        ui_game_tag(c, cx, y + 1, label, ui_type_color(t), 0xFFFFFF, 0);
         cx += cw + 2;
     }
     return y + 14;
@@ -1086,16 +1085,6 @@ static void summary_info(struct pd_canvas* c, const struct pd_game* g, const str
     }
 }
 
-static void summary_chip(struct pd_canvas* c, int x, int y, int width, int type, const char* label) {
-    static const uint32_t colors[] = {0xa8a878,0xc03028,0xa890f0,0xa040a0,0xe0c068,0xb8a038,
-        0xa8b820,0x705898,0xb8b8d0,0x68a090,0xf08030,0x6890f0,0x78c850,0xf8d030,0xf85888,0x98d8d8,0x7038f8,0x705848};
-    if (width < 15) return;
-    uint32_t color = type >= 0 && type < (int)(sizeof colors / sizeof *colors) ? colors[type] : 0x8a8a8a;
-    const unsigned light = 3 * (color >> 16) + 6 * ((color >> 8) & 255) + (color & 255);
-    pd_round_rect(c, x, y, width, 13, 2, color);
-    pd_text_fit(c, x + 3, y - 1, width - 6, label, light >= 1220 ? 0x141820 : 0xffffff, PD_NO_SHADOW);
-}
-
 static void summary_stats_left(struct pd_canvas* c, const struct pd_summary_view* v, int w, int y, int bottom) {
     const struct pd_mon_stats* st = v->stats;
     if (v->speciesName && strcmp(v->speciesName, v->name) && y + 15 <= bottom) {
@@ -1219,12 +1208,8 @@ void pd_ui_summary_page(struct pd_canvas* c, const struct pd_summary_view* v, en
     int x = 49;
     for (int i = 0; i < 2; i++) {
         if (types[i] < 0 || (i && types[i] == types[0])) continue;
-        const char* label = pd_type_name(v->game, types[i]);
-        if (!*label) continue;
-        int width = pd_text_width(label) + 6;
-        if (width > side + 8 - x) width = side + 8 - x;
-        summary_chip(c, x, 45, width, types[i], label);
-        x += width + 3;
+        if (!*pd_type_name(v->game, types[i])) continue;
+        x += ui_type_badge_for(c, x, 45, v->game, types[i]) + 3; // the game's own tag where its ROM has it, else the drawn one
     }
     pd_fill(c, side + 11, 12, 1, h - 16, PD_DIVIDER);
     const int bar = side - 4;
@@ -1264,12 +1249,10 @@ void pd_ui_summary_page(struct pd_canvas* c, const struct pd_summary_view* v, en
                 pd_text(c, x, y, pd_tr(headings[group]), PD_MUTED, PD_MUTED_SHADOW);
                 y += 14;
             }
-            const char* amount = pct == 400 ? " 4x" : pct == 200 ? " 2x" : pct == 50 ? " .5x" : pct == 25 ? " .25x" : "";
-            snprintf(line, sizeof line, "%s%s", label, amount);
-            const int chip = pd_text_width(line) + 6;
+            const int chip = ui_matchup_tag(NULL, 0, 0, v->game, type, pct); // "GROUND 2x", as the app's summary
             if (x + chip > side + 9) { x = 14; y += 14; }
-            if (y + 13 > h) break;
-            summary_chip(c, x, y, chip, type, line);
+            if (y + UI_TAG_H > h) break;
+            ui_matchup_tag(c, x, y + 1, v->game, type, pct);
             x += chip + 3;
         }
         if (x != 13) y += 14;
@@ -1290,9 +1273,7 @@ void pd_ui_summary_page(struct pd_canvas* c, const struct pd_summary_view* v, en
         else if (move->power > 1) snprintf(power, sizeof power, "%d", move->power);
         snprintf(line, sizeof line, pd_tr("PWR %s PP %d"), power, move->pp);
         pd_text_right(c, rx + rw - 3, top + 15, line, PD_VALUE, PD_VALUE_SHADOW);
-        const char* label = pd_type_name(v->game, move->type);
-        int chip = rw - pd_text_width(line) - 8, need = pd_text_width(label) + 6;
-        if (*label) summary_chip(c, rx, top + 15, chip < need ? chip : need, move->type, label);
+        if (*pd_type_name(v->game, move->type)) ui_type_badge_for(c, rx, top + 17, v->game, move->type);
         if (i != PD_NUM_MOVES - 1) pd_fill(c, rx, top + step - 4, rw, 1, PD_DIVIDER);
     }
 }
@@ -1634,9 +1615,8 @@ void ui_mon_summary(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
 // A BEST / OUT tag at the slot's top right (VerdictPill).
 static void slot_tag(struct pd_canvas* c, int x, int y, int w, const char* text, uint32_t fill) {
     text = pd_tr(text);
-    int tw = pd_text_width(text) + 6;
-    pd_round_rect(c, x + w - tw - 4, y + 7, tw, 13, 2, fill);
-    pd_text(c, x + w - tw - 1, y + 5, text, 0xFFFFFF, PD_NO_SHADOW);
+    int tw = ui_game_tag(NULL, 0, 0, text, 0, 0, 0);
+    ui_game_tag(c, x + w - tw - 4, y + 7, text, fill, 0xFFFFFF, 0);
 }
 
 void ui_party_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g, const struct pd_snapshot* s,

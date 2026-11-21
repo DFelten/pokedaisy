@@ -720,6 +720,13 @@ static bool hudFocus, hudShown;
 /* The frontend draws the field HUD itself (PD_ENV_SET_HUD): a ZOOM step's canvas is scaled to the window, and a HUD
  * blended into it would be resampled with the picture, soft at 1x and sharp only at 2x. */
 static bool hudHost, hudNativeOn;
+// The companion as a window over the running game, for a frontend that shows one (PD_ENV_SET_COMPANION: the Linux /
+// Windows host): its own picture, sized for the window (pd_companion_size), the game's canvas under it, dimmed.
+static bool companionHost;
+static uint32_t *compPx;
+static int compW, compH;               // this window's picture (companion_window)
+static struct pd_companion compReply;  // the host's last answer: the mouse over the window
+static bool compTouchWas, compDimHeld;
 static int hudNativePct; // SIZE the picture goes over the box for: 100 the whole box, 50 its four corners
 static uint32_t *hudPixels;
 static uint32_t hudDrawnKey;
@@ -1171,8 +1178,22 @@ static void choose_canvas(void) {
 }
 
 /* Keep GBA Quick Menu on the selected gameplay canvas. Companion has its own layout. */
+/* Whether the companion opens as a window over the game (and its picture's size, compW x compH): a host that shows one,
+ * on a window that holds it at 2x or more. Smaller screens keep the companion filling the canvas. */
+static bool companion_window(void) {
+  compW = compH = 0;
+  if (!companionHost || !compPx || panelW <= 0 || panelH <= 0)
+    return false;
+  int w = 0, h = 0;
+  if (!pd_companion_size(panelW, panelH, CANVAS_MAX_W, CANVAS_MAX_H, &w, &h))
+    return false;
+  compW = w;
+  compH = h;
+  return true;
+}
+
 static int want_canvas(void) {
-  if (companion || (quickOpen && !PD_BE_IS_GBA()))
+  if ((companion && !companion_window()) || (quickOpen && !PD_BE_IS_GBA()))
     return CANVAS_MENU;
   if (settings.aspect == PD_ASPECT_ORIGINAL)
     return PD_BE_IS_GBA() ? CANVAS_EXPAND : CANVAS_ZOOM;
@@ -1393,6 +1414,12 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
     struct pd_hud probe;
     memset(&probe, 0, sizeof probe);
     hudHost = realEnv && realEnv(PD_ENV_SET_HUD, &probe);
+    struct pd_companion off;
+    memset(&off, 0, sizeof off);
+    companionHost = realEnv && realEnv(PD_ENV_SET_COMPANION, &off);
+    if (companionHost && !compPx)
+      compPx = calloc((size_t)CANVAS_MAX_W * CANVAS_MAX_H, sizeof *compPx);
+    compTouchWas = compDimHeld = false;
   }
   {
     struct retro_audio_buffer_status_callback abc = {audio_status_both};
@@ -1632,6 +1659,14 @@ RETRO_API void retro_unload_game(void) {
   free(ovPixels);
   free(ovScratch);
   ovPixels = ovScratch = NULL;
+  if (companionHost && realEnv) {
+    struct pd_companion off;
+    memset(&off, 0, sizeof off);
+    realEnv(PD_ENV_SET_COMPANION, &off);
+  }
+  companionHost = false;
+  free(compPx);
+  compPx = NULL;
   cvs = NULL;
   out565 = NULL;
   hudPixels = NULL;
@@ -1823,7 +1858,7 @@ RETRO_API void retro_run(void) {
       pressedKeys |= 1u << A;
     } else
       pressedKeys |= 1u << B;
-  } else if (touch_tapped() && !quickOpen && !companion && hudShown) {
+  } else if (touch_tapped() && !quickOpen && !companion && hudShown && !compDimHeld) { // not the click that closed the window
     int id = hud_hit_at(touchX0, touchY0);
     if (id >= 0 && id == hud_hit_at(touchX, touchY)) {
       hudFocus = false;
@@ -1831,6 +1866,8 @@ RETRO_API void retro_run(void) {
       hud_press(id);
     }
   }
+  if (!touchDown && !companion)
+    compDimHeld = compTouchWas = false;
   bool wasCompanion = companion;
   if (down(companionBtn) && !hudFocus) {
     companion = !companion;
@@ -2078,8 +2115,23 @@ RETRO_API void retro_run(void) {
   if (companion) {
     if (ui.tab != PD_TAB_BAG || ui.overlay != PD_OVERLAY_NONE)
       ui.bagTabs = false; // the pocket tab bar's cursor lives only on the bag
-    // The finger over the companion, as the 3DS's stylus: down every frame it's held (drags scroll), then up.
-    if (touchDown)
+    // The finger over the companion, as the 3DS's stylus: down every frame it's held (drags scroll), then up. As a window,
+    // the host's mouse over it, in the window's own pixels; a press on the dimmed game beside it closes it (the app's).
+    if (compW > 0 && compReply.ptr_valid) {
+      const bool press = compReply.ptr_down != 0;
+      if (press && !compTouchWas && !compDimHeld && !compReply.ptr_inside) {
+        compDimHeld = true;
+        companion = false;
+      } else if (press && (compReply.ptr_inside || compTouchWas) && !compDimHeld) {
+        pd_ui_touch(&ui, compReply.ptr_x, compReply.ptr_y, true);
+        compTouchWas = true;
+      } else if (!press && compTouchWas) {
+        pd_ui_touch(&ui, 0, 0, false);
+        compTouchWas = false;
+      }
+      if (!press)
+        compDimHeld = false;
+    } else if (touchDown)
       pd_ui_touch(&ui, touchX, touchY, true);
     else if (touchWas)
       pd_ui_touch(&ui, 0, 0, false);
@@ -2263,17 +2315,19 @@ RETRO_API void retro_run(void) {
   }
   if (polishedActions && companion && pd_binput_busy(&polishedInput))
     companion = false; // The native battle / Bag / party resumes with the selected action.
-  bool paused = companion || hudFocus || (quickOpen && !flyAsk);
+  // The companion as a window keeps the game running under it, as the app's does (its keys stay the companion's).
+  const bool companionRuns = companion && companion_window();
+  bool paused = (companion && !companionRuns) || hudFocus || (quickOpen && !flyAsk);
   const bool expanded = wideSupported && settings.aspect != PD_ASPECT_ORIGINAL;
   const bool repeat = late && canDupe && haveGameFrame && !paused && !quickOpen &&
                       (!ff || (expanded && !repeatedFrame));
-  maskGame = paused;
+  maskGame = paused || companion;
   // The button that closed the companion / quick menu / HUD cursor (A on a pick, B backing out) is still held: it stays
   // out of the game until let go, as the app's menuHeld (GitHub #1100: on a Steam Deck it answered the game's prompt).
   static bool wasPaused;
-  if (wasPaused && !paused)
+  if (wasPaused && !(paused || companion))
     shortcutBlocked |= held;
-  wasPaused = paused;
+  wasPaused = paused || companion;
   shortcutExclusive = false;
   if (!paused) {
     if (polishedActions && !rewinding && settings.wildOff &&
@@ -2532,7 +2586,15 @@ RETRO_API void retro_run(void) {
     host.hasState = false;
     host.flightReady = freeFlight && fly_flyer(&snap) >= 0; // MAP's TAKE OFF / LAND
     host.flying = freeFlight && pk_flight_state() != PK_FLIGHT_IDLE;
-    memset(cvs, 0, (size_t)CW * CH * sizeof *cvs);
+    // As a window: the running game under it, dimmed like the app's, and the companion drawn into its own picture.
+    const struct pd_canvas gameCanvas = canvas;
+    const bool window = companion_window();
+    if (window) {
+      draw_game();
+      dim(0x8C);
+      pd_canvas_init(&canvas, compW, compH, compPx);
+    }
+    memset(canvas.px, 0, (size_t)canvas.w * canvas.h * sizeof *canvas.px);
     // Use the Dex's compact font throughout the GBC Companion. Restore the cart font for the in-game HUD.
     const bool gen2 = game.cfg && game.cfg->gb && game.cfg->gb->gen == 2;
     const struct pd_glyph *glyphs = NULL;
@@ -2551,6 +2613,16 @@ RETRO_API void retro_run(void) {
           (ui.tab != PD_TAB_SETTINGS && (ui.tab != PD_TAB_PARTY || ui.summarySlot < 0) &&
            !(ui.tab == PD_TAB_BAG && ui.bagTabs)))
         focus_draw(&ui, focus);
+    }
+    if (window) {
+      // The window's edge: a line of the frame's dark round the picture, as the app's window sits on the dimmed game.
+      pd_fill(&canvas, 0, 0, canvas.w, 1, 0x101418);
+      pd_fill(&canvas, 0, canvas.h - 1, canvas.w, 1, 0x101418);
+      pd_fill(&canvas, 0, 0, 1, canvas.h, 0x101418);
+      pd_fill(&canvas, canvas.w - 1, 0, 1, canvas.h, 0x101418);
+      for (int i = 0; i < canvas.w * canvas.h; i++)
+        compPx[i] |= 0xFF000000u;
+      canvas = gameCanvas;
     }
   } else if (quickOpen && ovPixels) {
     if (polishedActions && wideReady && settings.aspect != PD_ASPECT_ORIGINAL)
@@ -2601,6 +2673,20 @@ RETRO_API void retro_run(void) {
   }
   PF_T(td1);
   pf_add(PF_DRAW, td1 - td0);
+  // The companion window, for a frontend that shows it (PD_ENV_SET_COMPANION); its answer is the mouse over it, read by
+  // the next frame's companion input.
+  if (companionHost && realEnv) {
+    struct pd_companion cm;
+    memset(&cm, 0, sizeof cm);
+    if (companion && compW > 0 && compPx) {
+      cm.pixels = compPx;
+      cm.src_w = compW;
+      cm.src_h = compH;
+      cm.active = 1;
+    }
+    realEnv(PD_ENV_SET_COMPANION, &cm);
+    compReply = cm;
+  }
   // The HUD at the frontend's own pixels, for one that draws it (PD_ENV_SET_HUD). A frame it shows again sends nothing,
   // so the HUD stays as it was with the picture.
   if (hudHost && realEnv) {

@@ -44,6 +44,7 @@ extern "C" {
 #include "pd_ui.h"
 #include "../hud.h"
 #include "../quick_menu.h"
+#include "../pd_env.h"
 #include "pd_tables.h"
 #include "pd_icon.h"
 }
@@ -166,12 +167,17 @@ bool rgb565=false;
 // 854x480 screen and drawn 1:1 on a 640x480 one.
 constexpr int uiMaxW=640,uiMaxH=480;
 int uiW=341,uiH=256;
+// The companion as a window over the game, for a frontend that shows one (PD_ENV_SET_COMPANION: the SDL host): the
+// frontend's screen (pokedaisy_panel), and whether it does.
+int panelW=0,panelH=0;
+bool companionHost=false;
 void choose_companion_canvas(){
   uiW=341;uiH=256;
   retro_variable v{"pokedaisy_panel",nullptr};
   int w=0,h=0;
   if(!environment || !environment(RETRO_ENVIRONMENT_GET_VARIABLE,&v) || !v.value || std::sscanf(v.value,"%dx%d",&w,&h)!=2 || w<=0 || h<=0)
     return;
+  panelW=w;panelH=h;
   const int s=std::max(1,std::min(w/320,h/240));
   uiW=std::clamp(w/s,320,uiMaxW);uiH=std::clamp(h/s,240,uiMaxH);
 }
@@ -414,6 +420,27 @@ void draw_companion() {
   // The host sends the panel again when its window changes size (a desktop window, gamescope): looked at twice a second.
   static unsigned panelCheck=0;
   if(panelCheck++%30==0)choose_companion_canvas();
+  // As a window (a screen that holds the companion at 2x or more): the game's last picture stays, dimmed, at its own size,
+  // and the companion goes to the host in a picture of its own, in the middle of the window (the app's COMPANION VIEW).
+  int cw=0,ch=0;
+  if(companionHost && pd_companion_size(panelW,panelH,uiMaxW,uiMaxH,&cw,&ch)){
+    static uint32_t dimmed[512*384];
+    for(int i=0;i<512*384;++i){
+      const uint32_t p=stage[i];
+      dimmed[i]=0xFF000000u|(((p>>16&255)*115/255)<<16)|(((p>>8&255)*115/255)<<8)|((p&255)*115/255);
+    }
+    pd_canvas c;pd_canvas_init(&c,cw,ch,ui_pixels);
+    pd_fill(&c,0,0,cw,ch,0);
+    shell.draw(&c,snapshot,companionGame!=DsGame::Unsupported,map,icons);
+    pd_fill(&c,0,0,cw,1,0x101418);pd_fill(&c,0,ch-1,cw,1,0x101418);pd_fill(&c,0,0,1,ch,0x101418);pd_fill(&c,cw-1,0,1,ch,0x101418);
+    for(int i=0;i<cw*ch;++i)ui_pixels[i]|=0xFF000000u;
+    pd_companion msg{};msg.pixels=ui_pixels;msg.src_w=cw;msg.src_h=ch;msg.active=1;
+    environment(PD_ENV_SET_COMPANION,&msg);
+    geometry(512,384);
+    submit(dimmed,512,384);
+    return;
+  }
+  if(companionHost){pd_companion none{};environment(PD_ENV_SET_COMPANION,&none);}
   pd_canvas c;pd_canvas_init(&c,uiW,uiH,ui_pixels);
   shell.draw(&c,snapshot,companionGame!=DsGame::Unsupported,map,icons);
   geometry(uiW,uiH);
@@ -802,6 +829,7 @@ void present(const void* data,unsigned,unsigned,size_t) {
 }
 void present_frame(const void* data) {
   if(companion){hudHits.n=0;draw_companion();return;}
+  if(companionHost){pd_companion none{};environment(PD_ENV_SET_COMPANION,&none);} // the window goes with the companion
   // Refresh composition even when DSperate skipped rasterization: switching
   // screens must still display the latest retained framebuffer.
   (void)data;
@@ -1255,6 +1283,7 @@ RETRO_API bool retro_load_game(const retro_game_info* info){
       ds_battle_set_base_pp(ds_move_base_pp(rom,pd_ds::companionGame));
     }
   }
+  {pd_companion none{};pd_ds::companionHost=pd_ds::environment && pd_ds::environment(PD_ENV_SET_COMPANION,&none);}
   pd_ds::choose_companion_canvas();
   const auto old_layout=opt("pokedaisy_ds_layout");
   pd_ds::shell.init(dir(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY),

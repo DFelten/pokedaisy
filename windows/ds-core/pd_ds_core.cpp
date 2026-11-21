@@ -71,6 +71,7 @@ bool padCombo = false;
 bool wideEnabled = false;
 bool haveFrame = false;
 bool hudHost = false;   // the frontend draws the field HUD itself (PD_ENV_SET_HUD), at the window's pixels
+bool companionHost = false;   // the frontend shows the companion as a window over the game (PD_ENV_SET_COMPANION)
 int presentedW = PK_NDS_W, presentedH = PK_NDS_H * 2;   // the frame the frontend has (the overlay's size while it shows)
 std::vector<uint32_t> canvas;   // the frame as it goes out (XRGB8888)
 std::vector<uint32_t> scratch;  // a wide view asked for while the camera may have stopped
@@ -357,7 +358,15 @@ void compose()
     // screen's own pixels first, so the overlay is told where they sit in this picture.
     int outW = layout.w, outH = layout.h;
     overlay_view(layout.x, layout.y, layout.mode != Layout::Touch);
+    overlay_companion_window(companionHost, panelW, panelH);
     overlay_compose(canvas, outW, outH);
+    // The companion window's picture for the host, and its answer (the mouse over it) for the next frame's pointer.
+    if (companionHost && env_cb) {
+        pd_companion msg {};
+        overlay_companion_native(&msg);
+        env_cb(PD_ENV_SET_COMPANION, &msg);
+        overlay_companion_reply(msg);
+    }
     // The HUD at the window's own pixels, for a host that draws it: the canvas above is scaled to the window, and at a
     // ZOOM step (1.25x, 1.5x) a HUD blended into it would be resampled with the picture.
     if (hudHost && env_cb) {
@@ -695,6 +704,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game)
     pd_hud probe {};
     hudHost = env_cb && env_cb(PD_ENV_SET_HUD, &probe);
     overlay_hud_host(hudHost);
+    pd_companion none {};
+    companionHost = env_cb && env_cb(PD_ENV_SET_COMPANION, &none);
     quickFf = false;
     if (env_cb) env_cb(PD_ENV_SET_FAST_FORWARD, &quickFf);
     compose_layout();
@@ -707,6 +718,10 @@ RETRO_API void retro_unload_game(void)
     if (hudHost && env_cb) { // the HUD's picture goes with the overlay's buffers
         pd_hud off {};
         env_cb(PD_ENV_SET_HUD, &off);
+    }
+    if (companionHost && env_cb) { // and the companion window's
+        pd_companion none {};
+        env_cb(PD_ENV_SET_COMPANION, &none);
     }
     quickFf = false;
     // A save the game is still writing ("SAVING...") finishes first, as the app does before it stops a DS game: else

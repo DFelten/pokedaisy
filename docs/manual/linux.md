@@ -268,7 +268,12 @@ clicking a tab, the gear, a row or a button presses it, as `ENTER` on it would.
 
 The companion and the quick menu work as in the cores everywhere: X opens the [companion](companion.md), L3 opens the
 quick menu over the game (PC, FLY, the keep-away spray, BIKE, WILD ENCOUNTERS, COMPANION), and both buttons can be
-changed in the companion's `SETTINGS`. In the English FireRed and Emerald the quick menu also has `TAKE OFF`, to
+changed in the companion's `SETTINGS`. On a screen tall enough (about 550 pixels or more), the companion opens as a
+window in the middle of the screen, over the game, which stays as big as it was and dimmed behind it, like the app's
+companion window on one screen. The game keeps running under it (on Linux a DS game waits). Click the dimmed game
+beside the window to close it. On a smaller screen the companion fills the screen, as before. When the quick menu has
+more actions than fit round its circle with their names, it shows their pictures alone, with the name of the one
+you're on in the middle. In the English FireRed and Emerald the quick menu also has `TAKE OFF`, to
 [fly over the map](map.md#flying-over-the-map) on your Pokémon's bird (the companion's `MAP` has a `TAKE OFF` button
 too). There `FLY` flies you over the map to the town you pick, unless `FLY STYLE` in the companion's `SETTINGS` is
 `CLASSIC`, the game's own way. `FLY ON` swaps the bird for an air balloon, a helicopter or a zeppelin. `FLIGHT AREA`
