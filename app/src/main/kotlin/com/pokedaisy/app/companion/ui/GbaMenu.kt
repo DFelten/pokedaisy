@@ -759,6 +759,8 @@ fun OptionButton(
     frameLayers: List<Pair<Color, Int>>? = null,
     /** The room either side of the content, in GBA pixels: less for a row of icon buttons on a narrow screen. */
     sidePadding: Int = 8,
+    /** The room over and under the content, in GBA pixels (a key's edge adds 2 under it): less in a short screen's header. */
+    verticalPadding: Int = 4,
     /** In a pop-up, the D-pad starts here rather than on its first control. */
     focusStart: Boolean = false,
     /** RAINBOW may colour it; false keeps the usual look (STATES' buttons). */
@@ -805,7 +807,7 @@ fun OptionButton(
             .focusRequester(self)
             // The button's own corner: its box below is drawn at a 3u radius.
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
-            .heightIn(min = m.rowHeight)
+            .heightIn(min = if (verticalPadding < 4) m.lineHeight else m.rowHeight)
             .drawBehind {
                 if (key != null) {
                     drawKey(key, u.toPx(), 3 * u.toPx(), face = if (focused) key.low else key.face)
@@ -831,7 +833,7 @@ fun OptionButton(
                 } else Modifier,
             )
             .padding(horizontal = u * sidePadding)
-            .padding(top = u * 4, bottom = u * (if (key != null) 6 else 4)),
+            .padding(top = u * verticalPadding, bottom = u * (verticalPadding + if (key != null) 2 else 0)),
     ) {
         if (icon != null) {
             Icon(icon, contentDescription, tint = fg, modifier = Modifier.size(m.lineHeight))

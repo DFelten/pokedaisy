@@ -130,6 +130,7 @@ fun LibraryRomRow(
     val display = game.label
     val hasSave = game.hasSave
     val favorite = game.favorite
+    val short = LocalShortScreen.current
     LibraryCard(
         // In the launcher only its cursor gets the white fill (two white rows read as two cursors).
         selected, m, Modifier.fillMaxWidth(),
@@ -138,8 +139,8 @@ fun LibraryRomRow(
         onClick = onClick,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            cover(Modifier.height(56.dp))
-            Spacer(Modifier.width(m.u * 6))
+            cover(Modifier.height(if (short) 32.dp else 56.dp))
+            Spacer(Modifier.width(m.u * if (short) 4 else 6))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     GbaText(display, OptionColors.label, OptionColors.labelShadow, m, Modifier.weight(1f, fill = false))
@@ -173,7 +174,8 @@ fun LibraryRomRow(
                         OptionBadge(tk("PARTIALLY SUPPORTED"), m, fill = OptionColors.muted)
                     }
                 }
-                if (path != null) {
+                // A short screen's rows are one line: the name alone (the path is in INFO).
+                if (path != null && !short) {
                     GbaText(
                         path,
                         OptionColors.muted, OptionColors.mutedShadow, small,
@@ -286,6 +288,13 @@ fun LibraryCover(bitmap: ImageBitmap?, category: RomCategory?, m: GbaTextMetrics
     }
 }
 
+/** The library's margin round its pills and games: half as much on a short screen ([LocalShortScreen]). */
+val libraryMargin: Dp @Composable get() = if (LocalShortScreen.current) 8.dp else 16.dp
+
+/** A grid tile's least width: smaller on a short screen, where 150 dp left one tile the width of the page (three across
+ * on the RG DS; four cut every name to its first letters). */
+val libraryTileMin: Dp @Composable get() = if (LocalShortScreen.current) 112.dp else 150.dp
+
 /** The library's existing header and GAMES / TOOLS / SETTINGS rail, with platform work supplied as content/actions. */
 @Composable
 fun LibraryFrame(
@@ -302,7 +311,7 @@ fun LibraryFrame(
         val wide = maxWidth >= maxHeight
         AppBackdrop(logos = true)
         Row(Modifier.fillMaxSize()) {
-            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = 16.dp, onPick = onSection)
+            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (showHeader) {
                     LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
@@ -334,6 +343,9 @@ fun LibraryHeaderBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val u = m.u
+    val short = LocalShortScreen.current
+    val sidePad = if (short) 8.dp else 12.dp
+    val endPad = if (short) 8.dp else 16.dp
     // Whether [title] fits beside the full [actions]: their width is taken whenever they're the ones shown, so switching
     // to the compact ones (narrower) never flips it back.
     var barWidth by remember { mutableIntStateOf(0) }
@@ -346,7 +358,7 @@ fun LibraryHeaderBar(
         if (shownTitle.isEmpty()) 0 else measurer.measure(shownTitle, gbaTextStyle(font, m)).size.width + m.fontPixel.toInt()
     }
     val fixed = with(density) {
-        (12.dp + 16.dp + (if (onBack != null) m.lineHeight + u * 6 else 0.dp) + (if (logo) m.lineHeight + u * 6 else 0.dp)).roundToPx()
+        (sidePad + endPad + (if (onBack != null) m.lineHeight + u * 6 else 0.dp) + (if (logo) m.lineHeight + u * 6 else 0.dp)).roundToPx()
     }
     val compact = compactActions != null && barWidth > 0 && fullActions > 0 && fixed + titleWidth + fullActions > barWidth
     Row(
@@ -361,7 +373,7 @@ fun LibraryHeaderBar(
                     openTop = true, openLeft = true, openRight = true,
                 )
             }
-            .padding(start = 12.dp, end = 16.dp, top = u * 7, bottom = u * 7),
+            .padding(start = sidePad, end = endPad, top = u * (if (short) 3 else 7), bottom = u * (if (short) 3 else 7)),
     ) {
         if (onBack != null) {
             CompanionBackHandler(onBack = onBack)
@@ -390,9 +402,12 @@ fun LibraryHeaderBar(
 @Composable
 fun LibraryHeaderIcon(icon: ImageVector, label: String, m: GbaTextMetrics, modifier: Modifier = Modifier,
                       compact: Boolean = false, cursor: Boolean = false, onClick: () -> Unit) {
-    Spacer(Modifier.width(m.u * if (compact) 2 else 4))
+    // A short screen's header is lower: narrow buttons, less room over and under their icons.
+    val short = LocalShortScreen.current
+    val narrow = compact || short
+    Spacer(Modifier.width(m.u * if (narrow) 2 else 4))
     OptionButton(null, m, onClick = onClick, modifier = modifier.keyDrivenFocus().gbaFocusRing(cursor, PixelRoundedShape(m.u * 3)),
-        icon = icon, contentDescription = label, sidePadding = if (compact) 4 else 8)
+        icon = icon, contentDescription = label, sidePadding = if (narrow) 4 else 8, verticalPadding = if (short) 2 else 4)
 }
 
 /** A host's available game actions, drawn by one shared menu. [opens] lets a launcher retain its cursor for a page. */
@@ -478,11 +493,12 @@ fun <T> LibraryCollection(
     modifier: Modifier = Modifier, headerUp: () -> FocusRequester? = { null },
     item: @Composable (T, () -> FocusRequester?) -> Unit,
 ) {
-    val padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
-    val gap = Arrangement.spacedBy(m.u * 4)
+    val margin = libraryMargin
+    val padding = PaddingValues(start = margin, end = margin, bottom = margin)
+    val gap = Arrangement.spacedBy(m.u * if (LocalShortScreen.current) 3 else 4)
     if (grid) {
         val state = rememberLazyGridState()
-        LazyVerticalGrid(GridCells.Adaptive(150.dp), state = state, modifier = modifier.fillMaxWidth(),
+        LazyVerticalGrid(GridCells.Adaptive(libraryTileMin), state = state, modifier = modifier.fillMaxWidth(),
             contentPadding = padding, horizontalArrangement = gap, verticalArrangement = gap) {
             gridItemsIndexed(games, key = { _, game -> key(game) }) { index, game ->
                 item(game) { headerUp()?.takeIf { state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }?.row == 0 } }
@@ -541,11 +557,13 @@ fun <T> LibraryScreen(
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxWidth < 600.dp
+        val short = LocalShortScreen.current
+        val margin = libraryMargin
         val toolsOpen = state.section == LibrarySection.TOOLS
         LibraryFrame(state.section, m, small, actions.section,
             toolsBadge = state.tools.any { it.newBadge != null } && !toolsOpen, showHeader = state.section != LibrarySection.SETTINGS,
             compactTitle = compact && !toolsOpen && state.section == LibrarySection.GAMES,
-            headerGap = m.u * if (state.hasCatalog || state.section != LibrarySection.GAMES) 8 else 4,
+            headerGap = m.u * if (short) 3 else if (state.hasCatalog || state.section != LibrarySection.GAMES) 8 else 4,
             // The buttons; [narrow]: narrower and without HELP, where the full ones would cut POKéDAISY short (the user's
             // call, 2026-11-22: HELP is also in Settings).
             header = { LibraryHeaderButtons(state, actions, m, focus, compact, help = true) },
@@ -555,17 +573,17 @@ fun <T> LibraryScreen(
             when (state.section) {
                 LibrarySection.SETTINGS -> settings()
                 LibrarySection.TOOLS -> ToolsPage(state.tools, m, small,
-                    PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), Modifier.weight(1f))
+                    PaddingValues(start = margin, end = margin, bottom = margin), Modifier.weight(1f))
                 LibrarySection.GAMES -> {
                     LibrarySearchStrip(state.query, m, actions.search, actions.query)
                     if (state.hasCatalog) {
                         QuickViewPills(state.views, state.view, state.counts, m, small, actions.view,
-                            contentPadding = PaddingValues(horizontal = 16.dp), focusRequester = focus.views)
+                            contentPadding = PaddingValues(horizontal = margin), focusRequester = focus.views)
                         DisposableEffect(focus) { focus.viewsAttached = true; onDispose { focus.viewsAttached = false } }
-                        Spacer(Modifier.height(m.u * 8))
+                        Spacer(Modifier.height(m.u * if (short) 3 else 8))
                     }
                     if (state.games.isEmpty()) {
-                        OptionListWindow(m, Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        OptionListWindow(m, Modifier.fillMaxWidth().padding(horizontal = margin)) {
                             GbaText(if (state.hasCatalog) libraryEmptyViewText(state.view)
                                 else if (state.query.isNotBlank()) tr("No games match your search.") else state.emptyText,
                                 OptionColors.label, OptionColors.labelShadow, small, maxLines = Int.MAX_VALUE,
@@ -612,7 +630,7 @@ fun LibrarySearchDialog(query: String, onQuery: (String) -> Unit, m: GbaTextMetr
 fun LibrarySearchStrip(query: String, m: GbaTextMetrics, onSearch: () -> Unit, onQuery: (String) -> Unit) {
     if (query.isBlank()) return
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = m.u * 4),
+        Modifier.fillMaxWidth().padding(horizontal = libraryMargin).padding(bottom = m.u * 4),
         horizontalArrangement = Arrangement.spacedBy(m.u * 4),
     ) {
         OptionButton(tr("SEARCH") + ": " + query, m, modifier = Modifier.weight(1f, fill = false), onClick = onSearch)

@@ -2743,6 +2743,14 @@ fun main(args: Array<String>) {
         Shot("library-support-phone-side", 2400, 1080, 2.625f, activity { supportLibrary() }),
         Shot("library-support-4x3", 1280, 960, 2f, activity { supportLibrary() }),
         Shot("library-support-rgds", 640, 480, 1.5f, activity { supportLibrary() }),
+        // The RG DS's 640x480 top screen (r/PokeDaisy, 2026-11-21: the rail, header and rows didn't fit): the short library.
+        Shot("library-rgds", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }),
+        Shot("library-rgds-grid", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }) {
+            onNodeWithContentDescription("Toggle view").performClick()
+        },
+        Shot("library-rgds-tools", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
+        Shot("launcher-rgds", 640, 480, 1.5f, launcher(media = false, signedIn = false)),
+        Shot("launcher-rgds-rail", 640, 480, 1.5f, launcher(media = false, signedIn = false)) { pressKey(android.view.KeyEvent.KEYCODE_DPAD_LEFT) },
         Shot("library-whats-new-phone", 1080, 2400, 2.625f, activity { whatsNewLibrary() }),
         Shot("library-whats-new-phone-side", 2400, 1080, 2.625f, activity { whatsNewLibrary() }),
         Shot("library-whats-new-4x3", 1280, 960, 2f, activity { whatsNewLibrary() }),
@@ -3210,6 +3218,7 @@ fun main(args: Array<String>) {
         Shot("settings-tab", tw, th, td, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true).putExtra(SettingsActivity.EXTRA_TOOLS_NEW, true) } }),
         // The Thor's top screen is 2.3 dense (369 dpi): the pixel font is wider in dp there, and SETTINGS once cut short.
         Shot("settings-tab-thor", 1920, 1080, 2.30625f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true) } }),
+        Shot("settings-tab-rgds", 640, 480, 1.5f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true).putExtra(SettingsActivity.EXTRA_TOOLS_NEW, true) } }),
         Shot("settings-tab-phone", 1080, 2400, 2.625f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true) } }),
         Shot("settings-volume-popup", tw, th, td, activity { SettingsActivity() }) {
             onNodeWithText("GAME VOLUME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)

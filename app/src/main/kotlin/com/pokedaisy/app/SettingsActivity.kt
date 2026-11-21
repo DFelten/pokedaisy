@@ -359,7 +359,7 @@ class SettingsActivity : ComponentActivity() {
             if (tab && wide) LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
                     com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = true, nm, ns, toolsBadge = toolsNew,
-                    top = 16.dp, onPick = ::pickSection,
+                    top = com.pokedaisy.app.companion.ui.libraryMargin, onPick = ::pickSection,
                 )
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {

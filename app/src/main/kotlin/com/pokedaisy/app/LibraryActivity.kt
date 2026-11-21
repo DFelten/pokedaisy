@@ -975,8 +975,8 @@ class LibraryActivity : ComponentActivity() {
         com.pokedaisy.app.companion.ui.LibraryCover(bitmap, factsFor(rom).category, m, modifier)
     }
 
-    /** The library's margin to the screen's edges. */
-    private val SCREEN_MARGIN = 16.dp
+    /** The library's margin to the screen's edges (half on a short screen: [com.pokedaisy.app.companion.ui.libraryMargin]). */
+    private val SCREEN_MARGIN: androidx.compose.ui.unit.Dp @Composable get() = com.pokedaisy.app.companion.ui.libraryMargin
 
     private val NARROW_HEADER = 600.dp
 
@@ -1913,7 +1913,9 @@ class LibraryActivity : ComponentActivity() {
                 onPick = ::launcherPick,
             )
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                com.pokedaisy.app.companion.ui.LibraryHeaderBar("POKéDAISY", m) {
+                // A short screen's header has room for its buttons alone (the flower stays), as the classic library's narrow one.
+                val shortScreen = com.pokedaisy.app.companion.ui.LocalShortScreen.current
+                com.pokedaisy.app.companion.ui.LibraryHeaderBar(if (shortScreen) "" else "POKéDAISY", m) {
                     val buttons = launcherHeader()
                     SideEffect { launcher.headerCount = buttons.size }
                     buttons.forEachIndexed { i, b ->
@@ -1921,7 +1923,7 @@ class LibraryActivity : ComponentActivity() {
                     }
                 }
                 val library = views?.library.orEmpty()
-                Spacer(Modifier.height(m.u * (if (library.isNotEmpty() || toolsOpen) 8 else 4)))
+                Spacer(Modifier.height(m.u * (if (shortScreen) 3 else if (library.isNotEmpty() || toolsOpen) 8 else 4)))
                 SearchStrip(m)
                 if (views != null && library.isNotEmpty() && !toolsOpen) {
                     com.pokedaisy.app.companion.ui.QuickViewPills(
@@ -1930,7 +1932,7 @@ class LibraryActivity : ComponentActivity() {
                         contentPadding = PaddingValues(horizontal = SCREEN_MARGIN),
                         cursor = launcher.viewCursor,
                     )
-                    Spacer(Modifier.height(m.u * 8))
+                    Spacer(Modifier.height(m.u * if (shortScreen) 3 else 8))
                 }
                 // Room at the end for the legend, so the last game can scroll clear of it.
                 val padding = PaddingValues(start = SCREEN_MARGIN, end = SCREEN_MARGIN, bottom = SCREEN_MARGIN + m.rowHeight * 1.6f)
@@ -1957,7 +1959,7 @@ class LibraryActivity : ComponentActivity() {
                     val spacing = m.u * 4
                     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                         // GridCells.Adaptive's own count, worked out here so the D-pad knows the rows.
-                        val columns = maxOf(1, ((maxWidth - SCREEN_MARGIN * 2 + spacing) / (GRID_TILE_MIN + spacing)).toInt())
+                        val columns = maxOf(1, ((maxWidth - SCREEN_MARGIN * 2 + spacing) / (com.pokedaisy.app.companion.ui.libraryTileMin + spacing)).toInt())
                         SideEffect { launcher.columns = columns }
                         // Another quick view starts at its top (the grid would otherwise keep its first game's place).
                         LaunchedEffect(launcher.view) { if (state.firstVisibleItemIndex > 0 || state.firstVisibleItemScrollOffset > 0) state.scrollToItem(0) }
@@ -2001,7 +2003,7 @@ class LibraryActivity : ComponentActivity() {
                         state = state,
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         contentPadding = padding,
-                        verticalArrangement = Arrangement.spacedBy(m.u * 4),
+                        verticalArrangement = Arrangement.spacedBy(m.u * if (shortScreen) 3 else 4),
                     ) {
                         itemsIndexed(games, key = { _, rom -> rom.absolutePath }) { _, rom ->
                             RomRow(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, launcherCard = card(rom), showPath = onMain)
@@ -2373,8 +2375,6 @@ class LibraryActivity : ComponentActivity() {
         const val EXTRA_ROM = "rom"
         /** Who opened the game, for crash reports ([CrashReports.gameStarted]): the library, or the app that sent it. */
         const val EXTRA_LAUNCHED_FROM = "launchedFrom"
-        /** The grid view's narrowest tile (GridCells.Adaptive's minimum). */
-        private val GRID_TILE_MIN = 150.dp
         /** Keys the launcher's menu swallows (the launcher's own), so they don't act behind it. */
         private val LAUNCHER_KEYS = setOf(
             KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1,

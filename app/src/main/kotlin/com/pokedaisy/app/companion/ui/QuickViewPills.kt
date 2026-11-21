@@ -138,7 +138,8 @@ private fun QuickViewPill(
                     drawPixelRoundFrame(look.back, Offset.Zero, size, r, 3 * px)
                 }
             }
-            .padding(horizontal = u * 7, vertical = u * 5),
+            // Lower and narrower on a short screen (the RG DS), where every row of height counts.
+            .padding(horizontal = u * (if (LocalShortScreen.current) 5 else 7), vertical = u * (if (LocalShortScreen.current) 2 else 5)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val icon = when (view) {

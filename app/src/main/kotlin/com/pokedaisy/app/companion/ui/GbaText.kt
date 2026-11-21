@@ -65,9 +65,21 @@ fun CompactTextOnSmallWindows(content: @Composable () -> Unit) {
     // The room the activity's content gets (its window, less the system bars), measured: ui-preview has no Configuration.
     androidx.compose.foundation.layout.BoxWithConstraints(androidx.compose.ui.Modifier.fillMaxSize()) {
         val small = maxWidth < COMPACT_WINDOW_WIDTH_DP.dp || maxHeight < COMPACT_WINDOW_HEIGHT_DP.dp
-        androidx.compose.runtime.CompositionLocalProvider(LocalTextStep provides if (small) -1 else LocalTextStep.current, content = content)
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalTextStep provides if (small) -1 else LocalTextStep.current,
+            LocalShortScreen provides isShortCompanion(constraints.maxHeight, LocalDensity.current.density),
+            content = content,
+        )
     }
 }
+
+/**
+ * The top screen's activities on a short screen, the companion's rule ([isShortCompanion]: the RG DS's 640x480, Gamma's and
+ * Android's alike): their text is at its smallest crisp size there already, so the library's fixed sizes give way instead -
+ * the GAMES / TOOLS / SETTINGS rail its icons alone, a lower header, tighter gaps, smaller covers, no path under a game
+ * (r/PokeDaisy, 2026-11-21: on the RG DS the rail took a quarter of the width and two and a half games showed).
+ */
+val LocalShortScreen = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /**
  * A list that should show more where the screen has room (the Thor's companion: SETTINGS, GUIDE, DEX): the main text a font
