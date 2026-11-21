@@ -263,8 +263,15 @@ fun GroupedRows(
     /** A column of the group titles on the left ([GroupTabs]) where the window is wide enough: a tap scrolls the list
      * to that group. For a long list (SETTINGS' home pages); it's still one list. */
     groupTabs: Boolean = false,
+    /** [groupTabs]' list position, hoisted like [scroll] so a sub-page's BACK returns to the same rows (else its own). */
+    lazy: androidx.compose.foundation.lazy.LazyListState? = null,
     footer: @Composable () -> Unit = {},
 ) {
+    // A home page ([groupTabs]: SETTINGS' long lists) is lazy: only the rows on screen are composed. Composing all of them
+    // (a hundred rows, each a few texts) held the UI thread ~385 ms each time the companion's SETTINGS tab opened on the
+    // Retroid Pocket Classic (2026-11-22), whose firmware leaves every app interpreted.
+    val ownLazy = androidx.compose.foundation.lazy.rememberLazyListState()
+    val list = if (groupTabs && SettingsLook.lazyHome) lazy ?: ownLazy else null
     val groups = if (groupTabs && SettingsLook.tabs) rows.indices.filter { rows[it].header } else emptyList()
     // Inside [RailedWindow] the list draws the window itself, so the group tabs can stay out of it.
     val railed = LocalRailedWindow.current
@@ -272,12 +279,12 @@ fun GroupedRows(
         if (railed) OptionListWindow(m, Modifier.fillMaxSize(), content = content) else content()
     }
     if (groups.size < MIN_GROUP_TABS) {
-        Card { GroupedRowsList(rows, m, cursor, onClick, scroll, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
+        Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
         return
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth < GROUP_TABS_MIN_WIDTH || maxWidth < maxHeight) {
-            Card { GroupedRowsList(rows, m, cursor, onClick, scroll, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
+            Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
             return@BoxWithConstraints
         }
         // Each group title's top in the list (content pixels), as laid out.
@@ -294,9 +301,9 @@ fun GroupedRows(
         val focused: (Int) -> Unit = { i -> follow = i; onFocused?.invoke(i) }
         val railHeight = maxHeight
         androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
-            GroupTabs(rows, groups, tops, scroll, follow, m, outside = railed, height = railHeight)
+            GroupTabs(rows, groups, tops, scroll, list, follow, m, outside = railed, height = railHeight)
             androidx.compose.foundation.layout.Box(Modifier.weight(1f).fillMaxSize()) {
-                Card { GroupedRowsList(rows, m, cursor, onClick, scroll, labelWeight, reveal, onRevealed, firstRowFocus, focused, tops, footer) }
+                Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, focused, tops.takeIf { list == null }, footer) }
             }
         }
     }
@@ -334,6 +341,8 @@ private fun GroupTabs(
     groups: List<Int>,
     tops: Map<Int, Int>,
     scroll: ScrollState,
+    /** A lazy list's position: then the groups are found by item, not by [tops] / [scroll]. */
+    lazy: androidx.compose.foundation.lazy.LazyListState?,
     follow: Int,
     m: GbaTextMetrics,
     /** Beside the window ([RailedWindow]), not in it. */
@@ -346,17 +355,36 @@ private fun GroupTabs(
     // A row moved to: its group, wherever the scroll left the group titles.
     LaunchedEffect(follow) { if (follow >= 0) groups.lastOrNull { it <= follow }?.let { picked = it } }
     // Dragging the list hands the choice back to the scroll.
-    LaunchedEffect(scroll) {
-        scroll.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) picked = -1 }
+    LaunchedEffect(scroll, lazy) {
+        (lazy?.interactionSource ?: scroll.interactionSource).interactions.collect {
+            if (it is androidx.compose.foundation.interaction.DragInteraction.Start) picked = -1
+        }
     }
-    val atEnd = scroll.maxValue > 0 && scroll.value >= scroll.maxValue - 1
     val slack = with(androidx.compose.ui.platform.LocalDensity.current) { (m.u * 4).roundToPx() }
-    val shown = groups.lastOrNull { (tops[it] ?: Int.MAX_VALUE) <= scroll.value + slack } ?: groups.first()
-    // At the very end the last group is on screen whatever reached the top.
-    val current = picked.takeIf { it >= 0 } ?: if (atEnd) groups.last() else shown
+    // The group whose title has reached the top (within [slack]); at the very end the last group is on screen whatever
+    // reached the top. Derived, so scrolling within a group doesn't compose the rail again.
+    val shown by remember(groups, lazy, slack) {
+        androidx.compose.runtime.derivedStateOf {
+            if (lazy != null) {
+                val info = lazy.layoutInfo
+                val first = lazy.firstVisibleItemIndex
+                if (lazy.canScrollBackward && !lazy.canScrollForward) groups.last()
+                else groups.lastOrNull { g -> g < first || info.visibleItemsInfo.any { it.index == g && it.offset - info.viewportStartOffset <= slack } }
+                    ?: groups.first()
+            } else {
+                if (scroll.maxValue > 0 && scroll.value >= scroll.maxValue - 1) groups.last()
+                else groups.lastOrNull { (tops[it] ?: Int.MAX_VALUE) <= scroll.value + slack } ?: groups.first()
+            }
+        }
+    }
+    val current = picked.takeIf { it >= 0 } ?: shown
     TabRail(groups.map { tr(rows[it].label) }, groups.indexOf(current), m, outside, height.takeIf { outside }) { i ->
         val g = groups[i]
         picked = g
+        if (lazy != null) {
+            scope.launch { lazy.animateScrollToItem(g) }
+            return@TabRail
+        }
         val top = tops[g] ?: return@TabRail
         scope.launch { scroll.animateScrollTo(top.coerceAtMost(scroll.maxValue)) }
     }
@@ -513,6 +541,8 @@ private fun GroupedRowsList(
     cursor: Int,
     onClick: (Int) -> Unit,
     scroll: ScrollState,
+    /** Lazy, at this position ([GroupedRows]' home pages); null = a plain scrolling column (unless it's very long). */
+    lazy: androidx.compose.foundation.lazy.LazyListState?,
     labelWeight: Float,
     reveal: Int,
     onRevealed: () -> Unit,
@@ -566,9 +596,21 @@ private fun GroupedRowsList(
     // A list of hundreds (an imported cheat file: RetroArch's Platinum one has 2321) is composed only where it's on
     // screen: all of them at once held the UI thread for seconds, and the app stopped answering (GitHub #786). Its
     // scroll position isn't [scroll]'s, which only SETTINGS' home pages (far shorter) keep.
-    if (rows.size > LAZY_ROWS && tops == null) {
-        val lazy = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = cursor.coerceIn(0, rows.size - 1))
+    if (lazy != null) {
+        // The row to reveal may be off screen, so not composed yet: put it on screen, then its revealOnce scrolls its
+        // neighbours in with it.
+        LaunchedEffect(reveal) {
+            if (reveal >= 0 && lazy.layoutInfo.visibleItemsInfo.none { it.index == reveal }) lazy.scrollToItem(reveal)
+        }
         androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize(), state = lazy) {
+            items(rows.size) { i -> RowAt(i, rows[i]) }
+            item { footer() }
+        }
+        return
+    }
+    if (rows.size > LAZY_ROWS && tops == null) {
+        val long = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = cursor.coerceIn(0, rows.size - 1))
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize(), state = long) {
             items(rows.size) { i -> RowAt(i, rows[i]) }
             item { footer() }
         }
@@ -682,6 +724,10 @@ private fun Modifier.revealOnce(done: () -> Unit): Modifier = composed {
 object SettingsLook {
     var descriptions by mutableStateOf(true)
     var tabs by mutableStateOf(true)
+
+    /** SETTINGS' home lists are lazy ([GroupedRows]). ui-preview's shots turn it off: its harness can't scroll a lazy list
+     * (its clock never idles for performScrollToNode), and they scroll to rows off screen. The rows look the same either way. */
+    var lazyHome = true
     var onChange: ((descriptions: Boolean, tabs: Boolean) -> Unit)? = null
 
     fun set(descriptions: Boolean = this.descriptions, tabs: Boolean = this.tabs) {

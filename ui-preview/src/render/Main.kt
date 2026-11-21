@@ -1532,6 +1532,8 @@ fun main(args: Array<String>) {
         runCatching { com.pokedaisy.app.Prefs(android.content.Context()).appLanguage = code }
         com.pokedaisy.app.companion.i18n.L10n.apply(code, null)
     }
+    // The shots scroll to SETTINGS rows off screen, which a lazy list hasn't composed (SettingsLook.lazyHome).
+    com.pokedaisy.app.companion.ui.SettingsLook.lazyHome = false
     // -Pdark=true: DARK MODE on for every shot.
     if (System.getProperty("dark") == "true") com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
     // -Pfont=SMOOTH: that FONT for every shot.

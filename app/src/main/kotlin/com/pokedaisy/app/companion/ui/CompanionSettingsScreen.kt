@@ -326,7 +326,7 @@ fun CompanionSettingsScreen(
                         modifier = Modifier.fillMaxWidth().weight(1f))
                 } else if (application && page == Page.HOME) {
                     AppSettingsHome(rows, m, appSearch, { appSearch = it },
-                        Modifier.fillMaxWidth().weight(1f), scroll = homeScroll, footer = applicationFooter)
+                        Modifier.fillMaxWidth().weight(1f), scroll = homeScroll, lazy = ui.homeList, footer = applicationFooter)
                 } else if (page == Page.TOUCH && settings != null) {
                     // The preview beside / above the rows; it follows each change (tick).
                     @Suppress("UNUSED_EXPRESSION") tick
@@ -360,7 +360,7 @@ fun CompanionSettingsScreen(
                         GroupedRows(rows, m, cursor, onClick = { i -> moveCursor(i); rows[i].onClick() }, scroll = if (page == Page.HOME) homeScroll else rememberScrollState(),
                             // Cheat names are the player's own, often long: more room before ON / OFF.
                             labelWeight = when (page) { Page.TWEAKS -> 0.8f; Page.CHEATS -> 0.75f; else -> 0.58f }, reveal = reveal, onRevealed = { ui.revealRow = null },
-                            onFocused = ::moveCursor, groupTabs = page == Page.HOME) {
+                            onFocused = ::moveCursor, groupTabs = page == Page.HOME, lazy = ui.homeList.takeIf { page == Page.HOME }) {
                             // Actions, not settings: the list's last line, out of the way of the options.
                             if (page == Page.HOME && settings != null && settings.hasRunningGame) {
                                 // A summary-window line sets them apart from the last group.
@@ -470,6 +470,8 @@ class SettingsUiState(initialPage: String? = null, initialRow: String? = null) {
     // HOME starts with a group title, so its first row is index 1.
     internal var homeCursor by mutableStateOf(1)
     internal val homeScroll = androidx.compose.foundation.ScrollState(0)
+    /** HOME's list position (it's lazy), kept across sub-pages and tabs like [homeScroll]. */
+    internal val homeList = androidx.compose.foundation.lazy.LazyListState()
     /** HELP's page and place in the manual. */
     internal val docs = DocsUiState()
 }
