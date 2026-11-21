@@ -41,8 +41,8 @@ internal fun MissingPage(
     val subtitleLine = subtitleMetrics(m).lineHeight + m.u * 2
     val shown = entries?.let { list -> if (state.missingFilter == MissingFilter.CAN_COME) list.filter { it.best?.reachable == true } else list }
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        OptionTitleWindow(
-            tk("MISSING"), m, onBack = onClose,
+        ToolHeader(
+            tk("MISSING"), "EDIT", m, onBack = onClose,
             trailing = entries?.let { tr("{0} NOT CAUGHT", it.size) },
         )
         Spacer(Modifier.height(m.u * 4))

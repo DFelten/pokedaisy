@@ -54,8 +54,10 @@ internal fun TrainerPage(
 private fun TrainerWindow(state: PcBoxesState, bag: TrainerBagEditor, gen3: Gen3SaveData?, m: GbaTextMetrics, modifier: Modifier) {
     val data = state.data
     OptionListWindow(m, modifier) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            GbaText(tr("TRAINER"), OptionColors.groupTitleText, OptionColors.groupTitleShadow, m, Modifier.padding(horizontal = m.u * 4))
+        Column {
+            PanelHeader(tr("TRAINER"), m)
+            // The header outside the scroll: it reaches over the window's top edge, which a scroll would cut off.
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             OptionLine(tk("NAME"), data.trainerName, selected = false, m, labelWeight = 0.5f, divider = true) {}
             OptionLine(tk("ID No."), id5(data.trainerId), selected = false, m, labelWeight = 0.5f, divider = true) {}
             bag.playTime?.let { OptionLine(tk("TIME"), it, selected = false, m, labelWeight = 0.5f, divider = true) {} }
@@ -65,6 +67,7 @@ private fun TrainerWindow(state: PcBoxesState, bag: TrainerBagEditor, gen3: Gen3
             if (gen3 != null) OptionLine(tk("COINS"), "${gen3.coins}", selected = false, m, labelWeight = 0.5f, chevron = true) {
                 state.editing = PcBoxesState.Editing.Coins
             }
+                    }
         }
     }
 }
@@ -74,7 +77,7 @@ private fun DexWindow(state: PcBoxesState, bag: TrainerBagEditor, m: GbaTextMetr
     val c = bag.dex
     OptionListWindow(m, modifier) {
         Column {
-            GbaText(tr("POKéDEX"), OptionColors.groupTitleText, OptionColors.groupTitleShadow, m, Modifier.padding(horizontal = m.u * 4))
+            PanelHeader(tr("POKéDEX"), m)
             c.regionLabel?.let {
                 OptionLine(tk(it), tr("{0} SEEN · {1} CAUGHT", c.regionalSeen, c.regionalCaught), selected = false, m, labelWeight = 0.3f, divider = true) {}
             }
@@ -98,8 +101,10 @@ private fun DexWindow(state: PcBoxesState, bag: TrainerBagEditor, m: GbaTextMetr
 private fun EventsWindow(state: PcBoxesState, data: Gen3SaveData, m: GbaTextMetrics, small: GbaTextMetrics, modifier: Modifier) {
     val events = Gen3Event.forFormat(data.format)
     OptionListWindow(m, modifier) {
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            GbaText(tr("EVENT TICKETS"), OptionColors.groupTitleText, OptionColors.groupTitleShadow, m, Modifier.padding(horizontal = m.u * 4))
+        Column {
+            PanelHeader(tr("EVENT TICKETS"), m)
+            // The header outside the scroll: it reaches over the window's top edge, which a scroll would cut off.
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             events.forEachIndexed { i, ev ->
                 val st = state.gen3!!.eventState(ev)
                 OptionLine(
@@ -113,6 +118,7 @@ private fun EventsWindow(state: PcBoxesState, data: Gen3SaveData, m: GbaTextMetr
                 GbaText(it.note(data.format), OptionColors.muted, OptionColors.mutedShadow, small, maxLines = Int.MAX_VALUE,
                     modifier = Modifier.padding(horizontal = m.u * 4, vertical = m.u * 2))
             }
+                    }
         }
     }
 }

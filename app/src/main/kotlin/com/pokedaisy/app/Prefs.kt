@@ -410,6 +410,11 @@ class Prefs(
         get() = p.getBoolean("library_file_names", false)
         set(v) = p.edit().putBoolean("library_file_names", v).apply()
 
+    /** GAME PATHS: a [com.pokedaisy.app.companion.LibraryPathMode] id; 0 = the file's name when two games' names match. */
+    var libraryPathMode: Int
+        get() = p.getInt("library_path_mode", 0)
+        set(v) = p.edit().putInt("library_path_mode", v).apply()
+
     /** SUPPORTED ONLY: the library leaves out games the companion can't read (GitHub discussion #302). Off by default. */
     var librarySupportedOnly: Boolean
         get() = p.getBoolean("library_supported_only", false)

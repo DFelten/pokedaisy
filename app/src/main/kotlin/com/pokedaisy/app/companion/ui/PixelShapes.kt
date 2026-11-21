@@ -141,6 +141,20 @@ fun DrawScope.drawPixelRoundRect(
     drawStairs(color, Stairs(size, radius, radius, radius, radius, step), topLeft, null, 0f)
 }
 
+/** [drawPixelRoundRect] with a radius per corner (top-left, top-right, bottom-right, bottom-left): a panel's header band
+ * rounding with its window's top only. */
+fun DrawScope.drawPixelCornersRect(
+    color: Color, topLeft: Float, topRight: Float, bottomRight: Float, bottomLeft: Float,
+    at: Offset = Offset.Zero, size: Size = this.size, step: Float = gbaPixelPx(),
+) {
+    if (size.width <= 0f || size.height <= 0f) return
+    if (CompanionSkins.current.smooth) {
+        drawPath(pixelCornersPath(size, topLeft, topRight, bottomRight, bottomLeft, step, at), color)
+        return
+    }
+    drawStairs(color, Stairs(size, topLeft, topRight, bottomRight, bottomLeft, step), at, null, 0f)
+}
+
 /** A pixel-stepped rounded frame [width] px thick: the outer shape minus the inner one. */
 fun DrawScope.drawPixelRoundFrame(
     color: Color,

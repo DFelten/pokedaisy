@@ -90,7 +90,9 @@ class Hotkeys private constructor(
                 val key = action to chord
                 // Only a new press is turned away: a chord already down still gets its release (an FF HOLD let go after
                 // the screen turned).
-                val off = if (action.dsOnly) !dsActive(action) else chord in dsTaken
+                // A chord of the DS game's own X / Y keys alone (a device with no L3 / R3: Y's QUICK MENU, X's COMPANION)
+                // leaves them to the DS game.
+                val off = if (action.dsOnly) !dsActive(action) else chord in dsTaken || leftToDs(chord)
                 if (off && key !in activeChords) continue
                 if (satisfied && activeChords.add(key)) {
                     if (!action.isHold) out.add(Event(action, true))
@@ -175,8 +177,11 @@ class Hotkeys private constructor(
     /** True if this key should be withheld from the game right now (it's part of
      *  a chord whose other members are all held). */
     fun consumes(keyCode: Int): Boolean = chords.values.any { list ->
-        list.any { chord -> keyCode in chord && (chord - keyCode).all { it in held } }
+        list.any { chord -> keyCode in chord && (chord - keyCode).all { it in held } && !leftToDs(chord) }
     }
+
+    /** [chord] is only the running DS game's own X / Y keys ([dsOwnKeys]): theirs, not a hotkey's. */
+    private fun leftToDs(chord: Set<Int>): Boolean = dsOwnKeys().let { own -> own.isNotEmpty() && own.containsAll(chord) }
 
     companion object {
         private val DEFAULTS = linkedMapOf(
@@ -211,6 +216,20 @@ class Hotkeys private constructor(
          * its keys are the other hotkeys'. */
         @Volatile var dsActive: (Action) -> Boolean = { false }
 
+        /** A DS game's own X / Y keys while one runs (GAME BUTTONS' DS rows): a hotkey on those alone is off there. */
+        @Volatile var dsOwnKeys: () -> Set<Int> = { emptySet() }
+
+        /**
+         * The device's controller has no L3 / R3 (no stick to click: the Retroid Pocket Classic; PokeDaisyApp finds
+         * out at start, before any file is read). Then the QUICK MENU is on Y and COMPANION on X, the face buttons no
+         * GBA game has - in a DS game they stay its X / Y ([dsOwnKeys]) - instead of L3 and nothing.
+         */
+        @Volatile var noStickClicks = false
+
+        /** [DEFAULTS] for this device ([noStickClicks]). */
+        private fun defaults(): Map<String, String> = if (!noStickClicks) DEFAULTS
+            else DEFAULTS + mapOf("quick_menu" to "BUTTON_Y", "companion" to "BUTTON_X")
+
         /** Earlier defaults (X / Y saved and loaded states, R3 the next slot), swapped for [DEFAULTS]' where a file still
          * has them - nobody changed those. */
         private val OLD_DEFAULTS = mapOf(
@@ -230,7 +249,13 @@ class Hotkeys private constructor(
             var changed = false
             // X / Y left the state hotkeys for GAME BUTTONS' X / Y: only where nobody changed them.
             for ((k, old) in OLD_DEFAULTS) if (props[k] == old) { props[k] = DEFAULTS.getValue(k); changed = true }
-            for ((k, v) in DEFAULTS) if (k !in props) { props[k] = v; changed = true }
+            // No L3 on this device: a QUICK MENU still on it (its default, never pressable here) goes to Y; COMPANION, never
+            // bound or cleared, to X.
+            if (noStickClicks) {
+                if (props["quick_menu"] == "BUTTON_THUMBL") { props["quick_menu"] = "BUTTON_Y"; changed = true }
+                if ("companion" !in props) { props["companion"] = "BUTTON_X"; changed = true }
+            }
+            for ((k, v) in defaults()) if (k !in props) { props[k] = v; changed = true }
             if (changed) writeProps(filesDir, props)
             return props
         }

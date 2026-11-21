@@ -85,7 +85,7 @@ internal fun MonPage(state: PcBoxesState, at: MonRef, m: GbaTextMetrics, small: 
                 is MonRef.Party -> tr("PARTY {0}", at.index + 1)
                 is MonRef.Pc -> "${data.boxName(at.at.box).trim().ifEmpty { "BOX ${at.at.box + 1}" }} · ${at.at.slot + 1}"
             }
-            OptionTitleWindow(monLabel(mon), m, trailing = where, onBack = onClose)
+            ToolHeader(monLabel(mon), "EDIT", m, trailing = where, onBack = onClose)
             Spacer(Modifier.height(m.u * 4))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth > maxHeight * 1.1f
@@ -109,7 +109,10 @@ internal fun MonPage(state: PcBoxesState, at: MonRef, m: GbaTextMetrics, small: 
 @Composable
 private fun WhoCard(state: PcBoxesState, mon: SaveMon, level: Int, at: MonRef, m: GbaTextMetrics, icons: MonIconLoader?, sprites: MonSpriteLoader?, modifier: Modifier) {
     OptionListWindow(m, modifier) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(m.u * 4), verticalArrangement = Arrangement.spacedBy(m.u * 2)) {
+        Column(Modifier.fillMaxWidth()) {
+            PanelHeader(tr("POKéMON"), m)
+            // The header outside the scroll: it reaches over the window's top edge, which a scroll would cut off.
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(m.u * 4), verticalArrangement = Arrangement.spacedBy(m.u * 2)) {
             MonHeader(mon, level, m, icons, Modifier.fillMaxWidth(), iconLines = 3f)
             if (mon.isBadEgg) return@Column
             val dex = mon.game.nationalDex(mon.species)
@@ -125,6 +128,7 @@ private fun WhoCard(state: PcBoxesState, mon: SaveMon, level: Int, at: MonRef, m
             } else if (state.editor.canWriteNames && !state.editor.isOwn(mon)) {
                 GbaText(tr("Traded Pokémon keep their name: only the trainer who caught it can rename it."), OptionColors.muted, OptionColors.mutedShadow, m, maxLines = Int.MAX_VALUE)
             }
+        }
         }
     }
 }

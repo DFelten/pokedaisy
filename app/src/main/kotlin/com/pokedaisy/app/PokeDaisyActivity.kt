@@ -2590,6 +2590,8 @@ class PokeDaisyActivity : Activity() {
                 else -> false
             }
         }
+        // A DS game keeps its X / Y, which a device with no L3 / R3 gives the QUICK MENU / COMPANION elsewhere.
+        Hotkeys.dsOwnKeys = { if (romIsNds) input.dsOwnKeys() else emptySet() }
         displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         inputManager = getSystemService(Context.INPUT_SERVICE) as android.hardware.input.InputManager
 
@@ -3595,6 +3597,7 @@ class PokeDaisyActivity : Activity() {
         stopListeningForFold()
         com.pokedaisy.app.companion.FeatureTips.available = { false }
         Hotkeys.dsActive = { false }
+        Hotkeys.dsOwnKeys = { emptySet() }
         endN3ds()
         // Gone while the game slept (onPause held it): stop it now, as a close would have.
         if (::engine.isInitialized && engine.running) {

@@ -392,7 +392,7 @@ class LinkActivity : ComponentActivity() {
             AppBackdrop()
             // OptionRows scrolls by itself: the column around it doesn't (a scroll inside a scroll can't be measured).
             Column(Modifier.fillMaxSize().padding(16.dp)) {
-                OptionTitleWindow(tk("LINK PLAY"), m, onBack = { finish() })
+                com.pokedaisy.app.companion.ui.ToolHeader(tk("LINK PLAY"), "LINK", m, onBack = { finish() })
                 Spacer(Modifier.height(m.u * 4))
                 OptionListWindow(m, Modifier.fillMaxWidth().weight(1f, fill = false)) {
                     Column {
@@ -470,7 +470,7 @@ class LinkActivity : ComponentActivity() {
         Box(Modifier.fillMaxSize()) {
             AppBackdrop()
             Column(Modifier.fillMaxSize().padding(16.dp)) {
-                OptionTitleWindow(tk("LINK PLAY"), m)
+                com.pokedaisy.app.companion.ui.ToolHeader(tk("LINK PLAY"), "LINK", m)
                 Spacer(Modifier.height(m.u * 4))
                 OptionListWindow(m, Modifier.fillMaxWidth()) {
                     GbaText(text, OptionColors.label, OptionColors.labelShadow, m, maxLines = Int.MAX_VALUE, modifier = Modifier.padding(m.u * 4))

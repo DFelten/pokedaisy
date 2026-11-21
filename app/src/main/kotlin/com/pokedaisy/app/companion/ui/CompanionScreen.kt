@@ -532,6 +532,8 @@ fun CompanionScreen(
             val dock by androidx.compose.animation.core.animateFloatAsState(if (gen5Full) 1f else 0f, tween(220), label = "gen5-dock")
             // Nothing over the tab area: the controls spill over the top margin too.
             val nothingAbove = topStrip == null && !(statusBar != null && CompanionStatusBar.shown) && !(loaded && !snapshot.connected)
+            // The window's X (no room beside it): at the end of the companion's top bar - the status bar, else SETTINGS' title.
+            val barClose = LocalTopBarClose.current.takeIf { topStrip == null }
             Column(modifier = Modifier.fillMaxSize().padding(top = topInset).padding(margin)) {
                 if (topStrip != null) {
                     Box { topStrip() }
@@ -539,7 +541,7 @@ fun CompanionScreen(
                 }
                 // SETTINGS > STATUS BAR on the companion: the game's strip over the tabs.
                 if (statusBar != null && CompanionStatusBar.shown) {
-                    Box { statusBar() }
+                    CompositionLocalProvider(LocalTopBarClose provides barClose) { WithTopBarClose { Box(it) { statusBar() } } }
                     Spacer(Modifier.height(8.dp))
                 }
                 if (loaded && !snapshot.connected) {
@@ -783,6 +785,7 @@ fun CompanionScreen(
                             BoxSwapNotice(boxesUi)
                         } else if (tab == "SETTINGS") {
                             // Draws its own OPTION-screen windows, no cream card behind them.
+                            CompositionLocalProvider(LocalTopBarClose provides barClose.takeIf { !(statusBar != null && CompanionStatusBar.shown) }) {
                             CompanionSettingsScreen(
                                 settings, available,
                                 onTabsChanged = { chosenTabs = it },
@@ -794,6 +797,7 @@ fun CompanionScreen(
                                 },
                                 onPlaysAs = { pickerOpen = true },
                             )
+                            }
                         } else if (tab == "MORE") {
                             MoreScreen(
                                 hiddenTabs,

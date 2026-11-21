@@ -96,8 +96,8 @@ fun CollectionScreen(
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(
-                tk("COLLECTION"), m, onBack = onBack,
+            ToolHeader(
+                tk("COLLECTION"), "COLLECTION", m, onBack = onBack,
                 trailing = sides?.let { tr("{0} POKéMON · {1} KINDS", state.items.size, SaveCollection.species(state.items)) },
             )
             Spacer(Modifier.height(m.u * 4))

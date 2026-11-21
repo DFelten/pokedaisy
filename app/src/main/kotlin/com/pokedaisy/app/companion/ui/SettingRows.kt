@@ -183,6 +183,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "CHALLENGE ICONS" to "retroachievements cheevos achievements leaderboard tracker badge badges corner hide icons overlay",
     "BATTLE VIEW" to "battle tab default info buttons suggestions best picks first opens",
     "GAME NAMES" to "file name filename rom title library naming",
+    "GAME PATHS" to "path folder file name filename duplicate same name location where show hide",
     "SUPPORTED ONLY" to "filter hide unsupported not supported compatible library",
     "LOOK AROUND" to "right stick freecam free camera look pan view",
     "FOE IVS" to "enemy opponent ivs stats",
@@ -192,6 +193,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "MUTE GAME" to "mute unmute silent silence quiet sound off audio volume hotkey",
     "AUDIO EFFECTS" to "equalizer equaliser eq jamesdsp james dsp viper sound audio bass speaker enhancer",
     "TWEAKS" to "animations bounce blink cursor jump to battle effects motion",
+    "QUALITY OF LIFE" to "qol helpers convenience time savers instant text auto run refill",
     "SCENE SPEEDS" to "battle speed text speed instant text fast text menu speed overworld speed faster battles quality of life qol bike speed surf speed faster bike faster surfing",
     "AUTO-RUN" to "auto run autorun running shoes run sprint dash always run hold b",
     "RUN INDOORS" to "run inside buildings indoor running shoes houses",
@@ -278,13 +280,15 @@ fun GroupedRows(
     @Composable fun Card(content: @Composable () -> Unit) {
         if (railed) OptionListWindow(m, Modifier.fillMaxSize(), content = content) else content()
     }
+    // Each row's focus, for a group tab's tap: the next D-pad press lands on the group's first row ([FocusJump]).
+    val jump = remember(rows.size) { RowJump(rows.size) }
     if (groups.size < MIN_GROUP_TABS) {
-        Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
+        Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer, jump) }
         return
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth < GROUP_TABS_MIN_WIDTH || maxWidth < maxHeight) {
-            Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer) }
+            Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, onFocused, null, footer, jump) }
             return@BoxWithConstraints
         }
         // Each group title's top in the list (content pixels), as laid out.
@@ -301,9 +305,13 @@ fun GroupedRows(
         val focused: (Int) -> Unit = { i -> follow = i; onFocused?.invoke(i) }
         val railHeight = maxHeight
         androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
-            GroupTabs(rows, groups, tops, scroll, list, follow, m, outside = railed, height = railHeight)
+            GroupTabs(rows, groups, tops, scroll, list, follow, m, outside = railed, height = railHeight) { g ->
+                // The group's first row takes the next D-pad press (the user's call: not GAMES, or wherever it was).
+                val first = (g + 1 until rows.size).firstOrNull { !rows[it].header } ?: return@GroupTabs
+                FocusJump.target = jump.requesters[first]
+            }
             androidx.compose.foundation.layout.Box(Modifier.weight(1f).fillMaxSize()) {
-                Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, focused, tops.takeIf { list == null }, footer) }
+                Card { GroupedRowsList(rows, m, cursor, onClick, scroll, list, labelWeight, reveal, onRevealed, firstRowFocus, focused, tops.takeIf { list == null }, footer, jump) }
             }
         }
     }
@@ -349,6 +357,8 @@ private fun GroupTabs(
     outside: Boolean = false,
     /** The rail's height: beside the window, the tabs share it out. */
     height: androidx.compose.ui.unit.Dp? = null,
+    /** A tab was picked (tapped, or L / R): its group title's index. */
+    onPicked: (Int) -> Unit = {},
 ) {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var picked by remember { mutableStateOf(-1) }
@@ -378,17 +388,53 @@ private fun GroupTabs(
         }
     }
     val current = picked.takeIf { it >= 0 } ?: shown
-    TabRail(groups.map { tr(rows[it].label) }, groups.indexOf(current), m, outside, height.takeIf { outside }) { i ->
+    fun pick(i: Int) {
         val g = groups[i]
         picked = g
+        onPicked(g)
         if (lazy != null) {
             scope.launch { lazy.animateScrollToItem(g) }
-            return@TabRail
+            return
         }
-        val top = tops[g] ?: return@TabRail
+        val top = tops[g] ?: return
         scope.launch { scroll.animateScrollTo(top.coerceAtMost(scroll.maxValue)) }
     }
+    // L / R step through the tabs where the screen hands them over ([LocalGroupStep]: the top-screen Settings).
+    val stepNow by androidx.compose.runtime.rememberUpdatedState({ delta: Int ->
+        val now = groups.indexOf(current)
+        val i = (now + delta).coerceIn(0, groups.lastIndex)
+        if (i != now) pick(i)
+        true
+    })
+    val holder = LocalGroupStep.current
+    if (holder != null) androidx.compose.runtime.DisposableEffect(holder) {
+        val step: (Int) -> Boolean = { stepNow(it) }
+        holder.step = step
+        onDispose { if (holder.step === step) holder.step = null }
+    }
+    TabRail(groups.map { tr(rows[it].label) }, groups.indexOf(current), m, outside, height.takeIf { outside }) { pick(it) }
 }
+
+/**
+ * Where the next D-pad press puts the focus: a tap (a group tab, a pick-list opened by touch) parks the row it should
+ * land on here, since a focus asked for in touch mode doesn't take; the screen's key handler takes it, leaves touch mode
+ * and focuses it, and that press is spent on it (SettingsActivity, LibraryActivity, the companion's window).
+ */
+object FocusJump {
+    @kotlin.concurrent.Volatile var target: androidx.compose.ui.focus.FocusRequester? = null
+    /** The thing last tapped ([soundClickable]): the next D-pad press moves on from it (the user's call, 2026-11-22: not
+     * from wherever the D-pad left off before the taps). */
+    @kotlin.concurrent.Volatile var from: androidx.compose.ui.focus.FocusRequester? = null
+    fun take(): androidx.compose.ui.focus.FocusRequester? = target.also { target = null; if (it != null) from = null }
+    fun takeFrom(): androidx.compose.ui.focus.FocusRequester? = from.also { from = null }
+}
+
+/** A focus for each of a [GroupedRows] list's rows ([FocusJump]). */
+private class RowJump(size: Int) { val requesters = List(size) { androidx.compose.ui.focus.FocusRequester() } }
+
+/** L / R's way to [GroupedRows]' group tabs: a screen that provides one ([LocalGroupStep]) calls [step] (-1 / +1). */
+class GroupStep { var step: ((Int) -> Boolean)? = null }
+val LocalGroupStep = androidx.compose.runtime.staticCompositionLocalOf<GroupStep?> { null }
 
 /**
  * Tabs down a window's left edge, [selected] lit like the tab bar's chosen chip, a dashed rule between them and the page:
@@ -551,6 +597,7 @@ private fun GroupedRowsList(
     /** Each group title's top in the list, for [GroupTabs]. */
     tops: MutableMap<Int, Int>?,
     footer: @Composable () -> Unit,
+    jump: RowJump? = null,
 ) {
     val firstRow = rows.indexOfFirst { !it.header }
     // A game font is set larger to match Pixel Operator's letters (Gen 1's 7px capitals): its line is taller for the same
@@ -578,7 +625,8 @@ private fun GroupedRowsList(
                 modifier = (if (i == reveal) Modifier.revealOnce(onRevealed) else Modifier)
                     .then(if (i == firstRow && firstRowFocus != null) Modifier.focusRequester(firstRowFocus) else Modifier)
                     // The companion's window: the D-pad starts on the cursor row.
-                    .focusStart(i == cursor),
+                    .focusStart(i == cursor)
+                    .then(if (jump != null && i < jump.requesters.size) Modifier.focusRequester(jump.requesters[i]) else Modifier),
                 // A one-line row's letters sit low in their line (room above the capitals, none under): a little more
                 // under them, so the space below matches the space above.
                 height = heightOf(row),
@@ -586,7 +634,7 @@ private fun GroupedRowsList(
                 divider = rows.getOrNull(i + 1)?.header == false, labelBadge = row.labelBadge, labelIcon = row.labelIcon,
                 labelIconSize = if (row.iconPixels > 0) m.u * row.iconPixels else null,
                 valueBadge = row.badge, enabled = row.enabled, subtitle = subtitleOf(row), labelWeight = row.labelWeight ?: labelWeight,
-                chevron = row.opensPage, slider = row.slider,
+                chevron = row.opensPage, slider = row.slider, cursorArrow = true,
                 // A menu style's bands: every other row of a group.
                 stripe = (i - (rows.subList(0, i).indexOfLast { it.header } + 1)) % 2 == 1,
                 onFocus = onFocused?.let { f -> { f(i) } },

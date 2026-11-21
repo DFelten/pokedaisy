@@ -81,6 +81,10 @@ class GameSessionTest {
         s.observeField(true, -1, BATTLE_INPUT_NONE, true); assertFalse(s.onField)
         repeat(20) { s.observeField(true, 1, BATTLE_INPUT_NONE, false) }; assertFalse(s.onField)
         repeat(20) { s.observeField(true, -1, BATTLE_INPUT_PARTY_OPEN, false) }; assertFalse(s.onField)
+        // Flying: a new area's name sign (TEXT / OVERLAY with the controls locked) keeps the field.
+        repeat(20) { s.observeField(true, 0, BATTLE_INPUT_NONE, false) }; assertTrue(s.onField)
+        repeat(30) { s.observeField(true, 1, BATTLE_INPUT_NONE, false, flying = true) }; assertTrue(s.onField)
+        repeat(30) { s.observeField(true, 2, BATTLE_INPUT_NONE, false, flying = true) }; assertTrue(s.onField)
     }
 
     @Test fun closingInsideACallbackDropsTheRestAndResetCannotLeakOldWork() {

@@ -22,7 +22,7 @@ Many rows are on both. They're the same setting, so changing it on one screen ch
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
 | `DESCRIPTIONS` | **`SHOWN`**, `HIDDEN` | The grey line under each setting. Also on the companion's SETTINGS, the same switch. | [Companion](companion.md) |
-| `GROUP TABS` | **`SHOWN`**, `HIDDEN` | The group buttons beside the list. Hidden, the list takes the whole width. Also on the companion's SETTINGS. | [Companion](companion.md) |
+| `GROUP TABS` | **`SHOWN`**, `HIDDEN` | The group buttons beside the list. Hidden, the list takes the whole width. Also on the companion's SETTINGS. With a controller, L and R step to the previous or next group, and after tapping one the D-pad starts on its first setting. | [Companion](companion.md) |
 
 ### FF and speed
 
@@ -102,6 +102,7 @@ The `SHADERS` page:
 | --- | --- | --- | --- |
 | `RESUME GAMES` | **`ON`**, `OFF` | On, a game opens right where you left it. Off, it starts at the title screen and loads your save. | [Saves](saves.md) |
 | `GAME NAMES` | **`GAME TITLE`**, `FILE NAME` | How the library names your games. A name you gave a game with `RENAME` stays. | [Library](library.md#game-names) |
+| `GAME PATHS` | **`WHEN NAMES MATCH`**, `FULL PATH`, `OFF` | What the list shows under a game's name: its file's name only where two games share a name, every game's whole path, or nothing. | [Library](library.md#game-names) |
 | `SUPPORTED ONLY` | `ON`, **`OFF`** | Leaves games the companion can't read out of the library. Your files stay where they are. | [Library](library.md) |
 | `DUAL-SCREEN LAUNCHER` | **`ON`**, `OFF` | With two screens, the library shows the game list on one and the selected game's media on the other. Off, the plain library. | [Library](library.md#the-dual-screen-launcher) |
 | `COVER ART` | `ON` once a key is saved, else **`OFF`** (a page) | Your own free keys for RetroAchievements box art and SteamGridDB icons (`GET KEY` opens the page to make one). `REPLACE ALL` fetches every cover again. | [Library](library.md) |
@@ -196,6 +197,7 @@ At the top of SETTINGS, in a blue frame, in the games where any of it works.
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
+| `QUALITY OF LIFE` | | A page of its own holding `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON` (below). Its row says how many you've changed from the game's own way. | [Companion](companion.md) |
 | `WILD ENCOUNTERS` | **`ON`**, `OFF` | Wild Pokémon jumping out in grass, caves and water, or none. `N/A` in a game where it can't work. | [Controls](controls.md) |
 | `INSTANT TEXT` | `ON`, **`OFF`** | Words in a text box appear at once, and nothing else speeds up. `N/A` where it can't work. | [Fast-forward](fast-forward.md#instant-text) |
 | `FLY STYLE` | `CLASSIC`, **`SCENIC`** | How flying to a town looks: the game's own animation, or flying there over the map. `N/A` where it can't work. | [Map](map.md#the-scenic-way) |

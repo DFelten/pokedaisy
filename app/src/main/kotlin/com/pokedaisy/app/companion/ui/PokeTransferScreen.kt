@@ -111,7 +111,7 @@ fun PokeTransferScreen(
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("POKé TRANSFER"), m, trailing = "${state.gen4Label} · ${state.gen5Label}", onBack = leave)
+            ToolHeader(tk("POKé TRANSFER"), "TRANSFER", m, trailing = "${state.gen4Label} · ${state.gen5Label}", onBack = leave)
             Spacer(Modifier.height(m.u * 4))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth > maxHeight * 1.1f

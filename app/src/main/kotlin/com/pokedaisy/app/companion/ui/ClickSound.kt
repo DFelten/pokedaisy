@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.focus.focusRequester
 
 /**
  * Plays the running game's own menu click (SE_SELECT, rendered from the ROM -
@@ -26,8 +27,9 @@ val LocalGameSilent = staticCompositionLocalOf<() -> Boolean> { { false } }
  */
 fun Modifier.soundClickable(enabled: Boolean = true, onClick: () -> Unit): Modifier = composed {
     val sound = LocalClickSound.current
-    val click = { onClick(); sound() }
-    menuFocusAction(enabled, click).clickable(enabled = enabled, onClick = click)
+    val here = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+    val click = { FocusJump.from = here; onClick(); sound() }
+    menuFocusAction(enabled, click).focusRequester(here).clickable(enabled = enabled, onClick = click)
 }
 
 /** [soundClickable] with the caller's [interactionSource] / [indication], like [clickable]'s overload. */
@@ -38,19 +40,25 @@ fun Modifier.soundClickable(
     onClick: () -> Unit,
 ): Modifier = composed {
     val sound = LocalClickSound.current
-    val click = { onClick(); sound() }
-    menuFocusAction(enabled, click).clickable(interactionSource = interactionSource, indication = indication, enabled = enabled, onClick = click)
+    val here = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+    val click = { FocusJump.from = here; onClick(); sound() }
+    menuFocusAction(enabled, click).focusRequester(here)
+        .clickable(interactionSource = interactionSource, indication = indication, enabled = enabled, onClick = click)
 }
 
 /** A silent clickable with the same portable controller activation as [soundClickable]. */
 fun Modifier.menuClickable(enabled: Boolean = true, role: androidx.compose.ui.semantics.Role? = null,
                            onClick: () -> Unit): Modifier = composed {
-    menuFocusAction(enabled, onClick).clickable(enabled = enabled, role = role, onClick = onClick)
+    val here = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+    val click = { FocusJump.from = here; onClick() }
+    menuFocusAction(enabled, click).focusRequester(here).clickable(enabled = enabled, role = role, onClick = click)
 }
 
 fun Modifier.menuClickable(interactionSource: MutableInteractionSource, indication: Indication?,
                            enabled: Boolean = true, role: androidx.compose.ui.semantics.Role? = null,
                            onClick: () -> Unit): Modifier = composed {
-    menuFocusAction(enabled, onClick).clickable(interactionSource = interactionSource, indication = indication,
-        enabled = enabled, role = role, onClick = onClick)
+    val here = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+    val click = { FocusJump.from = here; onClick() }
+    menuFocusAction(enabled, click).focusRequester(here).clickable(interactionSource = interactionSource, indication = indication,
+        enabled = enabled, role = role, onClick = click)
 }

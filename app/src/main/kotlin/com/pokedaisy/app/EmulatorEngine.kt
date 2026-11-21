@@ -1564,7 +1564,7 @@ class EmulatorEngine(
             if (wideApplied == WideScreen.OFF || (wideCamera == null && !probeOnly)) wideScene = -1
             gameSession.observeField(
                 if (gba || nds) fieldScreen && !mapOpen && !(nds && fieldState and MgbaCore.FIELD_TEXT != 0) else wideScene == WideCamera.SCENE_FIELD,
-                wideScene, battleInput.gameState, battleInput.holdFrame)
+                wideScene, battleInput.gameState, battleInput.holdFrame, flying = gba && flightState != MgbaCore.FLIGHT_IDLE)
             if (onField.value != gameSession.onField) onField.value = gameSession.onField
         }
 

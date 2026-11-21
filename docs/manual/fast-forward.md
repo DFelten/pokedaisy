@@ -68,7 +68,7 @@ Each one is `SAME` (the default: it follows `GAME SPEED`, like walking around do
 
 ## Instant text
 
-Turn on `INSTANT TEXT` in the companion's `SETTINGS`, `GAMEPLAY` group, and the words in a text box appear at once, in conversations and in battles alike. Nothing else changes: the music and the rest of the game stay at their normal speed, and a box still waits for your press where the game would. That makes it different from `TEXT SPEED`, which runs the whole game faster while a box is up.
+Turn on `INSTANT TEXT` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE`, and the words in a text box appear at once, in conversations and in battles alike. Nothing else changes: the music and the rest of the game stay at their normal speed, and a box still waits for your press where the game would. That makes it different from `TEXT SPEED`, which runs the whole game faster while a box is up.
 
 It changes the game while it runs, never your ROM file or your save, and you can switch it off at any time.
 
