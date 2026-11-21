@@ -24,7 +24,7 @@ class LibraryCoordinator(
     private val changed: (Change) -> Unit = {},
 ) {
     enum class Change { QUERY, VIEW, SORT, GRID }
-    enum class Dialog { SEARCH, SORT }
+    enum class Dialog { SEARCH, SORT, LAYOUT }
     var section by mutableStateOf(LibrarySection.GAMES)
         private set
     var query by mutableStateOf("")
@@ -34,6 +34,7 @@ class LibraryCoordinator(
     var settingsPage by mutableStateOf<String?>(null)
         private set
     val grid get() = preferences().grid
+    val layout get() = preferences().layout
     val sort get() = preferences().sort
     val view get() = preferences().view
 
@@ -59,7 +60,13 @@ class LibraryCoordinator(
         dismiss(Dialog.SORT)
         changed(Change.SORT)
     }
-    fun toggleGrid() { preferences().setGrid(!grid); changed(Change.GRID) }
+    /** The header's view button: LIBRARY VIEW's pick-list (list, grid, the immersive views). */
+    fun toggleGrid() { dialog = Dialog.LAYOUT }
+    fun selectLayout(value: LibraryLayout) {
+        preferences().setLayout(value)
+        dismiss(Dialog.LAYOUT)
+        changed(Change.GRID)
+    }
 
     /** Root navigation only; native and shared modal handlers get first refusal. */
     fun back(): Boolean = when {

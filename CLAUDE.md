@@ -328,7 +328,25 @@ BACKGROUND once a picture exists), themes from a JSON file (`CustomThemes.parse`
 ids from 1000, in `themeById` / `availableThemes`; the format is in docs/manual/screen.md) and TTF / OTF fonts (`CustomFont`, worn as
 `AppFont.CUSTOM` + `AppFonts.custom`, sized by the file's OS/2 cap height, `FontFileInfo`). A label's font in a pick-list is a
 `FontChoice` (an `AppFont` or a `CustomFont`). ui-preview: `withMyLook()`, `demoLookPicture()` (drawn in code: never a real photo or a
-third-party font), `settings-my-look*`, `library-my-look*`, `$g-party-my-look`. RETRO's SUMMARY MINT build wears MODERN's own blues (`retroStylePalette`,
+third-party font), `settings-my-look*`, `library-my-look*`, `$g-party-my-look`. **MY LOOK round two** (2026-11-23, the user's requests; NEW tags
+`THEME_EDITOR`, `MOVING_BACKGROUNDS`, `SIDE_BARS`, `TAB_ICONS`, `HUD_EDITOR`, `TOUCH_LAYOUTS`, `LIBRARY_VIEWS`): themes made in the app (CREATE A
+THEME, `Screen.THEME_EDIT` in SettingsActivity, `ThemeDraft` / `ThemeFiles` in `theme/ThemeFiles.kt`: `theme-<id>.json` + its pictures in
+`theme-<id>/`, its font one of MY LOOK's fonts by `fontFile`), exported / added as a pack (`ThemePack`: a zip of `theme.json`, `font.ttf|otf`
+and `LookSlot` files, nothing else; unzipped / written by the app's `ThemePackFiles`). Pictures are `LookSlot`s (APP, COMPANION, LEFT_BAR,
+RIGHT_BAR), still or moving (GIF / WebP: `AnimatedPictures.host` = `AndroidAnimatedPictures`, AnimatedImageDrawable on Android 9+, drawn by
+`LookPictureImage`; LIGHT COMPANION holds the companion's on its first frame). A worn theme's pictures show where the player's setting is
+DEFAULT; picking a theme with a font wears it (`pickTheme` -> `wearThemeFont`). **Every added file goes through `LookLimits`** (the user's
+rule: checked by its bytes, size-capped; `FontFileInfo.problem`, `PictureKind` / `PictureMotion`, the zip's caps in `ThemePackFiles.unzip`).
+SIDE BARS (`SideBars`, `Prefs.sideBars`; GAME SCREEN on both screens): DEFAULT (theme's bar pictures, else the DS blur / black) / BLACK / MY
+PICTURES, drawn by `SideBarsFill` in `sideBarsView` (behind the game in `GameViewportView`, `onContent` gives the game's rect) or inside
+the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / `ModernGlyph`. Several
+custom layouts: touch (`TouchControlsStyle.customs` / `customIndex`, `TouchCustom`, prefs `touch_layouts`; EDIT LAYOUT on a preset makes a new
+one, never writes over another) and HUD (`FieldHudStyle.customs` / `custom`, `HudCustom` places per `HudBlock` as shares of the room;
+`HudEditor` over the game from the companion's HUD > EDIT LAYOUT, `CustomHudLayout`). LIBRARY VIEW (`LibraryLayout`, `Prefs.libraryViewMode`
+by ordinal: LIST / GRID / CARTRIDGES / CAROUSEL / SPOTLIGHT; the header's view button opens its pick-list): the immersive three are
+`LibraryShowcaseView` over the host's `LibraryShowcase` (cover, ScreenScraper's fanart / wheel, facts, menu); our own cartridge drawings,
+never a console maker's art. **ScreenScraper is on for players** (2026-11-23: `featureFlag("screenScraper", default = true)`; its row's words
+are back in `SETTING_KEYWORDS`, the manual has "Game media from ScreenScraper"). RETRO's SUMMARY MINT build wears MODERN's own blues (`retroStylePalette`,
 the user's call: the same colours in both views; its list frame band 2 px) and **a THEME moves the whole
 style to its hue** (`themedStylePalette`: `rehued` shifts the style's own colour family, SUMMARY MINT's greens / MODERN's blues, keeping
 saturation and lightness; `themed` then leaves colours already in the theme's hue alone) - before, themes only tinted the greys and

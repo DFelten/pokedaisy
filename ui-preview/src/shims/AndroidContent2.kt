@@ -44,6 +44,7 @@ class ClipboardManager { fun setPrimaryClip(c: ClipData) {} }
 
 class ContentResolver {
     fun openInputStream(u: Uri): java.io.InputStream? = null
+    fun openOutputStream(u: Uri): java.io.OutputStream? = null
     fun query(u: Uri, a: Array<String>?, b: String?, c: Array<String>?, d: String?): android.database.Cursor? = null
     fun takePersistableUriPermission(u: Uri, f: Int) {}
 }

@@ -210,7 +210,15 @@ fun CompanionSettingsScreen(
                         // The groups and pages where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
                         .let { rows -> if (settings.shownRows == null) regroupSettings(rows) { name -> page = if (name == BATTLE_PAGE) Page.BATTLE else Page.QOL } else rows }
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
-                    Page.TABS -> COMPANION_TABS.map { id ->
+                    Page.TABS -> listOf(
+                        // SHOW AS: the chips' names, or each tab's icon (RETRO's pixel tiles, MODERN's glyphs).
+                        SettingRow(tk("SHOW AS"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) tk("ICONS") else tk("NAMES"),
+                            labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS), subtitle = "The tabs' names, or their icons") {
+                            com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeTabIcons(!it.tabIcons) }
+                            tick++
+                        },
+                        groupTitle(tk("TABS")),
+                    ) + COMPANION_TABS.map { id ->
                         val shown = id in settings.companionTabs
                         // A tab this game doesn't have (DEX, GUIDE) keeps its setting for the games that do.
                         if (id !in availableTabs) return@map SettingRow(companionTabLabel(id), tk("N/A")) {}
@@ -296,6 +304,7 @@ fun CompanionSettingsScreen(
                         settings.fieldHud, settings.fieldHudStyle,
                         setOn = { settings.setFieldHud(it); tick++ },
                         setStyle = { settings.setFieldHudStyle(it); tick++ },
+                        onEdit = settings.editHudLayout,
                     ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.QUICK_MENU -> quickMenuRows(
                         settings.quickMenuActions, KeyCapture.labels(settings.hotkeyBindings()[Hotkeys.Action.QUICK_MENU]), settings.quickMenuStyle,
@@ -933,6 +942,18 @@ private fun homeRows(
                 labelBadge = s.pictureBadge ?: NewFeatures.badge(NewFeatures.ZOOM_SETTING),
             ) { select(Selector(tk("ZOOM"), labels, now) { l -> s.setZoomLevel(labels.indexOf(l)); changed() }) }
         },
+        // SIDE BARS: beside a game that doesn't fill the screen (the pictures are picked on the top screen, MY LOOK).
+        com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+            val now = look.sideBars
+            SettingRow(tk("SIDE BARS"), tk(now.label), subtitle = "Beside a game that doesn't fill the screen",
+                labelBadge = NewFeatures.badge(NewFeatures.SIDE_BARS)) {
+                val choices = com.pokedaisy.app.companion.ui.theme.SideBars.entries
+                select(Selector(tk("SIDE BARS"), choices.map { it.label }, now.label) { l ->
+                    choices.firstOrNull { it.label == l }?.let(look::changeSideBars)
+                    changed()
+                })
+            }
+        },
         // EXPAND only: whether a conversation, sign, menu or picture over the field pulls the zoom in (battles always do).
         SettingRow(tk("AUTO ZOOM IN"), onOff(s.expandZoomOnText), setting = SharedSetting.AUTO_ZOOM_IN, labelBadge = s.pictureBadge) { s.setExpandZoomOnText(!s.expandZoomOnText); changed() }
             .takeIf { s.gameAspect == GameAspect.WIDE },
@@ -1165,7 +1186,7 @@ private fun homeRows(
             tk("BATTLE FOCUS"), onOff(s.battleFocus), setting = SharedSetting.BATTLE_FOCUS, subtitle = "Battle info on one page, no scrolling",
             labelBadge = NewFeatures.badge(NewFeatures.BATTLE_FOCUS),
         ) { s.setBattleFocus(!s.battleFocus); changed() },
-        SettingRow(tk("TAB BAR"), tr("{0} TABS", barTabs), setting = SharedSetting.TAB_BAR, labelBadge = NewFeatures.badge(NewFeatures.MORE_TAB) ?: NewFeatures.badge(NewFeatures.BOXES_TAB), opensPage = true, subtitle = "Which tabs sit next to the gear") { navigate(Page.TABS) },
+        SettingRow(tk("TAB BAR"), tr("{0} TABS", barTabs), setting = SharedSetting.TAB_BAR, labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS) ?: NewFeatures.badge(NewFeatures.MORE_TAB) ?: NewFeatures.badge(NewFeatures.BOXES_TAB), opensPage = true, subtitle = "Which tabs sit next to the gear") { navigate(Page.TABS) },
         // The game's menu click on every companion button.
         SettingRow(tk("CLICK SOUND"), onOff(s.clickSound), setting = SharedSetting.CLICK_SOUND, labelBadge = s.clickSoundBadge) { s.setClickSound(!s.clickSound); changed() },
         // RetroAchievements' challenge badges and leaderboard values in the corner (GitHub discussion #620).

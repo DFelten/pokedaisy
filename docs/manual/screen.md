@@ -3,7 +3,7 @@ title: Screen, aspect and shaders
 summary: Change how the game sits on the top screen and how it looks, from widescreen EXPAND to LCD and CRT filters, frames, themes and dark mode.
 section: player
 order: 3
-keywords: [ds resolution, internal resolution, upscaling, hd, sharper 3d, jagged, lag, slow device, input delay, light companion, widescreen, fullscreen, 16:9, 3:2, ratio, bezel, border, frame, crt, lcd, scanlines, xbrz, scalefx, upscale, unlit, backlight, pixel transparency, night, appearance, framerate, fps, performance, graphics, look, theme, themes, colour scheme, color scheme, skin, holiday, seasonal, christmas, halloween, easter, lunar new year, valentine, cherry, rainbow, custom theme, my look, wallpaper, background picture, photo, own font, ttf, otf, text size, bigger text]
+keywords: [ds resolution, internal resolution, upscaling, hd, sharper 3d, jagged, lag, slow device, input delay, light companion, widescreen, fullscreen, 16:9, 3:2, ratio, bezel, border, frame, crt, lcd, scanlines, xbrz, scalefx, upscale, unlit, backlight, pixel transparency, night, appearance, framerate, fps, performance, graphics, look, theme, themes, colour scheme, color scheme, skin, holiday, seasonal, christmas, halloween, easter, lunar new year, valentine, cherry, rainbow, custom theme, my look, wallpaper, background picture, photo, own font, ttf, otf, text size, bigger text, theme editor, make a theme, create theme, export theme, share theme, import theme, theme pack, animated background, moving background, gif, live wallpaper, black bars, side bars, blurred bars, letterbox, pillarbox]
 ---
 
 The top screen is wider than a GBA, so there's a choice to make about the space around the game. You can keep the GBA's own shape, stretch it, or let PokeDaisy draw more of the world into the gaps. On top of that you can run the picture through a filter, put a frame around it and give the app's windows a theme or a dark look.
@@ -257,21 +257,32 @@ The dates follow your device's calendar. If two holidays overlap (`LUNAR NEW YEA
 
 ## My look: your own backgrounds, themes and fonts
 
-`MY LOOK`, in the top screen's Settings under `LOOK`, is where you add your own touches: a picture behind the app and the companion, a theme you made, a font you like. Each one shows on both screens as soon as you add it, and stays until you remove it here.
+`MY LOOK`, in the top screen's Settings under `LOOK`, is where you add your own touches: themes you make or get from friends, a picture behind the app and the companion (a still one or a moving one), pictures beside the game, and fonts you like. Each one shows on both screens as soon as you add it, and stays until you remove it here.
 
-### Backgrounds
+### Making a theme
 
-`APP BACKGROUND` puts a picture behind the library and the top screen's Settings. `COMPANION BACKGROUND` puts one behind the companion's tabs, in every game, in place of the game's own backdrop. For each, `CHOOSE A PICTURE` opens your device's file picker; any PNG, JPEG or WebP works, and the app keeps a copy sized for your screen, so you can delete or move the original. The picture fills the screen and is cropped to fit.
+`CREATE A THEME` makes a new theme from the colours you wear now, puts it on, and opens its page (`EDIT THEME`). Every change there is kept at once and shows on the page around you, since the theme you edit is the one you wear. Your themes are listed under `MY THEMES`; tap one to edit it again.
 
-The list also has `DEFAULT` (the look's own backdrop), `MY PICTURE` (back to your picture after trying `DEFAULT`) and `REMOVE PICTURE`. The companion's can use `SAME AS APP`, so one picture covers both. While you play, the companion's `SETTINGS` has `COMPANION BACKGROUND` too, under `LOOK`, once you've added a picture.
+| On its page | What it does |
+| --- | --- |
+| `NAME` | Its name in the `THEME` list (20 letters at most). |
+| `COLOR` | Its colour: pick a ready one, or set it with `HUE`, `SATURATION` and `LIGHTNESS` below. The windows' tint, the values, the backdrop and its glows all follow it. |
+| `WINDOW TINT` | How much the windows take the colour, from 0 (plain grey) to 100. |
+| `PAGE` | `LIGHT` or `DARK`: the backdrop behind the library and Settings (`DARK` writes white text on it). |
+| `FONT` | A font that goes on with the theme: `NONE`, one of your fonts, or `ADD A FONT`. |
+| `APP BACKGROUND`, `COMPANION BACKGROUND` | Pictures that come with the theme: behind the app and behind the companion. |
+| `LEFT BAR`, `RIGHT BAR` | Pictures that come with the theme for the [side bars](#side-bars). |
+| `WEAR IT` | Puts the theme on (when you wear another one). |
+| `EXPORT` | Saves the theme as one file to share: its font and pictures go in it. |
+| `DELETE THEME` | Removes it. |
 
-The windows stay as they are over your picture, so the text keeps reading well. In `DARK MODE` the picture is dimmed like the game's backdrops.
+For each picture, `CHOOSE A PICTURE` opens your file picker, `USE MY PICTURE` copies the one you set under `BACKGROUNDS` or `SIDE BARS`, and `REMOVE PICTURE` takes it out. A theme's pictures show while you wear it, wherever your own setting is `DEFAULT`; a picture you picked yourself (`MY PICTURE`, `MY PICTURES`) always wins.
 
-### Your own themes
+### Sharing themes
 
-A theme is a small text file ending in `.json`. `ADD A THEME` opens the file picker; the theme goes on at once and joins the `THEME` list with its colours beside its name. `REMOVE A THEME` takes one off the list.
+`EXPORT` saves a `.zip` file: the theme, its font and its pictures. Send it to anyone with PokeDaisy: `ADD A THEME` takes it (or a single `.json` theme file) and puts the theme on, with everything that came in it. A second theme with a name you already have gets a number after its name.
 
-The smallest theme is a name and one colour: `{ "name": "MIDNIGHT", "color": "#3D6FE0" }`. The app works out the rest from that colour: the windows' tint, the values, the backdrop and its glows. Anything else you write in the file wins over what it would work out:
+A theme file is text you can write yourself too. The smallest one is a name and a colour: `{ "name": "MIDNIGHT", "color": "#3D6FE0" }`. The app works out the rest from that colour. Anything else in the file wins over what it would work out:
 
 | Field | What it sets | If you leave it out |
 | --- | --- | --- |
@@ -284,11 +295,37 @@ The smallest theme is a name and one colour: `{ "name": "MIDNIGHT", "color": "#3
 | `glows` | Two to five colours that drift over the backdrop, like `["#FFC2D4", "#C4DAFF"]`. | Three shades of `color`. |
 | `gameTint` | A colour laid over the game's backdrop in the companion, or `null` for none. | A light `color`. |
 
-Each field goes between the braces, with a comma between two fields: `{ "name": "NIGHT SKY", "color": "#3D6FE0", "darkPage": true }`. If something in the file isn't right, the app says what (a missing name, a colour it can't read) and keeps your current theme. Themes are plain files, so you can share them with friends.
+Each field goes between the braces, with a comma between two fields. In a `.zip`, that file is named `theme.json`, and it can sit beside a font named `font.ttf` (or `font.otf`) and pictures named `app-background`, `companion-background`, `bar-left` and `bar-right`, each ending in `.png`, `.jpg`, `.webp` or `.gif`. Nothing else is taken. If something in a file isn't right, the app says what and keeps your current theme.
+
+### Backgrounds
+
+`APP BACKGROUND` puts a picture behind the library and the top screen's Settings. `COMPANION BACKGROUND` puts one behind the companion's tabs, in every game, in place of the game's own backdrop. For each, `CHOOSE A PICTURE` opens your device's file picker. A still picture (PNG, JPEG, WebP) is kept as a copy sized for your screen, so you can delete or move the original. A moving one (an animated GIF or WebP) plays behind the windows; it needs Android 9 or newer, and before that it shows its first picture. With `LIGHT COMPANION` on, the companion's moving picture stays still, so a weak device keeps its time for the game. The picture fills the screen and is cropped to fit.
+
+The list also has `DEFAULT` (your theme's picture if it has one, else the look's own backdrop), `MY PICTURE` (back to your picture after trying `DEFAULT`) and `REMOVE PICTURE`. The companion's can use `SAME AS APP`, so one picture covers both. While you play, the companion's `SETTINGS` has `COMPANION BACKGROUND` too, under `LOOK`, once you've added a picture.
+
+The windows stay as they are over your picture, so the text keeps reading well. In `DARK MODE` the picture is dimmed like the game's backdrops.
+
+### Side bars
+
+When a game doesn't fill the screen (no `EXPAND`, or a DS game showing its two screens), the space beside it is the side bars. `SIDE BARS`, here and in the `GAME SCREEN` group on both screens, picks what's there:
+
+- `DEFAULT`: your theme's bar pictures if it has some, else the app's own: a DS game's picture blurred behind its screens, black for the others.
+- `BLACK`: plain black, for every game.
+- `MY PICTURES`: your `LEFT BAR` and `RIGHT BAR` pictures (when you set only one, both sides show it). Each is cropped to fill its side. When the room is above and below the game instead, `LEFT BAR` goes on top and `RIGHT BAR` at the bottom.
 
 ### Your own fonts
 
-`ADD A FONT` takes a TrueType or OpenType file (`.ttf` or `.otf`, up to 10 MB). The font goes on at once and joins the `FONT TYPE` list under its file's name, drawn in its own letters. The app sizes it so its capital letters are as tall as the other fonts', so the screens still fit. Letters the font doesn't have (Japanese or Korean, say) come from the pixel font. `REMOVE A FONT` takes one off; if you were using it, the app goes back to `PIXEL SMALL`.
+`ADD A FONT` takes a TrueType or OpenType file (`.ttf` or `.otf`). The font goes on at once and joins the `FONT TYPE` list under its file's name, drawn in its own letters. The app sizes it so its capital letters are as tall as the other fonts', so the screens still fit. Letters the font doesn't have (Japanese or Korean, say) come from the pixel font. `REMOVE A FONT` takes one off; if you were using it, the app goes back to `PIXEL SMALL`.
+
+### What the app takes
+
+Every file is checked by what's in it, not its name, before anything is kept. A file that doesn't pass is turned down with the reason, and nothing changes:
+
+- A still picture: PNG, JPEG, WebP, GIF or BMP, up to 40 MB, at least 16 pixels a side and at most 20,000.
+- A moving picture: an animated GIF or WebP, up to 30 MB and at most 4096 pixels a side.
+- A font: a whole TrueType or OpenType file with letters in it, up to 10 MB.
+- A theme: a `.json` file up to 16 KB, or a `.zip` up to 80 MB holding at most 16 files, 100 MB unpacked.
+- Up to 30 fonts and 60 themes in all.
 
 ## FPS / CPU
 

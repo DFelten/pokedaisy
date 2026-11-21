@@ -41,6 +41,7 @@ class PokeDaisyApp : Application() {
         com.pokedaisy.app.companion.ui.PictureCodec.current = AndroidPictures
         // SETTINGS > MY LOOK: the player's fonts, themes and pictures (read before the theme and font are put on).
         com.pokedaisy.app.companion.ui.theme.CustomLook.dir = filesDir.toOkioPath() / "look"
+        com.pokedaisy.app.companion.ui.theme.AnimatedPictures.host = AndroidAnimatedPictures()
         runCatching { com.pokedaisy.app.companion.ui.theme.CustomLook.load() }
         // Dates and times the device's way (STATES' save times).
         com.pokedaisy.app.companion.ui.DeviceDates.current = JvmDeviceDates

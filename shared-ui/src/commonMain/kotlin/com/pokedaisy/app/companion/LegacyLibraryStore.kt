@@ -10,7 +10,9 @@ internal class LegacyLibraryStore(read: () -> String?, private val save: (String
     }?.toMap().orEmpty()
     private fun strings(value: JsonElement?) = (value as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
     private fun value(key: String): JsonPrimitive? = when (key) {
-        "library_view_mode" -> JsonPrimitive(if ((json["grid"] as? JsonPrimitive)?.booleanOrNull != false) 1 else 0)
+        // LIBRARY VIEW's layout (LibraryLayout's ordinal) where it's kept, else the grid switch it replaced.
+        "library_view_mode" -> (json["layout"] as? JsonPrimitive)?.takeIf { it.intOrNull != null }
+            ?: JsonPrimitive(if ((json["grid"] as? JsonPrimitive)?.booleanOrNull != false) 1 else 0)
         "library_sort" -> json["sort"] as? JsonPrimitive
         "library_view" -> json["view"] as? JsonPrimitive
         "library_view_order" -> json["viewOrder"] as? JsonPrimitive
@@ -38,7 +40,7 @@ internal class LegacyLibraryStore(read: () -> String?, private val save: (String
     override fun write(values: Map<String, Any?>) {
         val updated = json.toMutableMap()
         for ((key, value) in values) when (key) {
-            "library_view_mode" -> updated["grid"] = JsonPrimitive(value == 1)
+            "library_view_mode" -> { updated["grid"] = JsonPrimitive(value == 1); updated["layout"] = JsonPrimitive(value as Int) }
             "library_sort" -> updated["sort"] = JsonPrimitive(value as Int)
             "library_view" -> updated["view"] = JsonPrimitive(value as Int)
             "library_view_order" -> updated["viewOrder"] = JsonPrimitive(value as String)

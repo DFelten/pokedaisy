@@ -596,6 +596,8 @@ data class LibraryPresentation<T>(
     val views: List<LibraryView>, val view: LibraryView, val counts: Map<LibraryView, Int>,
     val hasCatalog: Boolean, val query: String, val emptyText: String,
     val tools: List<LibraryTool> = emptyList(),
+    /** LIBRARY VIEW; a host without [LibraryShowcase] support shows the immersive ones as the grid. */
+    val layout: com.pokedaisy.app.companion.LibraryLayout = if (grid) com.pokedaisy.app.companion.LibraryLayout.GRID else com.pokedaisy.app.companion.LibraryLayout.LIST,
 )
 
 typealias LibraryActions = com.pokedaisy.app.companion.LibraryActions
@@ -617,8 +619,8 @@ private fun <T> RowScope.LibraryHeaderButtons(
             Modifier.focusRequester(focus.header), compact = compact, onClick = actions.sort)
         DisposableEffect(focus) { focus.headerAttached = true; onDispose { focus.headerAttached = false } }
         LibraryHeaderIcon(Icons.Filled.Search, tr("SEARCH"), m, compact = compact, onClick = actions.search)
-        LibraryHeaderIcon(if (state.grid) LibraryIcons.ViewList else LibraryIcons.GridView,
-            tr("Toggle view"), m, compact = compact, onClick = actions.toggleGrid)
+        LibraryHeaderIcon(if (state.grid || state.layout.immersive) LibraryIcons.ViewList else LibraryIcons.GridView,
+            tr("Library view"), m, compact = compact, onClick = actions.toggleGrid)
         LibraryHeaderIcon(Icons.Filled.Add, tr("Add games"), m, compact = compact, onClick = actions.add)
         LibraryHeaderIcon(Icons.Filled.Refresh, tr("Refresh"), m, compact = compact, onClick = actions.refresh)
     }
@@ -630,6 +632,8 @@ fun <T> LibraryScreen(
     state: LibraryPresentation<T>, actions: LibraryActions, m: GbaTextMetrics, small: GbaTextMetrics,
     key: (T) -> String, modifier: Modifier = Modifier, focus: LibraryFocus = remember { LibraryFocus() },
     overlays: @Composable () -> Unit = {}, settings: @Composable ColumnScope.() -> Unit = {},
+    /** The immersive views' look at a game ([LibraryLayout.immersive]); null = this host shows them as the grid. */
+    showcase: LibraryShowcase<T>? = null,
     item: @Composable (T, () -> FocusRequester?) -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -668,7 +672,11 @@ fun <T> LibraryScreen(
                                 modifier = Modifier.padding(m.u * 4))
                         }
                     } else androidx.compose.runtime.key(state.view) {
-                        LibraryCollection(state.games, state.grid, m, key, Modifier.weight(1f), headerUp = { focus.up }, item = item)
+                        if (state.layout.immersive && showcase != null) {
+                            LibraryShowcaseView(state.games, state.layout, showcase, key, m, small, Modifier.weight(1f), headerUp = { focus.up })
+                        } else {
+                            LibraryCollection(state.games, state.grid || state.layout.immersive, m, key, Modifier.weight(1f), headerUp = { focus.up }, item = item)
+                        }
                     }
                 }
             }

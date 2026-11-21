@@ -68,9 +68,12 @@ fun touchControlsRows(
 ): List<SettingRow> {
     fun onOff(b: Boolean) = if (b) tk("ON") else tk("OFF")
     fun <T> List<T>.after(t: T): T = this[(indexOf(t) + 1) % size]
-    // null = CUSTOM, after the presets once there is one.
-    val layouts: List<TouchPreset?> = TouchPreset.entries + listOf(null)
-    val layoutNow: TouchPreset? = if (style.useCustom) null else style.preset
+    // The presets, then each of the player's layouts (by place in [TouchControlsStyle.customs]: a tap steps through all).
+    val choices: List<Pair<String, (TouchControlsStyle) -> TouchControlsStyle>> =
+        TouchPreset.entries.map { p -> p.label to { st: TouchControlsStyle -> st.copy(preset = p, useCustom = false) } } +
+            style.customs.mapIndexed { i, c -> c.name to { st: TouchControlsStyle -> st.pickCustom(i) } }
+    val layoutNow = style.currentCustom?.name ?: if (style.useCustom) CUSTOM_LAYOUT else style.preset.label
+    val custom = style.currentCustom != null
     // A skin draws its own buttons: the rows that shape the drawn ones stand aside while it's on.
     val skinned = style.skinFor(skinSystem)?.let { id -> skins.any { it.id == id } } == true
     val skinNote = "A skin is in use"
@@ -78,12 +81,19 @@ fun touchControlsRows(
         SettingRow(tk("SHOW"), style.show.label, subtitle = "AUTO: hidden with a controller") {
             set(style.copy(show = TouchShow.entries.after(style.show)))
         },
-        SettingRow(tk("LAYOUT"), layoutNow?.label ?: CUSTOM_LAYOUT, enabled = !skinned, subtitle = if (skinned) skinNote else "Where the buttons sit") {
-            // The presets, then CUSTOM once there is one.
-            val next = if (style.hasCustom) layouts.after(layoutNow) else TouchPreset.entries.after(style.preset)
-            if (!skinned) set(if (next == null) style.copy(useCustom = true) else style.copy(preset = next, useCustom = false))
+        SettingRow(tk("LAYOUT"), layoutNow, enabled = !skinned, subtitle = if (skinned) skinNote else "Where the buttons sit",
+            labelBadge = NewFeatures.badge(NewFeatures.TOUCH_LAYOUTS).takeIf { style.hasCustom }) {
+            val at = choices.indexOfFirst { it.first == layoutNow }
+            if (!skinned) set(choices[(at + 1).mod(choices.size)].second(style))
         },
-        SettingRow(tk("EDIT LAYOUT"), null, opensPage = true, enabled = !skinned, subtitle = if (skinned) skinNote else "Drag the buttons into place") { if (!skinned) onEdit() },
+        SettingRow(
+            tk("EDIT LAYOUT"), null, opensPage = true, enabled = !skinned,
+            subtitle = if (skinned) skinNote else if (custom) "Drag the buttons into place" else "Makes a layout of your own from this one",
+        ) { if (!skinned) onEdit() },
+        // A new layout of the player's, starting where the buttons are now (the preset's places), then EDIT LAYOUT.
+        SettingRow(tk("NEW LAYOUT"), null, enabled = !skinned, subtitle = "Another layout of your own, kept with the others") {
+            if (!skinned) { set(style.newCustom()); onEdit() }
+        }.takeIf { style.hasCustom },
         // Nothing to move in EXPAND + UNDER GAME's strip (it's the buttons' own height), nor a CUSTOM layout.
         (expand && underGame == true && touchShown).let { inStrip ->
             SettingRow(
@@ -126,9 +136,9 @@ fun touchControlsRows(
             set(next)
             feel(next.vibration)
         }.takeIf { style.vibrate },
-        SettingRow(tk("RESET LAYOUT"), null, subtitle = "Forget CUSTOM, back to the preset") {
-            set(style.copy(useCustom = false, portrait = TouchLayout(), landscape = TouchLayout()))
-        }.takeIf { style.hasCustom },
+        SettingRow(tk("DELETE LAYOUT"), null, subtitle = tr("Forget {0}, back to the preset", style.currentCustom?.name ?: "")) {
+            set(style.deleteCustom())
+        }.takeIf { custom },
     ) + skinRows(style, skins, skinUi, onImportSkin, skinBadge) + listOf(groupTitle(tk("EXTRA BUTTONS"))) + TouchButton.extras.filter { it in buttons }.map { b ->
         SettingRow(
             b.label, onOff(b in style.extras), enabled = !skinned, subtitle = if (skinned) skinNote else extraSubtitle(b),

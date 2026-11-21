@@ -1163,7 +1163,7 @@ fun OptionConfirm(
 @Composable
 fun GameBackdrop(game: GameKind, modifier: Modifier = Modifier.fillMaxSize()) {
     // MY LOOK > COMPANION BACKGROUND: the player's picture, whatever the game.
-    com.pokedaisy.app.companion.ui.theme.rememberLookPicture(companion = true)?.let { PictureBackdrop(it, modifier); return }
+    if (com.pokedaisy.app.companion.ui.theme.LookBackdrop(companion = true, modifier, OptionColors.backdropScrim)) return
     // VIEW MODERN: its own page, but a 3DS game keeps its own (its smooth skin is the game's).
     if (modernView && !game.isN3ds) { ModernBackdrop(modifier); return }
     // Dark mode: the game's art at night, under a blue-black scrim (Gen 1's white nearly all the way).
@@ -1216,25 +1216,6 @@ fun GameBackdrop(game: GameKind, modifier: Modifier = Modifier.fillMaxSize()) {
     }
 }
 
-/**
- * The player's picture behind a screen (MY LOOK): it fills the screen, cropped to its shape and smoothly scaled; DARK MODE
- * dims it under the backdrops' night scrim so the windows over it still read as they do on the game's art.
- */
-@Composable
-fun PictureBackdrop(picture: ImageBitmap, modifier: Modifier = Modifier.fillMaxSize()) {
-    val scrim = OptionColors.backdropScrim
-    Canvas(modifier) {
-        val k = maxOf(size.width / picture.width, size.height / picture.height)
-        val w = (picture.width * k).roundToInt()
-        val h = (picture.height * k).roundToInt()
-        drawImage(
-            picture, dstOffset = IntOffset(((size.width - w) / 2f).roundToInt(), ((size.height - h) / 2f).roundToInt()),
-            dstSize = IntSize(w, h), filterQuality = FilterQuality.Medium,
-        )
-        if (scrim > 0f) drawRect(NIGHT.copy(alpha = scrim))
-    }
-}
-
 /** HeartGold / SoulSilver's party screen background (headless capture). */
 private val HGSS_BACKDROP = Color(0xFF8ADBDB)
 
@@ -1250,7 +1231,7 @@ fun AppBackdrop(
     logos: Boolean = false,
 ) {
     // MY LOOK's pictures: the app's behind the top screen's pages, the companion's while a game's backdrop isn't known yet.
-    com.pokedaisy.app.companion.ui.theme.rememberLookPicture(companion = OptionColors.inGame)?.let { PictureBackdrop(it); return }
+    if (com.pokedaisy.app.companion.ui.theme.LookBackdrop(companion = OptionColors.inGame, scrim = OptionColors.backdropScrim)) return
     // VIEW MODERN: its own page everywhere.
     if (modernView) { ModernBackdrop(); return }
     if (!OptionColors.inGame) {

@@ -229,6 +229,8 @@ fun pickTheme(spec: ThemeSpec) {
         prefs.appTheme = spec.id
     }
     AppColors.applyTheme(spec)
+    // An added theme with a font of its own puts it on (FONT TYPE can change it after).
+    wearThemeFont(spec)
 }
 
 /** The saved theme ([themeToWear]: a limited one that has ended gives way), put on and saved again if it changed. */

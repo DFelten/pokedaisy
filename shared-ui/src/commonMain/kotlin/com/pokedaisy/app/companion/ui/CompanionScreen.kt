@@ -522,7 +522,7 @@ fun CompanionScreen(
                         } else {
                             // A blocked game's tabs can be opened: each shows its notice (the reason and its link).
                             val usable = !snapshot.unsupported || snapshot.blocked != null || title == "ACHIEVEMENTS"
-                            TabChip(companionTabLabel(title), selectedIdx == i && usable, Modifier.weight(1f).testTag("tab-$title"), enabled = usable, slot = i, onClick = open)
+                            TabChip(companionTabLabel(title), selectedIdx == i && usable, Modifier.weight(1f).testTag("tab-$title"), enabled = usable, slot = i, id = title, onClick = open)
                         }
                     }
                     if (shoulderHints > 0f) ShoulderHint("R", shoulderHints) { stepTab(1) }
@@ -1207,10 +1207,25 @@ private fun ShoulderHint(letter: String, shown: Float, onClick: () -> Unit) {
  * grey when idle, white with the value-red label when selected. RAINBOW gives each a colour by its [slot] in the bar.
  */
 @Composable
-internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, slot: Int = 0, onClick: () -> Unit) {
+internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modifier, enabled: Boolean = true, slot: Int = 0, id: String? = null, onClick: () -> Unit) {
     val m = rememberTabMetrics()
     val rainbow = OptionColors.rainbow(slot)
     val key = if (rainbow == null) OptionColors.tabKey(selected) else null
+    // TAB BAR > SHOW AS ICONS: the tab's icon (MORE's pixel tile in RETRO, its glyph in MODERN) where it has one.
+    if (id != null && com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) {
+        val modern = modernView
+        val glyph = if (modern) ModernGlyph.forTab(id) else null
+        val pixel = if (!modern) TabIcons.forTab(id) else null
+        if (glyph != null || pixel != null) {
+            val tint = if (rainbow != null) rainbow.text else key?.text ?: if (selected) OptionColors.value else OptionColors.label
+            TabChipShell(selected, m, modifier.fillMaxHeight().alpha(if (enabled) 1f else 0.4f).semantics { contentDescription = label }, onClick, enabled, rainbow) {
+                // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph in the label's colour, a little larger than a capital.
+                if (glyph != null) ModernIcon(glyph, tint, Modifier.size(m.u * 22))
+                else PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * TabIcons.SIZE))
+            }
+            return
+        }
+    }
     TabChipShell(selected, m, modifier.fillMaxHeight().alpha(if (enabled) 1f else 0.4f), onClick, enabled, rainbow) {
         GbaText(
             label,

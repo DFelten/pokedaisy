@@ -153,6 +153,20 @@ class FieldHudScreenshotTest {
 
     @Test fun railsWindow() = shot(FieldHudStyle(FieldHudLayout.RAILS, FieldHudLook.WINDOW))
 
+    /** A layout of the player's (HUD > LAYOUT's own, EDIT LAYOUT's places): the party top left, the minimap bottom right. */
+    @Test fun customLayout() = shot(FieldHudStyle().withPlaces(mapOf(
+        com.pokedaisy.app.companion.HudBlock.PARTY to com.pokedaisy.app.companion.HudPlace(0f, 0f),
+        com.pokedaisy.app.companion.HudBlock.MAP to com.pokedaisy.app.companion.HudPlace(1f, 1f),
+        com.pokedaisy.app.companion.HudBlock.BALLS to com.pokedaisy.app.companion.HudPlace(0f, 1f),
+        com.pokedaisy.app.companion.HudBlock.BUTTONS to com.pokedaisy.app.companion.HudPlace(0.5f, 1f),
+    )))
+
+    /** EDIT LAYOUT open over the game: each part framed, DONE / CORNERS / CANCEL at the top. */
+    @Test fun editLayout() {
+        HudEditor.begin(FieldHudStyle()) {}
+        try { shot(FieldHudStyle()) } finally { HudEditor.close() }
+    }
+
     @Test fun dockGlass() = shot(FieldHudStyle(FieldHudLayout.DOCK))
 
     @Test fun dockWindow() = shot(FieldHudStyle(FieldHudLayout.DOCK, FieldHudLook.WINDOW))

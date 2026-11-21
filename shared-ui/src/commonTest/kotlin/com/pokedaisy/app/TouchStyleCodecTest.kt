@@ -51,4 +51,47 @@ class TouchStyleCodecTest {
         assertEquals(TouchPreset.SIDES, read().preset)
         assertTrue(read().portrait.isEmpty)
     }
+
+    /** Several layouts of the player's (2026-11-23): each kept by name, a preset never written over, the one before
+     * several were kept becomes MY LAYOUT 1. */
+    @Test fun customLayoutsAreKeptApart() {
+        val a = TouchLayout(mapOf(TouchButton.A to TouchPlace(TouchPlace.Anchor.END, -40f, TouchPlace.Anchor.END, -40f)))
+        val b = TouchLayout(mapOf(TouchButton.B to TouchPlace(TouchPlace.Anchor.START, 20f, TouchPlace.Anchor.END, -30f)))
+        // EDIT LAYOUT on a preset makes a layout of the player's; again on another preset, a second one.
+        val one = TouchControlsStyle().withLayout(portrait = false, a)
+        assertEquals(listOf("MY LAYOUT 1"), one.customs.map { it.name })
+        val two = one.copy(useCustom = false, preset = TouchPreset.CLASSIC).withLayout(portrait = false, b)
+        assertEquals(listOf("MY LAYOUT 1", "MY LAYOUT 2"), two.customs.map { it.name })
+        assertEquals(a, two.customs[0].landscape)
+        assertEquals(b, two.landscape)
+        // Back to the first: its places, untouched.
+        assertEquals(a, two.pickCustom(0).landscape)
+        write(two)
+        assertEquals(two, read())
+        // DELETE LAYOUT: the one in use goes, the preset comes back.
+        val left = two.deleteCustom()
+        assertEquals(listOf("MY LAYOUT 1"), left.customs.map { it.name })
+        assertFalse(left.useCustom)
+    }
+
+    @Test fun theOneLayoutKeptBeforeBecomesTheFirst() {
+        val a = TouchLayout(mapOf(TouchButton.A to TouchPlace(TouchPlace.Anchor.END, -40f, TouchPlace.Anchor.END, -40f)))
+        saved["touch_use_custom"] = true
+        saved["touch_layout_landscape"] = a.encode()
+        val style = read()
+        assertEquals(listOf("MY LAYOUT 1"), style.customs.map { it.name })
+        assertEquals(a, style.currentCustom?.landscape)
+    }
+
+    @Test fun hudLayoutsRoundTrip() {
+        val c = HudCustom("MY LAYOUT 1", mapOf(HudBlock.PARTY to HudPlace(0.25f, 1f), HudBlock.MAP to HudPlace(0f, 0f)))
+        assertEquals(c, HudCustom.decode(c.encode()))
+        val style = FieldHudStyle().withPlaces(c.places)
+        assertEquals("MY LAYOUT 1", style.layoutLabel)
+        // LAYOUT steps through the built-in ones, then the player's, then round.
+        var s = style.copy(custom = -1)
+        val seen = (0 until FieldHudLayout.entries.size + 1).map { s = s.nextLayout(); s.layoutLabel }
+        assertEquals(FieldHudLayout.entries.drop(1).map { it.label } + "MY LAYOUT 1" + FieldHudLayout.entries.first().label, seen)
+        assertNull(style.deleteCustom().currentCustom)
+    }
 }

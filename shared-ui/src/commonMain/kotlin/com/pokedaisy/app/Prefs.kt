@@ -634,13 +634,16 @@ class Prefs(
                 size = pick(com.pokedaisy.app.companion.FieldHudSize.values(), "field_hud_size", d.size),
                 hidden = p.getString("field_hud_hidden", null).orEmpty().split(',')
                     .mapNotNull { n -> com.pokedaisy.app.companion.FieldHudPart.values().firstOrNull { it.name == n } }.toSet(),
-            )
+                customs = p.getString("field_hud_layouts", null).orEmpty().lines().mapNotNull(com.pokedaisy.app.companion.HudCustom::decode),
+            ).let { it.copy(custom = p.getInt("field_hud_custom", -1).takeIf { i -> i in it.customs.indices } ?: -1) }
         }
         set(v) = p.edit()
             .putString("field_hud_layout", v.layout.name)
             .putString("field_hud_look", v.look.name)
             .putString("field_hud_size", v.size.name)
             .putString("field_hud_hidden", v.hidden.joinToString(",") { it.name })
+            .putString("field_hud_layouts", v.customs.joinToString("\n") { it.encode() })
+            .putInt("field_hud_custom", v.custom)
             .apply()
 
     /** Whether the game has a status bar on top (game, location, money, clock, battery). */
@@ -1045,6 +1048,16 @@ class Prefs(
     var companionBackground: Int
         get() = p.getInt("companion_background", 0)
         set(v) = p.edit().putInt("companion_background", v).apply()
+
+    /** SIDE BARS: what's beside a game that doesn't fill the screen (a SideBars ordinal: DEFAULT, BLACK, MY PICTURES). */
+    var sideBars: Int
+        get() = p.getInt("side_bars", 0)
+        set(v) = p.edit().putInt("side_bars", v).apply()
+
+    /** COMPANION > TAB BAR's SHOW AS: false = the tabs' names, true = their icons. */
+    var tabIcons: Boolean
+        get() = p.getBoolean("tab_icons", false)
+        set(v) = p.edit().putBoolean("tab_icons", v).apply()
 
     /** The font RETRO wore before VIEW MODERN put on its own (AppViews.set gives it back). */
     var appFontRetro: Int

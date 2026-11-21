@@ -231,6 +231,9 @@ interface CompanionSettings : StoredCompanionSettings {
     /** EDIT LAYOUT over the running game (the companion steps aside while it's open). */
     fun editTouchLayout() {}
 
+    /** HUD > EDIT LAYOUT over the running game (the companion steps aside); null = this host can't (the row says why). */
+    val editHudLayout: (() -> Unit)? get() = null
+
     /** The touch controls are on the game's screen now (SHOW, a controller): EXPAND's UNDER GAME needs them. */
     val touchControlsShown: Boolean get() = true
 

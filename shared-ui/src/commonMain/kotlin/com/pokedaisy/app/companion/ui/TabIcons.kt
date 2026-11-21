@@ -259,6 +259,29 @@ internal object TabIcons {
         ),
     )
 
+    /** BATTLE (the tab bar's icons, TAB BAR > SHOW AS ICONS): two swords crossed, silver blades and gold hilts. */
+    private val battle = TabIcon(
+        listOf(
+            "kk............kk",
+            "kwk..........kwk",
+            ".kwk........kwk.",
+            "..kwk......kwk..",
+            "...kwk....kwk...",
+            "....kwk..kwk....",
+            ".....kwkkwk.....",
+            "......kwwk......",
+            "......kwwk......",
+            ".....kwkkwk.....",
+            "..kkkwk..kwkkk..",
+            "..kyyk....kyyk..",
+            "...kyk....kyk...",
+            "..kyyyk..kyyyk..",
+            ".kbk.kk..kk.kbk.",
+            ".kk..........kk.",
+        ),
+        mapOf('k' to OUTLINE, 'w' to Color(0xFFD8D8E0), 'y' to Color(0xFFF8C830), 'b' to Color(0xFF8A5A2A)),
+    )
+
     /** A tab id's icon; null for a tab without one (BATTLE and SETTINGS never sit on the MORE grid). */
     fun forTab(id: String): TabIcon? = when (id) {
         "PARTY" -> party
@@ -271,6 +294,7 @@ internal object TabIcons {
         "CARD" -> card
         "STATES" -> states
         "ACHIEVEMENTS" -> achievements
+        "BATTLE" -> battle
         else -> null
     }
 }

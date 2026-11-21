@@ -108,7 +108,6 @@ fun filterRows(rows: List<SettingRow>, query: String): List<SettingRow> {
  * flag goes and document it.
  */
 val FLAGGED_SETTING_KEYWORDS: Map<String, String> = mapOf(
-    "ScreenScraper" to "scraper scraping media artwork art box art boxart covers screenshots logos wheel fanart videos synopsis",
     // CO-OP (FeatureFlags.coop): moves to SETTING_KEYWORDS, with its manual page, when the flag goes.
     "LINK" to "co-op coop connection connected status partner online",
     "PAIR" to "co-op coop multiplayer multi player two player online friend partner link invite qr code join netplay play together",
@@ -125,6 +124,11 @@ val FLAGGED_SETTING_KEYWORDS: Map<String, String> = mapOf(
  * itself is matched in the language on screen too.
  */
 val SETTING_KEYWORDS: Map<String, String> = mapOf(
+    "ScreenScraper" to "scraper scraping media artwork art box art boxart covers screenshots logos wheel fanart videos synopsis",
+    "SIDE BARS" to "black bars letterbox pillarbox blurred bars blur borders sides background beside the game",
+    "SHOW AS" to "tab icons icons instead of names tab names",
+    "NEW LAYOUT" to "several layouts multiple layouts another layout save layout custom",
+    "DELETE LAYOUT" to "remove layout forget layout reset layout custom",
     "HELP" to "manual docs documentation guide how to faq instructions",
     "DISCORD" to "discord server community chat support help contact report bug feedback ideas suggestions developers dev",
     "FF" to "fast forward turbo speed up",
@@ -173,7 +177,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "DARK MODE" to "dark night black theme light colors appearance auto system",
     "FONT TYPE" to "font text letters typeface readable reading pixel smooth bold system small legible modern",
     "FONT SIZE" to "font size text size bigger smaller larger small medium large zoom readable scale letters more sizes custom percent slider tiny huge",
-    "MY LOOK" to "my look customize customise personalize custom theme themes json own font fonts ttf otf upload import background wallpaper picture photo image app background companion background",
+    "MY LOOK" to "my look customize customise personalize custom theme themes json create theme make theme theme editor export share theme pack zip animated moving gif webp live wallpaper own font fonts ttf otf upload import background wallpaper picture photo image app background companion background",
     "COMPANION BACKGROUND" to "companion background wallpaper picture photo image custom my picture behind tabs",
     "VIEW" to "view look style modern retro smooth pixel design ui interface appearance new rounded",
     "RESUME GAMES" to "auto resume continue launch boot",
@@ -259,7 +263,7 @@ val SETTINGS_GROUPS: List<Pair<String, List<String>>> = listOf(
     "FF / SPEED" to emptyList(),
     "SOUND" to emptyList(),
     "GAMEPLAY" to listOf(QOL_PAGE, "FLY STYLE", "FLIGHT AREA", "NUZLOCKE", "CHEATS"),
-    "GAME SCREEN" to listOf("ASPECT", "ZOOM", "AUTO ZOOM IN", "LOOK AROUND", "DISPLAY OPTIONS", "FPS / CPU"),
+    "GAME SCREEN" to listOf("ASPECT", "SIDE BARS", "ZOOM", "AUTO ZOOM IN", "LOOK AROUND", "DISPLAY OPTIONS", "FPS / CPU"),
     "ON THE GAME" to listOf("HUD", "BATTLE BUTTONS", "HIDE BATTLE MENU"),
     "SCREENS" to listOf("COMPANION VIEW", "COMPANION BUTTON", "SWAP SCREENS", "SINGLE SCREEN", "FOLD LAYOUT", "TABLETOP CONTROLS"),
     "DS" to listOf("DS LAYOUT", "DS TOUCH SCREEN", "DS RESOLUTION", "DS CPU BOOST", "DS CORE"),
@@ -1061,6 +1065,20 @@ fun themeSwatch(label: String): (@androidx.compose.runtime.Composable () -> Unit
             }
             drawPath(disc, Color(0x33000000), style = androidx.compose.ui.graphics.drawscope.Stroke(maxOf(1f, d / 18f)))
         }
+    }
+}
+
+/** A colour's disc before an option's name (EDIT THEME's ready colours), pixel-stepped in RETRO like [themeSwatch]'s. */
+fun colorSwatch(color: Color): @androidx.compose.runtime.Composable () -> Unit = {
+    val modern = modernView
+    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+        val d = size.minDimension
+        val tl = androidx.compose.ui.geometry.Offset((size.width - d) / 2f, (size.height - d) / 2f)
+        val box = androidx.compose.ui.geometry.Size(d, d)
+        val disc = if (modern) androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(tl, box)) }
+        else pixelRoundRectPath(box, d / 2f, gbaPixelPx(), tl)
+        drawPath(disc, color)
+        drawPath(disc, Color(0x33000000), style = androidx.compose.ui.graphics.drawscope.Stroke(maxOf(1f, d / 18f)))
     }
 }
 

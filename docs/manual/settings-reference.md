@@ -52,6 +52,7 @@ The `SPEED OPTIONS` page:
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
 | `ASPECT` | **`ORIGINAL`**, `STRETCH`, `EXPAND` | The GBA's 3:2, stretched to fill the screen, or more of the map drawn past the game's edges. Opens a preview to pick from. | [Screen](screen.md) |
+| `SIDE BARS` | **`DEFAULT`**, `BLACK`, `MY PICTURES` | What's beside a game that doesn't fill the screen: your theme's pictures or the app's own (a DS game's picture blurred), black, or your own pictures. | [Screen](screen.md#side-bars) |
 | `AUTO ZOOM IN` | **`ON`**, `OFF` | Only with `ASPECT` on `EXPAND`: conversations and signs ease the zoom back in. Battles and the game's menu screens always do. | [Screen](screen.md) |
 | `LOOK AROUND` | **`ON`**, `OFF` | Only with `ASPECT` on `EXPAND`: the right stick moves the view. | [Screen](screen.md) |
 | `DISPLAY OPTIONS` | a page | `STATUS BAR`, `SHADERS`, `OVERLAY`, `LIGHT COMPANION` and, on a phone, `COMPANION`; see the next table. | [Screen](screen.md) |
@@ -82,7 +83,7 @@ The `SHADERS` page:
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
-| `HUD` | **`ON`**, `OFF` (a page) | Your party, a minimap, your Poké Balls and `BAG` / `WILD` buttons on the game while you walk around, with `LAYOUT`, `LOOK`, `SIZE` and which parts show. | [HUD](hud.md) |
+| `HUD` | **`ON`**, `OFF` (a page) | Your party, a minimap, your Poké Balls and `BAG` / `WILD` buttons on the game while you walk around, with `LAYOUT` (the ready-made ones and your own), `EDIT LAYOUT` (in a game), `DELETE LAYOUT`, `LOOK`, `SIZE` and which parts show. | [HUD](hud.md) |
 | `BATTLE BUTTONS` | **`ON`**, `OFF` | Only on a device with one screen (or with `SINGLE SCREEN` on): `FIGHT`, `POKéMON` and `RUN` at the top right, beside the battle. | [Battle](battle.md) |
 | `HIDE BATTLE MENU` | `OFF`, **`ON`** | Only on a device with two screens: the game's own `FIGHT` / `BAG` menu and move list left off the game's screen, since you pick on the companion. | [Battle](battle.md#on-two-screens-hide-battle-menu) |
 
@@ -117,7 +118,7 @@ The `SHADERS` page:
 | `DARK MODE` | **`OFF`**, `ON`, `AUTO` | Dark windows on both screens. `AUTO` follows the device. | [Screen](screen.md) |
 | `FONT TYPE` | **`PIXEL SMALL`**, `PIXEL`, `MODERN`, `SMOOTH`, `SMOOTH BOLD`, `SYSTEM`, and the fonts you added | The app's letters on both screens: pixel art or smooth ones. The list shows each in its own letters. | [Screen](screen.md#font) |
 | `FONT SIZE` | `SMALL`, **`MEDIUM`**, `LARGE`, `MORE SIZES` (50% to 200%) | The app's text a size smaller or bigger, on both screens. | [Screen](screen.md#font) |
-| `MY LOOK` | a page | Your own backgrounds (`APP BACKGROUND`, `COMPANION BACKGROUND`), themes and fonts. | [Screen](screen.md#my-look-your-own-backgrounds-themes-and-fonts) |
+| `MY LOOK` | a page | Your own themes (`CREATE A THEME`, each theme's page with `EXPORT`, `ADD A THEME` for a shared one), backgrounds (`APP BACKGROUND`, `COMPANION BACKGROUND`, still or moving), side bars (`SIDE BARS`, `LEFT BAR`, `RIGHT BAR`) and fonts. | [Screen](screen.md#my-look-your-own-backgrounds-themes-and-fonts) |
 
 ### Achievements
 
@@ -134,6 +135,7 @@ The `SHADERS` page:
 | `GAME PATHS` | **`WHEN NAMES MATCH`**, `FULL PATH`, `OFF` | What the list shows under a game's name: its file's name only where two games share a name, every game's whole path, or nothing. | [Library](library.md#game-names) |
 | `SUPPORTED ONLY` | `ON`, **`OFF`** | Leaves games the companion can't read out of the library. Your files stay where they are. | [Library](library.md) |
 | `DUAL-SCREEN LAUNCHER` | **`ON`**, `OFF` | With two screens, the library shows the game list on one and the selected game's media on the other. Off, the plain library. | [Library](library.md#the-dual-screen-launcher) |
+| `ScreenScraper` | your username once signed in, else **`OFF`** (a page) | Your free screenscraper.fr account: box art, screenshots, logos, videos and stories for your games. | [Library](library.md#game-media-from-screenscraper) |
 | `COVER ART` | `ON` once a key is saved, else **`OFF`** (a page) | Your own free keys for RetroAchievements box art and SteamGridDB icons (`GET KEY` opens the page to make one). `REPLACE ALL` fetches every cover again. | [Library](library.md) |
 | `FOLDERS` | a page | A page for each: `ROMS FOLDERS`, your linked ROMs folders (`ADD FOLDER`, `RESCAN`, `REMOVE`); `GAME SAVES`, the folder saves go to (`CHANGE FOLDER`, `USE DEFAULT`); `ALSO LOOK IN`, other emulators' save folders; `SAVE BACKUPS`, the backup taken each time a game starts (`BACKUPS` on or off, `KEEP PER GAME`, and a folder for all of them); `SAVE STATES`, where save states are kept. | [Library](library.md), [Saves](saves.md) |
 | `HIDDEN GAMES` | **`NONE`**, or how many | Games you hid from the library with `HIDE`. Tap one to `SHOW` it again, or `SHOW ALL`. | [Library](library.md) |
@@ -146,7 +148,7 @@ The `SHADERS` page:
 | `GAME BUTTONS` | a page | Which button presses A, B, L, R, `START`, `SELECT`, `TURBO A` and `TURBO B` in every game, the DS games' `X` and `Y`, and the GBA and Game Boy games' `START 2`, `SELECT 2` and `TO COMPANION`. Press the button you want on each row. | [Controls](controls.md) |
 | `HOTKEYS` | **`ON`**, `OFF` (a page) | Shortcuts for save states, fast-forward, slow motion, rewind, `ZOOM`, muting the game, opening the companion and leaving the game. Each can be a combination of buttons, or cleared with `CLEAR`. Off, every button goes to the game. | [Controls](controls.md) |
 | `QUICK MENU` | a page | Its `STYLE` (**`RING`**, `GRID`), `LABELS` (**`ON`**, `OFF`) and which actions it shows (all of them to start with). Its button is the `QUICK MENU` hotkey. | [Controls](controls.md) |
-| `TOUCH CONTROLS` | a page | The on-screen buttons: `SHOW` (**`AUTO`**, `ALWAYS`, `NEVER`), `LAYOUT` (**`SIDES`**, `CLASSIC`, `COMPACT`, `MIRRORED`, `RAISED`, `CUSTOM`), `EDIT LAYOUT`, `POSITION` (`TOP`, **`MIDDLE`**, `BOTTOM`), `COMPANION` (upright, one-screen devices), `SIZE`, `LOOK` (**`GLASS`**, `SOLID`, `OUTLINE`, `CONSOLE`), `COLORS` (**`DARK`** and eight more), `OPACITY`, `D-PAD`, `FADE WHEN IDLE`, `VIBRATION` (and its `STRENGTH` while it's on), the skins (`GBA SKIN`, `GAME BOY SKIN`, `IMPORT SKIN`, `DELETE SKIN`) and the extra buttons (`FF`, `QUICK MENU`, turbo, save and load state, `ZOOM`, `REWIND`, `X AND Y`). A preview shows the result. | [Controls](controls.md#touch-controls) |
+| `TOUCH CONTROLS` | a page | The on-screen buttons: `SHOW` (**`AUTO`**, `ALWAYS`, `NEVER`), `LAYOUT` (**`SIDES`**, `CLASSIC`, `COMPACT`, `MIRRORED`, `RAISED`, then your own: `MY LAYOUT 1` and on), `EDIT LAYOUT`, `NEW LAYOUT`, `DELETE LAYOUT`, `POSITION` (`TOP`, **`MIDDLE`**, `BOTTOM`), `COMPANION` (upright, one-screen devices), `SIZE`, `LOOK` (**`GLASS`**, `SOLID`, `OUTLINE`, `CONSOLE`), `COLORS` (**`DARK`** and eight more), `OPACITY`, `D-PAD`, `FADE WHEN IDLE`, `VIBRATION` (and its `STRENGTH` while it's on), the skins (`GBA SKIN`, `GAME BOY SKIN`, `IMPORT SKIN`, `DELETE SKIN`) and the extra buttons (`FF`, `QUICK MENU`, turbo, save and load state, `ZOOM`, `REWIND`, `X AND Y`). A preview shows the result. | [Controls](controls.md#touch-controls) |
 
 ### App
 
@@ -257,6 +259,7 @@ The `SPEED OPTIONS` page:
 | --- | --- | --- | --- |
 | `ASPECT` | as on the top screen | A pick-list here. `EXPAND` is tagged `NOT YET` in a game that doesn't have it. | [Screen](screen.md) |
 | `ZOOM` | **`1x`**, then each step out (`1.4x`, `1.7x`...) | Only with `ASPECT` on `EXPAND`: how much of the map you see, the same steps as the `ZOOM` hotkey. Each game keeps its own. | [Screen](screen.md) |
+| `SIDE BARS` | as on the top screen | The pictures are picked on the top screen, under `MY LOOK`. | [Screen](screen.md#side-bars) |
 | `AUTO ZOOM IN` | as on the top screen | Only with `ASPECT` on `EXPAND`. | [Screen](screen.md) |
 | `LOOK AROUND` | as on the top screen | Only with `ASPECT` on `EXPAND`. | [Screen](screen.md) |
 | `DISPLAY OPTIONS` | a page | As on the top screen. | [Screen](screen.md) |
@@ -316,7 +319,7 @@ The `DISPLAY OPTIONS` page:
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
-| `TAB BAR` | **5 tabs** (a page) | Which tabs sit next to the gear: up to 5, `SHOWN` or `HIDDEN`. By default `PARTY`, `DEX`, `MAP`, `BAG` and `GUIDE`. A tab the game doesn't have gives its place to another of the game's tabs. The rest open from `MORE`, left of the gear. | [The companion](companion.md) |
+| `TAB BAR` | **5 tabs** (a page) | `SHOW AS` (**`NAMES`**, `ICONS`: each tab its picture), then which tabs sit next to the gear: up to 5, `SHOWN` or `HIDDEN`. By default `PARTY`, `DEX`, `MAP`, `BAG` and `GUIDE`. A tab the game doesn't have gives its place to another of the game's tabs. The rest open from `MORE`, left of the gear. | [The companion](companion.md) |
 | `CLICK SOUND` | **`ON`**, `OFF` | The game's own menu click on every companion button. | [The companion](companion.md) |
 | `POKéMON PICTURES` | **`GAME`**, `DETAILED` | Pokémon Red, Blue, Yellow, Gold, Silver and Crystal only: `DETAILED` shows each Pokémon's own picture instead of the game's shared icons, on the `PARTY` tab and everywhere else the companion and the HUD draw one. | [Party](party.md) |
 | `ITEM POPUPS` | **`ON`**, `OFF` | The `OBTAINED` card over the game when your bag gains an item. | [Bag](bag.md#item-gains) |

@@ -559,11 +559,12 @@ class LibraryActivity : ComponentActivity() {
         val presentation = com.pokedaisy.app.companion.ui.LibraryPresentation(roms, gridView, section,
             views.shown, view, views.counts, library.isNotEmpty(), searchQuery,
             tr("No ROMs yet. Tap + to add a ROM file (a .gba, .zip or .7z) or your ROMs folders, or drop files into {0}",
-                "Android/data/$packageName/files/roms/"), tools)
+                "Android/data/$packageName/files/roms/"), tools, this.library.layout)
         val actions = this.library.actions(add = { addMenu = true }, refresh = ::refreshLibrary)
         com.pokedaisy.app.companion.ui.LibraryScreen(presentation, actions, m, small, key = { it.absolutePath },
             modifier = Modifier.onSizeChanged { screenSize = with(density) { DpSize(it.width.toDp(), it.height.toDp()) } },
-            focus = libraryFocus, overlays = { LibraryDialogs(m, small); GameLoadingCover(m) }) { rom, up ->
+            focus = libraryFocus, overlays = { LibraryDialogs(m, small); GameLoadingCover(m) },
+            showcase = remember(m) { showcase(m) }) { rom, up ->
             if (gridView) RomTile(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, upTo = up)
             else RomRow(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, upTo = up)
         }
@@ -979,6 +980,63 @@ class LibraryActivity : ComponentActivity() {
             }
         }
         com.pokedaisy.app.companion.ui.LibraryCover(bitmap, factsFor(rom).category, m, modifier)
+    }
+
+    /** The immersive views' look at a game: its card, console, cover, ScreenScraper's art where it's been fetched, PLAY and its menu. */
+    private fun showcase(m: GbaTextMetrics) = com.pokedaisy.app.companion.ui.LibraryShowcase<File>(
+        game = ::libraryGame,
+        shape = { GameTitles.platform(this, it) },
+        cover = { rom -> rememberCover(rom) },
+        backdrop = { rom -> rememberMedia(rom, GameMedia.Kind.FANART, GameMedia.Kind.SCREENSHOT) },
+        logo = { rom -> rememberMedia(rom, GameMedia.Kind.WHEEL) },
+        facts = { rom ->
+            val f = launcherFacts(rom)
+            listOfNotNull(
+                GameTitles.platform(this, rom)?.label,
+                f.lastPlayed?.let { tr("Last played {0}", it) },
+                tr("Has a save").takeIf { f.hasSave },
+            ).let { listOf(it.joinToString("  ·  ")) }
+        },
+        play = ::play,
+        menu = { rom, open, dismiss -> RomOptionsMenu(open, dismiss, rom, m, onRename = { renaming = rom }, onDelete = { deleting = rom }) },
+    )
+
+    /** A game's cover, decoded off the UI thread once per revision ([CoverThumb]'s, without its box). */
+    @Composable
+    private fun rememberCover(rom: File): androidx.compose.ui.graphics.ImageBitmap? {
+        val key = "${rom.absolutePath}#$revision"
+        val hasCover = factsFor(rom).hasCover
+        val bitmap by produceKeyedState(if (hasCover) coverBitmaps.get(key) else null, key, hasCover) {
+            if (value == null && hasCover) {
+                val file = coverFile(rom)
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() }.getOrNull()
+                }?.also { coverBitmaps.put(key, it) }
+            }
+        }
+        return bitmap
+    }
+
+    /** The first of [kinds] ScreenScraper fetched for [rom] (GameMedia), at most 1280 px a side; null while there's none. */
+    @Composable
+    private fun rememberMedia(rom: File, vararg kinds: GameMedia.Kind): androidx.compose.ui.graphics.ImageBitmap? {
+        val root = remember { GameMedia.root(this) }
+        val file = remember(rom, revision) { kinds.firstNotNullOfOrNull { GameMedia.existing(root, rom, it) } }
+        val key = file?.let { "${it.absolutePath}#${it.lastModified()}" }
+        val bitmap by produceKeyedState(key?.let { coverBitmaps.get(it) }, key) {
+            if (value == null && file != null && key != null) {
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeFile(file.absolutePath, bounds)
+                        var sample = 1
+                        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1280) sample *= 2
+                        BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
+                    }.getOrNull()
+                }?.also { coverBitmaps.put(key, it) }
+            }
+        }
+        return if (file == null) null else bitmap
     }
 
     /** The library's margin to the screen's edges (half on a short screen: [com.pokedaisy.app.companion.ui.libraryMargin]). */
@@ -1862,7 +1920,7 @@ class LibraryActivity : ComponentActivity() {
     private fun LauncherList(m: GbaTextMetrics, small: GbaTextMetrics, onMain: Boolean) {
         @Suppress("UNUSED_EXPRESSION") revision
         val games = launcher.games
-        val grid = gridView
+        val grid = gridView || library.layout.immersive
         val views = launcherViews
         val context = with(androidx.compose.ui.platform.LocalDensity.current) { (m.rowHeight / 2).roundToPx() }
         fun card(rom: File) = LauncherCard(

@@ -13,6 +13,8 @@ class PrefsThemeStore(prefs: Prefs) : ThemeStore {
     override var customFont by prefs::customFont
     override var appBackground by prefs::appBackground
     override var companionBackground by prefs::companionBackground
+    override var sideBars by prefs::sideBars
+    override var tabIcons by prefs::tabIcons
     override var appView by prefs::appView
     override var darkMode by prefs::darkMode
 }

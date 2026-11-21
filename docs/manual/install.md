@@ -59,7 +59,11 @@ This page shows which of your device's buttons presses each GBA button. Check A 
 
 ![The same step with GBA B waiting for a button: PRESS A BUTTON… on its row and CANCEL under it](shots/setup-buttons-capture.png "Tap a row and press the button you want")
 
-### Step 4: cover art
+### Step 4: game media
+
+`GAME MEDIA (OPTIONAL)` signs you in to ScreenScraper.fr, a free site with box art, screenshots, title screens, logos, videos and each game's story. Type your screenscraper.fr username and password and tap `SIGN IN`; `NO ACCOUNT? SIGN UP` opens its site to make one. PokeDaisy then fetches them for your whole library (see [Game media from ScreenScraper](library.md#game-media-from-screenscraper)). Skip it now and sign in any time in Settings > `ScreenScraper`.
+
+### Step 5: cover art
 
 The library looks much better with box art. Covers come from two free services, and each needs a key you get from your own free account:
 
@@ -68,7 +72,7 @@ The library looks much better with box art. Covers come from two free services, 
 
 One key is enough. Tap `SAVE` and PokeDaisy fetches covers for your games (`FETCHING…`). Skip it now and add a key any time in Settings > `COVER ART`.
 
-![Setup's last step: COVER ART (OPTIONAL), with a key box for RetroAchievements and one for SteamGridDB](shots/setup-covers.png "Step 4: add cover art keys")
+![Setup's last step: COVER ART (OPTIONAL), with a key box for RetroAchievements and one for SteamGridDB](shots/setup-covers.png "Step 5: add cover art keys")
 
 ### Run setup again
 

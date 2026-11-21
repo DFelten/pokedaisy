@@ -540,9 +540,12 @@ fun companion(
     lock: com.pokedaisy.app.companion.coop.lock.CoopLockUi? = null,
     dsperate: Boolean = false,
     partyStorage: Boolean = false,
+    /** TAB BAR > SHOW AS ICONS. */
+    tabIcons: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons)
     DeviceBattery.status.value = battery
     val sv = snap()
     val back = com.pokedaisy.app.companion.ui.CompanionBack().also { previewBack = it }
@@ -1153,8 +1156,9 @@ fun seasonalLibrary(label: String) = run {
  */
 fun withMyLook(picture: Boolean = false, companion: Boolean = false, wearTheme: Boolean = false, wearFont: Boolean = false) {
     val look = com.pokedaisy.app.companion.ui.theme.CustomLook
-    val midnight = look.addTheme("""{ "name": "MIDNIGHT", "color": "#3D6FE0", "glows": ["#C4DAFF", "#FFD6E8", "#D6F0FF"] }""")
-    look.addTheme("""{ "name": "PEACH", "color": "#E8743C" }""")
+    fun theme(json: String) = com.pokedaisy.app.companion.ui.theme.ThemeFiles.import(mapOf("theme.json" to json.encodeToByteArray()))
+    val midnight = theme("""{ "name": "MIDNIGHT", "color": "#3D6FE0", "glows": ["#C4DAFF", "#FFD6E8", "#D6F0FF"] }""")
+    theme("""{ "name": "PEACH", "color": "#E8743C" }""")
     val font = look.addFont("Rounded Demo.ttf", File("fonts/Nunito-ExtraBold.ttf").readBytes())
     if (wearTheme) { Prefs(android.content.Context()).appTheme = midnight.id; com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(midnight) }
     if (wearFont) com.pokedaisy.app.companion.ui.theme.AppFonts.wear(font)
@@ -1166,6 +1170,12 @@ fun withMyLook(picture: Boolean = false, companion: Boolean = false, wearTheme: 
         look.previewCompanion = demoLookPicture()
         look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.SAME_AS_APP)
     }
+}
+
+/** The library's view pick-list (the header's view button), then [label]'s view. */
+fun androidx.compose.ui.test.SkikoComposeUiTest.pickLibraryView(label: String) {
+    onNodeWithContentDescription("Library view").performClick()
+    onNodeWithText(label).performClick()
 }
 
 /** A landscape drawn in code (a dusk sky, a sun, two rows of hills): MY LOOK's stand-in for a player's photo. */
@@ -1216,9 +1226,9 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
     File(ctx.filesDir, "saves").mkdirs()
     File(ctx.filesDir, "saves/firered-hack.sav").writeText("x")
     val prefs = Prefs(ctx)
-    // ScreenScraper off, as players get it (FeatureFlags): its shots turn it on with withScreenScraper in their make().
-    com.pokedaisy.app.BuildConfig.FEATURE_SCREENSCRAPER = false
-    com.pokedaisy.app.ScreenScraperClient.enabled = false
+    // ScreenScraper on, as players get it since 2026-11-23 (FeatureFlags): signed out, so it shows no media.
+    com.pokedaisy.app.BuildConfig.FEATURE_SCREENSCRAPER = true
+    com.pokedaisy.app.ScreenScraperClient.enabled = true
     // EXPAND's one-time introduction covers the Library: only its own shot shows it.
     prefs.expandIntroSeen = !expandIntro
     // BATTLE STYLE's one-time pick, likewise.
@@ -1247,7 +1257,9 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
         look.load()
         look.setBackground(false, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
         look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
-        look.previewApp = null; look.previewCompanion = null
+        look.changeSideBars(com.pokedaisy.app.companion.ui.theme.SideBars.DEFAULT)
+        look.changeTabIcons(false)
+        look.previewApp = null; look.previewCompanion = null; look.previewBars = null
     }
     if (com.pokedaisy.app.companion.ui.theme.AppFonts.setting == com.pokedaisy.app.companion.ui.theme.AppFont.CUSTOM) {
         com.pokedaisy.app.companion.ui.theme.AppFonts.set(com.pokedaisy.app.companion.ui.theme.AppFont.DEFAULT)
@@ -1735,6 +1747,8 @@ fun main(args: Array<String>) {
             val c = companion("PARTY")
             ({ com.pokedaisy.app.companion.ui.theme.CustomLook.previewCompanion = demoLookPicture(); c() })
         }),
+        // TAB BAR > SHOW AS ICONS: the tabs as their icons (RETRO's pixel tiles; -Pview=MODERN for the glyphs).
+        Shot("$g-party-tab-icons", bw, bh, bd, companion("PARTY", tabIcons = true)),
         // BOXES: the PC's box screen (FireRed's art from -Prom / the decomp build), a summary, the box list, the next box.
         Shot("$g-boxes", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot)),
         Shot("$g-boxes-detail", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot, items = true)) {
@@ -2557,7 +2571,7 @@ fun main(args: Array<String>) {
         // each in its colour; the open one striped like the console's cover art.
         Shot("library-views", tw, th, td, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-views-grid", tw, th, td, activity { platformLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-views-favorites", tw, th, td, activity { platformLibrary(com.pokedaisy.app.companion.data.LibraryView.FAVORITES); LibraryActivity() }),
         Shot("library-views-recent", tw, th, td, activity { platformLibrary(com.pokedaisy.app.companion.data.LibraryView.RECENT); LibraryActivity() }),
@@ -2575,7 +2589,7 @@ fun main(args: Array<String>) {
         Shot("library-loading-phone", 1080, 2400, 2.625f, activity { LibraryActivity().apply { preparing = File(android.content.Context().filesDir, "roms/firered-hack.gba") } }) {
             mainClock.advanceTimeBy(1200)
         },
-        Shot("library-tools", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { onNodeWithContentDescription("Toggle view").performClick() },
+        Shot("library-tools", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("GRID") },
         Shot("library-tools-open", tw, th, td, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
         Shot("library-tools-phone", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-tools-phone-open", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
@@ -2890,7 +2904,7 @@ fun main(args: Array<String>) {
         // The RG DS's 640x480 top screen (r/PokeDaisy, 2026-11-21: the rail, header and rows didn't fit): the short library.
         Shot("library-rgds", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-rgds-grid", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-rgds-tools", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
         Shot("launcher-rgds", 640, 480, 1.5f, launcher(media = false, signedIn = false)),
@@ -3021,7 +3035,7 @@ fun main(args: Array<String>) {
             File(ctx.filesDir, "rom-folder-scan.tsv").writeText("$hack\t1\t1700000000000\t0\n")
             LibraryActivity().apply { unsupportedRoms = setOf(hack) }
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // A game on the blocked list (BlockedGames): a black BLOCKED tag, in the list and the grid.
         Shot("library-tag-blocked", tw, th * 2, td, activity {
@@ -3036,7 +3050,7 @@ fun main(args: Array<String>) {
             File(ctx.filesDir, "rom-folder-scan.tsv").writeText("$hack\t1\t1700000000000\t0\n")
             LibraryActivity().apply { blockedRoms = setOf(hack) }
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // Games added in the last day (not by setup): a green NEW tag, in the list and the grid; SORT BY,
         // and the library by DATE ADDED (newest first).
@@ -3046,7 +3060,7 @@ fun main(args: Array<String>) {
             Prefs(android.content.Context()).librarySort = com.pokedaisy.app.LibrarySort.DATE_ADDED.id
             LibraryActivity()
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-sort", tw, th, td, activity { LibraryActivity().also { datedLibrary() } }) {
             onNodeWithContentDescription("Sort").performClick()
@@ -3069,7 +3083,7 @@ fun main(args: Array<String>) {
         // list row opens its menu like a grid tile's (ADD TO / REMOVE FROM FAVORITES on top).
         Shot("library-favorites", tw, th, td, activity { favoriteLibrary(); LibraryActivity() }),
         Shot("library-favorites-grid", tw, th * 2, td, activity { favoriteLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-list-menu", tw, th, td, activity { favoriteLibrary(); LibraryActivity() }) {
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.OnLongClick)
@@ -3083,14 +3097,14 @@ fun main(args: Array<String>) {
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.RequestFocus)
         },
         Shot("library-grid-focus", tw, th * 2, td, activity { favoriteLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
             mainClock.advanceTimeBy(500)
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.RequestFocus)
         },
         // A phone held upright (1080x2400 @ 2.625, a Pixel 6): the library before a game opens.
         Shot("library-list-phone", 1080, 2400, 2.625f, activity { LibraryActivity() }),
         Shot("library-grid-phone", 1080, 2400, 2.625f, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // The one-time "send crash reports?" ask (CrashReports.shouldAsk).
         Shot("library-crash-ask", tw, th, td, activity { LibraryActivity().apply { crashAsk = true } }),
@@ -3106,11 +3120,11 @@ fun main(args: Array<String>) {
             SettingsActivity()
         }) { onNodeWithText("DS CPU BOOST").performScrollTo() },
         Shot("library-grid", tw, th, td, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // Long-pressing a library tile opens its options. Taller than the screen so the first row of tiles is whole.
         Shot("library-grid-menu", tw, th * 2, td, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
             mainClock.advanceTimeBy(500) // lay the grid out before looking for its tiles
             onAllNodesWithText("Pokémon Emerald")[0].performSemanticsAction(SemanticsActions.OnLongClick)
         },
@@ -3521,6 +3535,34 @@ fun main(args: Array<String>) {
             onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("library-my-look", tw, th, td, activity { withMyLook(picture = true, wearTheme = true); LibraryActivity() }),
+        // LIBRARY VIEW: its pick-list, then the three immersive views (CARTRIDGES, CAROUSEL, SPOTLIGHT), RETRO and MODERN.
+        Shot("library-view-pick", tw, th, td, activity { platformLibrary(); LibraryActivity() }) {
+            onNodeWithContentDescription("Library view").performClick()
+        },
+        Shot("library-cartridges", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800) },
+        Shot("library-carousel", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CAROUSEL"); mainClock.advanceTimeBy(800) },
+        Shot("library-spotlight", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("SPOTLIGHT"); mainClock.advanceTimeBy(800) },
+        Shot("library-cartridges-modern", tw, th, td, activity { platformLibrary(); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }) {
+            pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800)
+        },
+        Shot("library-spotlight-modern", tw, th, td, activity { platformLibrary(); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }) {
+            pickLibraryView("SPOTLIGHT"); mainClock.advanceTimeBy(800)
+        },
+        Shot("library-cartridges-phone", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800) },
+        // MY LOOK > a theme's page (EDIT THEME), made with CREATE A THEME.
+        Shot("settings-theme-edit", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("CREATE A THEME").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-theme-edit-files", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("CREATE A THEME").performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("EXPORT").performScrollTo()
+        },
+        Shot("settings-my-look-bars", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("RIGHT BAR").performScrollTo()
+        },
         Shot("library-my-look-modern", tw, th, td, activity { withMyLook(picture = true); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }),
         // THEME: a few themes on the Library and Settings (the rest with -Ptheme), and a limited-time one's popup.
         Shot("library-theme-cherry", tw, th, td, activity { themedLibrary("CHERRY") }),

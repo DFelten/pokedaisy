@@ -73,6 +73,14 @@ interface ThemeStore {
     var companionBackground: Int
         get() = 0
         set(value) {}
+    /** SIDE BARS: a [SideBars.ordinal]. */
+    var sideBars: Int
+        get() = 0
+        set(value) {}
+    /** TAB BAR > SHOW AS ICONS ([CustomLook.tabIcons]). */
+    var tabIcons: Boolean
+        get() = false
+        set(value) {}
     /** The font RETRO had before MODERN put its own on ([AppViews.set]). */
     var appFontRetro: Int
         get() = AppFont.DEFAULT.ordinal

@@ -68,6 +68,11 @@ object ThemeHue {
 /** [c]'s hue, 0-360. */
 fun hueOf(c: Color): Float = hsl(c.red, c.green, c.blue).first
 
+/** [c]'s hue (0-359), saturation and lightness (0-100), whole numbers: the theme editor's sliders. */
+fun hslOf(c: Color): Triple<Int, Int, Int> = hsl(c.red, c.green, c.blue).let { (h, s, l) ->
+    Triple(h.toInt().mod(360), (s * 100).toInt().coerceIn(0, 100), (l * 100).toInt().coerceIn(0, 100))
+}
+
 /** A colour from its hue (0-360), saturation and lightness (0-1). */
 fun hslColor(h: Float, s: Float, l: Float): Color {
     val (r, g, b) = rgb(((h % 360f) + 360f) % 360f, s, l)

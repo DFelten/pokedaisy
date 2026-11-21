@@ -318,7 +318,7 @@ fun DrawScope.drawGlyph(glyph: ModernGlyph, c: Color) {
         ModernGlyph.ADD -> { line(12f, 5f, 12f, 19f, 2.6f); line(5f, 12f, 19f, 12f, 2.6f) }
         ModernGlyph.REFRESH -> {
             drawArc(c, -60f, 290f, false, p(4.5f, 4.5f), Size(15f * s, 15f * s), style = stroke(2.4f))
-            val a = Math.toRadians(-60.0)
+            val a = (-60.0 * kotlin.math.PI / 180.0)
             val end = p(12f + 7.5f * cos(a).toFloat(), 12f + 7.5f * sin(a).toFloat())
             drawPath(Path().apply {
                 moveTo(end.x + 3.6f * s, end.y - 1.6f * s); lineTo(end.x, end.y); lineTo(end.x - 0.6f * s, end.y - 4f * s)
@@ -333,7 +333,7 @@ fun DrawScope.drawGlyph(glyph: ModernGlyph, c: Color) {
         ModernGlyph.STAR, ModernGlyph.STAR_OUTLINE -> path(fill = glyph == ModernGlyph.STAR, sw = 2f) {
             for (i in 0 until 10) {
                 val r = if (i % 2 == 0) 10f else 4.2f
-                val a = Math.toRadians(-90.0 + i * 36.0)
+                val a = ((-90.0 + i * 36.0) * kotlin.math.PI / 180.0)
                 val x = 12f + r * cos(a).toFloat()
                 val y = 12.6f + r * sin(a).toFloat()
                 if (i == 0) m(x, y) else l(x, y)
