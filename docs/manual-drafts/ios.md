@@ -33,7 +33,37 @@ before anything is added. A code you add starts on, but the master switch still 
 on; `REMOVE` changes the list into codes you can remove after confirmation. Codes and their on/off choices are
 kept for this ROM when you reopen the game. Game Boy cheats are not supported by the current engine.
 
+## From companion.md
+
+In a supported GBA game on iPhone or iPad, choose a hero under `SETTINGS` > `MAKEOVER` > `PLAYER LOOK`. Import a compatible GBA game to supply its hero's graphics. Your choice is saved for the current game, and `OFF` restores its original look.
+
+`PLAYER LOOK` can also show Pokémon from your current party when their costume graphics are available. Add a compatible game with follower sprites to your library. The picker uses the same sprite cache as `FOLLOWER`.
+
+In Ruby, Sapphire and Emerald, `RIVAL LOOK` starts on. Pick a `PLAYER LOOK` to dress your rival as the other hero of that game when their graphics are available. Turn it off to keep your rival's original look.
+
+`TEXT LOOK` changes the dialogue boxes and compatible fonts in supported GBA games when you have a compatible game's style in your library. The choice is saved for the current game and can be used together with `PLAYER LOOK`. Choose `OFF` to return to the game's own text.
+
+On supported GBA carts, `RIDE ON` replaces the bike's look with a `MOTORCYCLE` or `SCOOTER`. Get on your bike as usual. Choose `BIKE` to restore the original look.
+
+In supported GBA games, `SETTINGS` > `GAMEPLAY` > `AUTO REFILL` uses another Repel from your bag before the current one runs out. It adds the new Repel's steps to the steps you had left.
+
+On iPhone and iPad, open `SETTINGS` > `MAKEOVER` > `FOLLOWER` while playing a supported GBA game. The first Pokémon in your party that isn't an Egg follows you on foot and waits while you surf. To supply its sprite, import a compatible game with its own followers, such as Emerald Seaglass, into your library. The row can show `N/A` while PokeDaisy scans your games.
+
+## From nuzlocke.md
+
+On iPhone and iPad, enable `NUZLOCKE` in the companion's `SETTINGS` > `GAMEPLAY` in a supported GBA game. The `NUZLOCKE` tab shows your run's encounters, rules, and fainted Pokémon. The run stays with the ROM when you close it or turn off tracking, and the same warning setting controls the optional notices over the game.
+
+## From battle.md
+
+On iPhone and iPad, `LAST BALL` is available in supported FireRed, LeafGreen and Emerald games and compatible GBA hacks. In the `GEN 4` battle style, the shared ball button throws the last ball you used, or the first ball in your bag if that kind is gone. It appears in eligible wild battles. Turn it off under `SETTINGS` > `COMPANION` > `LAST BALL`.
+
 ## From controls.md
+
+On iPhone and iPad, `SETTINGS` > `GAMEPLAY` includes `LOW HP BEEP` and `FIELD POISON` where the GBA game's code supports them. Turn off `LOW HP BEEP` to silence the warning during battle. Turn off `FIELD POISON` to prevent damage from poison while walking. Poison still works in battle.
+
+On iPhone and iPad, `SETTINGS` > `GAMEPLAY` > `BOSS RETRY` is available in supported GBA games. After losing a trainer battle, choose `RETRY` to return to the stored start of that battle. `UNDO LOAD` returns you to the moment before you retried.
+
+In a supported GBA game on iPhone or iPad, turn on `SETTINGS` > `GAMEPLAY` > `SHINY ALERT` to start a hunt. The row counts wild battles for the current game. A shiny foe stops fast-forward and held turbo, shows its name and the count over the game, then resets the count. The alert uses your touch vibration setting for haptic feedback.
 
 #### iPhone and iPad bindings
 

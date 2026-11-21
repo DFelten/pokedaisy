@@ -2,14 +2,18 @@
 
 package render
 
+import com.pokedaisy.app.companion.ui.RomPatchFlow
+import okio.Path.Companion.toPath
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.SkikoComposeUiTest
 import com.pokedaisy.app.companion.data.isGen5
 import com.pokedaisy.app.companion.data.save.BoxSlot
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -530,6 +534,7 @@ fun companion(
     coopPairList: List<com.pokedaisy.app.companion.coop.CoopPair> = emptyList(),
     lock: com.pokedaisy.app.companion.coop.lock.CoopLockUi? = null,
     dsperate: Boolean = false,
+    partyStorage: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
@@ -539,7 +544,7 @@ fun companion(
     val content: @Composable () -> Unit = {
         CompanionScreen(
             sv, FakeSlots(), FakeSettings(hints, initialTabs = barTabs, oneTap = oneTap, expandOffer = expandOffer, expand = expand, battleFocus = battleFocus, coop = coop, coopPairList = coopPairList, lock = lock, style = style, dsperate = dsperate), FakeBattleInput(busy), initialTab = tab,
-            initialMonIndex = mon, initialCardBack = cardBack, back = back, initialSettingsRow = settingsRow, itemUse = if (items) PreviewItemUse(sv.party, bagFull) else null,
+            initialMonIndex = mon, initialCardBack = cardBack, back = back, initialSettingsRow = settingsRow, itemUse = if (items) PreviewItemUse(sv.party, bagFull, partyStorage) else null,
         )
     }
     content
@@ -553,8 +558,10 @@ fun centerSnapshot() = snapshot().let { s -> s.copy(party = s.party.mapIndexed {
  * BagPalette shows the row mark, though the app has it on FireRed rev 1 only so far. The lead holds
  * nothing, the second a QUICK CLAW; a Potion helps whoever is below full HP.
  */
-class PreviewItemUse(private val party: List<MonView>, private val bagFull: Boolean = false) : com.pokedaisy.app.companion.ItemUse {
+class PreviewItemUse(private val party: List<MonView>, private val bagFull: Boolean = false, private val partyStorage: Boolean = false) : com.pokedaisy.app.companion.ItemUse {
     override fun canTake() = true
+    override fun canReorderParty() = partyStorage
+    override val partyBadge get() = if (partyStorage) "NEW" else null
     // BOXES' SWAP: the button shows, a pick goes through.
     override fun canSwapBox() = true
     override fun swapBox(box: Int, slot: Int, boxPersonality: Long, partySlot: Int, partyPersonality: Long, done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit) =
@@ -678,7 +685,7 @@ fun realShinyBattle(state: Int): SnapshotView {
     val (cfg, fixture) = if (activeGame == GameKind.EMERALD) NATIVE_EMERALD_RETAIL to "emerald_shiny_battle"
         else NATIVE_FIRERED_REV1 to "firered_shiny_battle"
     // The render task runs in app/src/main/assets.
-    val t = com.pokedaisy.app.companion.data.readNativeTelemetry(RamFixture(File("../../test/resources/fixtures/$fixture")), cfg.copy(shinyBelow = 8))
+    val t = com.pokedaisy.app.companion.data.readNativeTelemetry(RamFixture(ramFixtures.resolve(fixture)), cfg.copy(shinyBelow = 8))
     // buildSnapshotView points the icon loader at the ROM's tables (read through the core): keep the preview's own.
     val icons = com.pokedaisy.app.companion.data.DecompIconSource.tables
     val real = com.pokedaisy.app.companion.data.buildSnapshotView(t)
@@ -744,7 +751,10 @@ class RomFile(private val rom: ByteArray) : MemoryReader {
     }
 }
 
-/** Serves RAM reads from a save fixture's ewram.bin / iwram.bin (app/src/test/resources/fixtures). */
+// Preview render tasks run from app/src/main/assets.
+private val ramFixtures = File("../../../../test-fixtures/resources/fixtures")
+
+/** Serves RAM reads from a save fixture's ewram.bin / iwram.bin. */
 class RamFixture(dir: File) : MemoryReader {
     private val ewram = File(dir, "ewram.bin").readBytes()
     private val iwram = File(dir, "iwram.bin").readBytes()
@@ -773,7 +783,7 @@ fun liveGuide(): ((SnapshotView) -> SnapshotView)? {
     val tables = cfg.guideTables!!
     PokedexSource.reader = RomFile(File(path).readBytes())
     // The render task runs in app/src/main/assets. -Phour=22: the game's clock at that hour (Lazarus's night lists).
-    val fixtureRam = RamFixture(File("../../test/resources/fixtures/$fixture"))
+    val fixtureRam = RamFixture(ramFixtures.resolve(fixture))
     val hour = System.getProperty("hour").orEmpty().toIntOrNull()
     val hourAddr = tables.nightWild?.hourAddr
     val ram = if (hour == null || hourAddr == null) fixtureRam else object : MemoryReader {
@@ -811,7 +821,7 @@ fun dexShots(game: GameKind, live: ((SnapshotView) -> SnapshotView)?, w: Int, h:
         game == GameKind.EMERALD -> NATIVE_EMERALD_RETAIL to "emerald_vanilla"
         else -> NATIVE_FIRERED_REV1 to "firered_vanilla"
     }
-    val dex = com.pokedaisy.app.companion.data.readPokedexState(RamFixture(File("../../test/resources/fixtures/$fixture")), cfg, cfg.pokedex!!)
+    val dex = com.pokedaisy.app.companion.data.readPokedexState(RamFixture(ramFixtures.resolve(fixture)), cfg, cfg.pokedex!!)
         ?: return emptyList()
     val g = game.name.lowercase()
     // EEVEE's family / INFO, MAGIKARP's rods and routes (Emerald: ZIGZAGOON's), BULBASAUR's moves (Emerald: TREECKO's).
@@ -1485,7 +1495,7 @@ fun ndsFirstMon(game: GameKind) = when (game) {
 
 /** A DS game's real snapshot (-PndsFixture): the fixture's main RAM read the way the app reads it. */
 fun ndsSnapshot(): SnapshotView {
-    val main = File("../../test/resources/fixtures/${System.getProperty("ndsFixture")}/mainram.bin").readBytes()
+    val main = ramFixtures.resolve("${System.getProperty("ndsFixture")}/mainram.bin").readBytes()
     val reader = object : com.pokedaisy.app.companion.data.MemoryReader {
         override fun readCoreMemory(addr: Long, size: Int): ByteArray {
             val o = (addr - 0x02000000L).toInt()
@@ -1671,6 +1681,15 @@ fun main(args: Array<String>) {
         },
         // DEPOSIT: the party summary's button, its box pick, and the move into BOX2 with its message.
         Shot("$g-party-detail-deposit", bw, bh, bd, companion("PARTY", mon = 1, items = true, snap = ::boxesSnapshot)),
+        Shot("$g-party-storage-narrow", 600, 800, 1.5f, companion("PARTY", mon = 1, items = true, partyStorage = true,
+            snap = { boxesSnapshot().let { s -> s.copy(
+                pokedex = com.pokedaisy.app.companion.data.PokedexState(com.pokedaisy.app.companion.data.POKEDEX_EMERALD, emptySet(), emptySet(), true),
+                party = s.party.mapIndexed { i, m -> m.copy(personality = 0x1000L + i,
+                    stats = com.pokedaisy.app.companion.data.MonStats(List(6) { 1 }, List(6) { 0 }, 0, List(6) { 20 })) }) } })) {
+            for (label in listOf("STATS", "LEARN", "SWITCH", "CENTER", "DEPOSIT")) {
+                onAllNodesWithText(label, ignoreCase = true).onFirst().assertIsDisplayed()
+            }
+        },
         Shot("$g-party-deposit-pick", bw, bh, bd, companion("PARTY", mon = 1, items = true, snap = ::boxesSnapshot)) {
             onAllNodesWithText("DEPOSIT", ignoreCase = true).onFirst().performClick()
         },
@@ -2044,12 +2063,15 @@ fun main(args: Array<String>) {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("GROUP TABS")).performSemanticsAction(SemanticsActions.OnClick)
             waitForIdle()
         }),
+        Shot("$g-settings-day-night", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("DAY AND NIGHT").performScrollTo()
+        },
         // MORE (left of the gear): the tabs off the bar as app icons, the TAB BAR link under them.
         Shot("$g-more", bw, bh, bd, companion("MORE")),
         // NUZLOCKE is under MORE in every game the tracker follows; off, the tab says so and offers TURN ON.
         Shot("$g-nuzlocke-off", bw, bh, bd, companion("NUZLOCKE")),
         // A run under way: the area here, the team, encounters and a fainted one.
-        Shot("$g-nuzlocke-run", bw, bh, bd, companion("NUZLOCKE") {
+        Shot("$g-nuzlocke-run", bw, bh, bd, {
             val run = com.pokedaisy.app.companion.data.NuzlockeRun(
                 encounters = listOf(
                     com.pokedaisy.app.companion.data.NuzlockeEncounter(88, "ROUTE 1", 16, com.pokedaisy.app.companion.data.NuzlockeOutcome.CAUGHT),
@@ -2062,8 +2084,15 @@ fun main(args: Array<String>) {
                     com.pokedaisy.app.companion.data.NuzlockeMon(3L, 10, "BUGSY", 6, "VIRIDIAN FOREST", dead = true, diedIn = "ROUTE 2", diedLevel = 6),
                 ),
             )
-            com.pokedaisy.app.companion.Nuzlocke.load(true, run.encode(), {}, {})
-            snapshot()
+            val content = companion("NUZLOCKE")()
+            val seeded: @Composable () -> Unit = {
+                DisposableEffect(Unit) {
+                    val game = com.pokedaisy.app.companion.Nuzlocke.preview(run)
+                    onDispose { com.pokedaisy.app.companion.Nuzlocke.close(game) }
+                }
+                content()
+            }
+            seeded
         }),
         Shot("$g-more-full", bw, bh, bd, companion("MORE", barTabs = listOf("PARTY", "MAP"))),
         // Every app icon at once (a game can't have all of them off the bar with a ROM-less preview).
@@ -2941,14 +2970,14 @@ fun main(args: Array<String>) {
         Shot("library-info", tw, th, td, activity {
             LibraryActivity().apply {
                 val ctx = android.content.Context()
-                gameInfo = com.pokedaisy.app.GameInfo.read(ctx, Prefs(ctx), File(ctx.filesDir, "roms/firered-hack.gba"), hashes = true)
+                gameInfo = com.pokedaisy.app.AndroidGameInfo.read(ctx, Prefs(ctx), File(ctx.filesDir, "roms/firered-hack.gba"), hashes = true)
             }
         }),
         // A ROM the app doesn't know: INFO's PICK A GAME, tapped (every config of its base game, AUTO, NONE OF THESE).
         Shot("library-info-pick", tw, th, td, activity {
             LibraryActivity().apply {
                 val ctx = android.content.Context()
-                val info = com.pokedaisy.app.GameInfo.read(ctx, Prefs(ctx), File(ctx.filesDir, "roms/firered-hack.gba"), hashes = true)
+                val info = com.pokedaisy.app.AndroidGameInfo.read(ctx, Prefs(ctx), File(ctx.filesDir, "roms/firered-hack.gba"), hashes = true)
                 gameInfo = com.pokedaisy.app.GameInfo(
                     info.title, info.sections, supportUrl = "https://example.invalid",
                     gamePick = com.pokedaisy.app.GameInfo.GamePick("0123456789abcdef0123456789abcdef01234567", "BPEE", "SOULGOLD_V1_2"),
@@ -2978,14 +3007,15 @@ fun main(args: Array<String>) {
             }
         }),
         // PATCH A ROM: found and ready, patching, done (a hack the companion may read as its base game), and not found.
-        Shot("library-patch-ready", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("ready") } }),
-        Shot("library-patch-patching", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("patching") } }),
-        Shot("library-patch-done", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("done") } }),
-        Shot("library-patch-done-unsupported", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("unsupported") } }),
-        Shot("library-patch-not-found", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("notfound") } }),
-        Shot("library-patch-not-found-unknown", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("unknown") } }),
-        Shot("library-patch-looking", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("looking") } }),
-        Shot("library-patch-failed", tw, th, td, activity { LibraryActivity().apply { patcher.step = fakePatch("failed") } }),
+        Shot("library-patch-ready", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("ready") } }),
+        Shot("library-patch-ready-phone", 1080, 2400, 2.625f, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("ready") } }),
+        Shot("library-patch-patching", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("patching") } }),
+        Shot("library-patch-done", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("done") } }),
+        Shot("library-patch-done-unsupported", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("unsupported") } }),
+        Shot("library-patch-not-found", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("notfound") } }),
+        Shot("library-patch-not-found-unknown", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("unknown") } }),
+        Shot("library-patch-looking", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("looking") } }),
+        Shot("library-patch-failed", tw, th, td, activity { LibraryActivity().apply { patcher.flow.step = fakePatch("failed") } }),
         // TOOLS > SPRITE PACK's window: loaded (everything new, some refused), nothing new, and a file that isn't one.
         Shot("library-sprite-pack-done", tw, th, td, activity { LibraryActivity().apply { spritePack.step = SpritePackFlow.Step.Done(
             com.pokedaisy.app.companion.data.SpritePack.Result("2026-11-15", com.pokedaisy.app.companion.data.LookChar.entries,
@@ -3576,7 +3606,7 @@ fun overlayView(
         }
         is OverlayChoice.Imported -> {
             val layer = sampleOverlay().get(choice.id)!!.layerFor(viewW.toFloat() / viewH)!!
-            val img = ImageIO.read(layer.file)
+            val img = ImageIO.read(java.io.File(layer.file.toString()))
             val px = img.getRGB(0, 0, img.width, img.height, null, 0, img.width)
             Triple(img.toComposeImageBitmap(), layer.viewport ?: OverlayWindow.find(px, img.width, img.height), 0)
         }
@@ -3623,23 +3653,23 @@ fun PreviewGame(content: @Composable () -> Unit) {
 }
 
 /** PATCH A ROM's window in each state, over a made-up hack (no real patch or ROM). */
-private fun fakePatch(state: String): com.pokedaisy.app.RomPatchFlow.Step {
-    val info = com.pokedaisy.app.RomPatchFlow.PatchInfo("Daisy Quest (v1.2).bps", 16L shl 20, 0x84EE4776L, 32L shl 20, "")
-    val unknown = com.pokedaisy.app.RomPatchFlow.PatchInfo("Daisy Quest (v1.2).bps", 16L shl 20, 0x12345678L, 32L shl 20, "")
-    val plan = com.pokedaisy.app.RomPatchFlow.Plan(
-        File("/storage/emulated/0/ROMs/gba/Pokemon - FireRed Version (USA, Europe) (Rev 1).gba"), "Pokémon FireRed",
-        File("/storage/emulated/0/ROMs/gba"), "Daisy Quest (v1.2).gba",
+private fun fakePatch(state: String): RomPatchFlow.Step {
+    val info = RomPatchFlow.PatchInfo("Daisy Quest (v1.2).bps", 16L shl 20, 0x84EE4776L, 32L shl 20, "")
+    val unknown = RomPatchFlow.PatchInfo("Daisy Quest (v1.2).bps", 16L shl 20, 0x12345678L, 32L shl 20, "")
+    val plan = RomPatchFlow.Plan(
+        "/storage/emulated/0/ROMs/gba/Pokemon - FireRed Version (USA, Europe) (Rev 1).gba".toPath(), "Pokémon FireRed",
+        "/storage/emulated/0/ROMs/gba".toPath(), "Daisy Quest (v1.2).gba",
     )
-    val out = File(plan.dir, plan.name)
+    val out = plan.dir / plan.name
     return when (state) {
-        "ready" -> com.pokedaisy.app.RomPatchFlow.Step.Ready(info, plan)
-        "patching" -> com.pokedaisy.app.RomPatchFlow.Step.Patching(info, plan, 0.6f)
-        "done" -> com.pokedaisy.app.RomPatchFlow.Step.Done(info, plan, out, false, com.pokedaisy.app.CompanionSupport.Verdict.TRYABLE, "Daisy Quest (v1.2)")
-        "unsupported" -> com.pokedaisy.app.RomPatchFlow.Step.Done(info, plan, out, false, com.pokedaisy.app.CompanionSupport.Verdict.UNSUPPORTED, "Daisy Quest (v1.2)")
-        "notfound" -> com.pokedaisy.app.RomPatchFlow.Step.NotFound(info)
-        "unknown" -> com.pokedaisy.app.RomPatchFlow.Step.NotFound(unknown)
-        "looking" -> com.pokedaisy.app.RomPatchFlow.Step.Looking(info, 0.35f)
-        else -> com.pokedaisy.app.RomPatchFlow.Step.Failed(com.pokedaisy.app.RomPatchFlow.messageFor(com.pokedaisy.app.BpsPatch.Reason.DAMAGED))
+        "ready" -> RomPatchFlow.Step.Ready(info, plan)
+        "patching" -> RomPatchFlow.Step.Patching(info, plan, 0.6f)
+        "done" -> RomPatchFlow.Step.Done(RomPatchFlow.Result(out, false, RomPatchFlow.Support.TRYABLE, "Daisy Quest (v1.2)"))
+        "unsupported" -> RomPatchFlow.Step.Done(RomPatchFlow.Result(out, false, RomPatchFlow.Support.UNLISTED, "Daisy Quest (v1.2)"))
+        "notfound" -> RomPatchFlow.Step.NotFound(info)
+        "unknown" -> RomPatchFlow.Step.NotFound(unknown)
+        "looking" -> RomPatchFlow.Step.Looking(info, 0.35f)
+        else -> RomPatchFlow.Step.Failed(RomPatchFlow.messageFor(com.pokedaisy.app.BpsPatch.Reason.DAMAGED))
     }
 }
 

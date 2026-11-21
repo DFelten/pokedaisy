@@ -3,6 +3,7 @@ package com.pokedaisy.app
 import com.pokedaisy.app.companion.ui.LibraryMenuItem as RomMenuItem
 
 import com.pokedaisy.app.companion.SaveImportFlow
+import okio.Path.Companion.toOkioPath
 import okio.source
 import com.pokedaisy.app.companion.data.LibraryView
 import com.pokedaisy.app.companion.data.RomCategory
@@ -72,6 +73,8 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import com.pokedaisy.app.companion.ui.LibraryRestoreBackupDialog
+import com.pokedaisy.app.companion.ui.LibraryLoadSaveDialog
 import com.pokedaisy.app.companion.ui.LibraryIcons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -127,7 +130,7 @@ import com.pokedaisy.app.companion.ui.OptionLine
 import com.pokedaisy.app.companion.ui.OptionListWindow
 import com.pokedaisy.app.companion.ui.OptionOverlay
 import com.pokedaisy.app.companion.ui.OptionSelector
-import com.pokedaisy.app.companion.ui.OptionTextField
+import com.pokedaisy.app.companion.ui.LibraryRenameDialog
 import com.pokedaisy.app.companion.ui.OptionTitleWindow
 import com.pokedaisy.app.companion.ui.drawLayeredFrame
 import com.pokedaisy.app.companion.ui.rememberGbaTextMetrics
@@ -174,13 +177,15 @@ class LibraryActivity : ComponentActivity() {
     }
 
     /** PATCH A ROM: a .bps applied to a ROM the library has (internal for ui-preview). */
-    internal val patcher by lazy {
-        RomPatchFlow(this) { out ->
+    private val patcherDelegate = lazy {
+        AndroidRomPatches(this) { out ->
             generateAutoCoverAsync(out)
             identifyGames()
             bump()
         }
     }
+    internal val patcher by patcherDelegate
+
     /** SETTINGS opened as the rail's / bar's tab: its own GAMES / TOOLS come back here as the place to show. */
     private val settingsTab = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         when (r.data?.getStringExtra(SettingsActivity.EXTRA_SECTION)) {
@@ -390,6 +395,7 @@ class LibraryActivity : ComponentActivity() {
 
     override fun onDestroy() {
         saveImports.close()
+        if (patcherDelegate.isInitialized()) patcher.flow.close()
         setup?.let { it.flow.close(); it.capture.cancel() }
         super.onDestroy()
     }
@@ -637,12 +643,12 @@ class LibraryActivity : ComponentActivity() {
             com.pokedaisy.app.companion.ui.LibraryNavigationDialogs(library, m, small)
 
             renaming?.let { rom ->
-                RenameDialog(
+                LibraryRenameDialog(
                     current = romLabel(rom),
                     m = m, small = small,
                     onDismiss = { renaming = null },
                     onConfirm = { name ->
-                        prefs.setRomDisplayName(rom, name.takeIf { it != GameTitles.defaultLabel(this@LibraryActivity, rom) })
+                        libraryPreferences.rename(rom.name, name, GameTitles.defaultLabel(this@LibraryActivity, rom))
                         renaming = null
                         bump()
                     },
@@ -703,10 +709,10 @@ class LibraryActivity : ComponentActivity() {
                     },
                 ) }
 
-            PatchWindow(
-                patcher, m, small,
-                onPlay = ::play,
-                onAskSupport = { rom -> Thread({ val url = RomSupportRequest.url(rom); runOnUiThread { openUrl(url) } }, "pokedaisy-support-url").start() },
+            com.pokedaisy.app.companion.ui.PatchWindow(
+                patcher.flow, m, small,
+                onPlay = { play(it.toFile()) },
+                onAskSupport = { rom -> Thread({ val url = RomSupportRequest.url(rom.toFile()); runOnUiThread { openUrl(url) } }, "pokedaisy-support-url").start() },
             )
 
             SpritePackWindow(spritePack, m, small)
@@ -790,9 +796,8 @@ class LibraryActivity : ComponentActivity() {
             }
 
             backupPick?.let { b ->
-                OptionSelector(
-                    tr("RESTORE BACKUP"), b.files.indices.toList(), -1, { backupLabel(b.files[it]) }, m,
-                    onPick = { backupPick = null; readBackup(b.rom, b.files[it]) },
+                LibraryRestoreBackupDialog(b.files, ::backupLabel, m,
+                    onPick = { backupPick = null; readBackup(b.rom, it) },
                     onDismiss = { backupPick = null },
                 )
             }
@@ -801,20 +806,10 @@ class LibraryActivity : ComponentActivity() {
                 val name = romLabel(p.target)
                 val current = remember(p) { SavesLocation.saveFor(this@LibraryActivity, prefs, p.target) }
                 val size = p.bytes.size.toLong()
-                val what = "${p.fileName} (${GameInfo.sizeLabel(size)}${GameSaves.kind(size)?.let { " · $it" } ?: ""})"
-                OptionConfirm(
-                    title = tr("LOAD SAVE?"),
-                    message = (if (current.isFile) {
-                        tr(
-                            "{0}: replace its save with {1}? The current save is kept, renamed to {2}.",
-                            name, what, GameSaves.backupName(current),
-                        )
-                    } else {
-                        tr("{0} has no save yet: use {1} as its save?", name, what)
-                    }) + " " + tr("The game starts from this save next time, not from where you left off.") +
-                        (if (GameSaves.kind(size) == null) " " + tr("This doesn't look like a GBA save file.") else ""),
-                    confirmLabel = tr("LOAD"),
-                    m = m,
+                val what = "${p.fileName} (${AndroidGameInfo.sizeLabel(size)}${GameSaves.kind(size)?.let { " · $it" } ?: ""})"
+                LibraryLoadSaveDialog(
+                    name, what, current.takeIf { it.isFile }?.let { GameSaves.backupName(it) }, m,
+                    warnAboutGbaSize = GameSaves.kind(size) == null,
                     onDismiss = { saveImports.dismiss(p) },
                     onConfirm = { saveImports.confirm(p)?.let(::loadSave) },
                 )
@@ -1138,35 +1133,6 @@ class LibraryActivity : ComponentActivity() {
         if (!toolsOpen) com.pokedaisy.app.companion.ui.LibrarySearchStrip(searchQuery, m, { searching = true }, ::search)
     }
 
-    @Composable
-    private fun RenameDialog(
-        current: String,
-        m: GbaTextMetrics,
-        small: GbaTextMetrics,
-        onDismiss: () -> Unit,
-        onConfirm: (String) -> Unit,
-    ) {
-        var text by remember { mutableStateOf(current) }
-        OptionOverlay(onDismiss, Modifier.widthIn(max = 520.dp)) {
-            Column {
-                OptionTitleWindow(tr("RENAME"), m)
-                Spacer(Modifier.height(m.u * 4))
-                OptionListWindow(m, Modifier.fillMaxWidth()) {
-                    Column {
-                        GbaText(
-                            tr("Name shown in the list (display only - the file keeps its name)."),
-                            OptionColors.label, OptionColors.labelShadow, small, maxLines = Int.MAX_VALUE,
-                            modifier = Modifier.padding(horizontal = m.u * 8, vertical = m.u * 2),
-                        )
-                        OptionTextField(text, { text = it }, small, Modifier.padding(horizontal = m.u * 8, vertical = m.u * 2))
-                        OptionLine(tr("SAVE"), null, selected = false, m, height = m.rowHeight * 1.3f) { onConfirm(text) }
-                        OptionLine(tr("CANCEL"), null, selected = true, m, height = m.rowHeight * 1.3f, onClick = onDismiss)
-                    }
-                }
-            }
-        }
-    }
-
     /** Imported ROMs plus the linked folders' supported ones (from their last scan). */
     /** The library, alphabetical. Every ROM it lists for the first time is dated ([RomAdded]): NEW
      * unless setup is running or a newly linked folder's first scan brought it in. Any thread. */
@@ -1305,9 +1271,9 @@ class LibraryActivity : ComponentActivity() {
 
     /** INFO: the quick facts at once, then again with the hashes (a whole-ROM read). */
     private fun showInfo(rom: File) {
-        gameInfo = GameInfo.read(this, prefs, rom, hashes = false)
+        gameInfo = AndroidGameInfo.read(this, prefs, rom, hashes = false)
         Thread({
-            val full = GameInfo.read(this, prefs, rom, hashes = true)
+            val full = AndroidGameInfo.read(this, prefs, rom, hashes = true)
             runOnUiThread { if (gameInfo?.title == full.title) gameInfo = full }
         }, "pokedaisy-game-info").apply { isDaemon = true; start() }
     }
@@ -1336,9 +1302,12 @@ class LibraryActivity : ComponentActivity() {
     private fun showBackups(rom: File) {
         val save = SavesLocation.saveFor(this, prefs, rom)
         val dir = save.parentFile ?: SavesLocation.dir(this, prefs)
-        val files = (SaveBackups.list(save) + RomArchive.saveNames(rom).flatMap { GameSaves.backups(dir, it) })
-            .distinctBy { it.absolutePath }
-            .sortedByDescending { it.name.substringAfter(".backup-") }
+        val files = GameSaves.restoreBackups(
+            dir.absoluteFile.toOkioPath(),
+            RomArchive.saveNames(rom),
+            SaveBackups.list(save).map { it.absoluteFile.toOkioPath() },
+            GameSaves.RestoreBackupOrder.DATED_NAME,
+        ).map { File(it.toString()) }
         if (files.isEmpty()) {
             Toast.makeText(this, tr("No backups of this game's save yet"), Toast.LENGTH_LONG).show()
         } else {
@@ -1546,7 +1515,7 @@ class LibraryActivity : ComponentActivity() {
     /** Every window over the main screen (pass keys to them, not the launcher). */
     private val libraryDialogOpen
         get() = searching || pickingSort || addMenu || renaming != null || deleting != null || gameInfo != null || coverPickerFor != null ||
-            pendingImport != null || patcher.step != null || spritePack.step != null || saveImports.pending != null || saveImports.importing != null || backupPick != null || updates.release != null || crashAsk ||
+            pendingImport != null || patcher.flow.step != null || spritePack.step != null || saveImports.pending != null || saveImports.importing != null || backupPick != null || updates.release != null || crashAsk ||
             (expandIntro && !crashAsk) || battleStyleIntroShown || ssIntroShown || whatsNewShown || supportShown || seasonalShown
 
     /** BACK for the library's windows (OptionOverlay & co.): the newest open one closes. */
@@ -2189,6 +2158,10 @@ class LibraryActivity : ComponentActivity() {
      * old file stays where it was.
      */
     private fun setGameSaveFolder(rom: File, path: String?) {
+        if (!SaveFileEdits.recover(this)) {
+            Toast.makeText(this, ClosedSaveEdits.recoveryError(), Toast.LENGTH_LONG).show()
+            return
+        }
         val before = SavesLocation.saveFor(this, prefs, rom)
         prefs.setRomSaveDir(rom, path)
         val after = SavesLocation.saveFor(this, prefs, rom)
