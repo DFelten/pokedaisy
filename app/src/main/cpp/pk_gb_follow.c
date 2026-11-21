@@ -85,6 +85,9 @@ static void gbf_check(struct mCore* core) {
 void pk_gb_follow_forget(void) {
     gbfCore = NULL;
     gbf.known = false;
+    // a new core starts with no follower (EmulatorEngine sends its icon / show again only when they change from that)
+    gbf.show = false;
+    gbf.have = false;
 }
 
 int pk_gb_follow_runs(const struct mCore* core) {
@@ -334,11 +337,13 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
             if ((bg & 0x80) && (bg & 3)) continue;                  // a BG tile with priority
             if (grass && j >= GBF_H / 2 && (bg & 3)) continue;         // tall grass round its feet
             if (textUp) {
-                // a menu / text box: its frame and letters (tiles 0x60 and up) stay over it
+                // a menu / text box: its frame and letters (tiles 0x60 and up in VRAM bank 0) stay over it; a map tile
+                // from bank 1 can have such an id too, and doesn't
                 const uint8_t* io = gb->memory.io;
                 int bx = (x + io[GB_REG_SCX]) & 255, by = (y + io[GB_REG_SCY]) & 255;
                 int map = (lcdc & 0x08) ? 0x1C00 : 0x1800;
-                if (gb->video.vram[map + (by >> 3) * 32 + (bx >> 3)] >= 0x60) continue;
+                int cell = map + (by >> 3) * 32 + (bx >> 3);
+                if (gb->video.vram[cell] >= 0x60 && !(gb->video.vram[0x2000 + cell] & 0x08)) continue;
             }
             int r = (int) (c & 0xFF) * mr >> 8, g = (int) ((c >> 8) & 0xFF) * mg >> 8, b = (int) ((c >> 16) & 0xFF) * mb >> 8;
             r = r + (255 - r) * wr / 255;
