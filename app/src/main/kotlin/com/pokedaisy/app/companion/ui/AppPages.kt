@@ -229,7 +229,10 @@ fun setupPath(path: String): String = when {
 fun AppSettingsHome(
     rows: List<SettingRow>, m: GbaTextMetrics, query: String, onQuery: (String) -> Unit,
     modifier: Modifier = Modifier, scroll: ScrollState = rememberScrollState(),
-    firstRowFocus: FocusRequester = remember { FocusRequester() }, footer: @Composable () -> Unit = {},
+    firstRowFocus: FocusRequester = remember { FocusRequester() },
+    /** The home list's position, kept by the caller so BACK from a sub-page returns to the same rows. */
+    lazy: androidx.compose.foundation.lazy.LazyListState? = null,
+    footer: @Composable () -> Unit = {},
 ) {
     val shown = filterRows(rows, query)
     val keyboard = LocalSoftwareKeyboardController.current
@@ -256,7 +259,7 @@ fun AppSettingsHome(
                     modifier = Modifier.padding(horizontal = m.u * 8, vertical = m.u * 4),
                 )
             } else if (query.isBlank()) {
-                GroupedRows(rows, m, cursor = -1, onClick = { rows[it].onClick() }, scroll = scroll, firstRowFocus = firstRowFocus, groupTabs = true)
+                GroupedRows(rows, m, cursor = -1, onClick = { rows[it].onClick() }, scroll = scroll, firstRowFocus = firstRowFocus, groupTabs = true, lazy = lazy)
             } else {
                 GroupedRows(shown, m, cursor = -1, onClick = { shown[it].onClick() }, firstRowFocus = firstRowFocus)
             }

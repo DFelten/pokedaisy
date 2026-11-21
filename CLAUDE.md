@@ -2465,7 +2465,12 @@ window's cost 160 ms a frame) - `pixelClip` (smooth while LIGHT COMPANION is on)
 instead of clipping. Composition must not touch the disk or a system service (`MonArt.available` is cached, `secondScreen()` kept half a
 second): SETTINGS' getters run row by row. The touch pad (and, with LIGHT COMPANION, the companion window) sits in an offscreen layer
 the renderer keeps. A view over the stage keeps a fixed size (`WRAP_CONTENT` with changing text re-measured the whole stage). The
-`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet).
+`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet). **The Retroid Pocket Classic** (2026-11-22): a pixel
+staircase drawn as a path is painted into a mask on the CPU and uploaded (77 MB of them in SETTINGS): `drawPixelRoundRect` / `Frame`
+draw rows of rectangles (`Stairs`, PixelShapes.kt) - never `drawPath` a big staircase. `DaisyBackdrop` moves 4 times a second in an
+offscreen layer (at 60 it repainted the screen behind still menus). SETTINGS' home lists are lazy (`GroupedRows(groupTabs, lazy)`;
+ui-preview turns that off, `SettingsLook.lazyHome`). Its firmware names a missing `telephony-common.jar` in BOOTCLASSPATH, so no app
+there gets AOT code (`pm art dump`: `verify`): everything runs interpreted / JIT, one thread maxed at ~12% total CPU.
 **Crash reports** (`CrashReports.kt`, Firebase Crashlytics + -ndk): opt-in, off by default (manifest
 `firebase_crashlytics_collection_enabled=false`); on via Settings > CRASH REPORTS or the Library's one-time ask
 (`CrashReports.shouldAsk`: third app open - `PokeDaisyApp` counts process starts - and 48 h after

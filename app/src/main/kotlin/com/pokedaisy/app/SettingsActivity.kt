@@ -155,6 +155,8 @@ class SettingsActivity : ComponentActivity() {
     private val touchBack = com.pokedaisy.app.companion.ui.CompanionBack()
     /** HOME's scroll, kept while a sub-page is open so BACK returns to the same rows. */
     private val homeScroll = androidx.compose.foundation.ScrollState(0)
+    /** HOME's list position (it's lazy), kept the same way. */
+    private val homeList = androidx.compose.foundation.lazy.LazyListState()
     /** HOME has put the focus on its first setting (once: coming back from a sub-page keeps where it was). */
     private var homeFocused = false
     /** HOME's first setting, and whether anything on HOME has the focus: a D-pad press with nothing focused goes there
@@ -1048,7 +1050,7 @@ class SettingsActivity : ComponentActivity() {
             if (runCatching { firstRow.requestFocus() }.isSuccess) homeFocused = true
         }
         com.pokedaisy.app.companion.ui.AppSettingsHome(rows, m, searchQuery, { searchQuery = it },
-            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll,
+            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll, lazy = homeList,
             firstRowFocus = firstRow, footer = { AboutFooter(m) })
     }
 

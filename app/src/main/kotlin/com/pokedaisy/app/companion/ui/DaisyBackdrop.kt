@@ -1,16 +1,19 @@
 package com.pokedaisy.app.companion.ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -45,10 +48,15 @@ import kotlin.math.roundToInt
 fun DaisyBackdrop(logos: Boolean = false) {
     val clock = rememberInfiniteTransition(label = "daisy-backdrop")
     // Seconds into a 10-minute loop: every drift and turn below is a whole number of times round it.
-    val t by clock.animateFloat(
+    val raw = clock.animateFloat(
         0f, LOOP_S, infiniteRepeatable(tween((LOOP_S * 1000).toInt(), easing = LinearEasing), RepeatMode.Restart),
         label = "daisy-clock",
     )
+    // The drawing reads it in TICKS_PER_S steps, not every frame: the blobs drift a few pixels a second and the logos
+    // turn in steps half a second apart, yet at 60 frames a second the whole screen was drawn again for every frame -
+    // the Retroid Pocket Classic's GPU spent 15 ms of each 16 on it, behind menus standing still (2026-11-22). Read in
+    // the draw only, so a step redraws the backdrop's layer and nothing is composed again.
+    val stepped = remember(raw) { derivedStateOf { floor(raw.value * TICKS_PER_S) / TICKS_PER_S } }
     // Dark mode: the same page at night - deep ink, the blobs as dim glows, the dots and logos fainter. A theme with
     // a dark page of its own (HALLOWEEN) keeps it then, a little deeper.
     val theme = com.pokedaisy.app.companion.ui.theme.AppColors.theme
@@ -67,7 +75,10 @@ fun DaisyBackdrop(logos: Boolean = false) {
     }
     val blobs = colors.mapIndexed { i, c -> BLOB_PLACES[i % BLOB_PLACES.size].let { b -> Blob(b.x, b.y, b.yw, b.r, c, b.delay) } }
     val logo = motifBitmap(theme.motif)
-    Canvas(Modifier.fillMaxSize()) {
+    // Its own offscreen layer: a tick redraws the backdrop alone (not the menus over it), and a frame of the menus
+    // (a scroll, a cursor) puts the backdrop up as one picture instead of painting its blobs and dots again.
+    Canvas(Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
+        val t = stepped.value
         drawRect(page)
         // vw / vh like the site's CSS; the blobs size by the longer side so they stay soft on a phone too.
         val vw = size.width / 100f
@@ -118,6 +129,9 @@ fun DaisyBackdrop(logos: Boolean = false) {
 }
 
 private const val LOOP_S = 600f
+
+/** How often the backdrop moves: 4 times a second, about a pixel of drift each time. */
+private const val TICKS_PER_S = 4f
 
 /** The site's page colour (--bg). */
 private val PAGE = Color(0xFFF7F6FB)
