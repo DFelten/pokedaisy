@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -81,6 +82,7 @@ private fun ToolCard(tool: LibraryTool, m: GbaTextMetrics, small: GbaTextMetrics
             .fillMaxWidth()
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
             .drawBehind { drawLayeredBox(OptionColors.titleLayers.inPx(u.toPx()), if (focused) OptionColors.rowSelected else OptionColors.titleFill, radius = 3 * u.toPx()) }
+            .keyDrivenFocus()
             .soundClickable(interactionSource = interaction, indication = null, onClick = tool.open)
             .semantics { contentDescription = label }
             .padding(u * 6),
@@ -168,6 +170,7 @@ private fun NavItem(
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
             // No frame round the items (the user's call): the open one is a white block, the others the window's own grey.
             .drawBehind { if (on) drawPixelRoundRect(OptionColors.titleFill, radius = 3 * u.toPx(), step = u.toPx()) }
+            .keyDrivenFocus()
             .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
             .semantics { contentDescription = label }
             .padding(vertical = u * 5, horizontal = u * 3),
@@ -652,4 +655,34 @@ internal object ToolIcons {
         ),
         mapOf('k' to OUTLINE, 'h' to Color(0xFFD8E0EC), 's' to Color(0xFFA4AEC0), 'd' to Color(0xFF6E788C)),
     )
+}
+
+/**
+ * A tool's header (SAVE EDITOR, TRADE, PAL PARK...): the app's own header band along the screen's top edge, the whole
+ * width ([LibraryHeaderBar], the user's call, 2026-11-22), its title a step larger with the tool's icon before it, and
+ * [trailing] (whose saves) at its right end. Put inside a page with a [margin] all round, it reaches past it to the
+ * screen's edges, and leaves a gap under it.
+ */
+@Composable
+fun ToolHeader(
+    title: String, toolId: String?, m: GbaTextMetrics, trailing: String? = null, onBack: (() -> Unit)? = null,
+    margin: androidx.compose.ui.unit.Dp = 16.dp,
+) {
+    val big = rememberGbaTextMetrics(1.5f)
+    val gap = m.u * 4
+    LibraryHeaderBar(
+        title, big, onBack = onBack, logo = false,
+        leading = toolId?.let { id -> {
+            ToolIcons.of(id)?.let { PixelArt(it.bitmap, it.palette, Modifier.size(big.lineHeight * 1.15f)) }
+        } },
+        modifier = Modifier.layout { measurable, constraints ->
+            val extra = margin.roundToPx()
+            val w = constraints.maxWidth + 2 * extra
+            val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
+            // Placed over the page's margin (left, right and top), its height counted from the page's top edge, plus a gap.
+            layout(constraints.maxWidth, (placeable.height - extra + gap.roundToPx()).coerceAtLeast(0)) { placeable.place(-extra, -extra) }
+        },
+    ) {
+        trailing?.let { GbaText(it, OptionColors.headerText, OptionColors.headerShadow, m, maxLines = 1) }
+    }
 }

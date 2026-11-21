@@ -65,8 +65,7 @@ internal fun MoreScreen(
     val m = rememberGbaTextMetrics()
     val small = rememberGbaTextMetrics(1f)
     Column(modifier.fillMaxSize()) {
-        OptionTitleWindow(tk("MORE"), m)
-        Spacer(Modifier.height(m.u * 4))
+        // No title window (the user's call, 2026-11-22): the lit MORE chip says where you are; the grid takes the room.
         OptionListWindow(m, Modifier.fillMaxWidth().weight(1f)) {
             // One gap everywhere: between tiles across and down, and round the grid (the window pads its top and sides
             // alike); the tiles fill their columns, so no column slack adds to it.

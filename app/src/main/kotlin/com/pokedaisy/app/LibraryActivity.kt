@@ -623,8 +623,13 @@ class LibraryActivity : ComponentActivity() {
     private var awaitingFolderAccess = false
 
     /** Every window that opens over the library (the classic view or the launcher's main screen). */
+    /** [LibraryDialogs]' pop-ups ([com.pokedaisy.app.companion.ui.OptionOverlay]), for the D-pad. */
+    private val libraryOverlays = com.pokedaisy.app.companion.ui.OverlayStack()
+
     @Composable
     private fun LibraryDialogs(m: GbaTextMetrics, small: GbaTextMetrics) {
+        // The windows' D-pad: the focus moves in on open, stays in, and goes back to what opened it.
+        androidx.compose.runtime.CompositionLocalProvider(com.pokedaisy.app.companion.ui.LocalOverlayStack provides libraryOverlays) {
         Box(Modifier.fillMaxSize()) {
             if (addMenu) {
                 OptionSelector(
@@ -856,6 +861,7 @@ class LibraryActivity : ComponentActivity() {
                 )
             }
         }
+        }
     }
 
     @Composable
@@ -1085,6 +1091,24 @@ class LibraryActivity : ComponentActivity() {
 
     /** A card in the OPTION list-window look; the last-played ROM gets the
      * list's white "cursor" fill. D-pad focus tints it like a focused row. */
+    /** Labels (lower-cased) two or more of the library's games share, worked out once per [revision]. */
+    private var sameNames = emptySet<String>()
+    private var sameNamesRevision = -1
+
+    /** What the list shows under a game's name, by Settings > GAME PATHS. */
+    private fun pathLine(rom: File, game: com.pokedaisy.app.companion.ui.LibraryGame): String? =
+        when (com.pokedaisy.app.companion.LibraryPathMode.of(prefs.libraryPathMode)) {
+            com.pokedaisy.app.companion.LibraryPathMode.OFF -> null
+            com.pokedaisy.app.companion.LibraryPathMode.FULL -> game.path
+            com.pokedaisy.app.companion.LibraryPathMode.MATCHING -> {
+                if (sameNamesRevision != revision) {
+                    sameNames = listRoms().groupingBy { factsFor(it).label.lowercase() }.eachCount().filterValues { it > 1 }.keys
+                    sameNamesRevision = revision
+                }
+                if (game.label.lowercase() in sameNames) File(game.path).name else null
+            }
+        }
+
     private fun libraryGame(rom: File): com.pokedaisy.app.companion.ui.LibraryGame {
         val facts = factsFor(rom)
         return com.pokedaisy.app.companion.ui.LibraryGame(rom.absolutePath, facts.label,
@@ -1107,7 +1131,7 @@ class LibraryActivity : ComponentActivity() {
         val game = libraryGame(rom)
         com.pokedaisy.app.companion.ui.LibraryRomRow(game, m, small,
             selected = game.playing && launcherCard == null, cursor = launcherCard?.cursor == true,
-            upTo = upTo, showPath = showPath, onClick = launcherCard?.onTap ?: { play(rom) },
+            upTo = upTo, path = if (showPath) pathLine(rom, game) else null, onClick = launcherCard?.onTap ?: { play(rom) },
             onLongClick = longPressMenu { launcherCard?.onMenu?.invoke() ?: run { menu = true } },
             cover = { CoverThumb(rom, m, it) },
             menu = { if (launcherCard != null) MenuDots(m, launcherCard.onMenu)
@@ -1582,6 +1606,22 @@ class LibraryActivity : ComponentActivity() {
                 return true
             }
         }
+        // A window opened by a tap (ADD GAMES, SORT BY): this press lands on its current choice, out of touch mode first.
+        val dpad = event.keyCode == KeyEvent.KEYCODE_DPAD_UP || event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+            event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        if (dpad && event.action == KeyEvent.ACTION_DOWN && libraryDialogOpen) {
+            com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row ->
+                leaveTouchMode(this)
+                if (runCatching { row.requestFocus() }.isSuccess) return true
+            }
+        }
+        // The thing last tapped (a card, a tool, a header button): focused, and this press moves on from there.
+        if (dpad && event.action == KeyEvent.ACTION_DOWN && setup == null) {
+            com.pokedaisy.app.companion.ui.FocusJump.takeFrom()?.let { tapped ->
+                leaveTouchMode(this)
+                runCatching { tapped.requestFocus() }
+            }
+        }
         return super.dispatchKeyEvent(event)
     }
 
@@ -1641,7 +1681,7 @@ class LibraryActivity : ComponentActivity() {
         if (vertical && code == KeyEvent.KEYCODE_DPAD_LEFT && !toolsOpen && (
                 launcher.headerCursor == 0 ||
                     (launcher.viewCursor && launcher.views.indexOf(launcher.view) <= 0) ||
-                    (launcher.headerCursor < 0 && !launcher.viewCursor && launcher.columns > 1 && launcher.selected % launcher.columns == 0)
+                    (launcher.headerCursor < 0 && !launcher.viewCursor && (launcher.columns <= 1 || launcher.selected % launcher.columns == 0))
                 )
         ) {
             if (first) launcherToRail()
@@ -1857,6 +1897,8 @@ class LibraryActivity : ComponentActivity() {
         val section = if (toolsOpen) com.pokedaisy.app.companion.ui.LibrarySection.TOOLS else com.pokedaisy.app.companion.ui.LibrarySection.GAMES
         val railCursor = com.pokedaisy.app.companion.ui.LibrarySection.entries.getOrNull(launcher.navCursor)
         SideEffect { launcherTools = tools }
+        // The launcher's keys move its own cursors: none of its pieces take Compose focus (one marker at a time).
+        androidx.compose.runtime.CompositionLocalProvider(com.pokedaisy.app.companion.ui.LocalKeyDriven provides true) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             AppBackdrop(logos = true)
             // GAMES / TOOLS / SETTINGS as in the classic library: down the left of a wide screen, along the bottom of a tall one.
@@ -1871,9 +1913,7 @@ class LibraryActivity : ComponentActivity() {
                 onPick = ::launcherPick,
             )
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                OptionTitleWindow("POKéDAISY", m, Modifier.padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, top = SCREEN_MARGIN), leading = {
-                    PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight))
-                }) {
+                com.pokedaisy.app.companion.ui.LibraryHeaderBar("POKéDAISY", m) {
                     val buttons = launcherHeader()
                     SideEffect { launcher.headerCount = buttons.size }
                     buttons.forEachIndexed { i, b ->
@@ -1991,6 +2031,7 @@ class LibraryActivity : ComponentActivity() {
                 Modifier.align(Alignment.BottomEnd).padding(start = SCREEN_MARGIN, end = SCREEN_MARGIN, bottom = SCREEN_MARGIN + if (wide) 0.dp else barHeight),
             )
             launcher.menu?.let { menu -> LauncherMenuOverlay(menu, m) { launcher.menu = null } }
+        }
         }
     }
 

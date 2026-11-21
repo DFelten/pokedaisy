@@ -43,6 +43,9 @@ class GbaInput : Hotkeys.GameKeys, ScriptInput {
 
     fun setControls(maps: GbaControls.KeyMaps) { gbaControls = maps.gba; dsControls = maps.ds }
 
+    /** The keys on the DS games' X / Y ([Hotkeys.dsOwnKeys]). */
+    fun dsOwnKeys(): Set<Int> = dsControls.filterValues { it == CoreKey.X || it == CoreKey.Y }.keys
+
     /** One map for every game (tests). */
     fun setControls(map: Map<Int, Int>) { gbaControls = map; dsControls = map }
 

@@ -293,6 +293,11 @@ pixel, so there its text was as large for the screen as on a GBA): `LocalTextSte
    rewritten to `Icons.Filled`, a stale incremental cache once faked "Unresolved
    reference" errors — delete `build/kotlin` if errors look impossible).
 
+**Its colours are PokeDaisy's blues since 2026-11-22** (the user's call: `retroStylePalette`, #3D6FE0; `themedStylePalette` moves them
+to a THEME's hue, `Color.rehued`; `uiStylePalette`'s SUMMARY MINT keeps the sampled teal for reference). Top-screen headers (library,
+TOOLS, Settings, every tool: `LibraryHeaderBar`, `ToolHeader`) and Settings HOME's footer (`AppAboutBar`) are full-width bands on the
+screen's edges; a panel's title inside a window is a band across its top (`PanelHeader`, `LocalWindowInset`). The library header drops
+HELP and narrows its buttons when they'd cut POKéDAISY short (`compactActions`).
 **The menus' look is SUMMARY MINT** (2026-11-12, the user's pick of eight looks tried; `theme/UiStyle.kt`, `UiStyles`,
 `OptionColors.style`): the OPTION pieces below drawn over a `UiStylePalette` - Emerald's summary pages (sampled headless): a teal
 header joined to a mint list window (`OptionTitleWindow(joined)`, `WindowGap`), green section bands (`StyledGroupTitle`), banded
@@ -1270,6 +1275,14 @@ SCREEN > DISPLAY OPTIONS (STATUS BAR, SHADERS, OVERLAY, an upright phone's COMPA
 opens from DISPLAY OPTIONS, so BACK returns there (`Page.parent`, SettingsActivity's `goBack`). A row that opens a page of its own (not a pick-list) sets
 `SettingRow.opensPage`: a pixel chevron (`PixelIcons.chevronRight`) at its right end. Sub-pages and pick-lists get the title window's back arrow (`onBack`). The tabs not in the tab bar used to sit under the
 list as a second row of chips (TOOLS); they're the MORE tab now.
+**QUALITY OF LIFE** (companion GAMEPLAY, 2026-11-22, the user's call): WILD ENCOUNTERS, INSTANT TEXT, AUTO-RUN, RUN INDOORS, AUTO REFILL,
+REUSABLE TMS, NO HMS NEEDED, EXP SHARE, LEVEL CAP, TRADE EVOS, SHINY ODDS, SHINY ALERT, BOSS RETRY, LOW HP BEEP and FIELD POISON live on
+`Page.QOL`: `homeRows` still builds them, `withQolPage` moves them off HOME (`QOL_ROWS`; the row counts those changed from the game's
+own way, `QOL_UNUSED`). A new helper of that kind goes in `QOL_ROWS`. **D-pad after a tap** (`FocusJump`, SettingRows.kt): a focus
+asked for in touch mode doesn't take, so a tap parks a target - `target` (a group tab's first row, a pick-list's choice: the press
+lands there) or `from` (the last thing tapped, set by `soundClickable` / `menuClickable` / the library's cards: the press moves on
+from it) - which SettingsActivity / LibraryActivity / `sendFocusKey` take on the next D-pad press, after `leaveTouchMode`. L / R step
+the top-screen Settings' group tabs (`LocalGroupStep`). The launcher's pieces take no Compose focus (`LocalKeyDriven`).
 **DESCRIPTIONS / GROUP TABS** (2026-11-15, the first two rows of HOME on both screens, NEW tag `SETTINGS_LOOK`; `SettingsLook` in SettingRows.kt, Compose state, `Prefs.settingsDescriptions` / `settingsTabs` loaded by PokeDaisyApp): `GroupedRows` drops rows' subtitles (a featured group's tagline stays) and its `GroupTabs`. ui-preview resets both before each shot.
 **Settings round (2026-11-01, the user's calls)**: the top-screen Settings draws a step smaller (`LocalTextStep` -1 for the whole
 activity); rows whose label says it all carry no subtitle; a row can be a slider (`SettingRow.slider` -> `SettingSlider` /
@@ -1749,6 +1762,12 @@ BACK tap (`companionBackTap`); connect / disconnect show a HUD notice. Not tried
 Analog L2 / R2 (Retroid's triggers send no keys) are the BUTTON_L2 / R2 keys past half way (`triggerKey`): hotkeys first
 (their switch and bindings), then the game's controls, and the top-screen rebind capture takes them too. They used to be
 hard-wired to FF / slow-mo holds, which ignored HOTKEYS OFF and any rebinding (issue #54).
+**No L3 / R3** (`Hotkeys.noStickClicks`, found by PokeDaisyApp at start: the Retroid Pocket Classic by name - its driver lists
+stick buttons it doesn't have - else a gamepad without them): QUICK MENU on Y and COMPANION on X by default (an old file's L3 QUICK
+MENU moves too), START 2 / SELECT 2 lose X / Y (`GbaControls`' `x_y_to_hotkeys` mark); a DS game keeps its X / Y (`Hotkeys.dsOwnKeys`:
+a hotkey made only of them is off there). The companion window's X sits at the end of its top bar, as tall as it, where the window
+has no room beside it (`WithTopBarClose`, `LocalTopBarClose`). The HUD stays up through a map's name sign while FREE FLIGHT flies
+(`GameSession.observeField(flying)`).
 **Device BACK**: a BACK tap (from either screen - the Presentation forwards every key to
 `PokeDaisyActivity`) is the companion's back; a hold still leaves the game. Anything that
 opens over / inside a tab registers `CompanionBackHandler` (`companion/ui/CompanionBack.kt`,

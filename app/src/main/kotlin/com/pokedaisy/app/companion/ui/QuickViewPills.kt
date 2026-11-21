@@ -116,6 +116,7 @@ private fun QuickViewPill(
         modifier
             .gbaFocusRing(focused || cursor, PixelRoundedShape(u * PILL_RADIUS))
             .semantics { selected = on }
+            .keyDrivenFocus()
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
             .drawBehind {
                 val px = u.toPx()

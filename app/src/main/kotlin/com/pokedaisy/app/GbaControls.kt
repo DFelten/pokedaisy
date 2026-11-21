@@ -90,6 +90,9 @@ object GbaControls {
         "right" to "",
     )
 
+    /** Set in the file once START 2 / SELECT 2 gave X / Y up to the hotkeys ([Hotkeys.noStickClicks]). */
+    private const val NO_STICK_MARK = "x_y_to_hotkeys"
+
     /** Rows that came out of one: a file from before them gives each its old row's keys, so nothing moves (X was the
      * DS's X, a second START and the companion; Y the DS's Y and a second SELECT). */
     private val SPLIT_FROM = mapOf("ds_x" to "start2", "ds_y" to "select2", "companion" to "start2")
@@ -112,6 +115,14 @@ object GbaControls {
         // A file from before the split rows: start2 / select2 were X / Y, so they had keys if anything did.
         if ("start2" in p) for ((k, from) in SPLIT_FROM) if (k !in p) { p[k] = p[from] ?: DEFAULTS.getValue(from); changed = true }
         for ((k, v) in DEFAULTS) if (k !in p) { p[k] = v; changed = true }
+        // No L3 / R3 ([Hotkeys.noStickClicks]): X / Y are the COMPANION / QUICK MENU hotkeys' in the GBA and Game Boy games,
+        // so START 2 / SELECT 2 leave them (once: [NO_STICK_MARK]; only where they still had their defaults).
+        if (Hotkeys.noStickClicks && p[NO_STICK_MARK] == null) {
+            if (p["start2"] == "BUTTON_X") p["start2"] = ""
+            if (p["select2"] == "BUTTON_Y") p["select2"] = ""
+            p[NO_STICK_MARK] = "1"
+            changed = true
+        }
         if (changed) writeProps(dir, p, "PokeDaisy GBA button map — Android key names, comma-separated")
         return p
     }

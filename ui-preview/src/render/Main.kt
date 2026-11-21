@@ -471,6 +471,11 @@ fun snapshot() = SnapshotView(
     ),
 )
 
+/** Companion SETTINGS' QUALITY OF LIFE page opened (its rows live there, off HOME). */
+private fun SkikoComposeUiTest.openQol() {
+    onNodeWithText(com.pokedaisy.app.companion.i18n.tr("QUALITY OF LIFE")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+}
+
 class Shot(
     val name: String,
     val w: Int,
@@ -1750,7 +1755,7 @@ fun main(args: Array<String>) {
         Shot("$g-settings-after-swap", bw, bh, bd, companion("SETTINGS", settingsRow = "SWAP SCREENS")),
         // APP > TIPS, with its NEW tag.
         Shot("$g-settings-tips", bw, bh, bd, companion("SETTINGS", settingsRow = "TIPS")),
-        Shot("$g-settings-autorun", bw, bh, bd, companion("SETTINGS", settingsRow = "AUTO-RUN")),
+        Shot("$g-settings-autorun", bw, bh, bd, companion("SETTINGS")) { openQol(); onNodeWithText("AUTO-RUN").performScrollTo() },
         Shot("$g-settings-flystyle", bw, bh, bd, companion("SETTINGS", settingsRow = "FLY STYLE")),
         Shot("$g-settings-rideon", bw, bh, bd, companion("SETTINGS", settingsRow = "RIDE ON")),
         Shot("$g-settings-battleview", bw, bh, bd, companion("SETTINGS", settingsRow = "BATTLE VIEW")),
@@ -2104,7 +2109,11 @@ fun main(args: Array<String>) {
         Shot("$g-settings-volume-popup", bw, bh, bd, companion("SETTINGS")) {
             onNodeWithText("GAME VOLUME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
-        Shot("$g-settings-gameplay", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("TRADE EVOS").performScrollTo() },
+        Shot("$g-settings-gameplay", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("QUALITY OF LIFE").performScrollTo() },
+        // GAMEPLAY's helpers on their own page.
+        Shot("$g-settings-qol", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         Shot("$g-settings-touch", bw, bh, bd, companion("SETTINGS")) {
             onNodeWithText("TOUCH CONTROLS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
@@ -2172,45 +2181,56 @@ fun main(args: Array<String>) {
         // GAMEPLAY: WILD ENCOUNTERS, REUSABLE TMS, AUTO-RUN, RUN INDOORS, CHEATS, then WILD ENCOUNTERS flipped OFF and
         // REUSABLE TMS in view (OFF; -Pgame=UNBOUND: ON, greyed).
         Shot("$g-settings-controls", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText("WILD ENCOUNTERS").performScrollTo()
         },
         Shot("$g-settings-reusable-tms", bw, bh, bd, companion("SETTINGS")) {
             // Scrolled to AUTO-RUN, the row under it: a greyed row (Unbound's, Radical Red's: BUILT_IN) won't scroll to itself here.
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("AUTO-RUN")).performScrollTo()
         },
         // NO HMS NEEDED under REUSABLE TMS (OFF), then flipped ON.
         Shot("$g-settings-hm-free", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("NO HMS NEEDED")).performScrollTo()
         },
         // EXP SHARE's pick-list (OFF / SPLIT / FULL EXP, the note on what each does).
         Shot("$g-settings-exp-share", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("EXP SHARE")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // LEVEL CAP turned on: the row shows the cap now (the preview's LV 14).
         Shot("$g-settings-level-cap", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL CAP")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // AUTO REFILL turned on.
         Shot("$g-settings-auto-refill", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("AUTO REFILL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // FIELD POISON turned off (LOW HP BEEP above it, still the game's).
         Shot("$g-settings-field-poison", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("FIELD POISON")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // BOSS RETRY turned on.
         Shot("$g-settings-boss-retry", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("BOSS RETRY")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // SHINY ALERT turned on: the subtitle counts the hunt (the preview's 312).
         Shot("$g-settings-shiny-alert", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ALERT")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("$g-settings-hm-free-on", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("NO HMS NEEDED")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // PLAYER LOOK under REUSABLE TMS, then its tiles (OFF = the player's own hero, then the other games' heroes).
         Shot("$g-settings-player-look", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("RUN INDOORS")).performScrollTo()
         },
         Shot("$g-settings-player-look-pick", bw, bh, bd, companion("SETTINGS")) {
@@ -2218,12 +2238,15 @@ fun main(args: Array<String>) {
         },
         // SHINY ODDS under REUSABLE TMS, then its pick-list (the debug build's, with 1 IN 4 and 1 IN 1).
         Shot("$g-settings-shiny-odds", bw, bh, bd, companion("SETTINGS")) {
-            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("CHEATS")).performScrollTo()
+            openQol()
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ODDS")).performScrollTo()
         },
         Shot("$g-settings-shiny-odds-pick", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ODDS")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("$g-settings-wild", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText("WILD ENCOUNTERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // DISPLAY OPTIONS: STATUS BAR, SHADERS, OVERLAY.

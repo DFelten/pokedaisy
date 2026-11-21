@@ -114,7 +114,7 @@ fun PalParkScreen(
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("PAL PARK"), m, trailing = "${state.gba.label} · ${state.ds.label}", onBack = leave)
+            ToolHeader(tk("PAL PARK"), "PALPARK", m, trailing = "${state.gba.label} · ${state.ds.label}", onBack = leave)
             Spacer(Modifier.height(m.u * 4))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth > maxHeight * 1.1f

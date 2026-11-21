@@ -106,8 +106,10 @@ private fun PocketList(state: PcBoxesState, pockets: List<SavePocket>, open: Poc
 private fun StackList(state: PcBoxesState, bag: TrainerBagEditor, p: SavePocket, m: GbaTextMetrics, modifier: Modifier) {
     val addable = remember(state.revision, p.kind) { bag.addable(p.kind) }
     OptionListWindow(m, modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            GbaText(pocketLabel(p.kind), OptionColors.groupTitleText, OptionColors.groupTitleShadow, m, Modifier.padding(horizontal = m.u * 4))
+        Column(Modifier.fillMaxSize()) {
+            PanelHeader(pocketLabel(p.kind), m)
+            // The header outside the scroll: it reaches over the window's top edge, which a scroll would cut off.
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             p.stacks.forEachIndexed { i, st ->
                 OptionLine(
                     state.itemText(st.item), "×${st.quantity}", selected = false, m, labelWeight = 0.8f, divider = true,
@@ -124,6 +126,7 @@ private fun StackList(state: PcBoxesState, bag: TrainerBagEditor, p: SavePocket,
                     maxLines = Int.MAX_VALUE, modifier = Modifier.padding(m.u * 4),
                 )
             }
+                    }
         }
     }
 }

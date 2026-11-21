@@ -48,7 +48,7 @@ fun DsLayoutPicker(current: DsLayout, m: GbaTextMetrics, onPick: (DsLayout) -> U
                     DsLayout.entries.forEachIndexed { i, layout ->
                         val on = layout == current
                         OptionLine(
-                            layout.label, if (on) "◀" else null, selected = on && (focusedRow < 0 || focusedRow == i), m,
+                            layout.label, null, selected = on && (focusedRow < 0 || focusedRow == i), m, marker = on,
                             height = rowH, labelWeight = 0.88f, divider = true, subtitle = layout.subtitle,
                             onFocus = { focusedRow = i },
                             leading = { DsLayoutMiniature(layout, Modifier.size(m.u * MINI_W, m.u * MINI_H)) },

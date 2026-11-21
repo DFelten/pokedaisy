@@ -59,7 +59,7 @@ fun GamePickerPage(
                 picker.options.forEach { opt ->
                     val on = opt.id == picker.current
                     OptionLine(
-                        opt.title, if (on) "◀" else null, selected = on, m,
+                        opt.title, null, selected = on, m, marker = on,
                         labelWeight = 0.85f, divider = true, labelBadge = if (opt.likely) tk("LIKELY") else null,
                     ) { if (!on) actions.pick(opt.id); onBack?.invoke() }
                 }

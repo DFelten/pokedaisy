@@ -61,7 +61,7 @@ val STATUS_BAR_PLACES = listOf(tk("OFF"), tk("GAME"), tk("COMPANION"))
 
 fun statusBarLabel(on: Boolean, onCompanion: Boolean) = STATUS_BAR_PLACES[if (!on) 0 else if (onCompanion) 2 else 1]
 
-internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
+internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), QOL(tk("QUALITY OF LIFE")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
 
 /** Where BACK from a page goes: SHADERS opens from DISPLAY OPTIONS, the rest from HOME. */
 internal val Page.parent: Page get() = when (this) {
@@ -148,10 +148,13 @@ fun CompanionSettingsScreen(
             } else if (!(statusBarShown && page == Page.HOME)) {
                 // A sub-page's arrow (and BACK, through it) returns to the options.
                 val titleM = rememberGbaTextMetrics()
-                OptionTitleWindow(page.title, titleM, trailing = trailing, joined = true, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
-                    if (!statusBarShown && !application) {
-                        Spacer(Modifier.width(titleM.u * 8))
-                        BatteryIndicator(titleM)
+                // In the window with no room beside it, its X at the title's end (SidePanelHost).
+                WithTopBarClose { mod ->
+                    OptionTitleWindow(page.title, titleM, mod, trailing = trailing, joined = true, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
+                        if (!statusBarShown && !application) {
+                            Spacer(Modifier.width(titleM.u * 8))
+                            BatteryIndicator(titleM)
+                        }
                     }
                 }
                 WindowGap(m)
@@ -177,6 +180,7 @@ fun CompanionSettingsScreen(
                             opensPage = true, labelBadge = settings.gamePickBadge) { onPlaysAs() })
                     }.orEmpty() + homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
                         { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
+                        .let { withQolPage(it) { page = Page.QOL } }
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> COMPANION_TABS.map { id ->
@@ -280,6 +284,9 @@ fun CompanionSettingsScreen(
                         buttons = settings.touchButtons, xyBadge = settings.touchXyBadge,
                     ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.SPEED -> speedRows(settings, { tick++ }, { selector = it }) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
+                    Page.QOL -> qolRows(homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
+                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })) +
+                        SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.DISPLAY -> displayRows(settings, { tick++ }, { page = it }, { selector = it }) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.CHEATS -> cheatRows(settings, changed = { tick++ }, removing = removingCheats,
                         onAdd = { page = Page.CHEAT_ADD },
@@ -536,6 +543,38 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
         if (r.header) skipping = r.label in BLOCKED_GROUPS
         !skipping && r.label !in BLOCKED_ROWS
     }
+}
+
+/**
+ * GAMEPLAY's helpers (the user's call, 2026-11-22: a page of their own, not a long run of switches on HOME), in this
+ * order: their rows are built where they always were ([homeRows]) and moved here.
+ */
+private val QOL_ROWS = listOf(
+    "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
+    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+)
+
+/** A QOL row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
+private val QOL_UNUSED = mapOf(
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
+)
+
+/** QUALITY OF LIFE's rows, out of HOME's, in [QOL_ROWS]' order. */
+private fun qolRows(rows: List<SettingRow>): List<SettingRow> =
+    rows.filter { !it.header && it.label in QOL_ROWS }.sortedBy { QOL_ROWS.indexOf(it.label) }
+
+/** HOME with the QOL rows taken out and one QUALITY OF LIFE row where the first was ("3 ON"), opening their page. */
+private fun withQolPage(rows: List<SettingRow>, open: () -> Unit): List<SettingRow> {
+    val members = qolRows(rows)
+    if (members.isEmpty()) return rows
+    val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+    val opener = SettingRow(
+        tk("QUALITY OF LIFE"), tr("{0} ON", on), opensPage = true, subtitle = "Helpers that save you time",
+        labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },
+    ) { open() }
+    val at = rows.indexOfFirst { !it.header && it.label in QOL_ROWS }
+    return rows.filterIndexed { i, r -> i < at || r.header || r.label !in QOL_ROWS }
+        .let { kept -> kept.take(at) + opener + kept.drop(at) }
 }
 
 /** [rows] cut to the ones labelled in [shown], with the titles of the groups that still have one. */

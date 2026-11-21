@@ -203,7 +203,7 @@ fun TradeScreen(
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("TRADE"), m, trailing = "${state.a.label} · ${state.b.label}", onBack = leave)
+            ToolHeader(tk("TRADE"), "TRADE", m, trailing = "${state.a.label} · ${state.b.label}", onBack = leave)
             Spacer(Modifier.height(m.u * 4))
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val wide = maxWidth > maxHeight * 1.1f

@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -129,4 +130,38 @@ internal fun HeadedBlock(
 internal fun Modifier.headedBody(headed: Boolean, u: androidx.compose.ui.unit.Dp): Modifier {
     val c = OptionColors.cells ?: return this
     return if (!headed) this else cell(c.a, c.line, u, top = false, bottom = true).padding(horizontal = u * 4, vertical = u * 3)
+}
+
+/**
+ * A panel's title as a solid band across its top (the save editor's PARTY, ITEMS, TRAINER, the tools' sides: the user's
+ * call, 2026-11-22): in an [OptionListWindow] it reaches the frame on both sides and sits on its top edge (put it first,
+ * outside any scrolling column, whose clip would cut what reaches over the frame), the style's section colour with its
+ * white words; CLASSIC the title window's colours.
+ */
+@Composable
+fun PanelHeader(text: String, m: GbaTextMetrics, modifier: Modifier = Modifier) {
+    val u = m.u
+    val style = OptionColors.style
+    val fill = style?.let { OptionColors.tint(it.sectionFill) } ?: OptionColors.headerFill
+    val ink = style?.sectionText ?: OptionColors.headerText
+    val shadow = style?.sectionShadow ?: OptionColors.headerShadow
+    val edge = LocalWindowInset.current
+    val gap = u * 3
+    Box(
+        modifier
+            .layout { measurable, constraints ->
+                // Out to the frame's inner edge on both sides and the top: one band across the window's top.
+                val side = kotlin.math.round(edge?.side ?: 0f).toInt()
+                val top = kotlin.math.round(edge?.top ?: 0f).toInt()
+                val w = constraints.maxWidth + 2 * side
+                val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
+                layout(constraints.maxWidth, (placeable.height - top + gap.roundToPx()).coerceAtLeast(0)) { placeable.place(-side, -top) }
+            }
+            .drawBehind {
+                // The window's fill corners at the top, so it rounds with the window; square below.
+                val r = edge?.radius ?: u.toPx()
+                drawPixelCornersRect(fill, r, r, 0f, 0f)
+            }
+            .padding(horizontal = u * 6, vertical = u * 2),
+    ) { GbaText(text, ink, shadow, m, maxLines = 1) }
 }
