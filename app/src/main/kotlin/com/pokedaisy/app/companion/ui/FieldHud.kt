@@ -39,6 +39,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -1789,7 +1790,10 @@ private fun HudBagPanel(
     }
 }
 
-/** WILD: this map's wild Pokémon by method - icon, name (??? until seen), levels, how often, a ball once caught. */
+/**
+ * WILD: this map's wild Pokémon by method - icon, name (??? until seen, a tap shows it, like GUIDE > HERE's), levels,
+ * how often, a ball once caught.
+ */
 @Composable
 private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaTextMetrics, dock: Boolean, top: Boolean, inset: PaddingValues, kept: Boolean, onKeep: () -> Unit, onClose: () -> Unit) {
     val u = m.u
@@ -1797,6 +1801,8 @@ private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaText
     val icon = hudIconSize(m)
     val (align, place) = panelPlace(dock, top, u, inset)
     val c = ink
+    // Unseen species tapped open on this map (a tap again hides it); a new map starts hidden again.
+    val revealed = remember(snapshot.mapGroup, snapshot.mapNum) { mutableStateListOf<Int>() }
     HudPanelScrim(onClose, align, clear = kept) { window ->
         Column(place.width(u * 200).hudPanel(u).then(window).padding(u * 6), verticalArrangement = Arrangement.spacedBy(u * 2)) {
             PanelHeading(GRASS_ICON, GRASS_COLORS, tk("WILD POKéMON"), m, onClose) {
@@ -1809,13 +1815,17 @@ private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaText
                 wild.groupBy { it.method }.forEach { (method, list) ->
                     GbaText(tr(method), c.accent, c.accentShadow, small, Modifier.padding(top = u * 2))
                     list.forEach { w ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            // An unseen Pokémon stays hidden, like GUIDE > HERE's.
+                        val shown = w.seen || w.species in revealed
+                        val tap = if (w.seen) Modifier else Modifier.soundClickable {
+                            if (w.species in revealed) revealed.remove(w.species) else revealed.add(w.species)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().then(tap)) {
+                            // An unseen Pokémon stays hidden until tapped, like GUIDE > HERE's.
                             Box(Modifier.size(icon), contentAlignment = Alignment.Center) {
-                                if (w.seen) { if (LocalPokemonPictures.current != null) SpeciesPicture(w.species, null, icon, fit = true) else HudSpecies(spriteAsset("pokemon", w.species), icon) } else GbaText("?", c.muted, c.shadow, m)
+                                if (shown) { if (LocalPokemonPictures.current != null) SpeciesPicture(w.species, null, icon, fit = true) else HudSpecies(spriteAsset("pokemon", w.species), icon) } else GbaText("?", c.muted, c.shadow, m)
                             }
                             Spacer(Modifier.width(u * 2))
-                            GbaText(if (w.seen) speciesName(w.species) else "???", c.text, c.shadow, m, Modifier.weight(1f))
+                            GbaText(if (shown) speciesName(w.species) else "???", c.text, c.shadow, m, Modifier.weight(1f))
                             if (w.caught) {
                                 PixelArt(PixelIcons.pokeBall, CAUGHT_BALL, Modifier.size(u * 9))
                                 Spacer(Modifier.width(u * 4))
