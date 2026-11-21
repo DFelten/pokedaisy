@@ -105,7 +105,7 @@ fun decodeGen2BoxMon(raw: ByteArray, off: Int, cfg: Gen2Config, egg: Boolean): M
 
 /**
  * CalcMonStats with stat experience: ((base + DV) * 2 + ceil(sqrt(stat exp)) / 4) * level / 100 + 5, HP + level + 10
- * instead of 5, at most 999; in [MonStats.stats]' order (HP, Attack, Defense, Speed, Sp. Atk, Sp. Def). Base stats from
+ * instead of 5, at most 999 (the game's square root stops at 255: stat exp past 65025 counts as 63, not 64); in [MonStats.stats]' order (HP, Attack, Defense, Speed, Sp. Atk, Sp. Def). Base stats from
  * the cart (the DEX's entry); null while it isn't loaded.
  */
 internal fun gen2BoxStats(cfg: Gen2Config, species: Int, level: Int, dvs: List<Int>, statExp: List<Int>): List<Int>? {
@@ -114,7 +114,7 @@ internal fun gen2BoxStats(cfg: Gen2Config, species: Int, level: Int, dvs: List<I
     val page = PokedexSource.entry(tables, species)?.baseStats?.takeIf { it.size == 6 } ?: return null
     val base = listOf(page[0], page[1], page[2], page[5], page[3], page[4])
     return List(6) { i ->
-        val exp = kotlin.math.ceil(kotlin.math.sqrt(statExp[i].toDouble())).toInt() / 4
+        val exp = kotlin.math.ceil(kotlin.math.sqrt(statExp[i].toDouble())).toInt().coerceAtMost(255) / 4
         val core = ((base[i] + dvs[i]) * 2 + exp) * level / 100
         (if (i == STAT_HP) core + level + 10 else core + 5).coerceAtMost(999)
     }

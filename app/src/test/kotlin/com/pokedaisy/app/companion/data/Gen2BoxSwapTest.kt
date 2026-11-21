@@ -41,6 +41,8 @@ class Gen2BoxSwapTest {
         var pending: Int? = null
         val ran = mutableListOf<Pair<Int, Int>>()
         var onField = true
+        /** The loop stops coming by after this many more calls (null: never). */
+        var callsLeft: Int? = null
 
         private fun at(addr: Long): Pair<ByteArray, Int> = when {
             addr >= cartRam(1, 0xA000) && (addr and 0xFFFF) < 0xA010 -> sramTop to (addr and 0xFFFF).toInt() - 0xA000
@@ -55,6 +57,7 @@ class Gen2BoxSwapTest {
         override fun rom(off: Long, len: Int): ByteArray? = null
 
         override fun gbCallAt(at: Int, fn: Int, a: Int, b: Int, hl: Int): Boolean {
+            callsLeft?.let { if (it <= 0) onField = false else callsLeft = it - 1 }
             if (!onField) return false
             pending?.let { run(it) }
             assertEquals(calls.at, at)
@@ -210,6 +213,30 @@ class Gen2BoxSwapTest {
         g.onField = false
         assertEquals(BoxChangeResult.NOT_NOW, calls.changeBox(g, 3))
         assertEquals(7, g[calls.curBox])
+    }
+
+    @Test
+    fun `CHANGE BOX stopped half way - wCurBox always names the box sBox holds`() {
+        fun game() = Game(cfg, calls).also { g ->
+            g[calls.curBox] = 2
+            g[calls.saveCheck] = 99
+            g[calls.playerId] = 0xEC; g[calls.playerId + 1] = 0x78
+            g[calls.savedPlayerId] = 0xEC; g[calls.savedPlayerId + 1] = 0x78
+        }
+        // SaveBox and its settle ran, then the loop stopped: LoadBox never ran, so sBox is still box 2.
+        game().let { g ->
+            g.callsLeft = 2
+            assertEquals(BoxChangeResult.FAILED, calls.changeBox(g, 7))
+            assertEquals(listOf(calls.saveBox), g.saved)
+            assertEquals(2, g[calls.curBox])
+        }
+        // LoadBox ran (sBox is box 7 now), then nothing more: loading box 2 back can't run either, so wCurBox stays 7.
+        game().let { g ->
+            g.callsLeft = 4
+            assertEquals(BoxChangeResult.FAILED, calls.changeBox(g, 7))
+            assertEquals(listOf(calls.saveBox, calls.loadBox), g.saved)
+            assertEquals(7, g[calls.curBox])
+        }
     }
 
     @Test

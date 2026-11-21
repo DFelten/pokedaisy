@@ -1673,10 +1673,10 @@ int main(int argc, char** argv) {
             // cartRam reads): the boxes after a call that closed SRAM again.
             unsigned bank = 0, addr = 0, cnt = 1;
             sscanf(line, "%*s %x %x %x", &bank, &addr, &cnt);
-            struct GB* gb = core->board;
+            struct GB* gb = core->platform(core) == mPLATFORM_GB ? core->board : NULL;   // NULL: not a Game Boy game
             size_t at = (size_t) bank * 0x2000 + (addr - 0xA000);
             printf("gbsram %x:%04x:", bank, addr);
-            for (unsigned k = 0; k < cnt && gb->memory.sram && addr >= 0xA000 && at + k < gb->sramSize; k++) printf(" %02x", gb->memory.sram[at + k]);
+            for (unsigned k = 0; gb && k < cnt && gb->memory.sram && addr >= 0xA000 && at + k < gb->sramSize; k++) printf(" %02x", gb->memory.sram[at + k]);
             printf("\n");
         } else if (!strcmp(cmd, "gbwram")) {
             // gbwram: C000-DFFF then FF80-FFFE over the bus, one hex line, flushed - for a harness that reads the game

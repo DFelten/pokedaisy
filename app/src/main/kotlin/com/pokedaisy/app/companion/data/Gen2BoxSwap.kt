@@ -110,20 +110,27 @@ class Gen2BoxCalls(
         if (!g.gbCallAt(at, FARCALL, SAVE_BANK, 0, saveBox)) return BoxChangeResult.NOT_NOW
         if (!settle(g)) return BoxChangeResult.FAILED
         g.write(curBox, byteArrayOf(to.toByte()))
-        if (!g.gbCallAt(at, FARCALL, SAVE_BANK, 0, loadBox) || !settle(g)) return BoxChangeResult.FAILED.also { loadBack(g, current) }
+        // LoadBox never ran: sBox still holds the current box (SaveBox put it in its place too), which keeps its number.
+        if (!g.gbCallAt(at, FARCALL, SAVE_BANK, 0, loadBox)) return BoxChangeResult.FAILED.also { g.write(curBox, byteArrayOf(current.toByte())) }
+        if (!settle(g)) return BoxChangeResult.FAILED.also { loadBack(g, current, to) }
         // The save has to follow: until it does, the cart's sBox is the new box under a save that names the old one.
         if (!(0 until SAVE_TRIES).any { g.gbCallAt(at, FARCALL, SAVE_BANK, 0, saveGame) }) {
             if (g.gbCallAt(at, FARCALL, SAVE_BANK, 0, saveBox)) settle(g)
-            return BoxChangeResult.FAILED.also { loadBack(g, current) }
+            return BoxChangeResult.FAILED.also { loadBack(g, current, to) }
         }
         if (!settle(g, SAVE_SETTLE_TRIES)) return BoxChangeResult.FAILED
         return if (u8(g, curBox) == to) BoxChangeResult.CHANGED else BoxChangeResult.FAILED
     }
 
-    /** A box change that stopped half way: wCurBox back to [current] and that box into sBox again, as the save has them. */
-    private fun loadBack(g: GameCalls, current: Int) {
+    /**
+     * A box change that stopped half way, box [to] in sBox: wCurBox back to [current] and that box into sBox again, as the
+     * save has them. If LoadBox can't run, wCurBox stays [to], the box sBox holds: naming it [current] would let the next
+     * save's SaveBox write [to]'s Pokémon over [current]'s.
+     */
+    private fun loadBack(g: GameCalls, current: Int, to: Int) {
         g.write(curBox, byteArrayOf(current.toByte()))
         if ((0 until SAVE_TRIES).any { g.gbCallAt(at, FARCALL, SAVE_BANK, 0, loadBox) }) settle(g)
+        else g.write(curBox, byteArrayOf(to.toByte()))
     }
 
     /** WITHDRAW: the current box's slot [slot] ([key]) into the party. */

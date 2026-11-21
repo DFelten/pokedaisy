@@ -15,7 +15,7 @@ import java.io.File
 class GbStatsTest {
     /** Gen 1 / 2's stat: ((base + DV) * 2 + ceil(sqrt(stat exp)) / 4) * level / 100 + 5; HP + level + 10 instead of 5. */
     private fun gbStat(base: Int, dv: Int, statExp: Int, level: Int, hp: Boolean): Int {
-        val exp = kotlin.math.ceil(kotlin.math.sqrt(statExp.toDouble())).toInt() / 4
+        val exp = kotlin.math.ceil(kotlin.math.sqrt(statExp.toDouble())).toInt().coerceAtMost(255) / 4   // the game stops at 255
         val core = ((base + dv) * 2 + exp) * level / 100
         return if (hp) core + level + 10 else core + 5
     }
