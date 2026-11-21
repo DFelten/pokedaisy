@@ -271,8 +271,9 @@ internal class IosLibraryHost(
                                     labelBadge = NewFeatures.badge(NewFeatures.IOS_SETUP_BUTTONS)) { setup?.close(); setup = newSetup(fromSettings = true) },
                                 SettingRow("RetroAchievements", null, opensPage = true) { account = true },
                                 SettingRow(tk("CO-OP"), null, opensPage = true,
-                                    labelBadge = NewFeatures.badge(NewFeatures.IOS_COOP)) { coopPage = CoopPage.HOME },
-                            ))
+                                    labelBadge = NewFeatures.badge(NewFeatures.IOS_COOP)) { coopPage = CoopPage.HOME }
+                                    .takeIf { IosCoopHost.enabled },
+                            ).filterNotNull())
                     }
                 }
             }) { game, up ->

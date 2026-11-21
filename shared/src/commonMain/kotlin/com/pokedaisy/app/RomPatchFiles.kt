@@ -48,9 +48,10 @@ object RomPatchFiles {
         return null
     }
 
+    /** The patched ROM's file name: the patch's, trimmed ("patched" when nothing is left), never a hidden file. */
     fun outputName(patchName: String, extension: String): String {
-        val base = patchName.substringBeforeLast('.').replace('/', '_').replace('\u0000', '_')
-        return "$base.$extension"
+        val base = patchName.substringBeforeLast('.').replace('/', '_').replace('\u0000', '_').trim()
+        return "${base.ifEmpty { "patched" }}.$extension"
     }
 
     fun readPatch(source: Source): ByteArray = source.use {

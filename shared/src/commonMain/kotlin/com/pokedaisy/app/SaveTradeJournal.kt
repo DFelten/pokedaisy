@@ -40,17 +40,30 @@ class SaveTradeJournal(
         replace(file, data.readByteArray())
     }
 
-    /** Leave the journal intact if it cannot be validated or a recovery operation fails. */
+    /**
+     * False (the journal kept, to retry) while a save's folder is missing - a detached SD card - or a recovery write
+     * fails. A journal that can never be finished (unreadable, a path [accept] turns down, a save gone from a folder
+     * that is there) is set aside beside itself, untouched, so it can't keep every game from opening.
+     */
     fun recover(accept: (Side) -> Boolean, finishCommitted: (Side) -> Unit): Boolean = runCatching {
         if (!fs.exists(file)) return@runCatching true
-        val sides = fs.source(file).buffer().use { source ->
-            check(source.readUtf8(MAGIC.length.toLong()) == MAGIC)
-            List(2) { source.readSide() }.also { check(source.exhausted()) }
+        val sides = runCatching {
+            fs.source(file).buffer().use { source ->
+                check(source.readUtf8(MAGIC.length.toLong()) == MAGIC)
+                List(2) { source.readSide() }.also { check(source.exhausted()) }
+            }
+        }.getOrNull()
+        if (sides == null || sides[0].edit.path == sides[1].edit.path || !sides.all(accept)) {
+            return@runCatching setAside()
         }
-        check(sides[0].edit.path != sides[1].edit.path && sides.all(accept))
         // A detached SD card can make a published side temporarily disappear. Retry when both
         // saves are visible before deciding whether to retain or roll back the trade.
-        check(sides.all { fs.metadataOrNull(it.edit.path)?.isRegularFile == true })
+        for (side in sides) {
+            if (fs.metadataOrNull(side.edit.path)?.isRegularFile == true) continue
+            val folder = side.edit.path.parent
+            // The folder is there but the save isn't: the player moved or deleted it, and nothing can be put back.
+            return@runCatching if (folder != null && fs.metadataOrNull(folder)?.isDirectory == true) setAside() else false
+        }
         if (sides.all { matches(it.edit.path, it.edit.updated) }) {
             sides.forEach(finishCommitted)
         } else {
@@ -64,6 +77,12 @@ class SaveTradeJournal(
         fs.delete(file)
         true
     }.getOrDefault(false)
+
+    private fun setAside(): Boolean {
+        val nonce = Random.nextLong().toULong().toString(16)
+        fs.atomicMove(file, file.parent!! / "${file.name}.stuck-$nonce")
+        return true
+    }
 
     internal fun unchanged(side: Side): Boolean = runCatching {
         matches(side.edit.path, side.edit.expected)

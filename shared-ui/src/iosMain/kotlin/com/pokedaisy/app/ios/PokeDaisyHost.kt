@@ -380,7 +380,7 @@ object PokeDaisyHost {
             onDisableResume = {
                 runCatching { resume.startFresh(); true }.getOrElse { resumeFailed(); false }
             }, onEditTouch = { if (game === g) touch.edit() }, readTouchStage = { touch.readStage().takeIf { game === g } }, gameScreen = { screen.takeIf { game === g } }, playback = { currentRuntime },
-            looks = currentLook, tradeSupported = { game === g && evolution?.supported() == true }, coop = currentCoop)
+            looks = currentLook, tradeSupported = { game === g && evolution?.supported() == true }, coop = currentCoop.takeIf { IosCoopHost.enabled })
             .also { s ->
                 L10n.apply(s.appLanguage, code)
                 g.rewindEnabled = s.rewind
@@ -548,7 +548,7 @@ object PokeDaisyHost {
                 }
             })
         val currentBattle = battle!!
-        g.beforeRewind = { p.battleRetry.reset(); p.cancelFieldActions(); currentBattle.cancel() }
+        g.beforeRewind = { p.cancelFieldActions(); currentBattle.cancel() }
         val currentOptions = p.options
         var lookScanStarted = false
         g.onCoreStarted = {
@@ -609,7 +609,7 @@ object PokeDaisyHost {
                     ready = { currentOptions.settingsChanged(currentSettings) })
                 currentCheats.start()
                 g.withState { resume.restore() }
-                currentCoop.start(code, revision) { currentCheats.hasEnabledCheats }
+                if (IosCoopHost.enabled) currentCoop.start(code, revision) { currentCheats.hasEnabledCheats }
                 ra.setShinyOddsActive(p.shiny?.active == true)
                 ra.setExpShareActive(currentOptions.expShareActive)
                 ra.setFlightAnywhere(false)

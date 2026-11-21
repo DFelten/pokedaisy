@@ -60,25 +60,3 @@ drawn at about half the app's size (half of `LARGE`'s): smaller pictures of your
 and buttons with their pictures but no names. `LARGE` draws it at full size, with the names on the buttons. Every
 `LAYOUT` works at each size, and the HUD keeps to its corners on screen at every `ZOOM` step. When your party and the rest don't fit side by side, the HUD keeps to the bottom left corner, with a `MAP` button
 in place of the minimap.
-
-## On iPhone and iPad
-
-The same field HUD appears in supported GBA games when you hold the device sideways. It waits for the field
-to settle, then hides during battles and game menus. In portrait, the companion below the game shows this information.
-Open `SETTINGS` > `HUD` to change its layout, look, size and visible parts. Your choices are kept for the next game.
-The HUD makes room for your touch controls. Its party, map, bag and wild windows use the same screens and supported
-field actions as the companion. Opening `QUICK MENU` closes any open HUD window.
-
-`BATTLE BUTTONS` also work in supported single battles when you hold the device sideways. On iPhone and iPad,
-they can sit over the game when there is too little room beside it. `FIGHT`, the party list and `RUN` use the same battle controls as the companion. They stay hidden until
-the game can read battle commands, and during double battles. Opening the companion window or `QUICK MENU` hides them.
-The action buttons stay near the right edge when the space next to them is clear. They move left if a touch
-control overlaps that space. On a short landscape screen the battle buttons can line up in a row when they fit
-between the touch controls. If no space is clear, use the regular game controls. You can turn battle buttons off independently of the field HUD.
-
-HUD windows and battle move/party lists take your controller and bound keyboard buttons while they are open.
-Opening one finishes text entry in the companion and dismisses its keyboard. Text fields inside the new window
-still work normally.
-`B` or `START` backs out of the current overlay. Held gameplay buttons must be released before they can play again.
-WILD's `KEEP OPEN` keeps gameplay available. The Quick Menu shortcut still works from a modal overlay;
-editing controls or capturing a binding keeps priority over it.

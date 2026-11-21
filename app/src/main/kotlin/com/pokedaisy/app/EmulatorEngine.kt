@@ -1248,10 +1248,9 @@ class EmulatorEngine(
                 }
             }
             rewinding = rewindHold.active && rewindWanted > 0
-            if (rewinding) {
-                playback.cancelFieldActions()
-                playback.battleRetry.reset()
-            }
+            // BOSS RETRY keeps the state it took as the battle began: a rewind within the battle doesn't retake it
+            // there, and one back past the battle's start is out of battle at the next sample, which clears it.
+            if (rewinding) playback.cancelFieldActions()
             MgbaCore.pkSetRewinding(rewinding)
             // TURBO A / B: pressed 2 frames, released 2, in game frames - so FF mashes faster too.
             val reset = if (softResetFrames > 0) { softResetFrames--; SOFT_RESET_KEYS } else 0

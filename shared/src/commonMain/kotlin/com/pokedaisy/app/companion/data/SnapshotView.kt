@@ -467,9 +467,10 @@ fun buildSnapshotView(t: Telemetry): SnapshotView {
         fun statsFor(b: BattleMon, pool: List<Mon>, used: MutableSet<Int>, prefer: Int = -1): MonStats? {
             fun fits(i: Int, hp: Boolean) = i !in used && pool[i].species == b.species && pool[i].level == b.level &&
                 (!hp || pool[i].hp == b.hp)
+            // A personality that matches no one (an offset read wrong for that game) falls back too, as before it was read.
             val identified = if (b.personality != 0L) pool.indices.firstOrNull {
                 it !in used && pool[it].personality == b.personality
-            } ?: return null else null
+            } else null
             val i = identified ?: prefer.takeIf { it in pool.indices && fits(it, false) }
                 ?: pool.indices.firstOrNull { fits(it, true) } ?: pool.indices.firstOrNull { fits(it, false) }
                 ?: return null

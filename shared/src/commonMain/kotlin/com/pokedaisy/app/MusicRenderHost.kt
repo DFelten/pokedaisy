@@ -44,7 +44,8 @@ class MusicRenderHost(
             try {
                 configureWorker()
                 work()
-            } catch (error: Exception) {
+            } catch (error: Throwable) {
+                // Errors too (an OutOfMemoryError reading a 32 MB ROM): the renderer fails, STEADY falls back to SPED-UP.
                 onFailure(error)
             } finally {
                 dispatcher.close()

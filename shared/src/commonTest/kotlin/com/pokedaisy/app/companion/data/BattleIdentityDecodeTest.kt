@@ -36,8 +36,10 @@ class BattleIdentityDecodeTest {
         assertEquals(secondStats, s.battlePlayer.single().stats)
     }
 
-    @Test fun unknownIdentityKeepsLegacyMatchingButKnownUnmatchedIdentityDoesNotBorrowStats() {
+    @Test fun anUnknownOrUnmatchedIdentityKeepsTheSpeciesLevelAndHpMatching() {
         assertEquals(firstStats, snapshot(0).battlePlayer.single().stats)
-        assertNull(snapshot(13).battlePlayer.single().stats)
+        // A battler is always in its own party: a personality that matches no one was read at a wrong offset, so the
+        // species / level / HP match still gives the STATS page (a blank one was the other choice).
+        assertEquals(firstStats, snapshot(13).battlePlayer.single().stats)
     }
 }

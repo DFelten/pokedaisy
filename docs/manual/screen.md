@@ -26,8 +26,6 @@ On the top screen, `ASPECT` opens a preview: each choice is drawn as a little to
 
 ## EXPAND: more of the map
 
-On iPhone and iPad, use `SETTINGS` > `ASPECT` to pick `ORIGINAL`, `STRETCH` or `EXPAND`. Supported GB, GBC and GBA games use the same expanded picture and camera as Android. Pick `ZOOM` in Settings or tap its touch button to see more of the map. A controller’s right stick looks around when `LOOK AROUND` is on. Your zoom choice is kept for each game.
-
 With `EXPAND` you see more of the route around you instead of black bars. The strips beside the game aren't stretched or made up: they're rebuilt every frame from the game's own map, tiles and characters, so people walk in from the edges, water moves and the lighting matches. On a phone held upright the extra map goes above and below the game instead.
 
 A few things worth knowing:
@@ -108,21 +106,17 @@ On a device that can't run a DS game at full speed, PokeDaisy keeps the game at 
 
 `STATUS BAR` adds a thin strip with the game's name, where you are, your money, the time and the battery. It's handy when the game is full screen and you can't see the device's own clock.
 
-On iPhone and iPad, go to `SCREEN` > `DISPLAY OPTIONS` to choose where the strip appears.
-
 | Choice | Where it goes |
 | --- | --- |
 | `OFF` | No bar (the default). |
 | `GAME` | Across the top of the game, exactly as wide as it. The game shrinks a little to make room. |
-| `COMPANION` | Over the companion's tabs, so the game keeps its full size. |
+| `COMPANION` | Over the companion's tabs on the bottom screen, so the game keeps its full size. |
 
 The clock follows your device's 12 or 24 hour setting. Money shows for the games where PokeDaisy can read it.
 
 ![The status bar above the game, showing the game's name, the current town, money, the time and battery](shots/status-bar.png)
 
 ## Shaders
-
-On iPhone and iPad, `DISPLAY OPTIONS` > `SHADERS` offers `FILTER`, `GRID`, `GBA COLORS` and `UNLIT SCREEN` for the game picture. Choices are remembered and combine with `ORIGINAL`, `STRETCH`, `EXPAND` and game borders. `ON COMPANION` also applies your filter and GBA colors to the companion, HUD and panel controls. Touch controls and touch-skin artwork keep their own look. `SMOOTHING` offers `OFF`, `xBRZ`, `xBR` and `SCALEFX`, using the same presets as Android.
 
 `SHADERS` opens a page of effects for how the game is drawn. They stack: you can have smoothing, the GBA's colours, the unlit screen and a filter all at once.
 
@@ -151,8 +145,6 @@ On iPhone and iPad, `DISPLAY OPTIONS` > `SHADERS` offers `FILTER`, `GRID`, `GBA 
 - `xBR`: rounder and softer.
 - `SCALEFX`: the most even outlines.
 
-On iPhone and iPad, tap to switch between `OFF`, `xBRZ`, `xBR` and `SCALEFX`. Smoothing combines with your filter, GBA colors and unlit screen setting.
-
 Smoothing only applies to the game, never to the companion. On devices whose graphics chip can't run it, the row shows `N/A`.
 
 ### GBA COLORS
@@ -165,7 +157,7 @@ The first GBA had no light behind its screen. Light from the room went in throug
 
 ### On the companion too
 
-`ON COMPANION` (on by default) puts the same `FILTER` and `GBA COLORS` (not `UNLIT SCREEN`) over the companion screen, so both screens match. The grid is sized to the game's pixels. On iPhone and iPad it also styles the HUD and panel controls. On Android it also styles the app's status bar and needs Android 13 or newer; on older Android devices the companion keeps its plain look. A DS game's touch screen is part of the game, so it gets `FILTER` and `GBA COLORS` either way (Android 13 and newer).
+`ON COMPANION` (on by default) puts the same `FILTER` and `GBA COLORS` (not `UNLIT SCREEN`) over the companion screen and the status bar, so both screens match. The grid is sized to the game's pixels, so the lines line up with the top screen's. This needs Android 13 or newer; on older devices the companion keeps its plain look. A DS game's touch screen is part of the game, so it gets `FILTER` and `GBA COLORS` either way (Android 13 and newer).
 
 ## Overlay: a frame around the game
 
@@ -174,17 +166,15 @@ The first GBA had no light behind its screen. Light from the room went in throug
 - `DAISY`: PokeDaisy's blue with a dot grid and the flower mark in the margin.
 - `BEZEL`: a plain dark surround.
 
-On iPhone and iPad, pick `NONE`, `DAISY` or `BEZEL` from the shared `DISPLAY OPTIONS` > `OVERLAY` page. The choice is remembered. A selected touch skin supplies its own frame instead; `EXPAND` uses the expanded picture without a border. You can also import your own borders there, including from the library settings.
-
 They're drawn at the game's own pixel size and the game is shown at a whole-number scale inside them, so everything stays crisp (the game is a little smaller than without a frame).
 
 ![The game inside the DAISY frame: a blue border with a dot pattern and the PokeDaisy flower beside the screen](shots/overlay-daisy.png)
 
 ### Your own RetroArch overlays
 
-If you already use overlays in RetroArch, you can bring them over. On Android's top screen, open Settings > `OVERLAY`. On iPhone and iPad, open Settings > `DISPLAY OPTIONS` > `OVERLAY`. Tap `IMPORT FILE`. You can pick:
+If you already use overlays in RetroArch, you can bring them over. On the top screen, open Settings > `OVERLAY` and tap `IMPORT FILE`. You can pick:
 
-- a RetroArch overlay `.cfg` together with its PNG image (on iPhone and iPad, pick the `.cfg` first and its image when asked),
+- a RetroArch overlay `.cfg` together with its PNG image,
 - a `.zip` with overlays in it,
 - or any PNG with a see-through hole where the screen goes.
 
@@ -249,8 +239,6 @@ The dates follow your device's calendar. If two holidays overlap (`LUNAR NEW YEA
 `FPS / CPU` shows a small readout in the game's top-left corner: how many frames the game ran in the last second and how much of the CPU PokeDaisy is using. It should read about 60 at normal speed.
 
 Tap the readout to open a longer panel with frame times, late frames, the screen's refresh and pacing, audio underruns, battery temperature, thermal state and memory. It's useful when a game feels choppy; see [Troubleshooting](troubleshooting.md#the-game-feels-choppy-or-the-device-runs-hot).
-
-On iPhone and iPad, the panel shows measured game and display rates, CPU use, frame times and thermal state. A dash marks an unavailable reading. Scroll the panel to see more rows on a short screen.
 
 ## Game look
 

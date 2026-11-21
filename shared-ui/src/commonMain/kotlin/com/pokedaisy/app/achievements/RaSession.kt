@@ -605,8 +605,8 @@ private val raHttp by lazy {
         expectSuccess = false
         install(HttpTimeout) {
             connectTimeoutMillis = 15_000
+            // An idle limit, no total one (as HttpURLConnection's readTimeout was): a large set on a slow line still loads.
             socketTimeoutMillis = 30_000
-            requestTimeoutMillis = 30_000
         }
     }
 }

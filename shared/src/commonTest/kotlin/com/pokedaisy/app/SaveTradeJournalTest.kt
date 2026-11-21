@@ -51,13 +51,33 @@ class SaveTradeJournalTest {
         assertFalse(fs.exists(file))
     }
 
-    @Test fun unrecognizedPathOrFailedRecoveryKeepsTheJournal() = fixture { file, journal, a, b ->
+    @Test fun aJournalThatCanNeverFinishIsSetAsideUntouched() = fixture { file, journal, a, b ->
         journal.write(a, b)
         b.edit.path.writeBytes(b.edit.updated)
-
-        assertFalse(journal.recover({ it.stateKey != b.stateKey }) { error("Rejected path") })
-        assertTrue(fs.exists(file))
+        // A path the host turns down: nothing is written to either save, and games open again.
+        assertTrue(journal.recover({ it.stateKey != b.stateKey }) { error("Rejected path") })
+        assertFalse(fs.exists(file))
+        assertEquals(1, stuck(file).size)
         assertContentEquals(b.edit.updated, b.edit.path.readBytes())
+        assertContentEquals(a.edit.expected, a.edit.path.readBytes())
+
+        // A save deleted from a folder that is still there.
+        journal.write(a, b)
+        fs.delete(a.edit.path)
+        assertTrue(journal.recover({ true }) { error("A save is gone") })
+        assertFalse(fs.exists(file))
+        assertContentEquals(b.edit.updated, b.edit.path.readBytes())
+
+        // An unreadable journal.
+        file.writeBytes("PKTRADE1 cut short".encodeToByteArray())
+        assertTrue(journal.recover({ true }) { error("Unreadable") })
+        assertFalse(fs.exists(file))
+        assertEquals(3, stuck(file).size)
+    }
+
+    @Test fun aFailedRecoveryKeepsTheJournal() = fixture { file, journal, a, b ->
+        journal.write(a, b)
+        b.edit.path.writeBytes(b.edit.updated)
 
         val unwritable = SaveTradeJournal(file, { _, _ -> error("Could not sync the rollback") })
         assertFalse(unwritable.recover({ true }) { error("Partial trade") })
@@ -69,15 +89,21 @@ class SaveTradeJournalTest {
         assertFalse(fs.exists(file))
     }
 
-    @Test fun aDetachedSaveFolderDefersRecoveryUntilBothSavesAreVisible() = fixture { file, journal, a, b ->
+    @Test fun aDetachedSaveFolderDefersRecoveryUntilBothSavesAreVisible() = fixture { file, journal, _, b ->
+        val card = file.parent!! / "card"
+        fs.createDirectories(card)
+        val onCard = card / "a.sav"
+        val a = SaveTradeJournal.Side(SaveEditFiles.Edit(onCard, "a original".encodeToByteArray(), "a edited".encodeToByteArray()), "a-key")
+        onCard.writeBytes(a.edit.expected)
         journal.write(a, b)
         b.edit.path.writeBytes(b.edit.updated)
-        fs.delete(a.edit.path)
+        fs.deleteRecursively(card)
 
         assertFalse(journal.recover({ true }) { error("A save is unavailable") })
         assertTrue(fs.exists(file))
         assertContentEquals(b.edit.updated, b.edit.path.readBytes())
 
+        fs.createDirectories(card)
         a.edit.path.writeBytes(a.edit.expected)
         assertTrue(journal.recover({ true }) { error("Partial trade") })
         assertContentEquals(b.edit.expected, b.edit.path.readBytes())
@@ -126,6 +152,8 @@ class SaveTradeJournalTest {
         assertContentEquals(a.edit.updated, a.edit.path.readBytes())
         assertContentEquals(b.edit.updated, b.edit.path.readBytes())
     }
+
+    private fun stuck(file: Path) = fs.list(file.parent!!).filter { it.name.startsWith("${file.name}.stuck-") }
 
     private fun fixture(action: (Path, SaveTradeJournal, SaveTradeJournal.Side, SaveTradeJournal.Side) -> Unit) {
         val dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY / "pokedaisy-trade-${Random.nextLong().toULong()}"
