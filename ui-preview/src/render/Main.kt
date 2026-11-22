@@ -154,6 +154,14 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
                    style: com.pokedaisy.app.companion.BattleStyle = com.pokedaisy.app.companion.BattleStyle.GEN4,
                    private val dsperate: Boolean = false) : CompanionSettings {
     private var battleFocusOn = battleFocus
+    // SETTINGS FOR: a game with two settings of its own (FF SPEED, REWIND); a tap on the row flips it.
+    override val gameSettings = object : com.pokedaisy.app.companion.GameSettingsControl {
+        private var own = false
+        override val thisGame get() = own
+        override fun setThisGame(on: Boolean) { own = on }
+        override val overridden = setOf(com.pokedaisy.app.companion.SharedSetting.FF_SPEED, com.pokedaisy.app.companion.SharedSetting.REWIND)
+        override fun reset() {}
+    }
     // A DS game on DS CORE DSPERATE (no EXPAND): the `*-settings-expand-dsperate` shot.
     override val dsCore get() = if (dsperate) com.pokedaisy.app.companion.DsCore.DSPERATE else null
     override val dsMelonDs get() = !dsperate
@@ -2161,6 +2169,11 @@ fun main(args: Array<String>) {
                 blocked = com.pokedaisy.app.companion.data.BlockedGames.GHOST_GREY)
         }),
         Shot("$g-settings", bw, bh, bd, companion("SETTINGS")),
+        // SETTINGS FOR flipped to THIS GAME: only the settings a game can have its own value of.
+        Shot("$g-settings-thisgame", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("SETTINGS FOR").performClick() },
+        Shot("$g-settings-thisgame-ff", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("SETTINGS FOR").performClick(); waitForIdle(); onNodeWithText("REWIND").performScrollTo()
+        },
         // DESCRIPTIONS and GROUP TABS hidden: the rows without their grey lines, the list without its tabs.
         Shot("$g-settings-look-hidden", bw, bh, bd, companion("SETTINGS"), {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("DESCRIPTIONS")).performSemanticsAction(SemanticsActions.OnClick)
@@ -3215,24 +3228,26 @@ fun main(args: Array<String>) {
             LibraryActivity().apply { coverPickerFor = File("firered-hack.gba") }
         }),
         // First-time setup: each step, before and after its folder is picked.
-        Shot("setup-roms", tw, th, td, activity { LibraryActivity().apply { setup = SetupState() } }),
-        Shot("setup-roms-from-settings", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { fromSettings = true } } }),
-        Shot("setup-roms-noaccess", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { hasAccess = false } } }),
+        Shot("setup-restore", tw, th, td, activity { LibraryActivity().apply { setup = SetupState() } }),
+        Shot("setup-roms", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { step = SetupState.Step.ROMS } } }),
+        Shot("setup-roms-from-settings", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { fromSettings = true; step = SetupState.Step.ROMS } } }),
+        Shot("setup-roms-noaccess", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { hasAccess = false; step = SetupState.Step.ROMS } } }),
         Shot("setup-roms-scanning", tw, th, td, activity {
             LibraryActivity().apply {
-                setup = SetupState().apply { romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/XXXX-XXXX/ROMs/NDS"); scanning = true; checked = 14; toCheck = 41 }
+                setup = SetupState().apply { step = SetupState.Step.ROMS; romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/XXXX-XXXX/ROMs/NDS"); scanning = true; checked = 14; toCheck = 41 }
             }
         }),
         Shot("setup-roms-found", tw, th, td, activity {
             LibraryActivity().apply {
                 setup = SetupState().apply {
+                    step = SetupState.Step.ROMS
                     romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/emulated/0/ROMs/GBC")
                     found = listOf("Pokémon FireRed", "Pokémon Emerald", "Pokémon Unbound", "Pokémon Radical Red", "Pokemon Emerald Imperium")
                 }
             }
         }),
         Shot("setup-roms-none", tw, th, td, activity {
-            LibraryActivity().apply { setup = SetupState().apply { romsFolders = listOf("/storage/emulated/0/Download"); found = emptyList() } }
+            LibraryActivity().apply { setup = SetupState().apply { step = SetupState.Step.ROMS; romsFolders = listOf("/storage/emulated/0/Download"); found = emptyList() } }
         }),
         Shot("setup-saves", tw, th, td, activity {
             LibraryActivity().apply {
@@ -3696,6 +3711,35 @@ fun main(args: Array<String>) {
             waitForIdle()
             onNodeWithText("SAVE BACKUPS").performSemanticsAction(SemanticsActions.OnClick)
         },
+        // FOLDERS > SAVE STATES: every game's states with its newest picture, then one game's, then a picture large.
+        Shot("settings-folders-states", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        Shot("settings-folders-states-game", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("Pokémon Emerald").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        Shot("settings-folders-states-preview", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("Pokémon Emerald").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("SLOT 1").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        // APP > SETTINGS FILE.
+        Shot("settings-file", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("SETTINGS FILE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         // CHEATS from the hub (no cheats yet), then as a game's library menu opens it.
         Shot("settings-cheats-empty", tw, th, td, activity { SettingsActivity() }) {
             onNodeWithText("CHEATS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
@@ -3963,6 +4007,37 @@ fun ModernIconSheet() {
                 com.pokedaisy.app.companion.ui.ModernIcon(g, androidx.compose.ui.graphics.Color(0xFF232B40), androidx.compose.ui.Modifier.size(28.dp))
                 androidx.compose.material3.Text(g.name, fontSize = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp))
             }
+        }
+    }
+}
+
+/** SAVE STATES' shots: two games' states in the preview's files, each picture an invented scene (no game art). */
+internal fun previewStates() {
+    val root = java.io.File(android.content.Context().filesDir, "states")
+    root.deleteRecursively()
+    fun scene(file: java.io.File, sky: Int, ground: Int, seed: Int) {
+        val img = java.awt.image.BufferedImage(240, 160, java.awt.image.BufferedImage.TYPE_INT_RGB)
+        val r = java.util.Random(seed.toLong())
+        for (y in 0 until 160) for (x in 0 until 240) {
+            val c = if (y < 70 + ((x / 16 + seed) % 3) * 8) sky else ground
+            img.setRGB(x, y, if ((x / 8 + y / 8) % 2 == 0) c else (c and 0xFEFEFE) shr 1 or 0x202020)
+        }
+        repeat(6) { val x = r.nextInt(220); val y = 80 + r.nextInt(60); for (dy in 0 until 12) for (dx in 0 until 12) img.setRGB(x + dx, y + dy, 0x3D6FE0) }
+        javax.imageio.ImageIO.write(img, "png", file)
+    }
+    val day = 24 * 3600 * 1000L
+    val now = 1_795_000_000_000L
+    listOf(
+        Triple("1a2b3c4d", "Pokémon Emerald", listOf(-1, 0, 1, 2, 5)),
+        Triple("5e6f7a8b", "Pokémon FireRed", listOf(-1, 3)),
+    ).forEachIndexed { g, (crc, name, slots) ->
+        val dir = java.io.File(root, crc).apply { mkdirs() }
+        java.io.File(dir, "game.txt").writeText(name)
+        slots.forEachIndexed { i, slot ->
+            val f = java.io.File(dir, if (slot < 0) "resume" else "ss$slot")
+            f.writeBytes(ByteArray(400_000 + i * 1000))
+            f.setLastModified(now - (g * 3 + i) * day)
+            scene(java.io.File(dir, f.name + ".png"), listOf(0x88C8F8, 0xF8C070, 0x6080C0, 0xA0E0A0)[i % 4], listOf(0x58A848, 0xC09050, 0x406030)[(i + g) % 3], i + g * 7)
         }
     }
 }

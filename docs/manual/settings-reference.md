@@ -139,7 +139,7 @@ The `SHADERS` page:
 | `DUAL-SCREEN LAUNCHER` | **`ON`**, `OFF` | With two screens, the library shows the game list on one and the selected game's media on the other. Off, the plain library. | [Library](library.md#the-dual-screen-launcher) |
 | `ScreenScraper` | your username once signed in, else **`OFF`** (a page) | Your free screenscraper.fr account: box art, screenshots, logos, videos and stories for your games. | [Library](library.md#game-media-from-screenscraper) |
 | `COVER ART` | `ON` once a key is saved, else **`OFF`** (a page) | Your own free keys for RetroAchievements box art and SteamGridDB icons (`GET KEY` opens the page to make one). `REPLACE ALL` fetches every cover again. | [Library](library.md) |
-| `FOLDERS` | a page | A page for each: `ROMS FOLDERS`, your linked ROMs folders (`ADD FOLDER`, `RESCAN`, `REMOVE`); `GAME SAVES`, the folder saves go to (`CHANGE FOLDER`, `USE DEFAULT`); `ALSO LOOK IN`, other emulators' save folders; `SAVE BACKUPS`, the backup taken each time a game starts (`BACKUPS` on or off, `KEEP PER GAME`, and a folder for all of them); `SAVE STATES`, where save states are kept. | [Library](library.md), [Saves](saves.md) |
+| `FOLDERS` | a page | A page for each: `ROMS FOLDERS`, your linked ROMs folders (`ADD FOLDER`, `RESCAN`, `REMOVE`); `GAME SAVES`, the folder saves go to (`CHANGE FOLDER`, `USE DEFAULT`); `ALSO LOOK IN`, other emulators' save folders; `SAVE BACKUPS`, the backup taken each time a game starts (`BACKUPS` on or off, `KEEP PER GAME`, and a folder for all of them); `SAVE STATES`, every game's save states with their pictures and the folder they go in (`CHANGE FOLDER`, `USE DEFAULT`). | [Library](library.md), [Saves](saves.md) |
 | `HIDDEN GAMES` | **`NONE`**, or how many | Games you hid from the library with `HIDE`. Tap one to `SHOW` it again, or `SHOW ALL`. | [Library](library.md) |
 | `CHEATS` | `ON`, **`OFF`** (a page) | The master switch for cheat codes, and each game's codes: `ADD CODE`, `IMPORT FILE`, `REMOVE`. | [Cheats](cheats.md) |
 
@@ -158,7 +158,8 @@ The `SHADERS` page:
 | --- | --- | --- | --- |
 | `VERSION` | the version number | Tap to look for a newer version now. | [Install](install.md) |
 | `BETA UPDATES` | `ON`, **`OFF`** | The update offer includes beta versions too, before they go out to everyone. | [Install](install.md#beta-versions) |
-| `RUN SETUP` | | Back to the library with the first-time setup open again (ROMs folder, saves folder, game buttons, cover art). | [Install](install.md) |
+| `SETTINGS FILE` | a page | `EXPORT` saves every setting to a file; `IMPORT` puts them back from one (on this device or another) and starts the app again. Sign-ins and keys stay out. | [Install](install.md#move-your-settings-to-another-device) |
+| `RUN SETUP` | | Back to the library with the first-time setup open again (settings file, ROMs folder, saves folder, game buttons, cover art). | [Install](install.md) |
 | `CRASH REPORTS` | `ON`, **`OFF`** | Sends a short report when the app crashes, only if you turn it on. Only in official builds. | [Troubleshooting](troubleshooting.md#what-does-pokedaisy-send-over-the-internet) |
 | `TIPS` | **`ON`**, `OFF` | Now and then, a card about a feature you haven't tried yet, shown in a game while you walk around. | [The companion](companion.md#tips) |
 | `LICENSES` | a page | The licenses of PokeDaisy and everything it includes. | |
@@ -176,10 +177,12 @@ Some groups share one of the `GROUP TABS`: `GAMEPLAY` also takes you to `GAME SC
 
 `DESCRIPTIONS` and `GROUP TABS` sit at the top, as on the top screen (one switch for both screens).
 
-### Game (for an unknown ROM)
+### Game
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
+| `SETTINGS FOR` | **`ALL GAMES`**, `THIS GAME` | Who your changes are for. `THIS GAME` shows only the settings a game can have its own value of, and changes them for this game alone. | [The companion](companion.md#settings-for-one-game) |
+| `RESET THIS GAME` | how many it has | Shown once this game has settings of its own: puts them all back to the ones every game uses. | [The companion](companion.md#settings-for-one-game) |
 | `PLAYS AS` | the game it's read as | Only for a ROM PokeDaisy doesn't know but reads as one it does. Opens **WHICH GAME IS THIS?** to pick another. | [Supported games](supported-games.md#which-game-is-this) |
 
 ### Makeover

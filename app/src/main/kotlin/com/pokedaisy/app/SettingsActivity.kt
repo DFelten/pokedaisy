@@ -139,7 +139,7 @@ import okio.source
  */
 class SettingsActivity : ComponentActivity() {
 
-    private enum class Screen { HOME, SPEED, DISPLAY, MY_LOOK, THEME_EDIT, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, BACKUPS, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
+    private enum class Screen { HOME, SPEED, DISPLAY, MY_LOOK, THEME_EDIT, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, STATES_GAME, BACKUPS, SETTINGS_FILE, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
 
     private lateinit var prefs: Prefs
     private var screen by mutableStateOf(Screen.HOME)
@@ -399,6 +399,8 @@ class SettingsActivity : ComponentActivity() {
                         Screen.SAVES_FOLDER -> tk("GAME SAVES")
                         Screen.SAVE_SEARCH -> tk("ALSO LOOK IN")
                         Screen.STATES_FOLDER -> tk("SAVE STATES")
+                        Screen.STATES_GAME -> statesGame?.name ?: tk("SAVE STATES")
+                        Screen.SETTINGS_FILE -> tk("SETTINGS FILE")
                         Screen.BACKUPS -> tk("SAVE BACKUPS")
                         Screen.COVER_ART -> tk("COVER ART")
                         Screen.SCREENSCRAPER -> "ScreenScraper"
@@ -439,6 +441,8 @@ class SettingsActivity : ComponentActivity() {
                     Screen.SAVES_FOLDER -> SavesFolderScreen(m, small)
                     Screen.SAVE_SEARCH -> AlsoLookInScreen(m, small)
                     Screen.STATES_FOLDER -> StatesFolderScreen(m, small)
+                    Screen.STATES_GAME -> StatesGameScreen(m, small)
+                    Screen.SETTINGS_FILE -> SettingsFileScreen(m, small)
                     Screen.BACKUPS -> SaveBackupsScreen(m, small)
                     Screen.COVER_ART -> CoverArtScreen(m, small)
                     Screen.SCREENSCRAPER -> ScreenScraperScreen(m, small)
@@ -651,6 +655,8 @@ class SettingsActivity : ComponentActivity() {
                 )
             }
 
+            if (screen == Screen.STATES_GAME) StatesOverlays(m, small)
+
             deletingFile?.let { f ->
                 OptionConfirm(
                     title = tk("DELETE FILE?"),
@@ -701,6 +707,8 @@ class SettingsActivity : ComponentActivity() {
             screen == Screen.COOP_PAIR || screen == Screen.COOP_JOIN -> { coop.leave(); screen = Screen.HOME }
             screen == Screen.HOME && tab -> finishTab(com.pokedaisy.app.companion.ui.LibrarySection.GAMES)
             screen == Screen.HOME || (screen == Screen.CHEATS && cheatsOnly) || (screen == Screen.ROMS_FOLDERS && romsFoldersOnly) -> finish()
+            // A game's states go back to every game's.
+            screen == Screen.STATES_GAME -> { statesGame = null; screen = Screen.STATES_FOLDER }
             // FOLDERS' pages go back to it.
             screen in FOLDER_PAGES -> screen = Screen.FOLDERS
             // SHADERS and OVERLAY open from DISPLAY OPTIONS.
@@ -711,7 +719,7 @@ class SettingsActivity : ComponentActivity() {
 
     /** The newest savestate thumbnail of any game (a real frame for the ASPECT preview), or null. */
     private fun newestStateThumb(): File? =
-        File(filesRoot, "states").listFiles().orEmpty()
+        statesDir.listFiles().orEmpty()
             .flatMap { it.listFiles().orEmpty().asList() }
             .filter { it.isFile && it.name.matches(Regex("ss\\d+\\.png")) }
             .maxByOrNull { it.lastModified() }
@@ -1427,6 +1435,11 @@ class SettingsActivity : ComponentActivity() {
                     revision++
                 }
             },
+            // Every setting into one file, and back from one (a reinstall, another device).
+            SettingRow(
+                tk("SETTINGS FILE"), null, opensPage = true, subtitle = "Export your settings to a file, or import them",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.SETTINGS_FILE),
+            ) { screen = Screen.SETTINGS_FILE },
             // Back to the library, which opens the first-time setup again.
             SettingRow(tk("RUN SETUP"), null, subtitle = "First-time setup again: folders, buttons, art") { prefs.setupRequested = true; finish() },
             // Opt-in crash reports (CrashReports.kt); only in builds that can send them.
@@ -2234,7 +2247,6 @@ class SettingsActivity : ComponentActivity() {
         @Suppress("UNUSED_EXPRESSION") folderTick
         val roms = prefs.romsFolders
         val extra = prefs.extraSaveDirs
-        val states = statesDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
         return listOf(
             SettingRow(
                 tk("ROMS FOLDERS"), if (roms.isEmpty()) tk("NONE") else roms.size.toString(), opensPage = true,
@@ -2251,11 +2263,16 @@ class SettingsActivity : ComponentActivity() {
                 subtitle = "A copy of the save each time a game starts",
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.SAVE_BACKUPS),
             ) { screen = Screen.BACKUPS },
-            SettingRow(tk("SAVE STATES"), humanSize(states), opensPage = true) { screen = Screen.STATES_FOLDER },
+            SettingRow(
+                tk("SAVE STATES"), if (prefs.statesDirOverride.isNullOrBlank()) tk("DEFAULT") else tk("CUSTOM"), opensPage = true,
+                subtitle = "Every game's states and their pictures",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.STATES_FOLDER),
+            ) { screen = Screen.STATES_FOLDER },
         )
     }
 
-    private val statesDir by lazy { File(getExternalFilesDir(null), "states").apply { mkdirs() } }
+    /** The states folder in use (Settings > FOLDERS > SAVE STATES). */
+    private val statesDir get() = SaveStates.root(this, prefs).apply { mkdirs() }
 
     /** ROMS FOLDERS: the linked folders, each with its games' count. No file list or delete buttons here - those
      * are the player's own files, not ours. */
@@ -2354,11 +2371,148 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    /** SAVE STATES: the app's own states, every file with its delete button. */
+    /** SAVE STATES: where they go, and every game's (StatesPages.kt). */
+    private var statesGame by mutableStateOf<StatesBrowser.Game?>(null)
+    private var statesPreview by mutableStateOf<StatesBrowser.State?>(null)
+    private var statesDeleteAll by mutableStateOf<StatesBrowser.Game?>(null)
+    /** "done / total" while states move to another folder, else null. */
+    private var statesMoving by mutableStateOf<String?>(null)
+
     @Composable
     private fun StatesFolderScreen(m: GbaTextMetrics, small: GbaTextMetrics) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-            FolderSection(null, statesDir, folderTick, m, small)
+        val tick = folderTick
+        val root = remember(tick) { statesDir }
+        val games by produceState<List<StatesBrowser.Game>?>(null, tick, root) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val library = StatesBrowser.libraryKeys(this@SettingsActivity, prefs)
+                StatesBrowser.list(root, library) { GameTitles.label(this@SettingsActivity, prefs, it) }
+            }
+        }
+        val pick = rememberLauncherForActivityResult(StorageAccess.PickFolder()) { uri ->
+            val path = pickedFolder(uri) ?: return@rememberLauncherForActivityResult
+            moveStates(path)
+        }
+        StatesFolderPage(
+            StatesModel(root, !prefs.statesDirOverride.isNullOrBlank(), games, statesMoving), tick, m, small,
+            onChangeFolder = { pickFolder(pick) },
+            onUseDefault = { moveStates(null) },
+            onCopyPath = { copyPath(this, root.absolutePath) },
+            onOpenGame = { statesGame = it; screen = Screen.STATES_GAME },
+        )
+    }
+
+    /** One game's states, their pictures large on a tap. */
+    @Composable
+    private fun StatesGameScreen(m: GbaTextMetrics, small: GbaTextMetrics) {
+        val game = statesGame
+        if (game == null) {
+            androidx.compose.runtime.LaunchedEffect(Unit) { screen = Screen.STATES_FOLDER }
+            return
+        }
+        StatesGamePage(game, folderTick, m, small, onOpen = { statesPreview = it }, onDeleteAll = { statesDeleteAll = game })
+    }
+
+    /** SAVE STATES' windows over the whole screen: a picture large, DELETE ALL's question. */
+    @Composable
+    private fun StatesOverlays(m: GbaTextMetrics, small: GbaTextMetrics) {
+        val game = statesGame ?: return
+        statesPreview?.let { s ->
+            StatePreview(game, s, folderTick, m, small,
+                onDelete = {
+                    StatesBrowser.delete(game, s)
+                    statesPreview = null
+                    val left = StatesBrowser.statesIn(game.dir)
+                    statesGame = game.copy(states = left)
+                    if (left.isEmpty()) { statesGame = null; screen = Screen.STATES_FOLDER }
+                    folderTick++
+                },
+                onDismiss = { statesPreview = null })
+        }
+        statesDeleteAll?.let { g ->
+            OptionConfirm(
+                title = tk("DELETE ALL STATES?"),
+                message = tr("Every save state of {0} and its picture. The game's save file stays.", g.name ?: g.key.uppercase()),
+                confirmLabel = tk("DELETE"), m = m,
+                onDismiss = { statesDeleteAll = null },
+                onConfirm = {
+                    StatesBrowser.deleteGame(g)
+                    statesDeleteAll = null; statesGame = null; screen = Screen.STATES_FOLDER; folderTick++
+                },
+            )
+        }
+    }
+
+    /** SAVE STATES' CHANGE FOLDER / USE DEFAULT ([path] null): the states made so far move along, off the UI thread. */
+    private fun moveStates(path: String?) {
+        if (SaveStates.openGames.get() > 0) {
+            Toast.makeText(this, tr("Close the game first: its states are in use"), Toast.LENGTH_LONG).show()
+            return
+        }
+        val from = statesDir
+        val to = path?.let(::File) ?: SaveStates.defaultRoot(this)
+        if (!(to.isDirectory || to.mkdirs()) || !to.canWrite()) {
+            Toast.makeText(this, tr("Can't write to that folder"), Toast.LENGTH_LONG).show()
+            return
+        }
+        statesMoving = "0 / ?"
+        Thread({
+            val moved = StatesBrowser.move(from, to) { done, total -> runOnUiThread { statesMoving = "$done / $total" } }
+            runOnUiThread {
+                prefs.statesDirOverride = path
+                statesMoving = null
+                folderTick++
+                Toast.makeText(this@SettingsActivity,
+                    if (moved.failed > 0) tr("{0} file(s) couldn't be moved and stayed in the old folder", moved.failed)
+                    else tr("Save states moved"), Toast.LENGTH_LONG).show()
+            }
+        }, "states-move").start()
+    }
+
+    /** SETTINGS FILE: EXPORT writes [SettingsFile] where the player picks; IMPORT reads one back (asking first) and restarts. */
+    private var settingsFileBusy by mutableStateOf(false)
+    private var settingsFileMessage by mutableStateOf<String?>(null)
+    private var settingsFileImport by mutableStateOf<Uri?>(null)
+
+    @Composable
+    private fun SettingsFileScreen(m: GbaTextMetrics, small: GbaTextMetrics) {
+        val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(SettingsFile.MIME)) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            settingsFileBusy = true
+            Thread({
+                val ok = SettingsFile.export(this@SettingsActivity, uri).isSuccess
+                runOnUiThread {
+                    settingsFileBusy = false
+                    settingsFileMessage = if (ok) tr("Settings exported") else tr("Can't write the file")
+                }
+            }, "settings-export").start()
+        }
+        val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) settingsFileImport = uri
+        }
+        SettingsFilePage(m, small, settingsFileBusy, settingsFileMessage,
+            onExport = { settingsFileMessage = null; export.launch(SettingsFile.suggestedName()) },
+            onImport = { settingsFileMessage = null; import.launch(arrayOf(SettingsFile.MIME, "text/plain", "application/octet-stream")) })
+        settingsFileImport?.let { uri ->
+            OptionConfirm(
+                title = tk("IMPORT SETTINGS?"),
+                message = tr("Your settings here are replaced by the file's, then the app starts again."),
+                confirmLabel = tk("IMPORT"), m = m,
+                onDismiss = { settingsFileImport = null },
+                onConfirm = {
+                    settingsFileImport = null
+                    settingsFileBusy = true
+                    Thread({
+                        val r = SettingsFile.import(this@SettingsActivity, uri)
+                        runOnUiThread {
+                            settingsFileBusy = false
+                            when (r) {
+                                is SettingsFile.Imported.Done -> SettingsFile.restart(this@SettingsActivity)
+                                is SettingsFile.Imported.Refused -> settingsFileMessage = r.message
+                            }
+                        }
+                    }, "settings-import").start()
+                },
+            )
         }
     }
 

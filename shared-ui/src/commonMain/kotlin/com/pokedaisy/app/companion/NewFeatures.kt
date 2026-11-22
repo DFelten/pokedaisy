@@ -284,6 +284,12 @@ object NewFeatures {
     const val GAME_NAMES = "game_names"
     /** Settings > GAME PATHS: the file's name under a game's, only where two names match. */
     const val GAME_PATHS = "game_paths"
+    /** Companion SETTINGS > SETTINGS FOR: a game's own settings (GameSettings.kt). */
+    const val GAME_SETTINGS = "game_settings"
+    /** Settings > SETTINGS FILE (and setup's first step): every setting exported to a file and imported back. */
+    const val SETTINGS_FILE = "settings_file"
+    /** Settings > FOLDERS > SAVE STATES: a folder of the player's own, the states listed by game with their pictures. */
+    const val STATES_FOLDER = "states_folder"
     /** Settings > SUPPORTED ONLY: the library without the games the companion can't read. */
     const val SUPPORTED_ONLY = "supported_only"
     /** SETTINGS > INSTANT TEXT: a text box's words at once (companion.data.InstantText). */
@@ -417,7 +423,7 @@ object NewFeatures {
         QUICK_TOUCH, APP_FONT, PIXEL_SMALL, FONT_SIZE, APP_VIEW, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
-        TAB_BAR_PLACE, THEME_COLORS,
+        TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS,
     )
 
     private const val DAYS = 7

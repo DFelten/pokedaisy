@@ -9,6 +9,7 @@ object ActivityResultContracts {
     class CreateDocument(val mimeType: String) : ActivityResultContract<String, Uri?>()
     class StartActivityForResult : ActivityResultContract<android.content.Intent, androidx.activity.result.ActivityResult>()
     class OpenMultipleDocuments : ActivityResultContract<Array<String>, List<Uri>>()
+    class CreateDocument(val mimeType: String) : ActivityResultContract<String, Uri?>()
     class GetContent : ActivityResultContract<String, Uri?>()
     open class OpenDocumentTree : ActivityResultContract<Uri?, Uri?>() {
         open fun createIntent(context: android.content.Context, input: Uri?): android.content.Intent = android.content.Intent()

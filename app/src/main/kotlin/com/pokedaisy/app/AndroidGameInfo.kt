@@ -61,7 +61,7 @@ object AndroidGameInfo {
         val savesDir = save.parentFile ?: SavesLocation.dir(context, prefs)
         val backups = GameSaves.backups(savesDir.toOkioPath(), save.nameWithoutExtension)
         val saveSection = GameInfoDetails.save(save.toOkioPath(), backups, ::dateLabel, ::sizeLabel)
-        val states = crc?.let { SaveStates(context.getExternalFilesDir(null) ?: context.filesDir, it).files.directory }
+        val states = crc?.let { SaveStates.of(context, it, prefs).files.directory }
 
         return GameInfo(
             name,

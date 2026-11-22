@@ -2,6 +2,8 @@ package com.pokedaisy.app.companion.ui
 
 import com.pokedaisy.app.companion.data.isGameBoyGame
 import com.pokedaisy.app.companion.SharedSetting
+import com.pokedaisy.app.companion.PerGameSettings
+import com.pokedaisy.app.companion.GameSettingsControl
 
 import com.pokedaisy.app.badge
 import kotlin.time.Clock
@@ -197,7 +199,7 @@ fun CompanionSettingsScreen(
             val quietOptions = if (page == Page.HOME) settings?.let { it.lowHpBeepSupported to it.fieldPoisonSupported } else null
             val nuzlockeSupported = if (page == Page.HOME) settings?.nuzlockeSupported else null
             val refillSupported = if (page == Page.HOME) settings?.repelRefillSupported else null
-            val rows = remember(settings, page, tick, availableTabs, playsAs, capturing, capturedKeys, touchRevision,
+            val pageRows = remember(settings, page, tick, availableTabs, playsAs, capturing, capturedKeys, touchRevision,
                 overlayRevision, removingCheats, removingOverlays, lookOptions, selectedLook, textOptions, refillSupported, shinyAlertSupported, shinyHuntCount, quietOptions, nuzlockeSupported) {
                 if (settings == null) return@remember listOf(SettingRow(tk("NO GAME RUNNING"), null) {})
                 when (page) {
@@ -395,6 +397,16 @@ fun CompanionSettingsScreen(
                     } + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.HELP -> emptyList()
                 }
+            }
+            // SETTINGS FOR (GameSettings.kt): the game's own settings, made only here.
+            val rows = remember(pageRows, settings, page, tick) {
+                gameScopedRows(settings?.gameSettings, page, pageRows,
+                    flip = { settings?.gameSettings?.let { it.setThisGame(!it.thisGame) }; tick++ },
+                    reset = {
+                        confirm = Confirm(tk("RESET THIS GAME?"),
+                            tr("Every setting this game has its own value of goes back to the one every game uses."), tk("RESET"),
+                        ) { settings?.gameSettings?.reset(); tick++ }
+                    })
             }
             // A page of its own each time: the rows sit in slots by position, so the row the D-pad had focused on HOME
             // (HUD) kept the focus in the next page's row at the same place - near the bottom of SETTINGS > HUD - while the
@@ -627,6 +639,42 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
         if (r.header) skipping = r.requiresGameSupport
         !skipping && r.setting !in blockedSettings
     }
+}
+
+/** The pages SETTINGS FOR applies to: the ones holding settings a game can have its own value of. */
+private val GAME_SCOPED_PAGES = setOf(Page.HOME, Page.SPEED, Page.DISPLAY, Page.SHADERS, Page.QOL)
+
+/**
+ * SETTINGS FOR (GameSettings.kt): on HOME, its switch (ALL GAMES / THIS GAME) and RESET THIS GAME at the top of the GAME
+ * group; under THIS GAME, only the settings a game can have its own value of (and the pages holding them); and a line
+ * under each setting this game already has its own value of.
+ */
+private fun gameScopedRows(g: GameSettingsControl?, page: Page, rows: List<SettingRow>, flip: () -> Unit, reset: () -> Unit): List<SettingRow> {
+    if (g == null || page !in GAME_SCOPED_PAGES) return rows
+    val own = g.overridden
+    val thisGame = g.thisGame
+    val marked = rows.map { r -> if (!r.header && r.setting in own) r.withSubtitle("Set for this game only") else r }
+    val shown = if (!thisGame) marked else {
+        val allowed = PerGameSettings.KEYS.keys + PerGameSettings.ALWAYS_PER_GAME + PerGameSettings.PAGES
+        val kept = marked.filter { it.header || it.setting in allowed || it.label == "QUALITY OF LIFE" || it.label == "CANCEL" }
+        kept.filterIndexed { i, r -> !r.header || kept.getOrNull(i + 1)?.header == false }
+    }
+    if (page != Page.HOME) return shown
+    val head = listOfNotNull(
+        SettingRow(
+            tk("SETTINGS FOR"), if (thisGame) tk("THIS GAME") else tk("ALL GAMES"), setting = SharedSetting.SETTINGS_FOR,
+            subtitle = if (thisGame) "What you change here is for this game only" else "What you change here is for every game",
+            labelBadge = NewFeatures.badge(NewFeatures.GAME_SETTINGS),
+        ) { flip() },
+        SettingRow(tk("RESET THIS GAME"), own.size.toString(), subtitle = "Back to the settings every game uses") { reset() }
+            .takeIf { own.isNotEmpty() },
+    )
+    // Into the GAME group (PLAYS AS's), or a GAME group of their own before the first group (after DESCRIPTIONS and
+    // GROUP TABS, which come before every group).
+    val gameGroup = shown.indexOfFirst { it.header && it.label == "GAME" }
+    if (gameGroup >= 0) return shown.take(gameGroup + 1) + head + shown.drop(gameGroup + 1)
+    val firstGroup = shown.indexOfFirst { it.header }.let { if (it < 0) shown.size else it }
+    return shown.take(firstGroup) + groupTitle(tk("GAME")) + head + shown.drop(firstGroup)
 }
 
 /** [rows] cut to the settings in [shown], with the titles of the groups that still have one. */
@@ -883,7 +931,7 @@ private fun homeRows(
         },
         // A Game Boy game: B held while walking moves at the bike's speed (GbGamePatches' RUNNING SHOES).
         SettingRow(
-            tk("RUNNING SHOES"), if (s.runningShoesSupported) onOff(s.runningShoes) else tk("N/A"),
+            tk("RUNNING SHOES"), if (s.runningShoesSupported) onOff(s.runningShoes) else tk("N/A"), setting = SharedSetting.RUNNING_SHOES,
             enabled = s.runningShoesSupported, labelBadge = NewFeatures.badge(NewFeatures.RUNNING_SHOES),
             subtitle = "Hold B to run while you walk",
         ) {
@@ -984,7 +1032,7 @@ private fun homeRows(
             val now = core.valueLabel()
             val pending = core.runs() != s.dsCoreRunning
             SettingRow(
-                tk("DS CORE"), now, labelBadge = NewFeatures.badge(NewFeatures.DS_CORE_BANANADS),
+                tk("DS CORE"), now, setting = SharedSetting.DS_CORE, labelBadge = NewFeatures.badge(NewFeatures.DS_CORE_BANANADS),
                 subtitle = if (pending) "Takes effect when the game restarts" else "DSPERATE runs on weaker devices",
             ) {
                 select(Selector(tk("DS CORE"), DsCore.offered().map { it.label }, core.label) { l ->
@@ -996,7 +1044,7 @@ private fun homeRows(
         s.dsResolution?.let { scale ->
             val can = s.dsGpuAvailable && DsCore.hasResolution(s.dsCoreRunning)
             SettingRow(
-                tk("DS RESOLUTION"), if (can) dsResolutionLabel(scale) else tk("N/A"), enabled = can,
+                tk("DS RESOLUTION"), if (can) dsResolutionLabel(scale) else tk("N/A"), setting = SharedSetting.DS_RESOLUTION, enabled = can,
                 labelBadge = NewFeatures.badge(NewFeatures.DS_RESOLUTION),
                 subtitle = if (!DsCore.hasResolution(s.dsCoreRunning)) DsCore.unavailableOn(s.dsCoreRunning) else null,
             ) {
@@ -1009,7 +1057,7 @@ private fun homeRows(
         s.dsCpuBoost?.let { on ->
             val boost = DsCore.boosts(s.dsCoreRunning)
             SettingRow(
-                tk("DS CPU BOOST"), if (boost) onOff(on) else tk("N/A"), enabled = boost,
+                tk("DS CPU BOOST"), if (boost) onOff(on) else tk("N/A"), setting = SharedSetting.DS_CPU_BOOST, enabled = boost,
                 labelBadge = NewFeatures.badge(NewFeatures.DS_CPU_BOOST),
                 subtitle = if (boost) "Fewer slowdowns in DS games" else DsCore.unavailableOn(s.dsCoreRunning),
             ) { if (boost) { s.setDsCpuBoost(!on); changed() } }
@@ -1024,7 +1072,7 @@ private fun homeRows(
         // A DS game on one screen held sideways: where its two screens go (DsLayout), picked from miniatures.
         s.dsLayout?.let { layout ->
             SettingRow(
-                tk("DS LAYOUT"), layout.label, labelBadge = NewFeatures.badge(NewFeatures.DS_LAYOUT),
+                tk("DS LAYOUT"), layout.label, setting = SharedSetting.DS_LAYOUT, labelBadge = NewFeatures.badge(NewFeatures.DS_LAYOUT),
                 subtitle = "Where a DS game's two screens go",
             ) {
                 select(Selector(tk("DS LAYOUT"), com.pokedaisy.app.companion.DsLayout.entries.map { it.label }, layout.label, dsLayouts = true) { l ->
@@ -1037,7 +1085,7 @@ private fun homeRows(
         // Two screens: the game's own FIGHT / BAG and move menus off its screen, the companion's buttons pick.
         s.hideBattleMenu?.let { hide ->
             SettingRow(
-                tk("HIDE BATTLE MENU"), onOff(hide), subtitle = "Pick from the companion, not the game",
+                tk("HIDE BATTLE MENU"), onOff(hide), setting = SharedSetting.HIDE_BATTLE_MENU, subtitle = "Pick from the companion, not the game",
                 labelBadge = NewFeatures.badge(NewFeatures.HIDE_BATTLE_MENU),
             ) { s.setHideBattleMenu(!hide); changed() }
         },
@@ -1360,12 +1408,12 @@ private fun speedRows(s: CompanionSettings, changed: () -> Unit, select: (Select
     listOf(groupTitle(tk("SCENE SPEEDS"))) + sceneRows(s, changed, select) + listOf(
         groupTitle(tk("FAST-FORWARD")),
         // SMART: menus (party, bag, ... in battle too) and the region map at 1x; NORMAL: fast everywhere.
-        SettingRow(tk("FF MODE"), s.ffMode.label, labelBadge = s.speedOptionsBadge, subtitle = "SMART slows down for menus and the map") {
+        SettingRow(tk("FF MODE"), s.ffMode.label, setting = SharedSetting.FF_MODE, labelBadge = s.speedOptionsBadge, subtitle = "SMART slows down for menus and the map") {
             val modes = FfMode.entries
             select(Selector(tk("FF MODE"), modes.map { it.label }, s.ffMode.label) { l -> s.setFfMode(modes.first { it.label == l }); changed() })
         },
         // STEADY / SPED-UP / OFF (FfMusicMode's order).
-        SettingRow(tk("FF MUSIC"), s.ffMusicMode.label, enabled = s.ffMusicModes.size > 1,
+        SettingRow(tk("FF MUSIC"), s.ffMusicMode.label, setting = SharedSetting.FF_MUSIC, enabled = s.ffMusicModes.size > 1,
             labelBadge = s.ffMusicBadge, subtitle = "What you hear while fast-forwarding") {
             val modes = s.ffMusicModes
             select(Selector(tk("FF MUSIC"), modes.map { it.label }, s.ffMusicMode.label) { l -> s.setFfMusicMode(modes.first { it.label == l }); changed() })
@@ -1407,7 +1455,7 @@ private fun displayRows(s: CompanionSettings, changed: () -> Unit, navigate: (Pa
 private fun sceneRows(s: CompanionSettings, changed: () -> Unit, select: (Selector) -> Unit): List<SettingRow> {
     val labels = SCENE_SPEEDS.map(::sceneSpeedLabel)
     fun row(label: String, value: Float, enabled: Boolean = true, set: (Float) -> Unit) =
-        SettingRow(label, if (enabled) sceneSpeedLabel(value) else tk("N/A"), enabled = enabled, labelBadge = s.speedOptionsBadge) {
+        SettingRow(label, if (enabled) sceneSpeedLabel(value) else tk("N/A"), setting = SharedSetting.SCENE_SPEEDS, enabled = enabled, labelBadge = s.speedOptionsBadge) {
             if (enabled) select(Selector(label, labels, sceneSpeedLabel(value)) { l -> set(SCENE_SPEEDS[labels.indexOf(l)]); changed() })
         }
     return listOf(

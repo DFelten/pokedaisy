@@ -93,6 +93,21 @@ The options come in groups, the ones you change while playing first. With `GROUP
 
 Every option is explained in the [Settings reference](settings-reference.md). The top screen has its own Settings too, with more options and a search box.
 
+### Settings for one game
+
+Want EXPAND in one game but not another, or wild Pokémon off only in the hack you're grinding? A game can keep its own value of the settings about how it plays and looks.
+
+At the top of the companion's SETTINGS, in the `GAME` group, `SETTINGS FOR` says who your changes are for:
+
+- `ALL GAMES` (the default): what you change is for every game, as always.
+- `THIS GAME`: the list shows only the settings a game can have its own value of, and what you change is for this game alone. The other games keep theirs.
+
+The settings a game can have its own value of: the fast-forward and speed ones (`FF SPEED`, `REWIND`, `SCENE SPEEDS`, `FF MODE`, `FF MUSIC`), the screen ones (`ASPECT`, `AUTO ZOOM IN`, `LOOK AROUND`, `OVERLAY` and the `SHADERS`), everything in `QUALITY OF LIFE`, `FLY STYLE`, `FLIGHT AREA` and the `MAKEOVER` looks, the DS ones (`DS CORE`, `DS RESOLUTION`, `DS CPU BOOST`, `DS LAYOUT`) and the battle ones (`BATTLE STYLE`, `ONE-TAP MOVES`, `HIDE BATTLE MENU`, `BATTLE BUTTONS`). Everything else, game volume included, is always for every game. `GAME SPEED`, `ZOOM`, `PLAYER LOOK`, `TEXT LOOK`, `NUZLOCKE` and cheats were already kept for each game, and still are, so `THIS GAME` lists them too.
+
+A setting this game has its own value of says `Set for this game only` under its name, whichever way `SETTINGS FOR` is set, and changing it changes this game's value. `RESET THIS GAME` (under `SETTINGS FOR`, once the game has any) puts every one of them back to the settings every game uses.
+
+A game's own settings are only made in that game: the top screen's Settings always shows and changes the ones every game uses. They go into your [settings file](install.md#move-your-settings-to-another-device) with the rest.
+
 ### TWEAKS
 
 `TWEAKS` holds small on / off preferences, all on to start with:

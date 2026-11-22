@@ -885,6 +885,12 @@ class Prefs(
         get() = p.getString("saves_dir_override", null)
         set(v) = p.edit().putString("saves_dir_override", v).apply()
 
+    /** Custom folder for save states (a folder per game inside it, Settings > FOLDERS > SAVE STATES); null = the app's
+     * own files/states/. */
+    var statesDirOverride: String?
+        get() = p.getString("states_dir_override", null)
+        set(v) = p.edit().putString("states_dir_override", v).apply()
+
     /** More folders to look for a game's save in, after [savesDirOverride] (Settings > FOLDERS >
      * ALSO LOOK IN; see [SavesLocation.saveFor]). New saves still go to the saves folder. */
     var extraSaveDirs: List<String>

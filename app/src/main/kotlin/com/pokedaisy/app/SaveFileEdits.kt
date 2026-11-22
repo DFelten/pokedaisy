@@ -58,7 +58,7 @@ object SaveFileEdits {
         runCatching {
             val save = SavesLocation.saveFor(context, prefs, rom).canonicalFile.toOkioPath()
             transactions(context).write(SaveEditFiles.Edit(save, expected, edited)) {
-                SaveStates(context.getExternalFilesDir(null) ?: context.filesDir, SaveStates.crc32(rom)).files
+                SaveStates.of(context, SaveStates.crc32(rom), prefs).files
             }.androidResult()
         }.getOrElse { Result.Failed(tr("Can't write the save")) }
 
@@ -73,10 +73,9 @@ object SaveFileEdits {
 
     fun recover(context: Context): Boolean = transactions(context).recover()
 
-    private fun stateKey(context: Context, rom: File): String {
-        val storage = if (context.getExternalFilesDir(null) == null) "internal" else "external"
-        return "$storage:${SaveStates.crc32(rom)}"
-    }
+    /** The trade journal's name for [rom]'s states: "states:<crc>", found again in the states folder in use
+     * ([SaveStates.root]). Journals from before the SAVE STATES folder say "external:" / "internal:". */
+    private fun stateKey(context: Context, rom: File): String = "states:${SaveStates.crc32(rom)}"
 
     private fun transactions(context: Context) = ClosedSaveEdits(
         files = files { SaveBackups.snapshot(it, force = true) },
@@ -92,12 +91,16 @@ object SaveFileEdits {
                 stateKeyPattern.matches(side.stateKey)
         },
         states = { key ->
-            val root = if (key.startsWith("external:")) checkNotNull(context.getExternalFilesDir(null)) else context.filesDir
-            SaveStates(root, key.substringAfter(':')).files
+            val crc = key.substringAfter(':')
+            when {
+                key.startsWith("external:") -> SaveStates(java.io.File(checkNotNull(context.getExternalFilesDir(null)), "states"), crc).files
+                key.startsWith("internal:") -> SaveStates(java.io.File(context.filesDir, "states"), crc).files
+                else -> SaveStates.of(context, crc).files
+            }
         },
     )
 
-    private val stateKeyPattern = Regex("(external|internal):[0-9a-f]{8}")
+    private val stateKeyPattern = Regex("(external|internal|states):[0-9a-f]{8}")
 
     /** One save's part of [commitBoth]: the file as read and as edited. */
     class Edit(val rom: File, val expected: ByteArray, val edited: ByteArray)

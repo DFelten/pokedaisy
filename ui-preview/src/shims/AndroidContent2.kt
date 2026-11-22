@@ -35,6 +35,7 @@ open class Intent() {
         const val FLAG_GRANT_READ_URI_PERMISSION = 1
         const val FLAG_GRANT_WRITE_URI_PERMISSION = 2
         const val FLAG_ACTIVITY_NEW_TASK = 0x10000000
+        const val FLAG_ACTIVITY_CLEAR_TASK = 0x8000
     }
 }
 
@@ -45,6 +46,7 @@ class ClipboardManager { fun setPrimaryClip(c: ClipData) {} }
 class ContentResolver {
     fun openInputStream(u: Uri): java.io.InputStream? = null
     fun openOutputStream(u: Uri): java.io.OutputStream? = null
+    fun openOutputStream(u: Uri, mode: String): java.io.OutputStream? = null
     fun query(u: Uri, a: Array<String>?, b: String?, c: Array<String>?, d: String?): android.database.Cursor? = null
     fun takePersistableUriPermission(u: Uri, f: Int) {}
 }

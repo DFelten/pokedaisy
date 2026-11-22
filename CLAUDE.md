@@ -447,6 +447,15 @@ battle buttons); bags get `BagPalette.night()` (`theme/NightColors.kt`: each col
 yellows lean amber, a dark cream read olive), Yellow's party slots `YellowPartyPaletteNight`, Gen 1 pictures a white card
 (`spritePaper`: their paper is transparent). New colours: read `OptionColors` (or add a getter with both values), never a
 bare white / black fill. Look at it: `gradle render -Pdark=true -Pout=build/shots-dark`, `DarkCompanionScreenshotTest`.
+**Per-game settings** (companion SETTINGS > GAME > SETTINGS FOR: ALL GAMES / THIS GAME, NEW tag `GAME_SETTINGS`; 2026-11-23,
+`docs/plans/per-game-settings.md`): a game's own value of a setting is `game.<crc>.<key>` beside the normal key; `GameSettingsStore`
+(`companion/GameSettings.kt`) reads it first and writes there under THIS GAME (or once one exists). Only the game's activity sees them
+(`PokeDaisyActivity : GameSettingsScope`, so every `Prefs(this)` there is scoped); the library and top-screen Settings never show or change
+them (the user's call). A setting a game may keep its own value of goes in `PerGameSettings.KEYS` (its `SharedSetting` id and every pref
+key it writes; its row needs that id); game volume stays global. Reset / a scope flip re-applies through `reapplyGameSettings`.
+**SETTINGS FILE** (Settings > APP, setup's first step; `SettingsBackup.kt` / `SettingsFile.kt`): every pref and the controls / hotkeys /
+cheat files in one JSON; sign-ins and keys never (`SECRET_KEYS`). **SAVE STATES folder** (FOLDERS > SAVE STATES, `Prefs.statesDirOverride`):
+every states path goes through `SaveStates.root` / `SaveStates.of`, never `File(filesDir, "states")`.
 **ACHIEVEMENTS from a popup**: `AchievementPopup.achievementId` (unlocks and progress); a tap opens the tab on it
 (`AchievementFocus`: scrolled to, the white cursor row, followed for 3 s while the list re-sorts), BACK returns to the
 tab it was opened over (`popupReturn`). The list's filter button (pixel funnel, `OptionButton(pixelIcon = …)`) opens a

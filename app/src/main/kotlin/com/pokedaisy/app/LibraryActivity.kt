@@ -210,6 +210,24 @@ class LibraryActivity : ComponentActivity() {
     /** RESTORE BACKUP: [rom]'s save backups to pick one from, newest first. */
     internal class BackupPick(val rom: File, val files: List<File>)
     internal var backupPick by mutableStateOf<BackupPick?>(null)
+    /** Setup's SETTINGS FILE step: a settings file imported (SettingsFile), then the app starts again. */
+    private val pickSettingsFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val s = setup ?: return@registerForActivityResult
+        if (uri == null) return@registerForActivityResult
+        s.restoreBusy = true
+        s.restoreMessage = null
+        Thread({
+            val r = SettingsFile.import(this, uri)
+            runOnUiThread {
+                s.restoreBusy = false
+                when (r) {
+                    is SettingsFile.Imported.Done -> SettingsFile.restart(this)
+                    is SettingsFile.Imported.Refused -> s.restoreMessage = r.message
+                }
+            }
+        }, "settings-import").start()
+    }
+
     private val pickSaveFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val pick = savePick
         savePick = null
@@ -2212,6 +2230,7 @@ class LibraryActivity : ComponentActivity() {
                 )
             },
             onNext = { s.flow.next(page) },
+            onImportSettings = { pickSettingsFile.launch(arrayOf(SettingsFile.MIME, "text/plain", "application/octet-stream")) },
         )
     }
 

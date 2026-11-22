@@ -15,5 +15,5 @@ fun GameSaves.load(context: Context, prefs: Prefs, rom: File, picked: ByteArray)
     if (!SaveFileEdits.recover(context)) return GameSaves.Result.Failed(ClosedSaveEdits.recoveryError())
     val current = SavesLocation.saveFor(context, prefs, rom)
     return load(current.toOkioPath(), bytes,
-        states = { SaveStates(context.getExternalFilesDir(null) ?: context.filesDir, SaveStates.crc32(rom)).files })
+        states = { SaveStates.of(context, SaveStates.crc32(rom), prefs).files })
 }

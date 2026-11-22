@@ -75,7 +75,11 @@ class SettingRow(
     val setting: SharedSetting? = null,
     val requiresGameSupport: Boolean = false,
     val onClick: () -> Unit,
-)
+) {
+    /** The same row with another [subtitle] (SETTINGS FOR's "Set for this game only"). */
+    fun withSubtitle(subtitle: String?) = SettingRow(label, value, badge, header, enabled, labelBadge, labelIcon, iconPixels,
+        subtitle, keywords, opensPage, featured, slider, labelWeight, setting, requiresGameSupport, onClick)
+}
 
 /**
  * Settings' search: the rows whose label, value, subtitle or keywords hold every word of [query]
@@ -194,6 +198,10 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "CRASH REPORTS" to "crash report bug crashlytics privacy diagnostics send",
     "LICENSES" to "license legal open source credits notices about",
     "RUN SETUP" to "setup onboarding wizard first time welcome",
+    "SETTINGS FOR" to "per game this game only one game game specific own settings override profile all games",
+    "RESET THIS GAME" to "per game reset game settings overrides back to all games",
+    "SETTINGS FILE" to "export import backup restore transfer move new device phone reinstall settings file json copy",
+    "SAVE STATES" to "states folder screenshots pictures thumbnails by game slots resume move sd card",
     "TAB BAR" to "tabs layout bar order",
     "BATTLE HINTS" to "suggestions recommendations best move tips",
     "BATTLE STYLE" to "battle screen look theme gen 4 gen 5 platinum black white buttons design",

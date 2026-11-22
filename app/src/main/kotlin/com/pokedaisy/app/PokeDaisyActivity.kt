@@ -109,7 +109,7 @@ import com.pokedaisy.app.companion.data.lastModified
 /** HeartGold, SoulSilver, Platinum (every language): their text printer task is DsInstantText's (INSTANT TEXT). */
 private val DS_TEXT_CODES = setOf("IPK", "IPG", "CPU")
 
-class PokeDaisyActivity : Activity() {
+class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private val input = GbaInput()
     /** The companion's GAME BUTTONS / HOTKEYS rows waiting for keys: every key comes here (the Presentation forwards
@@ -172,6 +172,9 @@ class PokeDaisyActivity : Activity() {
     /** Opened by a frontend through [LaunchActivity] (see [exitGame]). */
     private var fromFrontend = false
     private var romKey: String = ""      // ROM CRC32, for per-ROM prefs
+    /** Per-game settings: every Prefs(this) reads this game's own values first (GameSettings.kt). */
+    override val gameSettingsKey: String? get() = romKey.takeIf { it.isNotEmpty() }
+    private val ownSettings by lazy { gameSettingsStore(this) { gameSettingsKey } }
     /** WIDE's native tables for this ROM ([WideScreen.gameFor]); OFF for a game it doesn't know. */
     private var wideGame = WideScreen.OFF
     /** The running game is one its makers asked PokéDaisy not to read ([com.pokedaisy.app.companion.data.BlockedGames], by
@@ -1706,6 +1709,18 @@ class PokeDaisyActivity : Activity() {
         }
         override val gameName get() = romBlocked?.title ?: com.pokedaisy.app.companion.data.activeGame.displayName()
         override val gameBlocked get() = romBlocked != null
+        // SETTINGS FOR: this game's own settings (GameSettings.kt). Made only here, never in the top screen's Settings.
+        override val gameSettings get() = gameSettingsKey?.let {
+            object : com.pokedaisy.app.companion.GameSettingsControl {
+                override val thisGame get() = ownSettings.thisGame()
+                override fun setThisGame(on: Boolean) = ownSettings.setThisGame(on)
+                override val overridden get() = ownSettings.overridden()
+                override fun reset() {
+                    ownSettings.forgetAll()
+                    runOnUiThread { reapplyGameSettings() }
+                }
+            }
+        }
         override val romFileName get() = rom?.name ?: "(none)"
         override val coopEnabled get() = coopOn
         override val coopState get() = com.pokedaisy.app.companion.coop.CoopSession.link.state.value
@@ -1748,6 +1763,7 @@ class PokeDaisyActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SaveStates.openGames.incrementAndGet()
         coopOn = FeatureFlags.coop(this)
         RomFolder.useBestEffortStore(this)
         BestEffortShare.flush(this)   // a shared match that couldn't go out last time
@@ -1989,7 +2005,7 @@ class PokeDaisyActivity : Activity() {
         FeatureFlags.applyBlocked(this)
         romBlocked = com.pokedaisy.app.companion.data.BlockedGames.forCrc(crc)
         RetroAchievements.setFlightAnywhere(false)
-        states = SaveStates(getExternalFilesDir(null) ?: filesDir, crc)
+        states = SaveStates.of(this, crc).also { it.noteGame(GameTitles.label(this, Prefs(this), romFile)) }
         val ffMusicCache = androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, crc, gameBoy = RomIdentity.isGameBoy(r))
         // STEADY FF music: songs rendered on their own from this ROM, in the
         // background, as the game starts them (see FfMusicRenderer).
@@ -2325,6 +2341,19 @@ class PokeDaisyActivity : Activity() {
     }
 
     /** SCENE SPEEDS, AUTO-RUN, RUN INDOORS, WILD ENCOUNTERS and REUSABLE TMS onto [e], and the game whose field they read (EXPAND on or off). */
+    /** SETTINGS FOR flipped or RESET THIS GAME: everything onResume picks up from the settings, again. */
+    private fun reapplyGameSettings() {
+        if (::engine.isInitialized) {
+            val p = Prefs(this)
+            engine.ffMaxSpeed = p.ffMaxSpeed
+            engine.ffMusicMode = p.ffMusicMode
+            engine.ffMode = p.ffMode
+            engine.rewindEntries = rewindEntries(p.rewind)
+            applyFieldPrefs(engine)
+        }
+        syncGameScreen()
+    }
+
     private fun applyFieldPrefs(e: EmulatorEngine) {
         val p = Prefs(this)
         e.fieldGame = fieldGame
@@ -2781,6 +2810,7 @@ class PokeDaisyActivity : Activity() {
     }
 
     override fun onDestroy() {
+        SaveStates.openGames.decrementAndGet()
         if (::engine.isInitialized) engine.playback.quiesce()
         if (::touchControls.isInitialized) touchControls.releaseInputWindows()
         stopListeningForFold()
@@ -3492,7 +3522,7 @@ class PokeDaisyActivity : Activity() {
         romKey = key
         // AUTO language: the title id names none (its 4th character is a digit); the session sets the save's.
         com.pokedaisy.app.companion.i18n.L10n.apply(Prefs(this).appLanguage, key)
-        states = SaveStates(getExternalFilesDir(null) ?: filesDir, key)
+        states = SaveStates.of(this, key)
         engine = EmulatorEngine(input, states!!, androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, key), com.pokedaisy.app.companion.GameBattleInput(telemetry, null, 0, input = input), Prefs(this), telemetry)
         val session = com.pokedaisy.app.n3ds.N3dsSession(
             this, romFile, header.titleId, input,
