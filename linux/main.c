@@ -396,6 +396,7 @@ static bool frontRowsCore;
 static int frontPress = -1;
 static bool frontOpenSettings;
 static bool libraryClick;              // a left press this frame
+static bool libraryMenuClick;          // a right press this frame: the game under it opens its menu
 static int libraryWheel;               // wheel notches this frame (+ up)
 
 static void pointer_at(int x, int y) {
@@ -529,6 +530,8 @@ static void events(void) {
         pointerPulse = 1; // a click the core sees even when press and release fall in one frame
         libraryClick = true;
       }
+      if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT)
+        libraryMenuClick = true;
     }
 #ifndef _WIN32
     // The cursor shows while a real mouse is used (not a touch screen's mouse events) and goes at the next key / button.
@@ -565,12 +568,12 @@ static void events(void) {
   script_resize();
   script_keys();
 }
-/* POCKET_MOUSE="TICK:X:Y[:c],...": where the cursor is (window pixels) from that tick on, ',c' clicking then, for
+/* POCKET_MOUSE="TICK:X:Y[:c],...": where the cursor is (window pixels) from that tick on, ",c" clicking then (",r" a right click), for
  * tests; the same tick numbering as POCKET_KEYS. */
 static struct {
   unsigned at;
   int x, y, wheel;
-  bool click;
+  bool click, menu; // 'c' a left click, 'r' a right one
 } mscript[16];
 static int mscriptN = -1;
 static void script_mouse(void) {
@@ -583,7 +586,7 @@ static void script_mouse(void) {
       int x, y;
       char c = 0;
       if (sscanf(t, "%u:%d:%d:%c", &at, &x, &y, &c) >= 3)
-        mscript[mscriptN] = (typeof(mscript[0])){at, x, y, c == 'd' ? -1 : c == 'u' ? 1 : 0, c == 'c'}, mscriptN++;
+        mscript[mscriptN] = (typeof(mscript[0])){at, x, y, c == 'd' ? -1 : c == 'u' ? 1 : 0, c == 'c', c == 'r'}, mscriptN++;
     }
   }
   for (int i = 0; i < mscriptN; i++)
@@ -594,6 +597,8 @@ static void script_mouse(void) {
         pointerPulse = 1;
         libraryClick = true;
       }
+      if (mscript[i].menu)
+        libraryMenuClick = true;
       wheelSteps += mscript[i].wheel;
       libraryWheel += mscript[i].wheel;
     }
@@ -3023,13 +3028,17 @@ int main(int argc, char **argv) {
         kb_menu_build();
         libraryClick = false;
         libraryWheel = 0;
-      } else if (libraryClick || libraryWheel) {
+      } else if (libraryClick || libraryWheel || libraryMenuClick) {
         int ow, oh, s, w, h, x0, y0;
         library_viewport(&ow, &oh, &s, &w, &h, &x0, &y0);
         int mx = (mouseWindowX - x0) / s, my = (mouseWindowY - y0) / s;
-        if (mx >= 0 && my >= 0 && mx < w && my < h)
-          library_pointer(mx, my, libraryClick, libraryWheel);
-        libraryClick = false;
+        if (mx >= 0 && my >= 0 && mx < w && my < h) {
+          if (libraryMenuClick)
+            library_menu_at(mx, my); // a right click: the game's menu, as the app's long press
+          else
+            library_pointer(mx, my, libraryClick, libraryWheel);
+        }
+        libraryClick = libraryMenuClick = false;
         libraryWheel = 0;
       }
       const char *game = library_picked();

@@ -1986,6 +1986,19 @@ static void wheel_games(int dir) {
   focus = F_GAMES;
 }
 
+void library_menu_at(int x, int y) {
+  if (menuOpen || closeAsk || page != P_GAMES)
+    return;
+  int under = hit_under(x, y);
+  const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
+  if (!h || h->action != LIB_HIT_GAME || h->arg < 0 || h->arg >= shownCount)
+    return;
+  selected = h->arg;
+  focus = F_GAMES;
+  menuOpen = true;
+  menuCursor = 0;
+}
+
 void library_pointer(int x, int y, bool click, int wheel) {
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;

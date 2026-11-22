@@ -234,6 +234,8 @@ and `HACKS`.
 | L, R | The previous or next view. |
 | START, or START and SELECT together, or Menu / Guide | Closes PokeDaisy (it asks first). |
 
+With a mouse, a click plays a game, a right click opens its menu, and the wheel scrolls the list.
+
 The header's first button sorts the games by name or by when you last played them; favorites always come first.
 `SETTINGS` holds `DARK MODE`, `THEME` and `ASPECT` (shared with the companion in your games) and the program's own
 `LCD FILTER`, `FF SPEED`, `REWIND` and `A/B BUTTONS`. `BUTTON COLORS` paints the button legend like your device's
