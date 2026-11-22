@@ -575,6 +575,8 @@ open class CompanionScreenshotTest {
             v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
             val tables = v.pokedex?.tables ?: return
             val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+            // Worked out in the background in the app: here before the frame, so the list shows rather than LOADING.
+            com.pokedaisy.app.companion.data.MoveLearning.options(tables, v.guideTables, v.party[0], v.items)
             snapshot { AppTheme { MonDetailScreen(v.party, 0, {}, {}, learn = ctx, initialLearnPick = 0) } }
         } finally {
             com.pokedaisy.app.companion.data.NdsArt.dir = null
