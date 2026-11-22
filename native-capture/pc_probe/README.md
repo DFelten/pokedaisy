@@ -29,6 +29,12 @@ with `opt mkxp-z_preload-<file name in hex> enabled`; `pokedaisy_companion.rb` i
 `mkxp-z_preload-706f6b6564616973795f636f6d70616e696f6e2e7262`. For states: `opt mkxp-z_threadedAudio disabled` and
 `opt mkxp-z_saveStateSize 512` (Infinite Fusion's heap is ~400 MB). Run at least one frame before a `load`.
 
+`pc_fit_test.c` checks the app's sharp scaling sizes (`app/src/main/cpp/pk_pc_fit.h`), from the repo's root:
+
+```
+cc -I app/src/main/cpp -o /tmp/pc_fit_test native-capture/pc_probe/pc_fit_test.c && /tmp/pc_fit_test
+```
+
 ## Building the core (2026-11-17)
 
 white-axe/mkxp-z, branch `libretro` (commit 650cb08), with `third_party/patches/mkxp-z-libretro-pokedaisy.patch`:

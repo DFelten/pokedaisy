@@ -332,7 +332,13 @@ town's, as the GBA games' map sections), off every named tile the game's own map
 Fusion's real `town_map.dat` (278 points, two behind switches) with both tile rules, and by `PcTownMapTest` / `PcCompanionTest` /
 `PcCompanionScreenshotTest` over a drawn stand-in; not yet in a game.
 
-Not yet: sharp scaling, the companion's guide, picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
+Sharp scaling (2026-11-23): the picture keeps its shape at the largest size the screen holds, which is rarely a whole number
+(Infinite Fusion's 512 x 384 is 2.81x on the Thor). A smooth stretch blurred every pixel, so `pcFrame` draws it at the next
+whole-number size with hard pixels into a copy of its own (3x), then smooths that down the last step: each pixel's edge blends over
+one screen pixel at most. A whole-number fit is one hard-pixel draw; a GPU refusing the copy gets the old smooth stretch. The sizes
+are `pk_pc_fit.h`'s, checked by `native-capture/pc_probe/pc_fit_test.c`; not yet looked at on a device.
+
+Not yet: the companion's guide, picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
 for players to get the core.
 
 ## Next steps

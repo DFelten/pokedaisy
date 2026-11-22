@@ -34,6 +34,7 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 
 ## Playing
 
+- The game fills the screen in its own shape, its pixels kept sharp.
 - The buttons and the stick work as in the game itself: A to pick, B to go back.
 - On a screen with no controller, the on-screen controls show, the same ones (and the same `TOUCH CONTROLS` settings)
   as in your other games, with X and Y too.

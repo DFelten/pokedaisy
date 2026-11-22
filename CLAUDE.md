@@ -241,7 +241,7 @@ icons from its folder (`pc_png.c`); `pc-companion-shot` draws its pages from a s
 `<saves>/mkxp-z/Saves/<game>/` is backed up into `pokedaisy-backups/mkxp-z/` (newest 10 distinct; a failed copy keeps it closed).
 **PC fan games in the app** (prototype, `FeatureFlags.pcGames` off: `-Ppokedaisy.pcGames=true` / marker `pc-games`; 2026-11-17):
 `PcGameActivity` (its own screen, like LINK PLAY: no EmulatorEngine or HUD yet) runs the core on its GLSurfaceView's
-thread through `cpp/pk_pc.c` (libretro host, GLES 3.2 into our FBO, blitted to the view; the mailbox read under the core lock) and `PcCore`.
+thread through `cpp/pk_pc.c` (libretro host, GLES 3.2 into our FBO, blitted to the view sharp: whole-number hard pixels, then smoothed the last step, `pk_pc_fit.h`; the mailbox read under the core lock) and `PcCore`.
 `PcGames`: the core from `<external files>/pc/cores/` copied into private files before `dlopen` (never bundled), games in `pc/games/`
 (a TOOLS card each), saves in `pc/saves/` backed up before each start; our preloads ride along as `assets/pc_preload/*.rb` (a Sync task
 from `linux/pc_games`). Resume states (`pcSaveState` / `pcLoadState`, gzip, `pc/states/`) load only while the save folders'

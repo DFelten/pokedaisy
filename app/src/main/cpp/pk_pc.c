@@ -20,6 +20,7 @@
 #include <zlib.h>
 
 #include "libretro.h"
+#include "pk_pc_fit.h"
 
 #define TAG "pokedaisy/pc"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
@@ -43,6 +44,9 @@ static char sysDir[512], saveDir[512];
 static struct retro_hw_render_callback hw;
 static bool hwSet, running;
 static GLuint fbo, tex, rb;
+// The picture at a whole-number size with hard pixels, smoothed down from there to the screen (pk_pc_fit.h).
+static GLuint upFbo, upTex;
+static int upW, upH, maxTex;
 static int fbw = 640, fbh = 480, frameW, frameH;
 static double fps = 60.0, nextFrame;
 static retro_audio_callback_t audioCb;
@@ -248,6 +252,10 @@ static void unloadLocked(void) {
     if (tex) glDeleteTextures(1, &tex);
     if (rb) glDeleteRenderbuffers(1, &rb);
     fbo = tex = rb = 0;
+    if (upFbo) glDeleteFramebuffers(1, &upFbo);
+    if (upTex) glDeleteTextures(1, &upTex);
+    upFbo = upTex = 0;
+    upW = upH = 0;
     dlclose(lib);
     lib = NULL;
     running = hwSet = false;
@@ -369,9 +377,36 @@ JNIEXPORT jint JNICALL Java_com_pokedaisy_app_PcCore_pcSampleRate(JNIEnv *jenv, 
     return (jint) sampleRate;
 }
 
+/** [upFbo] at [w] x [h] (made, or remade when the size changes); false if the GPU won't have it. */
+static bool upscaled(int w, int h) {
+    if (upFbo && upW == w && upH == h) return true;
+    if (upW == -w && upH == -h) return false; // refused at this size already
+    if (!upFbo) {
+        glGenFramebuffers(1, &upFbo);
+        glGenTextures(1, &upTex);
+    }
+    glBindTexture(GL_TEXTURE_2D, upTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, upFbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, upTex, 0);
+    bool ok = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    if (!ok) {
+        LOGW("sharp scaling's %dx%d copy refused: smoothed instead", w, h);
+        upW = -w; // asked once a size, not every frame
+        upH = -h;
+        return false;
+    }
+    upW = w;
+    upH = h;
+    return true;
+}
+
 /**
  * One screen refresh: the frames due by the clock (at most two, so a slow frame never turns into a burst), then the
- * picture blitted into the view's framebuffer at the largest size that keeps its shape. Returns how many frames ran,
+ * picture blitted into the view's framebuffer at the largest size that keeps its shape, sharp (pk_pc_fit.h). Returns how many frames ran,
  * or -1 once the game has asked to close.
  */
 JNIEXPORT jint JNICALL Java_com_pokedaisy_app_PcCore_pcFrame(JNIEnv *jenv, jclass cls, jint viewW, jint viewH) {
@@ -401,14 +436,21 @@ JNIEXPORT jint JNICALL Java_com_pokedaisy_app_PcCore_pcFrame(JNIEnv *jenv, jclas
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     int w = frameW > 0 ? frameW : fbw, h = frameH > 0 ? frameH : fbh;
-    int outW = viewW, outH = viewW * h / w;
-    if (outH > viewH) {
-        outH = viewH;
-        outW = viewH * w / h;
-    }
-    int x0 = (viewW - outW) / 2, y0 = (viewH - outH) / 2;
+    if (!maxTex) glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
+    PkPcFit f = pk_pc_fit(w, h, viewW, viewH, maxTex > 0 ? maxTex : 2048);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-    glBlitFramebuffer(0, 0, w, h, x0, y0 + outH, x0 + outW, y0, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    if (f.exact || f.prescale <= 1 || !upscaled(w * f.prescale, h * f.prescale)) {
+        // A whole-number scale: hard pixels straight on; under 1x (or no room for the copy), smoothed.
+        glBlitFramebuffer(0, 0, w, h, f.x, f.y + f.h, f.x + f.w, f.y, GL_COLOR_BUFFER_BIT, f.exact ? GL_NEAREST : GL_LINEAR);
+    } else {
+        // Sharp: hard pixels up to the whole-number size (flipped here), then smoothed down the last step.
+        int uw = w * f.prescale, uh = h * f.prescale;
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, upFbo);
+        glBlitFramebuffer(0, 0, w, h, 0, uh, uw, 0, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, upFbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, uw, uh, f.x, f.y, f.x + f.w, f.y + f.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     if (scissor) glEnable(GL_SCISSOR_TEST);
     return ran;
