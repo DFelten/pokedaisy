@@ -254,6 +254,12 @@ sealed class GbField {
         private val KANTO_LANDMARK: Int = 47,
         /** The PC's moves on the current box (Gen2BoxSwap.kt), where they're mapped. */
         val boxCalls: Gen2BoxCalls? = null,
+        /**
+         * wStatusFlags2 (bit 2: the Bug-Catching Contest's timer; the contest hides all but the lead, ContestDropOffMons,
+         * and its START menu has no SAVE) and wLinkMode: no PC there. Null = not mapped (Gold / Silver).
+         */
+        private val STATUS_FLAGS2: Long? = null,
+        private val LINK_MODE: Long? = null,
     ) : GbField() {
         private val BATTLE_MODE = cfg.battleMode
         private val PARTY_COUNT = cfg.partyCount          // then wPartySpecies
@@ -264,7 +270,8 @@ sealed class GbField {
         private val SPAWN_INDIGO = 13
 
         private fun free(g: GameCalls) = u8(g, SCRIPT_RUNNING) == 0 && u8(g, MAP_EVENT_STATUS) == 0 &&
-            u8(g, BATTLE_MODE) == 0 && u8(g, QUEUE) == 0
+            u8(g, BATTLE_MODE) == 0 && u8(g, QUEUE) == 0 &&
+            STATUS_FLAGS2?.let { u8(g, it) and 0x04 == 0 } != false && LINK_MODE?.let { u8(g, it) == 0 } != false
 
         private fun queue(g: GameCalls, bank: Int, addr: Int) {
             put(g, QUEUE + 1, bank, addr and 0xFF, addr shr 8)
@@ -359,6 +366,7 @@ sealed class GbField {
             0x24 * 0x4000L + (0x5C5E - 0x4000) to "010e030f",                         // Flypoints: NEW BARK, CHERRYGROVE
         ),
         boxCalls = GEN2_BOX_CALLS_CRYSTAL,
+        STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
     )
 
     /** German Crystal (Kristall): English Crystal's RAM and scripts, its Flypoints table 0x1E later. */
@@ -376,6 +384,7 @@ sealed class GbField {
             0x24 * 0x4000L + (0x5C7C - 0x4000) to "010e030f",                         // Flypoints: NEUBORKIA, ROSALIA CITY
         ),
         boxCalls = GEN2_BOX_CALLS_CRYSTAL_DE,
+        STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
     )
 
     /**

@@ -217,7 +217,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "FLY STYLE" to "fly style scenic classic flight animation flying over map travel town cutscene bird fly to",
     "EXP SHARE" to "exp share experience all party team whole party level up faster grinding exp all split full bench",
     "AUTO REFILL" to "auto refill repel repels super max keep away spray wild encounters avoid use another run out wore off again automatic",
-    "POKéMON PICTURES" to "pokemon pictures party pictures sprites front sprite icons party icons detailed pictures recognise recognize team images crystal",
+    "POKéMON PICTURES" to "pokemon pictures party pictures sprites front sprite icons party icons detailed pictures recognise recognize team images crystal gold silver red blue yellow",
     "ITEM POPUPS" to "item popup obtained got received pickup found item gain toast notice card notification bag new item",
     "LAST BALL" to "last ball throw ball catch quick ball button one tap poke ball pokeball great ultra repeat throw again catching capture",
     "BOSS RETRY" to "boss retry try again redo rematch lost loss black out blackout white out whiteout gym leader trainer battle restart undo",

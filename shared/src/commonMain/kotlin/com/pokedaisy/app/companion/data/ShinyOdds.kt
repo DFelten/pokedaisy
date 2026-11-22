@@ -507,6 +507,7 @@ object ShinyOdds {
 
     /**
      * Gold / Silver / Crystal ([GbRoller]): pret's pokegold / pokecrystal RAM, the same in every English release of each
+     * (and in the German carts: Goldene, Silberne and Kristall keep it, checked on their `*_de_battle` fixtures)
      * (their builds' .sym files agree; Crystal rev 0, rev 1 and Australia, Gold and Silver). wEnemyMon and its stats, the
      * unmodified copy the battle keeps (wEnemyStats), wBaseDexNo with wBaseStats right after it and wBaseGender (GetBaseData's
      * copy: LoadEnemyMon's of the foe, still there through the slide-in), and what says what kind of battle it is.

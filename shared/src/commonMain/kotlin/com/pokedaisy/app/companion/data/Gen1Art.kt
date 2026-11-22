@@ -447,8 +447,7 @@ object Gen1Art {
     }
 
     private fun ballTiles(rom: ByteArray): Int? {
-        val crc = java.util.zip.CRC32()
-        fun crcAt(o: Int): Long { crc.reset(); crc.update(rom, o, 16); return crc.value }
+        fun crcAt(o: Int): Long = crc32(rom, o, 16)
         for (o in 0..rom.size - 0x110) {
             if (crcAt(o) == BALL_TOP_CRC && crcAt(o + 0x100) == BALL_BOTTOM_CRC) return o
         }

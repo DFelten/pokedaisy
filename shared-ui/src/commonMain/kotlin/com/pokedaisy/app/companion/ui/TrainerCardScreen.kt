@@ -107,7 +107,7 @@ fun TrainerCardScreen(card: TrainerCardInfo, art: CardArt, modifier: Modifier = 
         val px = IntArray((r - l) * (b - t)) { img.argb[(t + it / (r - l)) * img.width + l + it % (r - l)] }
         imageBitmapOf(px, r - l, b - t).also { renders[if (colon) 1 else 0] = it }
     }
-    FlippingCard(image, back, modifier) { back = !back }
+    FlippingCard(image, back, modifier, dropHint = false) { back = !back }
 }
 
 /**
@@ -134,12 +134,12 @@ private fun CrystalCard(card: TrainerCardInfo, art: Gen2TrainerCard.Art, badges:
         val img = Gen2TrainerCard.render(art, card, badges, phase)
         imageBitmapOf(img.argb, img.width, img.height).also { renders[phase] = it }
     }
-    FlippingCard(image, badges, modifier, flip)
+    FlippingCard(image, badges, modifier, dropHint = true, flip = flip)
 }
 
 /** [image] at the largest whole scale that fits; a tap squashes it shut, [flip]s and opens it again. */
 @Composable
-private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, flip: () -> Unit) {
+private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, dropHint: Boolean, flip: () -> Unit) {
     val squash = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     var flipping by remember { mutableStateOf(false) }
@@ -151,10 +151,11 @@ private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, 
         val w = with(density) { maxWidth.toPx() }
         val h = with(density) { maxHeight.toPx() }
         // Whole screen pixels per game pixel, so the card stays crisp. The hint under it goes when leaving it out gives
-        // the card a whole step more (Crystal's 160x144 on the Thor's bottom screen: 6x instead of 5x).
+        // the card a whole step more (Crystal's 160x144 on the Thor's bottom screen: 6x instead of 5x). Crystal only
+        // ([dropHint]): the GBA cards keep their hint everywhere, as before.
         val hint = with(density) { (m.lineHeight + m.u * 4).toPx() }
         fun fit(height: Float) = max(1, min(w / image.width, height / image.height).toInt())
-        val showHint = fit(h - hint) >= fit(h)
+        val showHint = !dropHint || fit(h - hint) >= fit(h)
         val scale = if (showHint) fit(h - hint) else fit(h)
         val size = with(density) { DpSize((image.width * scale).toDp(), (image.height * scale).toDp()) }
         Column(

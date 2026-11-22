@@ -4079,7 +4079,7 @@ class PokeDaisyActivity : Activity() {
                 onTap = { com.pokedaisy.app.companion.FeatureTips.used(TipId.HUD) },
                 onPanel = { hudPanelOpen.value = it },
             ) else androidx.compose.runtime.CompositionLocalProvider(
-                // POKéMON PICTURES (Crystal): the HUD's party shows the front pictures too.
+                // POKéMON PICTURES (the Game Boy games, `pokemonPicturesOffered`): the HUD's party shows the front pictures too.
                 com.pokedaisy.app.companion.ui.LocalPokemonPictures provides snap.pokedex?.tables?.takeIf {
                     // The switch's version first: Prefs isn't Compose state, and a flip should show at once.
                     com.pokedaisy.app.companion.PokemonPicturesSwitch.version >= 0 &&

@@ -19,12 +19,17 @@ class Gen2BoxSwapTest {
     fun `the calls' code is in the English and the German cart, each only its own`() {
         val en = File(dir, "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
         val de = File(dir, "Pokemon - Kristall-Edition (Germany).gbc")
-        assumeTrue("no Crystal carts", en.isFile && de.isFile)
+        // Each cart is checked on its own when it's here (a missing German cart once skipped the English check too).
+        assumeTrue("no Crystal cart", en.isFile || de.isFile)
         fun Gen2BoxCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
-        assertTrue(GEN2_BOX_CALLS_CRYSTAL.on(en))
-        assertTrue(GEN2_BOX_CALLS_CRYSTAL_DE.on(de))
-        assertFalse(GEN2_BOX_CALLS_CRYSTAL.on(de))
-        assertFalse(GEN2_BOX_CALLS_CRYSTAL_DE.on(en))
+        if (en.isFile) {
+            assertTrue(GEN2_BOX_CALLS_CRYSTAL.on(en))
+            assertFalse(GEN2_BOX_CALLS_CRYSTAL_DE.on(en))
+        }
+        if (de.isFile) {
+            assertTrue(GEN2_BOX_CALLS_CRYSTAL_DE.on(de))
+            assertFalse(GEN2_BOX_CALLS_CRYSTAL.on(de))
+        }
         assertTrue(GbField.Crystal.boxCalls === GEN2_BOX_CALLS_CRYSTAL && GbField.CrystalDe.boxCalls === GEN2_BOX_CALLS_CRYSTAL_DE)
     }
 
@@ -35,6 +40,7 @@ class Gen2BoxSwapTest {
     /** WRAM bank 1 and the box: a party and a box of Pokémon told apart by species and OT ID. */
     private class Game(val cfg: Gen2Config, val calls: Gen2BoxCalls) : GameCalls {
         val wram = ByteArray(0x1000)
+        val wram0 = ByteArray(0x1000)   // C000-CFFF (wLinkMode)
         val sram = ByteArray(0x450)
         val sramTop = ByteArray(0x10)   // A000-A00F: sCheckValue1, sPlayerData's ID
         val saved = mutableListOf<Int>()   // bank 5 calls, in order
@@ -47,6 +53,7 @@ class Gen2BoxSwapTest {
         private fun at(addr: Long): Pair<ByteArray, Int> = when {
             addr >= cartRam(1, 0xA000) && (addr and 0xFFFF) < 0xA010 -> sramTop to (addr and 0xFFFF).toInt() - 0xA000
             addr >= cartRam(1, 0xA000) -> sram to (addr and 0xFFFF).toInt() - 0xAD10
+            (addr and 0xFFFF) < 0xD000 -> wram0 to (addr and 0xFFFF).toInt() - 0xC000
             else -> wram to (addr and 0xFFFF).toInt() - 0xD000
         }
         operator fun get(addr: Long) = at(addr).let { (m, i) -> m[i].toInt() and 0xFF }
@@ -247,6 +254,14 @@ class Gen2BoxSwapTest {
         g[wramx(1, 0xD438)] = 0
         assertEquals(BoxSwapResult.SWAPPED, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
         g[cfg.battleMode] = 1
+        assertEquals(BoxSwapResult.NOT_NOW, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
+        g[cfg.battleMode] = 0
+        // The Bug-Catching Contest (wStatusFlags2 bit 2: the game hides all but the lead) and a link: no PC there.
+        g[wramx(1, 0xD84D)] = 0x04
+        assertEquals(BoxSwapResult.NOT_NOW, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
+        g[wramx(1, 0xD84D)] = 0x01   // another flag in the byte: no matter
+        assertEquals(BoxSwapResult.SWAPPED, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
+        g[0xC2DCL] = 1
         assertEquals(BoxSwapResult.NOT_NOW, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
     }
 }

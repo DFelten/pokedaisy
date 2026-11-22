@@ -87,7 +87,7 @@ class TranslationsTest {
 
     @Test
     fun placeholders() {
-        L10n.apply("EN", null)
+        L10n.apply("EN", null, Locale("en"))  // AUTO follows the device; pin it so a German Mac passes too
         assertEquals("AUTO (ENGLISH)", L10n.settingLabel(LANGUAGE_AUTO))
         assertEquals("3 + 4", tr("{0} + {1}", 3, 4))
     }

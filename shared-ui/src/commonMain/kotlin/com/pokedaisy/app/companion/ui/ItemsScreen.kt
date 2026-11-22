@@ -707,6 +707,7 @@ private val PureRgbBag = YellowBag.copy(
 
 /** Pokémon Ghost Grey's bag (headless): Yellow's black-on-white boxes with its grey row lines, on white. */
 private val GhostGreyBag = YellowBag.copy(
+    corner = 4, // a GBA game: the GBA bags' corners, not the Game Boy frame's 2u
     panelLayers = listOf(Color.Black to 1, Color.White to 1, Color.Black to 1, Color.White to 1),
     divider = Color(0xFFADADAD),
     text = Color.Black, tabText = Color.Black, tabUnderline = Color.Black,
