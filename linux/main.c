@@ -783,6 +783,49 @@ static void host_save(void) {
     fprintf(f, "kb_%s=%d\n", kbIds[i], kbKeys[i]);
   fclose(f);
 }
+/* The companion window's X (the app's: beside its top right corner): a key in the look's button colours, at the window's
+ * scale, where the window leaves room for it on the right. A click on it lands outside the window, which closes it (the
+ * core's rule), so it needs no handling of its own. A square handheld's screen has no room: none there. */
+#define CLOSE_KEY 16
+static SDL_Texture *closeTex;
+static uint32_t closeTexKey;
+static void companion_close_key(int ow, SDL_Rect win, int k) {
+  const int x = win.x + win.w + 3 * k, size = CLOSE_KEY * k;
+  if (x + size > ow - 2 * k)
+    return;
+  const struct pd_key plain = {pd_cur->title[0].color, pd_cur->titleFill, pd_two_tone_low(pd_cur->titleFill),
+                               pd_cur->title[0].color, pd_cur->titleText, PD_NO_SHADOW, PD_NO_SHADOW, false};
+  const struct pd_key *key = pd_style ? &pd_style->button : &plain;
+  const uint32_t want = key->face ^ (key->outline << 1) ^ (key->text << 2) ^ key->depth;
+  if (!closeTex || closeTexKey != want) {
+    static uint32_t px[CLOSE_KEY * CLOSE_KEY];
+    const uint32_t clear = 0x00FF00FF;
+    for (int i = 0; i < CLOSE_KEY * CLOSE_KEY; i++)
+      px[i] = clear;
+    struct pd_canvas c;
+    pd_canvas_init(&c, CLOSE_KEY, CLOSE_KEY, px);
+    pd_key(&c, 0, 0, CLOSE_KEY, CLOSE_KEY, key);
+    // The X: two 2-pixel diagonals, 8 wide, in the face's middle (over the depth edge).
+    for (int i = 0; i < 7; i++) {
+      pd_fill(&c, 4 + i, 3 + i, 2, 1, key->text);
+      pd_fill(&c, 10 - i, 3 + i, 2, 1, key->text);
+    }
+    for (int i = 0; i < CLOSE_KEY * CLOSE_KEY; i++)
+      px[i] = px[i] == clear ? 0 : (px[i] | 0xFF000000u);
+    if (closeTex)
+      SDL_DestroyTexture(closeTex);
+    closeTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, CLOSE_KEY, CLOSE_KEY);
+    if (!closeTex)
+      return;
+    SDL_SetTextureBlendMode(closeTex, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureScaleMode(closeTex, SDL_ScaleModeNearest);
+    SDL_UpdateTexture(closeTex, NULL, px, CLOSE_KEY * 4);
+    closeTexKey = want;
+  }
+  SDL_Rect dst = {x, win.y, size, size};
+  SDL_RenderCopy(renderer, closeTex, NULL, &dst);
+}
+
 /* ---- the desktop window (Windows, a Linux desktop, the Steam Deck's Desktop Mode) ----
  * windowedHost: the video driver has a window manager (not KMSDRM / a handheld's framebuffer, not gamescope, which
  * fills the screen itself, not the tests' dummy / offscreen drivers) - only there does FULLSCREEN mean anything, and
@@ -1547,6 +1590,7 @@ static void present_game(const struct pd_menu *menu) {
       SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
       SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
       SDL_RenderCopy(renderer, compTexture, NULL, &dst);
+      companion_close_key(ow, dst, k);
     }
   }
   bool any = false;
