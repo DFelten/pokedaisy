@@ -207,11 +207,11 @@ and back, or use `FULLSCREEN` in the `SCREEN` group of the companion's `SETTINGS
 big as your screen comfortably allows the first time, and after that at the size and place you left it, maximised if it
 was. In Game Mode and on handhelds the program always fills the screen, so the row isn't there.
 
-### FONT TYPE
+### LOOK and FONT TYPE
 
-`FONT TYPE` in the `SCREEN` group of the companion's `SETTINGS` picks the companion's letters: `PIXEL SMALL`, the app's
-smaller pixel font, to start with, or `PIXEL` for the larger one the desktop version used before. The HUD and the quick
-menu keep their own.
+The companion's `SETTINGS` has a `LOOK` group, as in the app: `DARK MODE`, `THEME` (the same ones as the game list's)
+and `FONT TYPE`, which picks the companion's letters: `PIXEL SMALL`, the app's smaller pixel font, to start with, or
+`PIXEL` for the larger one the desktop version used before. The HUD and the quick menu keep their own.
 
 ## Adding games
 

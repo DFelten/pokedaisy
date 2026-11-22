@@ -270,9 +270,21 @@ static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp,
     static const char* const NAMES[PD_BUTTONS] = {"X", "Y", "L2", "R2", "NONE", "L3"};
     if (host && host->hasButtonRows)
         setting(ui, c, ix, yp, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
-    if (host && host->hasCoreRows) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
-    if (host && host->hasFontType) font_type_row(ui, c, ix, yp, iw, st);
+    // The app's LOOK group (DARK MODE, THEME, FONT TYPE) where the host has FONT TYPE (the desktop cores); else DARK MODE
+    // stays in SCREEN.
+    const bool lookGroup = host && host->hasFontType && host->hasCoreRows;
+    if (host && host->hasCoreRows && !lookGroup) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
     if (host && host->hasPerf) setting(ui, c, ix, yp, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
+    if (lookGroup) {
+        pendingGroup = "LOOK";
+        setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+        const char* themeName = pd_themes[0].label;
+        for (int i = 0; i < pd_theme_count; i++)
+            if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
+        setting(ui, c, ix, yp, iw, SETTING_THEME, "THEME", themeName);
+        font_type_row(ui, c, ix, yp, iw, st);
+    } else if (host && host->hasFontType)
+        font_type_row(ui, c, ix, yp, iw, st);
     pendingGroup = "COMPANION";
     snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
     setting(ui, c, ix, yp, iw, SETTING_TAB_BAR, "TAB BAR", buf);
@@ -313,7 +325,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     groupCount = 0;
     int railX = x, railW = 0;
     if (railed) {
-        static const char* const LABELS[] = { "GAME", "FF / SPEED", "SOUND", "GAMEPLAY", "SCREEN", "COMPANION" };
+        static const char* const LABELS[] = { "GAME", "FF / SPEED", "SOUND", "GAMEPLAY", "SCREEN", "LOOK", "COMPANION", "CONTROLS" };
         for (unsigned i = 0; i < sizeof(LABELS) / sizeof(*LABELS); i++)
             if (pd_text_width(LABELS[i]) + 12 > railW) railW = pd_text_width(LABELS[i]) + 12;
     }
