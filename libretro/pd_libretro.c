@@ -32,6 +32,7 @@
 #include "pd_font.h"
 #include "pd_gb.h"
 #include "pd_map.h"
+#include "pd_party_art.h"
 #include "pd_menu.h"
 #include "pd_romart.h"
 #include "pd_settings.h"
@@ -1479,6 +1480,7 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
   }
   // The app's RETRO look (SUMMARY MINT in PokeDaisy's blues) on the desktop: the 3DS keeps the OPTION windows.
   pd_style_enable(true);
+  pd_party_backdrop_whole(true); // the party's backdrop art at a whole scale: even stripes
   pd_look_apply(&game, &settings); // DARK MODE (pd_game_detect applied the game's windows with no settings)
   autoRunFlip = 0;
   read_options(); // the frontend's ASPECT, over the file's own

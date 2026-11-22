@@ -42,6 +42,10 @@ int pd_party_glyph_row(const struct pd_party_art* a, int glyph, int y);
 
 // Fills c with the game's party backdrop under the theme's wash and dark mode's scrim, or returns false for the stripes.
 bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g);
+// A host that shows the companion at a whole scale (the desktop cores) asks for the backdrop picture at a whole scale too:
+// the smallest that covers the canvas, cropped to its middle, so the art's 2-pixel stripes stay even (a fill by a ratio,
+// 1.69 on a Steam Deck, alternated 2 and 1 pixel stripes, and the host's scale made it plain). Off: filled by the ratio.
+void pd_party_backdrop_whole(bool on);
 
 // The backdrop behind the slots at the game's own size, filling c: no zig-zags, text box or CANCEL.
 bool pd_party_screen(struct pd_canvas* c, const struct pd_game* g);

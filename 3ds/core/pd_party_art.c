@@ -214,6 +214,12 @@ bool pd_party_screen(struct pd_canvas* c, const struct pd_game* g) {
     return true;
 }
 
+static bool wholeScale;
+void pd_party_backdrop_whole(bool on) {
+    if (wholeScale != on) back.viewW = 0; // drawn again
+    wholeScale = on;
+}
+
 bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g) {
     unsigned rom = pd_rom_id(g);
     if (!rom) return false;
@@ -234,6 +240,11 @@ bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g) {
         // A tiled cell goes at the slots' scale (GameBackdrop); a screen fills the canvas, cropped (ContentScale.Crop).
         int num = back.tiled ? 1 : c->w * back.h > c->h * back.w ? c->w : c->h;
         int den = back.tiled ? 1 : c->w * back.h > c->h * back.w ? back.w : back.h;
+        if (wholeScale && !back.tiled) { // the smallest whole scale covering the canvas
+            int sw = (c->w + back.w - 1) / back.w, sh = (c->h + back.h - 1) / back.h;
+            num = sw > sh ? sw : sh;
+            den = 1;
+        }
         int dx = back.tiled ? 0 : (back.w * num - c->w * den) / 2, dy = back.tiled ? 0 : (back.h * num - c->h * den) / 2;
         uint32_t from = 0, to = 0;
         for (int y = 0; y < c->h; y++) {

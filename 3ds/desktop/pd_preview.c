@@ -21,6 +21,7 @@
 #include "../core/pd_ui.h"
 #include "../core/pd_ui_internal.h"
 #include "../core/pd_map.h"
+#include "../core/pd_party_art.h"
 #include "pd_png.h"
 #include "../../linux/pd_env.h"
 
@@ -309,6 +310,7 @@ int main(int argc, char** argv) {
     // PD_PREVIEW_THEME (20 CHERRY, 23 MINT ...).
     if (bareShot) {
         pd_style_enable(true);
+        pd_party_backdrop_whole(true);
         settings.darkMode = getenv("PD_PREVIEW_DARK") != NULL;
         if (getenv("PD_PREVIEW_THEME")) settings.theme = atoi(getenv("PD_PREVIEW_THEME"));
         pd_look_apply(&game, &settings);
@@ -345,6 +347,13 @@ int main(int argc, char** argv) {
     ui.tab = PD_TAB_BATTLE;
     draw(&p);
     shot(out, name, "battle", px);
+    if (bareShot && snap.inBattle) { // FOE DETAILS (the expand button's page)
+        ui.foeDetails = true;
+        draw(&p);
+        shot(out, name, "battle-foe", px);
+        ui.foeDetails = false;
+        draw(&p);
+    }
     if (has_hit(&p, HIT_BATTLE_SUGGEST)) {
         tap(&p, HIT_BATTLE_SUGGEST, 0);
         shot(out, name, "battle-suggest", px);
