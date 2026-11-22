@@ -162,7 +162,8 @@ how in `native-capture/pc_probe/README.md`. Infinite Fusion 6.4.5 (its public re
     280-480 ms to save, 75-260 ms to load in the same session, 0.7-0.9 s into a fresh core. gzip -1 makes it 99 MB in
     3.8 s.
   - Same-session load: refused while the game held a directory stream open (Infinite Fusion does), and the failure
-    path then asserted in the core. Our patch closes such streams first, and fixes an index typo in that loop.
+    path then asserted in the core. Our patch closes such streams first, and fixes an index typo in that loop. (It also
+    restores a closed file stream as closed: Rejuvenation's states, below.)
   - Fresh core: loading before the first `retro_run` traps in the WASM. After one frame it works, which RESUME must
     respect.
   - Threaded audio off.
@@ -405,9 +406,12 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   Reborn's map scene failed), `Input.shiftKeyPressed?` / `shiftKeyTriggered?` (SHIFT), `isComboKeyPressed?` /
   `modifierKeyPressed?` / `repeatexAny?` (never), `triggerGamepad?` (`trigger?`); and a listing of the sandbox's root, which
   can't be listed, is empty (Rejuvenation's New Game looks beside its save folder for your Reborn / Where Love Lies saves).
-- **Rejuvenation's states don't load back** (`retro_unserialize` returns false early, within ~40 ms, with no message; not the
-  state's size: 1 GB of room did the same). Reborn's load fine (35 ms from a 512 MB state). So a Rejuvenation resume state
-  would be set aside: to find in the core (its MP3 music, or another open resource the serializer can't restore).
+- **Rejuvenation's states didn't load back** (`retro_unserialize` false within ~40 ms, no message). Found with a logging
+  build: its state holds a *closed* file stream (a script it read: the stream outlives its file, root 0), and the core's
+  loader required every stream's root to be an open file. Our patch restores a closed stream as closed, and links open
+  ones to their file after every slot is back (a stream before its file in the table would have failed the same way). Both
+  games now save and load (Rejuvenation 0.33 s, Reborn 0.04 s, 512 MB states). The fix changes the core's sandbox hash, so
+  states from an older core are refused (a resume state is set aside, as for any refused load).
 - Not yet: playing in (a new game, a save), states (their heaps), timings on a device, their updater's `patch/` files
   (our core reads the game folder alone; the downloads ship it empty); Rejuvenation's cross-game bonuses (it can't see
   your Reborn save). A cheat that runs the game's own loop (a battle) runs again inside it until the sandbox overflows: the

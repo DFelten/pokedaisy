@@ -1,8 +1,8 @@
 diff --git a/binding-sandbox/sandbox-serial-wasi.h b/binding-sandbox/sandbox-serial-wasi.h
-index 020ede4..8151379 100644
+index 020ede4e..c4fcdecf 100644
 --- a/binding-sandbox/sandbox-serial-wasi.h
 +++ b/binding-sandbox/sandbox-serial-wasi.h
-@@ -137,6 +137,14 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+@@ -137,12 +137,21 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
      if (!::sandbox_deserialize(size, data, max_size)) return false;
      if (size < fdtable.size() && (fdtable[size].type == wasi_fd_type::FS || fdtable[size].type == wasi_fd_type::STDIN || fdtable[size].type == wasi_fd_type::STDOUT || fdtable[size].type == wasi_fd_type::STDERR)) return false;
  
@@ -17,7 +17,14 @@ index 020ede4..8151379 100644
      for (uint32_t i = fdtable.size(); i > size;) {
          deallocate_file_descriptor(--i);
      }
-@@ -153,7 +161,7 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+     vacant_fds.clear();
+     fdtable.resize(size, {nullptr, wasi_fd_type::VACANT});
+ 
++    std::vector<std::pair<uint32_t, uint32_t>> pending_streams; // (stream, its file)
+     uint32_t i = 0;
+     while (i < size) {
+         uint8_t type;
+@@ -153,7 +162,7 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
              if (!::sandbox_deserialize(num_free_handles, data, max_size)) return false;
              if (i + num_free_handles > size || i + num_free_handles < i) return false;
              for (uint32_t j = i; j < i + num_free_handles; ++j) {
@@ -26,3 +33,29 @@ index 020ede4..8151379 100644
                      continue;
                  }
                  deallocate_file_descriptor(j);
+@@ -240,8 +249,11 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+                 if (!::sandbox_deserialize(offset, data, max_size)) return false;
+                 uint32_t root;
+                 if (!::sandbox_deserialize(root, data, max_size)) return false;
+-                if (root >= fdtable.size() || fdtable[root].type != wasi_fd_type::FSFILE) return false;
+-                fdtable[root].file_handle()->streams.insert(i);
++                // Root 0 is a closed stream (its file was closed; the game hasn't dropped the stream yet: Rejuvenation
++                // keeps one), which has no file to link - a load over one was refused. An open one's file may come later
++                // in the table: linked once every slot is back (below).
++                if (root >= size) return false;
++                if (root != 0) pending_streams.emplace_back(i, root);
+                 fdtable[i] = {new fs_file_stream {offset, root}, wasi_fd_type::FSFILESTREAM};
+             } else if (type == 5) { // AISTREAM
+                 wasm_size_t length;
+@@ -267,6 +279,11 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+         }
+     }
+ 
++    for (const auto &[stream, root] : pending_streams) {
++        if (fdtable[root].type != wasi_fd_type::FSFILE) return false;
++        fdtable[root].file_handle()->streams.insert(stream);
++    }
++
+     std::vector<uint32_t> new_vacant_fds;
+     for (uint32_t j = 0; j < fdtable.size(); ++j) {
+         if (fdtable[j].type == wasi_fd_type::VACANT) {
