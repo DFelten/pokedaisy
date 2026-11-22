@@ -57,7 +57,8 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
         its buttons as keys, the rail and cards in the list window's frame, SETTINGS' section bands and striped rows,
         TOOLS' cards; the host's menu, HOTKEYS and KEYBOARD under a header band (`pd_menu`)
   - [x] The summary's moves in cells (GBA and DS summaries), FOE DETAILS' card and moves in red cells with the YOU tag
-  - [ ] FOE DETAILS' facts (ABILITY, stats) in a cell, the game list's button legend
+  - [x] FOE DETAILS' facts (ABILITY, stats) in a cell; the game list's menu (header + list), legend and notices
+  - [x] SETTINGS: the group rail on the desktop's list, a LOOK group (DARK MODE, THEME, FONT TYPE)
   - [ ] Folder tabs on the window's side (`FolderTab`), the header joined to its list (`OptionTitleWindow(joined)`)
   - [ ] `PanelHeader` bands, `GameTag` tags (12 px, notched corners, #424242 shadow)
   - [ ] Themes move the whole palette (`themedStylePalette`, `rehued`), the focus ring in the theme's opposite colour

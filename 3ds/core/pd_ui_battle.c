@@ -646,6 +646,13 @@ static void foe_details(struct pd_canvas* c, const struct battle_data* d, const 
     y = iy + CARD_H + 4;
     if (!fc) separator(c, rx, y, rw, false);
     y += 5;
+    if (fc) {
+        // The style's facts (ABILITY, ITEM, stats) in a red cell: measured first under an empty clip, then drawn on it.
+        pd_clip(c, 0, 0, 0, 0);
+        const int factsH = foe_facts(c, d, foeBattler, rx, y, rw);
+        pd_unclip(c);
+        if (factsH > 0) pd_cell(c, rx - 3, y - 3, rw + 6, factsH + 1, fc->line, fc->b);
+    }
     y += foe_facts(c, d, foeBattler, rx, y, rw);
     int bottom = iy + ih;
     // The foe's moves two by two, a row each pair.
