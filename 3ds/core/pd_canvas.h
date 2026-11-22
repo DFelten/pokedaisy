@@ -25,6 +25,11 @@ struct pd_layer {
 };
 
 void pd_canvas_init(struct pd_canvas* c, int w, int h, uint32_t* px);
+// A host that shows the canvas at a whole scale (the desktop cores: Linux, Windows) sets this: the party backdrop's art
+// then goes at whole scales too, so its pixels stay even (a ratio fill,
+// 1.69 on a Steam Deck, made 2-pixel stripes 2 and 1 pixels by turn and the host's scale made it plain). Off (the 3DS):
+// filled by the ratio as before.
+extern bool pd_whole_scale_art;
 void pd_clip(struct pd_canvas* c, int x, int y, int w, int h);
 void pd_unclip(struct pd_canvas* c);
 // Limits all drawing to the rectangle until pd_canvas_unlimit (clips set meanwhile are cut to it).

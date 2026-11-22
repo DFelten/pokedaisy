@@ -214,12 +214,6 @@ bool pd_party_screen(struct pd_canvas* c, const struct pd_game* g) {
     return true;
 }
 
-static bool wholeScale;
-void pd_party_backdrop_whole(bool on) {
-    if (wholeScale != on) back.viewW = 0; // drawn again
-    wholeScale = on;
-}
-
 bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g) {
     unsigned rom = pd_rom_id(g);
     if (!rom) return false;
@@ -230,6 +224,8 @@ bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g) {
     }
     if (!back.art) return false;
     uint32_t key[3] = { pd_backdrop_tint(0xFFFFFF), pd_backdrop_tint(0x808080), pd_backdrop_tint(0) };
+    static bool wasWhole;
+    if (wasWhole != pd_whole_scale_art) back.viewW = 0, wasWhole = pd_whole_scale_art; // drawn again
     if (fresh || c->w != back.viewW || c->h != back.viewH || memcmp(key, back.viewKey, sizeof(key))) {
         uint32_t* v = realloc(back.view, (size_t) c->w * c->h * sizeof(*v));
         if (!v) return false;
@@ -240,7 +236,7 @@ bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g) {
         // A tiled cell goes at the slots' scale (GameBackdrop); a screen fills the canvas, cropped (ContentScale.Crop).
         int num = back.tiled ? 1 : c->w * back.h > c->h * back.w ? c->w : c->h;
         int den = back.tiled ? 1 : c->w * back.h > c->h * back.w ? back.w : back.h;
-        if (wholeScale && !back.tiled) { // the smallest whole scale covering the canvas
+        if (pd_whole_scale_art && !back.tiled) { // the smallest whole scale covering the canvas
             int sw = (c->w + back.w - 1) / back.w, sh = (c->h + back.h - 1) / back.h;
             num = sw > sh ? sw : sh;
             den = 1;

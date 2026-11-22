@@ -6,6 +6,8 @@
 #include "pd_font.h"
 #include "pd_style.h"
 
+bool pd_whole_scale_art;
+
 void pd_canvas_init(struct pd_canvas* c, int w, int h, uint32_t* px) {
     c->w = w;
     c->h = h;

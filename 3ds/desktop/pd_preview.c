@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
     // PD_PREVIEW_THEME (20 CHERRY, 23 MINT ...).
     if (bareShot) {
         pd_style_enable(true);
-        pd_party_backdrop_whole(true);
+        pd_whole_scale_art = true;
         settings.darkMode = getenv("PD_PREVIEW_DARK") != NULL;
         if (getenv("PD_PREVIEW_THEME")) settings.theme = atoi(getenv("PD_PREVIEW_THEME"));
         pd_look_apply(&game, &settings);
