@@ -202,6 +202,17 @@ gets the wide view rather than the bars the old window would have, and so does a
 screens (16:3), its overworld drawn out to both sides. The picture is shown at a whole scale where one fits, so its
 pixels stay sharp, and fills the window when one doesn't.
 
+On a Windows PC or a Linux desktop (and the Steam Deck's Desktop Mode), press `F11` or `Alt` + `Enter` to go fullscreen
+and back, or use `FULLSCREEN` in the `SCREEN` group of the companion's `SETTINGS` or the game list's. The window opens as
+big as your screen comfortably allows the first time, and after that at the size and place you left it, maximised if it
+was. In Game Mode and on handhelds the program always fills the screen, so the row isn't there.
+
+### FONT TYPE
+
+`FONT TYPE` in the `SCREEN` group of the companion's `SETTINGS` picks the companion's letters: `PIXEL SMALL`, the app's
+smaller pixel font, to start with, or `PIXEL` for the larger one the desktop version used before. The HUD and the quick
+menu keep their own.
+
 ## Adding games
 
 The program's game list shows the `.gb`, `.gbc`, `.gba` and `.nds` files in the `roms` folder of its data folder (and, on

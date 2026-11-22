@@ -95,6 +95,7 @@ bool pd_settings_load(struct pd_settings* s, const char* path) {
         }
         else if (!strcmp(key, "guide")) int_in(value, 0, 0x7FFFFFFF, &s->guideNotice);
         else if (!strcmp(key, "dark")) s->darkMode = atoi(value) != 0;
+        else if (!strcmp(key, "fontpixel")) s->fontPixel = atoi(value) != 0;
         else if (!strcmp(key, "ffnormal")) s->ffNormal = atoi(value) != 0;
         else if (!strcmp(key, "cheats")) s->cheats = atoi(value) != 0;
         else if (!strcmp(key, "theme")) int_in(value, 0, 99, &s->theme);
@@ -188,6 +189,7 @@ bool pd_settings_save(const struct pd_settings* s, const char* path) {
             s->rewind ? 1 : 0, s->runIndoors ? 1 : 0);
     fprintf(f, "quickbtn=%d\ncompanionbtn=%d\nhudbtn=%d\nquickbtnrev=1\n", s->quickBtn, s->companionBtn, s->hudBtn);
     fprintf(f, "dark=%d\ntheme=%d\nffnormal=%d\ncheats=%d\n", s->darkMode, s->theme, s->ffNormal, s->cheats);
+    fprintf(f, "fontpixel=%d\n", s->fontPixel ? 1 : 0);
     fprintf(f, "librarygrid=%d\nlibraryrecent=%d\n", s->libraryGrid, s->libraryRecent);
     fprintf(f, "speed=%d\nvolume=%d\nnohints=%d\nonetap=%d\nmute=%d\nautorun=%d\nperf=%d\n", s->gameSpeed,
             s->gameVolume, s->hideHints, s->oneTapMoves, s->gameMuted, s->autoRun, s->showPerf ? 1 : 0);

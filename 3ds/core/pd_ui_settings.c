@@ -144,6 +144,10 @@ void ui_settings_group(struct pd_ui* ui, int i) {
 }
 
 // FLIGHT AREA (the app's GAMEPLAY row): where TAKE OFF may fly. Two values, so it flips in place.
+// FONT TYPE: the companion's letters, PIXEL SMALL (the app's default since 2026-11-18) or PIXEL (Pixel Operator).
+static void font_type_row(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, const struct pd_settings* st) {
+    setting(ui, c, x, y, w, SETTING_FONT_TYPE, "FONT TYPE", st->fontPixel ? "PIXEL" : "PIXEL SMALL");
+}
 static void flight_area_row(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, const struct pd_settings* st) {
     setting(ui, c, x, y, w, SETTING_FLIGHT_AREA, "FLIGHT AREA", st->flightAnywhere ? "ANYWHERE" : "VISITED");
 }
@@ -267,6 +271,7 @@ static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp,
     if (host && host->hasButtonRows)
         setting(ui, c, ix, yp, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
     if (host && host->hasCoreRows) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+    if (host && host->hasFontType) font_type_row(ui, c, ix, yp, iw, st);
     if (host && host->hasPerf) setting(ui, c, ix, yp, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
     pendingGroup = "COMPANION";
     snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
@@ -528,6 +533,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
             for (int i = 0; i < pd_theme_count; i++)
                 if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
             setting(ui, c, ix, &y, iw, SETTING_THEME, "THEME", themeName);
+            if (host->hasFontType) font_type_row(ui, c, ix, &y, iw, st);
             group(c, ix, &y, "COMPANION");
             setting(ui, c, ix, &y, iw, SETTING_BATTLE_INFO, "BATTLE INFO", st->noBattleInfo ? "OFF" : "ON");
             if (!st->noBattleInfo) {
@@ -542,6 +548,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         if (!full && host && host->hasCoreRows) {
             if (host->fieldSupported) setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
             setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+            if (host->hasFontType) font_type_row(ui, c, ix, &y, iw, st);
         }
         snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
         setting(ui, c, ix, &y, iw, SETTING_TAB_BAR, "TAB BAR", buf);

@@ -1567,6 +1567,7 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
   host.hasExpand = true;
   host.fieldSupported = fieldKnown; // AUTO-RUN (the field read tells walking from scripts, battles and bikes)
   host.hasCoreRows = true; // AUTO-RUN, DARK MODE, RESET SETTINGS
+  host.hasFontType = true; // FONT TYPE, by DARK MODE
   host.hasFlightArea = freeFlight;
   host.flightSupported = freeFlight; // FLY STYLE / FLIGHT AREA / FLY ON (SCENIC needs scenic_ok, else classic)
   host.itemCanUse = polishedActions ? polished_potion : NULL;
@@ -2640,7 +2641,11 @@ RETRO_API void retro_run(void) {
       pd_font_get(&glyphs, &glyphCount);
       pd_font_set(NULL, 0);
     }
+    // FONT TYPE: PIXEL SMALL (the app's default) or PIXEL, for the companion alone; the HUD and the quick menu keep
+    // Pixel Operator as before.
+    pd_font_size_set(!settings.fontPixel);
     pd_ui_draw(&ui, &canvas, &game, &snap, &host);
+    pd_font_size_set(0);
     if (gen2)
       pd_font_set(glyphs, glyphCount);
     map_cursor_sync(&ui, &game, &snap);

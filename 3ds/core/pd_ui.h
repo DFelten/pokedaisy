@@ -106,6 +106,7 @@ struct pd_settings {
     bool gameMuted;  // MUTE GAME
     bool autoRun;    // AUTO-RUN: B held for the player while walking
     bool darkMode;   // DARK MODE
+    bool fontPixel;  // FONT TYPE PIXEL (Pixel Operator); false = PIXEL SMALL, the app's default (hosts with hasFontType)
     bool ffNormal;   // FF MODE: NORMAL; off = SMART, 1x while the game waits for the player
     bool cheats;     // CHEATS: the game's file's codes on
     int theme;       // THEME: a pd_themes[] id
@@ -224,6 +225,7 @@ struct pd_host_info {
     const char* frontLabels[8];
     const char* frontValues[8];
     const char* frontGroups[8]; // the app's group each goes in ("FF / SPEED", "SCREEN", "CONTROLS" ...)
+    bool hasFontType;    // FONT TYPE (PIXEL SMALL / PIXEL) by THEME or DARK MODE: the desktop cores (the 3DS is always PIXEL SMALL)
     bool hasCoreRows;    // the compact list adds AUTO-RUN (with fieldSupported), DARK MODE and RESET SETTINGS (the libretro cores)
     int batteryPct;     // -1 = unknown
     bool charging;      // the battery is charging (a bolt by it)

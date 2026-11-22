@@ -636,6 +636,10 @@ static void act(struct pd_ui* ui, int id) {
             id == HIT_SETTING + SETTING_FF_MODE ? &ui->settings->ffNormal : &ui->settings->cheats;
         *flag = !*flag;
         ui->action = PD_ACTION_SETTINGS_CHANGED;
+    } else if (id == HIT_SETTING + SETTING_FONT_TYPE) {
+        // Two values: a tap flips it, as the app's pick-list would with two (the host draws the next frame in it).
+        ui->settings->fontPixel = !ui->settings->fontPixel;
+        ui->action = PD_ACTION_SETTINGS_CHANGED;
     } else if (id == HIT_SETTING + SETTING_RESET) {
         ui->overlay = PD_OVERLAY_CONFIRM_RESET;
     } else if (id == HIT_SETTING + SETTING_RESTART) {

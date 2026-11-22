@@ -22,6 +22,7 @@
 #include "../core/pd_ui_internal.h"
 #include "../core/pd_map.h"
 #include "pd_png.h"
+#include "../../linux/pd_env.h"
 
 #define TOP_W 400
 #define TOP_H 240
@@ -106,10 +107,11 @@ static const struct pd_ui* shotUi;
 // PD_PREVIEW_SIZE=WxH: the companion alone at another canvas size (the Linux
 // host's, which follows its screen: 426x240, 360x360 ...), no 3DS around it.
 static int uiW = PD_UI_WIDTH, uiH = PD_UI_HEIGHT;
+static bool bareShot; // PD_PREVIEW_WINDOW: the companion alone even at 320x240
 
 static void shot(const char* dir, const char* name, const char* what, const uint32_t* bottom) {
     static uint32_t img[TOP_W * TOP_H * 2];
-    if (uiW != PD_UI_WIDTH || uiH != PD_UI_HEIGHT) {
+    if (bareShot || uiW != PD_UI_WIDTH || uiH != PD_UI_HEIGHT) {
         char path[1024];
         snprintf(path, sizeof(path), "%s/%s-%s.png", dir, name, what);
         if (!pd_png_write(path, uiW, uiH, bottom)) {
@@ -183,12 +185,19 @@ static void centre_of(struct preview* p, int id, int* x, int* y) {
         }
     }
     fprintf(stderr, "pd_preview (%s): nothing to tap with id %d\n", p->name, id);
+    // PD_PREVIEW_WINDOW: a size whose layout scrolled the target out of view goes on without that tap (its shot then
+    // repeats the last one) rather than failing the whole size.
+    if (bareShot) {
+        *x = *y = -1;
+        return;
+    }
     exit(1);
 }
 
 static void press(struct preview* p, int id, int dy) {
     int x, y;
     centre_of(p, id, &x, &y);
+    if (x < 0) return;
     pd_ui_touch(p->ui, x, y + dy, true);
     draw(p);
 }
@@ -207,6 +216,7 @@ static void tap(struct preview* p, int id, int dy) {
 static void drag(struct preview* p, int id, int dy) {
     int x, y;
     centre_of(p, id, &x, &y);
+    if (x < 0) return;
     pd_ui_touch(p->ui, x, y, true);
     for (int i = 1; i <= 4; i++) pd_ui_touch(p->ui, x, y + dy * i / 4, true);
     release(p);
@@ -262,6 +272,34 @@ int main(int argc, char** argv) {
         fprintf(stderr, "pd_preview: PD_PREVIEW_SIZE is WxH, 320x240 to 1024x768\n");
         return 1;
     }
+    // PD_PREVIEW_WINDOW=WxH: the companion at the size the desktop host (Linux, Windows, Steam Deck) gives it in a W x H
+    // window - the window over the dimmed game (pd_companion_size, its inner picture), else filling the core's menu
+    // canvas (the largest whole scale keeping 320x240, at most 640x480: pd_libretro.c's canvas_for). Prints
+    // "window W H mode scale" for desktop_preview.py.
+    const char* window = getenv("PD_PREVIEW_WINDOW");
+    if (window) {
+        bareShot = true;
+        int ww = 0, wh = 0;
+        if (sscanf(window, "%dx%d", &ww, &wh) != 2 || ww < 320 || wh < 240) {
+            fprintf(stderr, "pd_preview: PD_PREVIEW_WINDOW is WxH, at least 320x240\n");
+            return 1;
+        }
+        int sw = 0, sh = 0;
+        const int k = pd_companion_size(ww, wh, 640, 480, &sw, &sh);
+        if (k) {
+            uiW = sw - 2 * PD_COMPANION_PAD;
+            uiH = sh - 2 * PD_COMPANION_PAD;
+            printf("window %d %d window %d\n", ww, wh, k);
+        } else {
+            const int s = ww / 320 < wh / 240 ? (ww / 320 < 1 ? 1 : ww / 320) : (wh / 240 < 1 ? 1 : wh / 240);
+            uiW = ww / s > 640 ? 640 : ww / s;
+            uiH = wh / s > 480 ? 480 : wh / s;
+            printf("window %d %d fill %d\n", ww, wh, s);
+        }
+    }
+    // PD_PREVIEW_FONT=small|normal: the companion's font for every shot (FONT TYPE PIXEL SMALL / PIXEL).
+    const char* font = getenv("PD_PREVIEW_FONT");
+    if (font) pd_font_size_set(!strcmp(font, "small"));
     struct pd_canvas c;
     pd_canvas_init(&c, uiW, uiH, px);
     struct pd_settings settings = { .screenMode = PD_SCREEN_SHARP, .ffSpeed = 2 };
@@ -276,6 +314,8 @@ int main(int argc, char** argv) {
     host.labels[1] = "SPEED|emulation";
     snprintf(host.values[1], sizeof(host.values[1]), "100%% (60 FPS)");
     snprintf(host.stateWhen, sizeof(host.stateWhen), "10-09 12:30");
+    // PD_PREVIEW_WINDOW: SETTINGS as the desktop cores list it (their AUTO-RUN, DARK MODE, FONT TYPE, RESET SETTINGS).
+    if (bareShot) host.hasCoreRows = host.hasFontType = true;
 
     struct preview p = { &ui, &c, &game, &snap, &host, out, name };
     draw(&p);
@@ -320,6 +360,13 @@ int main(int argc, char** argv) {
     host.ffOn = true;
     tap(&p, HIT_TAB + PD_TAB_SETTINGS, 0);
     shot(out, name, "settings", px);
+    if (bareShot) { // the desktop's own rows at the list's end (FONT TYPE, DARK MODE, TAB BAR ...)
+        ui.settingsScroll = 100000;
+        draw(&p);
+        shot(out, name, "settings-end", px);
+        ui.settingsScroll = 0;
+        draw(&p);
+    }
     tap(&p, HIT_SETTING + SETTING_SCREEN, 0);
     shot(out, name, "pick-screen", px);
     tap(&p, HIT_OPTION + PD_SCREEN_STRETCH, 0);
@@ -336,7 +383,8 @@ int main(int argc, char** argv) {
     // MAP: where the player is, a tapped place, the cursor's other size, PLACES.
     tap(&p, HIT_TAB + PD_TAB_MAP, 0);
     shot(out, name, "map", px);
-    if (game.rom) {
+    // The map's taps are the 3DS's checks (its 320x240 layout): PD_PREVIEW_WINDOW shows the map alone.
+    if (game.rom && !bareShot) {
         tap(&p, HIT_MAP, 0);
         shot(out, name, "map-tapped", px);
         ui.mapBlink = true;
