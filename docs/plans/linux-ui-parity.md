@@ -72,13 +72,16 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
 - [ ] **3. Settings**: `SETTINGS_GROUPS`' order, the QUALITY OF LIFE and BATTLE pages, sub-pages with chevrons,
       DESCRIPTIONS / GROUP TABS, NEW tags, search (a desktop has a keyboard), translations of the host's rows
 - [ ] **4. Library and tools** (done: the header band, SORT BY NAME / LAST PLAYED / DATE ADDED as a pick-list, the NEW
-      tag, a right click for a game's menu, the game list's text translated through `pd_tr` with LANGUAGE): RECENTLY PLAYED, hidden games, INFO,
+      tag, SEARCH in the header, INFO in a game's menu, a right click for a game's menu, the game list's and the host
+      menu's text translated through `pd_tr` with LANGUAGE): hidden games,
       RENAME, cover picker, WHAT'S NEW, first-time setup, folders; TOOLS' SAVE EDITOR / TRADE / COLLECTION from the 3DS's
       C editor (`pd_library_saves.c`)
 - [ ] **5. Desktop and Deck behaviour**
   - [x] The wheel scrolls the companion's list under the pointer (`pd_ui_wheel`); a right click opens a game's menu in
         the game list (`library_menu_at`); the companion window's X beside its corner (the host's `companion_close_key`)
-  - [ ] Hover, text entry (Steam's keyboard in Game Mode), file pickers (Windows' own, the desktop portal / zenity on
+  - [x] Text entry where it's needed so far (SEARCH: SDL text input, Steam's keyboard in Game Mode); the window
+        no smaller than 320x240
+  - [ ] Hover, file pickers (Windows' own, the desktop portal / zenity on
         Linux), `%APPDATA%` or portable, Deck touch, button legends per controller
 - [ ] **6. Optional**: the companion in a second window on a second monitor
 
