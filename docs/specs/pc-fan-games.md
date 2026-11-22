@@ -208,15 +208,42 @@ What this changes in the risks:
 - **Not yet**: the HUD over the field, MAP / DEX / GUIDE, battle INFO, item icons in the bag, an ability line (the
   shared summary has no field for it), DS and GBA cores' settings / states tabs.
 
+## States and saves on Linux (2026-11-17)
+
+- **States are zstd-compressed** (`linux/pc_state.c`, used for PC games only; libzstd is optional at build time, without
+  it states are written raw). Infinite Fusion's 512 MB state is a 101 MB file: in `pokedaisy-linux` saving took ~1.0 s
+  (0.38 s of it the core's `retro_serialize`) and loading 0.8-1.0 s, also into a fresh process (one frame after start),
+  here on 4 x86 cores with a build running beside it. zstd -1 against the others on that state: zstd -3 104 MB in 1.6 s,
+  gzip -1 99 MB in 3.8 s. Decoding takes ~0.5 s. The host used to refuse any state over 64 MB; a PC game's are taken
+  up to 1 GB.
+- **No REWIND for PC games**: a 512 MB state every other frame can't be kept. The hotkey says so.
+- **The games' own saves are backed up** before a PC game opens: each folder under `<saves>/mkxp-z/Saves/` is copied to
+  `<saves>/pokedaisy-backups/mkxp-z/<game>/<YYYYmmdd-HHMMSS>/` when its files differ from the newest copy, the newest 10
+  kept. A copy that fails keeps the game closed, as for every battery save.
+- One state slot, as the host has for every game. More slots would cost ~100 MB each.
+
+## Linux aarch64 (2026-11-17)
+
+The core cross-builds for aarch64 with Ubuntu 24.04's `aarch64-linux-gnu` GCC 13 (`native-capture/pc_probe/README.md`):
+46 MB, needing only libc / libm / libgcc_s (libstdc++ linked in, libidn's punycode built from source). But it wants
+glibc 2.38: too new for SteamOS (2.35) and the TrimUI Brick (2.33). A release build needs Ubuntu 22.04's cross GCC, as
+`.github/workflows/linux.yml` uses for the armGBA core, or `libretro/armgba/glibc_compat.*`'s trick. The Android build
+(`platform=android-arm64`) needs the NDK, which this cloud session couldn't download.
+
+Under `qemu-aarch64` (user mode, arm64 Mesa llvmpipe), `pc_probe` on the aarch64 core booted Infinite Fusion to the
+title, published the mailbox and did a state round trip (serialize 254 ms, unserialize 266 ms). Its frames after
+120, 420 and a load matched the x86_64 core's pixel for pixel, and the mailbox JSON byte for byte. qemu's timings say
+nothing about a handheld: the boot (the game compiling its scripts) took ~5 min against ~15 s natively, the title loop
+16.6 ms a frame against 1.45. `pokedaisy-linux` itself also cross-builds for aarch64 with `-DPOCKET_PC_GAMES=ON` (SDL2,
+EGL, zlib, zstd from Ubuntu's arm64 packages).
+
 ## Next steps
 
-1. Build the core for Android arm64 and Linux aarch64 (`Makefile.libretro`'s platforms) and time Infinite Fusion on the
-   RP6 and a TrimUI: boot, ms a frame, heap, state save / load.
+1. Time Infinite Fusion on real hardware: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built against
+   an older glibc), and the core built with the NDK for the RP6: boot, ms a frame, heap, state save / load.
 2. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
    with the patch.
-3. States: compress them (zstd), keep a slot count that fits the storage, and back up the core's own save folder
-   (`<saves>/mkxp-z/Saves/<title>/`) like every battery save.
-4. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
+3. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
 
 Behind a feature flag (`FeatureFlags.pcGames`, off) when it reaches the app, like co-op and 3DS.
 
