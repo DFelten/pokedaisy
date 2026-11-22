@@ -789,6 +789,18 @@ static bool scroll_area_at(struct pd_ui* ui, int x, int y) {
     return true;
 }
 
+bool pd_ui_wheel(struct pd_ui* ui, int x, int y, int notches) {
+    if (!notches || ui->touching) return false;
+    // The list under the pointer (a scroll hit there), as a drag of two rows a notch would move it.
+    if (!scroll_area_at(ui, x, y)) return false;
+    int* scroll = scroll_target(ui);
+    if (!scroll) return false;
+    int was = *scroll;
+    *scroll -= notches * 32;
+    if (*scroll < 0) *scroll = 0; // the far end is clamped by the list's own draw
+    return *scroll != was;
+}
+
 bool pd_ui_touch(struct pd_ui* ui, int x, int y, bool down) {
     ui->touchScrollOnly = false;
     if (down) {

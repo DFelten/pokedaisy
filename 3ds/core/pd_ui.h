@@ -626,6 +626,8 @@ void pd_ui_draw(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g,
                 const struct pd_snapshot* s, const struct pd_host_info* host);
 // Stylus: down / held / up at (x, y). Returns true if the screen needs a redraw: with touchScrollOnly set, only the
 // list being dragged moved (pd_ui_draw_scrolled).
+// A mouse wheel's [notches] (+ up) over (x, y): the list under it scrolls, two rows a notch. True when it moved (redraw).
+bool pd_ui_wheel(struct pd_ui* ui, int x, int y, int notches);
 bool pd_ui_touch(struct pd_ui* ui, int x, int y, bool down);
 // When nothing but pd_ui_touch's scroll-only changes (touchScrollOnly) came since the last draw, over the picture it left:
 // the list's box alone (the same pixels a whole redraw gives there; the rest of the canvas is left as it was). The host

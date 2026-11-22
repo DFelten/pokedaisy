@@ -2165,6 +2165,13 @@ RETRO_API void retro_run(void) {
       }
       if (!press)
         compDimHeld = false;
+      // The desktop's mouse wheel over a list scrolls it (the host passes its notches as RETRO_DEVICE_MOUSE).
+      if (realInput && compReply.ptr_inside) {
+        const int notches = realInput(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP) -
+                            realInput(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+        if (notches)
+          pd_ui_wheel(&ui, compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, notches);
+      }
     } else if (touchDown)
       pd_ui_touch(&ui, touchX, touchY, true);
     else if (touchWas)
