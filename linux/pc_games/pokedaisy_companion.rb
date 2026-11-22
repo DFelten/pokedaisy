@@ -14,9 +14,75 @@ module PokeDaisyCompanion
   CAPACITY = 256 * 1024
   HEADER = 24
   EVERY = 15 # frames between snapshots (4 a second at 60 fps)
-  VERSION = 3
+  VERSION = 4
   # Essentials' stat keys, in the order "stats" sends them.
   STAT_KEYS = [:HP, :ATTACK, :DEFENSE, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :SPEED]
+  # A battler's stat stages, in the order the companion keeps them (its battle stats, then accuracy and evasion).
+  STAGE_KEYS = [:ATTACK, :DEFENSE, :SPEED, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :ACCURACY, :EVASION]
+
+  # The battle running (pbStartBattle's own object, set by [hook_battle] for its length); nil = none.
+  class << self
+    attr_accessor :battle
+  end
+
+  # The game's battle class gets a wrapper round pbStartBattle (the whole battle, start to end) once the game's scripts
+  # have defined it: our preload runs before them. Essentials v19 calls it PokeBattle_Battle, v20+ Battle.
+  def self.hook_battle
+    return if @battle_hooked
+    cls = (defined?(::PokeBattle_Battle) && ::PokeBattle_Battle) ||
+          (defined?(::Battle) && ::Battle.is_a?(Class) && ::Battle.method_defined?(:pbStartBattle) && ::Battle)
+    return unless cls && cls.method_defined?(:pbStartBattle)
+    @battle_hooked = true
+    cls.prepend(Module.new do
+      def pbStartBattle(*args, &block)
+        PokeDaisyCompanion.battle = self
+        super
+      ensure
+        PokeDaisyCompanion.battle = nil
+      end
+    end)
+  end
+
+  # One battler as the companion's BATTLE tab takes it: the party entry of who it shows as (an Illusion's), then what the
+  # battle has changed - HP, status, types, moves with their PP, stages, stats.
+  def self.battler(b)
+    shown = try { b.displayPokemon } || try { b.pokemon }
+    out = (shown && try { mon(shown) }) || {}
+    out.merge(
+      "index" => b.index,
+      "partyIndex" => try { b.pokemonIndex },
+      "level" => try { b.level },
+      "hp" => try { b.hp },
+      "totalhp" => try { b.totalhp },
+      "status" => try { b.status },
+      "types" => try { b.pbTypes(true).map { |t| type_id(t) } },
+      "item" => try { b.item ? GameData::Item.get(b.item).name : nil },
+      "ability" => try { b.ability ? GameData::Ability.get(b.ability).name : nil },
+      "moves" => try {
+        b.moves.map { |m|
+          { "name" => try { m.name }, "pp" => try { m.pp }, "total" => try { m.total_pp },
+            "type" => type_id(try { m.type }), "power" => try { m.baseDamage } || 0 }
+        }
+      },
+      "battleStats" => try { [b.attack, b.defense, b.speed, b.spatk, b.spdef] },
+      "stages" => try { STAGE_KEYS.map { |k| b.stages[k] || 0 } },
+      "fainted" => try { b.fainted? } || false,
+    )
+  end
+
+  def self.battle_snapshot(bt)
+    list = try { bt.battlers } || []
+    out = {
+      "trainer" => try { bt.trainerBattle? } || false,
+      "double" => (try { bt.pbSideSize(0) } || 1) > 1 || (try { bt.pbSideSize(1) } || 1) > 1,
+      "player" => list.each_with_index.select { |b, i| b && i.even? }.map { |b, _| battler(b) },
+      "foes" => list.each_with_index.select { |b, i| b && i.odd? }.map { |b, _| battler(b) },
+    }
+    if out["trainer"]
+      out["foeParty"] = try { bt.pbParty(1).map { |p| p ? mon(p) : nil } }
+    end
+    out
+  end
 
   @buf = nil
   @seq = 0
@@ -191,12 +257,21 @@ module PokeDaisyCompanion
       }
     end
     out["inBattle"] = try { $game_temp ? !!$game_temp.in_battle : false } || false
+    # Its own guard: whatever a battle does, the party and bag above still go out.
+    if @battle
+      out["battle"] = begin
+        battle_snapshot(@battle)
+      rescue Exception
+        nil
+      end
+    end
     out["scene"] = try { $scene ? $scene.class.name : nil }
     out
   end
 
   def self.tick
     @frame += 1
+    hook_battle
     return if @frame % EVERY != 0
     publish(j(snapshot))
   rescue Exception => e

@@ -24,6 +24,7 @@ import com.pokedaisy.app.companion.data.PcGameTypes
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.TYPE_NONE
 import com.pokedaisy.app.companion.data.typeMatchups
+import com.pokedaisy.app.companion.data.withMovesVs
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -65,6 +66,14 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
         val items = o.optJSONArray("bag")?.let { bag(it, names) }.orEmpty()
         itemNames = names
         val map = o.optJSONObject("map")
+        // The battle (pbStartBattle's own object): the battlers on each side as the battle has them, each move's verdict
+        // on the other side, and a trainer's whole team for the FOE TEAM strip.
+        val battle = o.optJSONObject("battle")
+        val player = battlers(battle?.optJSONArray("player"), slotBase = 0)
+        val foes = battlers(battle?.optJSONArray("foes"), slotBase = FOE_SLOTS)
+        val foeParty = battle?.optJSONArray("foeParty")?.let { a ->
+            (0 until a.length()).mapNotNull { i -> a.optJSONObject(i)?.let { mon(it, FOE_SLOTS + i) } }
+        }.orEmpty()
         return SnapshotView(
             connected = true,
             game = GameKind.ESSENTIALS,
@@ -75,8 +84,30 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             x = map?.optInt("x") ?: 0,
             y = map?.optInt("y") ?: 0,
             money = trainer?.takeIf { it.has("money") }?.optLong("money"),
+            inBattle = battle != null,
+            isDoubleBattle = battle?.optBoolean("double") == true,
+            isTrainerBattle = battle?.let { it.optBoolean("trainer") },
+            battlePlayer = player.map { it.first.withMovesVs(foes.map { f -> f.first }) },
+            battleOpponent = foes.map { it.first.withMovesVs(player.map { p -> p.first }) },
+            playerBattlers = player.map { it.second },
+            enemyBattlers = foes.map { it.second },
+            enemyParty = foeParty,
+            enemyActive = foes.firstOrNull()?.second?.takeIf { foeParty.isNotEmpty() } ?: -1,
         )
     }
+
+    /** A side's battlers ([mon], then the battle's stats, stages, item and ability) with each one's party index. */
+    private fun battlers(a: JSONArray?, slotBase: Int): List<Pair<MonView, Int>> = a?.let {
+        (0 until it.length()).mapNotNull { i ->
+            val b = it.optJSONObject(i) ?: return@mapNotNull null
+            val partyIndex = b.optInt("partyIndex", -1)
+            val view = mon(b, slotBase + partyIndex.coerceAtLeast(0)).copy(
+                battleStats = ints(b.optJSONArray("battleStats")).takeIf { s -> s.size == 5 },
+                statStages = ints(b.optJSONArray("stages")).takeIf { s -> s.size == 7 },
+            )
+            view to partyIndex
+        }
+    }.orEmpty()
 
     private fun type(t: JSONObject) = PcGameTypes.Type(
         id = t.optInt("id"),
@@ -247,5 +278,8 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
     private companion object {
         /** The party icon as the companion's slots draw it (the games' are 64 x 64, drawn 2x). */
         const val ICON = 32
+
+        /** Where a foe's [MonView.species] starts: the companion matches battlers to the party by it ([mon]'s slot + 1). */
+        const val FOE_SLOTS = 100
     }
 }

@@ -92,6 +92,33 @@ class PcCompanionTest {
         assertEquals(v.items.size, v.items.map { it.itemId }.toSet().size)
     }
 
+    @Test fun battle() {
+        val v = PcCompanion(tmp.newFolder("gb"), tmp.newFolder("fb")).snapshot(PcCompanionSample.BATTLE_JSON)!!
+        assertTrue(v.inBattle)
+        assertEquals(true, v.isTrainerBattle)
+        assertEquals(listOf("EMBERPUP"), v.battlePlayer.map { it.name })
+        assertEquals(listOf("BUBBLEFIN"), v.battleOpponent.map { it.name })
+        val pip = v.battlePlayer[0]
+        assertEquals(40, pip.hp)
+        assertEquals("BRN", pip.status)
+        assertEquals(listOf(32, 25, 30, 22, 24), pip.battleStats)
+        assertEquals(1, pip.statStages!![0])
+        // The game's own chart: Fire into Water is resisted, a status move has no verdict.
+        assertEquals(50, pip.moves.first { it.name == "Ember" }.vs.single().pct)
+        assertTrue(pip.moves.first { it.name == "Growl" }.vs.isEmpty())
+        // ...and the foe's Water move is super effective on Pip.
+        assertEquals(200, v.battleOpponent[0].moves.first { it.name == "Bubble" }.vs.single().pct)
+        assertEquals(listOf("BUBBLEFIN", "THORNLET"), v.enemyParty.map { it.name })
+        assertEquals(0, v.enemyActive)
+        assertEquals(listOf(0), v.playerBattlers)
+    }
+
+    @Test fun noBattleNoBattleFields() {
+        val v = view()
+        assertTrue(!v.inBattle)
+        assertTrue(v.battlePlayer.isEmpty() && v.enemyParty.isEmpty())
+    }
+
     @Test fun anErrorSnapshotIsNone() {
         assertNull(PcCompanion(tmp.newFolder("g"), tmp.newFolder("f")).snapshot("""{"v":3,"error":"NoMethodError"}"""))
     }

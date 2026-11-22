@@ -41,8 +41,8 @@ class PcCompanionScreenshotTest {
         OwnItemNames.lookup = null
     }
 
-    private fun shot(tab: String, mon: Int? = null) {
-        val view = companion.snapshot(PcCompanionSample.JSON)!!
+    private fun shot(tab: String, mon: Int? = null, json: String = PcCompanionSample.JSON) {
+        val view = companion.snapshot(json)!!
         paparazzi.snapshot { CompanionScreen(view, initialTab = tab, initialMonIndex = mon) }
     }
 
@@ -50,6 +50,7 @@ class PcCompanionScreenshotTest {
     @Test fun summary() = shot("PARTY", mon = 0)
     @Test fun summaryWater() = shot("PARTY", mon = 1)
     @Test fun bag() = shot("ITEMS")
+    @Test fun battle() = shot("BATTLE", json = PcCompanionSample.BATTLE_JSON)
 
     /** The summary's STATS page: IVs and EVs as the game sends them, its nature. */
     @Test fun stats() {

@@ -52,4 +52,23 @@ object PcCompanionSample {
      "map":{"id":42,"name":"Route 2","x":12,"y":30},
      "inBattle":false,"scene":"Scene_Map"}
     """.trimIndent()
+
+    /** [JSON] mid-battle (snapshot VERSION 4): Pip out against a trainer's BUBBLEFIN, a second foe in reserve. */
+    val BATTLE_JSON: String = org.json.JSONObject(JSON).put("battle", org.json.JSONObject("""
+    {"trainer":true,"double":false,
+     "player":[{"name":"Pip","species":"EMBERPUP","level":18,"hp":40,"totalhp":51,"status":"BURN","egg":false,"shiny":false,
+       "gender":0,"types":[10],"item":"Ember Charm","ability":"Blaze","natureId":3,
+       "stats":[51,32,25,22,24,30],"ivs":[31,20,18,10,25,30],"evs":[12,40,0,0,4,30],
+       "moves":[{"name":"Ember","pp":20,"total":25,"type":10,"power":40},{"name":"Tackle","pp":34,"total":35,"type":0,"power":40},
+                {"name":"Growl","pp":40,"total":40,"type":0,"power":0}],
+       "index":0,"partyIndex":0,"battleStats":[32,25,30,22,24],"stages":[1,0,-1,0,0,0,0],"fainted":false}],
+     "foes":[{"name":"BUBBLEFIN","species":"BUBBLEFIN","level":17,"hp":20,"totalhp":46,"status":"NONE","egg":false,"shiny":false,
+       "gender":1,"types":[11],"item":null,"ability":"Torrent",
+       "moves":[{"name":"Bubble","pp":28,"total":30,"type":11,"power":40},{"name":"Tackle","pp":35,"total":35,"type":0,"power":40}],
+       "index":1,"partyIndex":0,"battleStats":[22,28,21,26,30],"stages":[0,-1,0,0,0,0,0],"fainted":false}],
+     "foeParty":[
+       {"name":"BUBBLEFIN","species":"BUBBLEFIN","level":17,"hp":20,"totalhp":46,"status":"NONE","egg":false,"types":[11]},
+       {"name":"THORNLET","species":"THORNLET","level":18,"hp":50,"totalhp":50,"status":"NONE","egg":false,"types":[12]}
+     ]}
+    """.trimIndent())).toString()
 }

@@ -248,7 +248,8 @@ from `linux/pc_games`). Resume states (`pcSaveState` / `pcLoadState`, gzip, `pc/
 fingerprint beside them holds (`PcGames.savesFingerprint`), like `pkStateMatchesSave`. Its second screen is the real `CompanionScreen` (PARTY + BAG, `GameKind.ESSENTIALS` / `isPcGame`)
 over `PcCompanion`'s `SnapshotView` from the mailbox: the game's own strings, its types / chart through `PcGameTypes` (what
 `activeTypeNames` / `activeTypeEffectiveness` read while it runs), the bag's names through `OwnItemNames`, icons rebuilt from its PNGs
-into `rom-art/pc/`. Texts in `TrPcGames.kt`; manual draft
+into `rom-art/pc/`. In a battle the BATTLE tab (INFO / SUGGESTIONS, read-only) is fed by the preload's wrapper round
+`pbStartBattle`, which keeps the battle object while it runs. Texts in `TrPcGames.kt`; manual draft
 `docs/manual-drafts/pc-games.md` (into `docs/manual/` with a NEW tag when the flag goes).
 
 ## Testing: quick by default, full runs only with the user's OK

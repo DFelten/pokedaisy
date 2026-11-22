@@ -302,8 +302,15 @@ moves, abilities and items are the game's strings; its types and chart go into `
 into `rom-art/pc/` (a party icon as the companion's 32 x 64 sheet, a fusion's as Infinite Fusion's createFusionIcon draws it). The
 preload sends IVs / EVs and item descriptions now (snapshot VERSION 3). `PcCompanionTest`, `PcCompanionScreenshotTest`.
 
-Not yet: touch controls, sharp scaling, the companion's other tabs and battle helper, HUD, NEW tag, and a way for players to get the
-core.
+The battle helper (2026-11-23): the preload prepends a wrapper to `PokeBattle_Battle#pbStartBattle` (v20+: `Battle`) once the game's
+scripts have defined it, keeping the battle object for the battle's length, and each snapshot then carries `battle` (VERSION 4): both
+sides' battlers (the party entry it shows as, then the battle's HP, status, types with a third, moves and PP, stats and stages, item,
+ability) and a trainer's `foeParty`, in a guard of its own. `PcCompanion` makes them `battlePlayer` / `battleOpponent` (each move's
+verdict on the other side by the game's chart) and the FOE TEAM: the BATTLE tab's INFO / SUGGESTIONS, read-only (no `BattleInput`: the
+game's own menu picks). Checked against stand-in classes in plain Ruby and `PcCompanionTest`, not yet in a real battle.
+
+Not yet: touch controls, sharp scaling, the companion's map / guide, picks from the companion, HUD, NEW tag, and a way for players to
+get the core.
 
 ## Next steps
 
