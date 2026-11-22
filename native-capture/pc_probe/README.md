@@ -36,7 +36,36 @@ white-axe/mkxp-z, branch `libretro` (commit 650cb08), with `third_party/patches/
 2. Stage 2: `meson setup build -Dlibretro=true -Dbuildtype=release && ninja -C build` (~10 min).
 
 In a cloud session the proxy refused deb.debian.org, ftpmirror.gnu.org and GitHub's archive zips. What stood in
-(scratch builds only, never a release): uchardet's orig tarball from archive.ubuntu.com (same SHA-256);
-fluidsynth's gcem cloned into `subprojects/fluidsynth/gcem` at the revision `FindGCEM.cmake` names; libiconv and libidn
-replaced by stub subprojects (glibc's iconv, the system libidn) - glibc doesn't know GNU's `UCS-4-INTERNAL`, so
-`src/util/encoding.h` said `WCHAR_T` instead. On a machine that reaches those hosts, none of that is needed.
+(scratch builds only, never a release): uchardet's and libidn's orig tarballs from archive.ubuntu.com (same SHA-256 as
+the wraps'; put in `subprojects/packagecache/` as `uchardet.tar.xz` / `libidn.tar.gz`; libidn's unpacks as
+`libidn-v1.43`, so copy it over the wrap's `libidn-1.43`); fluidsynth's gcem cloned into `subprojects/fluidsynth/gcem`
+at the revision `FindGCEM.cmake` names; libiconv replaced by a stub subproject (glibc's iconv) - glibc doesn't know
+GNU's `UCS-4-INTERNAL`, so `src/util/encoding.h` said `WCHAR_T` instead. On a machine that reaches those hosts, none of
+that is needed.
+
+### Linux aarch64
+
+Stage 1's output is the same for every target. Stage 2 with a cross file (`gcc-aarch64-linux-gnu`,
+`g++-aarch64-linux-gnu`), ~6.5 min on 4 cores:
+
+```
+[binaries]
+c = 'aarch64-linux-gnu-gcc'
+cpp = 'aarch64-linux-gnu-g++'
+ar = 'aarch64-linux-gnu-ar'
+strip = 'aarch64-linux-gnu-strip'
+pkg-config = 'false'
+cmake = 'cmake'
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'generic-armv8-a'
+endian = 'little'
+[cmake]
+CMAKE_SYSTEM_PROCESSOR = 'aarch64'
+```
+
+`meson setup build-a64 --cross-file cross-a64.ini -Dlibretro=true -Dlibretro_save_states=true
+-Demscripten_threaded=false -Dbuildtype=release -Db_lto=false -Dstatic_libstdcpp=true && ninja -C build-a64`. The
+probe: `aarch64-linux-gnu-gcc ... -ldl -lEGL -lGL` against the arm64 Mesa packages (`dpkg --add-architecture arm64`,
+ports.ubuntu.com), run with `qemu-aarch64`. The glibc the core needs is the cross compiler's (2.38 on Ubuntu 24.04).

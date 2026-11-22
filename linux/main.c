@@ -16,6 +16,7 @@
 #include "hw_gl.h"
 #include "pc_companion.h"
 #include "pc_mailbox.h"
+#include "pc_state.h"
 #include "pc_preloads.h"
 #endif
 #include <SDL.h>
@@ -679,7 +680,8 @@ static const struct {
                 {"r1", R},      {"l2", L2},       {"r2", R2},       {"up", UP},         {"down", DOWN},
                 {"left", LEFT}, {"right", RIGHT}, {"menu", MENU},   {"select", SELECT}, {"start", START}, {"l3", L3},
                 {"sup", SUP},   {"sdown", SDOWN}, {"sleft", SLEFT}, {"sright", SRIGHT}, {"r3", R3},
-                {"p1", P1},     {"p2", P2},       {"p3", P3},       {"p4", P4}};
+                {"p1", P1},     {"p2", P2},       {"p3", P3},       {"p4", P4},
+                {"save", SAVEKEY}, {"load", LOADKEY}};
 static int key_named(const char *s) {
   for (size_t i = 0; i < sizeof keyNames / sizeof keyNames[0]; i++)
     if (!strcmp(s, keyNames[i].name))
@@ -2094,17 +2096,51 @@ static void panel_follow(void) {
   }
 }
 static bool state_file(const char *ss, bool save) {
+#ifdef POCKET_PC_GAMES
+  // A PC game's state is the whole Ruby heap (512 MB): compressed, and taken that big (pc_state.c).
+  const bool big = pcGame;
+#else
+  const bool big = false;
+#endif
   if (save) {
     size_t n = core.serialize_size();
     void *d = n ? malloc(n) : NULL;
-    bool ok = d && core.serialize(d, n) && write_file(ss, d, n, false);
+    Uint64 t0 = SDL_GetPerformanceCounter();
+    bool ok = d && core.serialize(d, n);
+    Uint64 t1 = SDL_GetPerformanceCounter();
+#ifdef POCKET_PC_GAMES
+    if (big)
+      ok = ok && pc_state_write(ss, d, n);
+    else
+#endif
+      ok = ok && write_file(ss, d, n, false);
     free(d);
+    if (big) {
+      double f = (double)SDL_GetPerformanceFrequency() / 1000.0;
+      struct stat st;
+      fprintf(stderr, "state: saved %zu MB in %.0f ms (core %.0f ms), file %lld MB\n", n >> 20,
+              (double)(SDL_GetPerformanceCounter() - t0) / f, (double)(t1 - t0) / f,
+              stat(ss, &st) == 0 ? (long long)st.st_size >> 20 : -1LL);
+    }
     return ok;
   }
+  Uint64 t0 = SDL_GetPerformanceCounter();
   size_t n;
-  unsigned char *d = read_file(ss, &n, 64u << 20);
+  unsigned char *d;
+#ifdef POCKET_PC_GAMES
+  if (big)
+    d = pc_state_read(ss, &n, (size_t)1 << 30);
+  else
+#endif
+    d = read_file(ss, &n, 64u << 20);
+  Uint64 t1 = SDL_GetPerformanceCounter();
   bool ok = d && core.unserialize(d, n);
   free(d);
+  if (big) {
+    double f = (double)SDL_GetPerformanceFrequency() / 1000.0;
+    fprintf(stderr, "state: loaded %zu MB in %.0f ms (read %.0f ms)%s\n", n >> 20,
+            (double)(SDL_GetPerformanceCounter() - t0) / f, (double)(t1 - t0) / f, ok ? "" : ", failed");
+  }
   if (ok)
     rewind_clear(); // its differences lead back from another history
   return ok;
@@ -2321,6 +2357,16 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     if (exists(old) && !exists(ss))
       notice("Your older save state doesn't load in this version");
   }
+#ifdef POCKET_PC_GAMES
+  // A PC game keeps its saves in the core's folder under the saves folder, not in a .sav.
+  if (!strcmp(coreName, "mkxp-z_libretro.so") && !pc_saves_backup(savesDir, backups)) {
+    free(rom);
+    dlclose(core.dl);
+    appError = 1;
+    notice("Save backup failed; game not opened");
+    return;
+  }
+#endif
   if (!save_backup(sav, backups)) {
     free(rom);
     dlclose(core.dl);
@@ -2415,6 +2461,12 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   int rewindMB = getenv("POCKET_REWIND_MB") ? atoi(getenv("POCKET_REWIND_MB")) : 32;
   rewindBudget = (size_t)(rewindMB > 0 ? rewindMB : 32) << 20; // a bad value (negative, 0) is the default
   rewindTick = 0;
+  // A PC game's state is 512 MB: a step back every other frame can't be kept.
+#ifdef POCKET_PC_GAMES
+  const bool noRewind = pcGame;
+#else
+  const bool noRewind = false;
+#endif
   bool menuOpen = false, leave = false;
   struct pd_menu menu, hkMenu;
   static char rows[M_COUNT][40], hkRows[HK_ACTIONS + 1][40];
@@ -2543,6 +2595,8 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       notice(!exists(ss) ? "No state saved yet" : state_file(ss, false) ? "State loaded" : "State load failed");
     if ((hkFired & (1u << HK_REWIND)) && !hostSet.rewind)
       notice("REWIND is off: turn it on in the menu");
+    else if ((hkFired & (1u << HK_REWIND)) && noRewind)
+      notice("REWIND isn't available for this game");
     const bool menuFrame = menuOpen; // the frame that closes the menu is still the menu's
     if (menuOpen && capturing >= 0) {
       // The next assignable button is the hotkey (taken from any other action that had it); B cancels, SELECT = OFF.
@@ -2739,7 +2793,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       continue;
     }
     muted = false;
-    bool rewinding = (hkOn & (1u << HK_REWIND)) && hostSet.rewind;
+    bool rewinding = (hkOn & (1u << HK_REWIND)) && hostSet.rewind && !noRewind;
     bool ff = !rewinding && ((hkOn & (1u << HK_FF)) || ffQuick);
     int runs = 1;
     if (ff) {
@@ -2788,7 +2842,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
           gameKeys &= ~joypad(modifierPulse);
           modifierPulse = 0;
         }
-        if (hostSet.rewind && !(++rewindTick & 1))
+        if (hostSet.rewind && !noRewind && !(++rewindTick & 1))
           rewind_push();
       }
     }

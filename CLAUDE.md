@@ -236,7 +236,9 @@ into the host's frame texture, every core call bracketed so SDL's context comes 
 (`pc_companion.c`: PARTY / summary / BAG / TRAINER, a lone SELECT tap) is the shared `3ds/core` views fed from the snapshot through their
 sources (`pd_party_source` / `pd_summary_view` / `pd_bag_source`, as `linux/dsperate/party_view.cpp`), names and type table the game's own,
 icons from its folder (`pc_png.c`); `pc-companion-shot` draws its pages from a saved snapshot. Test hooks: `POCKET_PC_CHEAT="FRAME:ruby"`,
-`POCKET_PC_COMPANION=1`, `POCKET_PC_LOG` (with `POCKET_KEYS`).
+`POCKET_PC_COMPANION=1`, `POCKET_PC_LOG` (with `POCKET_KEYS`; `save` / `load` press the state keys). A PC game's state is the 512 MB heap:
+`pc_state.c` writes it zstd-compressed (libzstd optional; ~100 MB), reads up to 1 GB, and REWIND is off for it; before it opens,
+`<saves>/mkxp-z/Saves/<game>/` is backed up into `pokedaisy-backups/mkxp-z/` (newest 10 distinct; a failed copy keeps it closed).
 
 ## Testing: quick by default, full runs only with the user's OK
 
