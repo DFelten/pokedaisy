@@ -77,7 +77,7 @@ The first two rows change how this list looks, on both screens: `DESCRIPTIONS` h
 
 The options come in groups, the ones you change while playing first. With `GROUP TABS` on, some groups share a tab: `GAMEPLAY`'s covers `GAME SCREEN` too, `SCREENS`' covers `ON THE GAME` and `DS`, `COMPANION`'s covers `ACHIEVEMENTS`.
 
-- **MAKEOVER**: `PLAYER LOOK`, `RIVAL LOOK`, `TEXT LOOK`, `FOLLOWER`, `FLY ON`, `RIDE ON` and `DAY AND NIGHT`, fresh looks for your game. It sits at the top in a blue frame of its own, and only shows in a game it works in. See [MAKEOVER](#makeover) below.
+- **MAKEOVER**: `PLAYER LOOK`, `RIVAL LOOK`, `TEXT LOOK`, `FOLLOWER`, `FLY ON`, `RIDE ON` and `DAY AND NIGHT`, fresh looks for your game. It sits at the top, and only shows in a game it works in. See [MAKEOVER](#makeover) below.
 - **FF / SPEED**: `FF`, `FF SPEED`, `GAME SPEED`, `REWIND` and `SPEED OPTIONS` (a page with `SCENE SPEEDS`, `FF MODE` and `FF MUSIC`). See [Fast-forward](fast-forward.md).
 - **SOUND**: `GAME VOLUME`, `MUTE GAME` and `AUDIO EFFECTS`. See [Fast-forward](fast-forward.md#game-volume-and-mute-sound).
 - **GAMEPLAY**: `QUALITY OF LIFE`, `FLY STYLE`, `FLIGHT AREA`, `NUZLOCKE` and `CHEATS`. `QUALITY OF LIFE` opens a page of the helpers that save you time, its row saying how many you've changed from the game's own way: `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON`. See [Controls](controls.md), [Party](party.md#trade-evolutions), [Bag](bag.md), [Nuzlocke](nuzlocke.md) and [Cheats](cheats.md).

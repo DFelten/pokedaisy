@@ -166,14 +166,15 @@ fun CompanionSettingsScreen(
                 val titleM = rememberGbaTextMetrics()
                 // In the window with no room beside it, its X at the title's end (SidePanelHost).
                 WithTopBarClose { mod ->
-                    OptionTitleWindow(page.title, titleM, mod, trailing = trailing, joined = true, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
+                    OptionTitleWindow(page.title, titleM, mod, trailing = trailing, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
                         if (!statusBarShown && !application) {
                             Spacer(Modifier.width(titleM.u * 8))
-                            BatteryIndicator(titleM)
+                            BatteryIndicator(titleM, onHeader = true)
                         }
                     }
                 }
-                // Room under the title in every style (the user's call: the tabs and the list sat right on it).
+                // Room under the title in every style (the user's call: the tabs and the list sat right on it), so the title
+                // keeps its bottom edge (joined, it was left open over the gap).
                 Spacer(Modifier.height(m.u * 4))
             }
             // While a row waits for keys: what to press (the game's screen asks for them too), CLEAR / CANCEL for a touch.
@@ -713,11 +714,11 @@ private fun homeRows(
 ): List<SettingRow> {
     fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
     val rateLabels = FF_RATES.map(::rateLabel)
-    // MAKEOVER: the game's look from other games (the user's call: its own group, first and standing out, only in a
-    // game it works in).
+    // MAKEOVER: the game's look from other games (the user's call: its own group, first, only in a game it works in; a
+    // plain group title like the others since 2026-11-23, no blue frame or tagline).
     val looks = s.playerLookSupported
     val makeover = if (!looks && !s.dayNightSupported && !s.followerSupported && !s.flyStyleSupported) emptyList() else listOfNotNull(
-        featuredGroupTitle(tk("MAKEOVER"), if (looks) "Other games' looks in this one" else "A fresh look for this game", requiresGameSupport = true),
+        groupTitle(tk("MAKEOVER"), requiresGameSupport = true),
         // Another game's hero for the player (PlayerLook.kt: their sprites from the player's own ROM of that game,
         // patched into this one in memory). The heroes' names are the games' own, so they aren't translated.
         if (!looks) null else SettingRow(
