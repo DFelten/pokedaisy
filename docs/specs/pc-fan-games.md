@@ -69,8 +69,8 @@ docs.libretro.com were blocked from this session; raw.githubusercontent.com and 
 | Game | Essentials | Runtime it ships | Source public? | Android today | Status |
 |---|---|---|---|---|---|
 | **Infinite Fusion** (game v6.4.5 in the repo) | **19.1.dev** (`Data/Scripts/001_Settings.rb`: `Essentials::VERSION = "19.1.dev"`), confirmed | `Game.exe` + `x64-msvcrt-ruby300.dll` / `ruby310.dll` (mkxp-z's Windows Ruby DLLs), `Game.ini` still names `RGSS100J.dll`. 19.1 needs Ruby 3, so mkxp-z: inference, not stated | **yes**, github.com/infinitefusion/infinitefusion-e18, scripts as `.rb` files | JoiPlay, engine set to mkxp-z | best first target: open scripts, newest base, `$Trainer` global, 40 PC boxes |
-| **Reborn** | not confirmed (old, heavily rewritten) | its own mkxp-z build: E18.3 was "the first version" on Mac / Linux without Wine; E19 ships `game-z.exe` | not confirmed | JoiPlay (forum guide exists) | second target; Ruby stdlib work done by its team |
-| **Rejuvenation** | not confirmed (shares Reborn's tech) | Reborn's mkxp base, Windows / Linux / Mac builds | not confirmed | JoiPlay | with Reborn |
+| **Reborn** | its own engine, not Essentials 19 (2026-11-23, below) | its own mkxp-z build: E18.3 was "the first version" on Mac / Linux without Wine; E19 ships `game-z.exe` | not confirmed | JoiPlay (forum guide exists) | second target; Ruby stdlib work done by its team |
+| **Rejuvenation** | Reborn's engine (2026-11-23, below) | Reborn's mkxp base, Windows / Linux / Mac builds | not confirmed | JoiPlay | with Reborn |
 | **Insurgence** | not confirmed (pre-v19) | stock RGSS `Game.exe` | no | JoiPlay with workarounds (reports disagree) | needs Win32API stubs |
 | **Uranium** | not confirmed (pre-v19) | stock RGSS | no | JoiPlay | development over; needs Win32API stubs |
 
@@ -358,13 +358,36 @@ window. Two screens keep BACK twice. `PcWindowScreenshotTest` (RP6 size); not ye
 Not yet: picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
 for players to get the core.
 
+## Reborn 19.5 and Rejuvenation 14.0 (2026-11-23)
+
+Both from rebornevo.com's own download pages (Linux builds: Reborn 654 MB from rebornevo.com, Rejuvenation 1.95 GB from
+its Mediafire mirror), kept in `~/.cache/pokedaisy-pc/games/` (never in the repo). Booted headless in `pc_probe` on the
+Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: the probe now falls back from 3.2 to 3.1 /
+3.0, as the app's host does; Docker's engine wouldn't start).
+
+- **One engine for both.** Rejuvenation is built on Reborn's scripts: plain `.rb` files in `Scripts/` loaded by a
+  `ScriptLoader.rb` (`Data/Scripts.rxdata` only evals it), the same `Cache_Game` (`$cache`: `pkmn`, `moves`, `items`,
+  `types`, `mapdata`, `town_map`, `encounters`...), `PokeBattle_Pokemon`, `PokeBattle_Battle#pbStartBattle`,
+  `PokeBattle_Scene#pbCommandMenuEx` / `pbFightMenu`, `PokemonEncounters` with `@enctypes`, a map's Town Map spot as
+  `$cache.mapdata[id].MapPosition`. No `GameData`: it isn't Essentials 19, so the companion preload's reads (written for
+  `GameData::Type` / `Species` / `MapMetadata` / `TownMap` and `@encounter_tables`) find nothing there yet; one adapter
+  for this engine would serve both games.
+- **Both reach their title screens on our core**, with stand-ins in `pokedaisy_ruby32_compat.rb` for what only their own
+  mkxp-z builds or a PC have: `rubygems` (they use it for `Gem::Version`), `socket` / `openssl` (their boot update check and
+  online play then fail as offline, which they rescue), `discord` (never connected), `Input::D` / `E` / `F` (their extra
+  run / turbo / mute buttons: never pressed), `System.file_exist?` (with mkxp.json's `patches` folders) and a sixth
+  `Audio.bgm_play` argument (Rejuvenation's fade-in probe: left off, so it plays without the fade). A stand-in applies
+  only when the real library fails to load. The companion preload runs in both without an error; its snapshot is empty.
+- Not yet: playing in (a new game, a save), states (their heaps), timings on a device, their updater's `patch/` files
+  (our core reads the game folder alone; the downloads ship it empty).
+
 ## Next steps
 
 1. Time Infinite Fusion on the other handhelds: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built
    against an older glibc), and the Android core on the RP6 and a 4 GB device; worst frame times, not just averages.
 2. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
    with the patch.
-3. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
+3. Reborn / Rejuvenation: the companion preload's data reads for their engine (below).
 
 Behind a feature flag (`FeatureFlags.pcGames`, off) when it reaches the app, like co-op and 3DS.
 

@@ -104,6 +104,10 @@ $NDK_LLVM/bin/aarch64-linux-android29-clang -O2 -I../../third_party/mgba/src/pla
   -o pc_probe pc_probe.c -ldl -lEGL -lGLESv3
 ```
 
+The probe asks for OpenGL ES 3.2 and falls back to 3.1 / 3.0, so it also runs in an arm64 Android emulator with
+`-gpu swiftshader_indirect` (3.1): slow, but enough to boot a game when no device is connected. A big game wants an AVD
+with room (`disk.dataPartition.size`); Rejuvenation is 2.3 GB.
+
 On the device everything goes in `/data/local/tmp/pc` (`adb shell` may run code there): the core, the probe, the game
 (streamed: `curl -sL <repo tarball> | adb shell 'cd game && tar xzf -'`), `system/mkxp-z/Scripts/Preload/` with
 `linux/pc_games/*.rb`, and a script. Shots come back as PPM (`sips -s format png` on the Mac).

@@ -72,3 +72,123 @@ module Graphics
     end
   end
 end
+
+# Libraries the libretro core's Ruby hasn't got (its image carries no rubygems, no sockets, no native gems) that games
+# require at boot: Reborn and Rejuvenation ask for rubygems only for Gem::Version (a save's version against a patch's),
+# and load their online / Discord scripts unasked. A require that fails for one of these takes a stand-in instead: a
+# small Gem::Version, and nothing at all for the network ones, so the game acts as a PC that's offline. Any other
+# missing library still fails as before.
+module PokeDaisyStandIns
+  class Version
+    include Comparable
+    attr_reader :segments
+
+    def initialize(v)
+      @string = v.to_s.strip
+      @segments = @string.scan(/\d+|[a-z]+/i).map { |s| s =~ /\A\d+\z/ ? s.to_i : s }
+    end
+
+    def to_s = @string
+    def version = @string
+
+    def <=>(other)
+      other = Version.new(other) unless other.is_a?(Version)
+      a = segments
+      b = other.segments
+      [a.size, b.size].max.times do |i|
+        x = a[i] || 0
+        y = b[i] || 0
+        next if x == y
+        # A word (a pre-release: "1.0.a") sorts before any number.
+        return x.is_a?(String) ? (y.is_a?(String) ? x <=> y : -1) : (y.is_a?(String) ? 1 : x <=> y)
+      end
+      0
+    end
+
+    def self.correct?(v) = v.to_s =~ /\A\s*\d+(\.\d+)*([.-]?[a-z0-9]+)*\s*\z/i ? true : false
+    def self.create(v) = v.is_a?(Version) ? v : new(v)
+  end
+
+  STANDINS = {
+    "rubygems" => -> {
+      Object.const_set(:Gem, Module.new) unless defined?(::Gem)
+      ::Gem.const_set(:Version, Version) unless ::Gem.const_defined?(:Version, false)
+    },
+    # No network in the core: a connection then fails with the NameError an offline game's own rescue takes (Reborn's
+    # and Rejuvenation's update check at boot, their online play), not a LoadError past it.
+    "socket" => -> {},
+    "openssl" => -> {},
+    # Discord's native gem: its module as on a PC where Discord isn't running (never connected; every call does nothing).
+    "discord" => -> {
+      unless defined?(::Discord)
+        d = Module.new
+        d.define_singleton_method(:connected?) { false }
+        d.define_singleton_method(:method_missing) { |*_a, **_k, &_b| nil }
+        d.define_singleton_method(:respond_to_missing?) { |*_a| true }
+        Object.const_set(:Discord, d)
+      end
+    },
+  }.freeze
+  @done = {}
+
+  def self.stand_in(name)
+    s = STANDINS[name.to_s]
+    return nil unless s
+    return false if @done[name.to_s]
+    @done[name.to_s] = true
+    s.call
+    true
+  end
+end
+
+module Kernel
+  unless private_method_defined?(:__pokedaisy_require) || method_defined?(:__pokedaisy_require)
+    alias_method :__pokedaisy_require, :require
+    private :__pokedaisy_require
+    def require(name)
+      __pokedaisy_require(name)
+    rescue LoadError
+      r = PokeDaisyStandIns.stand_in(name)
+      raise if r.nil?
+      r
+    end
+    private :require
+  end
+end
+
+# Reborn's and Rejuvenation's own mkxp-z builds add buttons D, E and F (hold to run, turbo, mute: their mkxp.json's
+# bindingNames), which the libretro core's Input hasn't got. They're the "no button" code here: never pressed.
+module Input
+  %i[D E F].each { |c| const_set(c, 0) unless const_defined?(c, false) }
+end
+
+# Their builds' System.file_exist?: File.exist? that also looks in the folders mkxp.json's "patches" names, where the
+# game's updater puts its fixes (Reborn's and Rejuvenation's "patch"). Read from mkxp.json; "patch" if it can't be read.
+module System
+  unless respond_to?(:file_exist?)
+    def self.pokedaisy_patch_dirs
+      @pokedaisy_patch_dirs ||= begin
+        File.read("mkxp.json")[/"patches"\s*:\s*\[([^\]]*)\]/, 1].to_s.scan(/"([^"]+)"/).flatten
+      rescue StandardError
+        []
+      end.then { |d| d.empty? ? ["patch"] : d }
+    end
+
+    def self.file_exist?(path)
+      File.exist?(path) || pokedaisy_patch_dirs.any? { |d| File.exist?(File.join(d, path)) }
+    end
+  end
+end
+
+# Rejuvenation's build takes a sixth Audio.bgm_play argument (a fade-in) and tells its own build from an older one by
+# calling it so, rescuing the TypeError an older one raises; the libretro core's raises ArgumentError for the count
+# instead, which it doesn't rescue. Past five, the extra arguments are left off: the older build's answer, and the game
+# plays its music without the fade.
+module Audio
+  class << self
+    unless method_defined?(:__pokedaisy_bgm_play)
+      alias_method :__pokedaisy_bgm_play, :bgm_play
+      def bgm_play(*args) = __pokedaisy_bgm_play(*args.first(5))
+    end
+  end
+end

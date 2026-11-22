@@ -213,8 +213,12 @@ int main(int argc, char **argv) {
   EGLint cfgattr[] = {EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
                       EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8, EGL_NONE};
   EGLConfig cfg; EGLint n; eglChooseConfig(dpy, cfgattr, &cfg, 1, &n);
-  EGLint ctxattr[] = {EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 2, EGL_NONE};
-  EGLContext ctx = eglCreateContext(dpy, cfg, EGL_NO_CONTEXT, ctxattr);
+  // 3.2 where the driver has it (the Thor), else 3.1 / 3.0 (the emulator's software GPU), as the app's host takes.
+  EGLContext ctx = EGL_NO_CONTEXT;
+  for (int minor = 2; minor >= 0 && !ctx; minor--) {
+    EGLint ctxattr[] = {EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, minor, EGL_NONE};
+    ctx = eglCreateContext(dpy, cfg, EGL_NO_CONTEXT, ctxattr);
+  }
   EGLint pbattr[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
   EGLSurface pb = n ? eglCreatePbufferSurface(dpy, cfg, pbattr) : EGL_NO_SURFACE;
   if (!ctx || !eglMakeCurrent(dpy, pb, pb, ctx)) { fprintf(stderr, "egl ctx failed 0x%x\n", eglGetError()); return 1; }
