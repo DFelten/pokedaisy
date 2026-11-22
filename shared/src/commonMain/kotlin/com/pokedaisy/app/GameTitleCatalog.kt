@@ -118,6 +118,7 @@ object GameTitleCatalog {
         "dacb6e40e7f572ddefd2dfa10e99c0da6835b062" to "Pokémon SoulGold",
         "e10105d8544469c6a11ca2cf510289981df3c3b0" to "Pokémon Glazed",
         "a7c4e34fafb53f2d5283eb6d43dad285c0dd40a8" to "Pokémon Emerald Kaizo",
+        "bfe52fb1b279792bc02aa5ebb7e162cb91435f4f" to "Pokémon Emerald, MWisBest's RTC + RNG fix",
         "cbd71af65ee3dcd53280a6a12014bfb11e8f626a" to "Pokémon Emerald Legacy",
         "1d20091c4d936f5eb122db8780554dd0829ffb63" to "Pokémon Emerald Imperium",
         "d0658315da1e8827f66f15c3d3a000fe747e163e" to "Pokémon Quetzal",

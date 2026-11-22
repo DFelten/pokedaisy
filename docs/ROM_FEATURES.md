@@ -34,6 +34,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | LeafGreen | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
 | LeafGreen | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
 | Emerald | USA/Europe | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
+| Emerald, MWisBest's RTC + RNG fix | 1.0 | ✅ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ ³⁴ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ | ✅ | ✅ ⁶⁰ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
 | Emerald | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
 | Emerald | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
 | FireRed, randomized (UPR ZX 4.6.1) | USA/Europe rev 1 | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
@@ -1085,3 +1086,12 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
     Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
     Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+60. MWisBest's "32-bit RTC + Timer RNG Fix" v1.0 of retail Emerald (USA, Europe), 2026-11-22: retail byte for byte but 76
+    bytes (AgbMain calls a new routine, one callback pointer, the routine itself in retail's zero space at 0x089C0D00), so it
+    runs as retail by its SHA-1 (`EMERALD_MWISBEST_V1_0_SHA1`, retail's config and cursors) and EXPAND / the field reads take
+    retail's CRC (`TelemetrySampler.retailTablesCrc`, through `WideTables.resolve`). Headless on the user's own save
+    (`emerald_mwisbest*`): `wideon 22 <retail CRC>` + `widecheck` walking, 271 of 271 frames exact, `fieldinfo` known; a
+    scripted wild battle with FIGHT on the cursor, a written move cell + A spending that move's PP; the PC opened through
+    special 63. Every field item, FLY, PC, trade evolution, TM and FLASH function passes its code CRC on the file, WILD
+    ENCOUNTERS', REUSABLE TMS' and INSTANT TEXT's sites are retail's (`MWisBestDecodeTest`). FLY wasn't flown (the save has
+    no badge yet). RetroAchievements knows the file's MD5 as Emerald (game 668).
