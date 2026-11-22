@@ -533,7 +533,10 @@ static void draw_list(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int w
     int cy = y - ui->guideScroll;
     for (int si = 0; si < sectionCount; si++) {
         const struct view_section* sec = &sections[si];
-        pd_text_fit(c, x + 6, pd_text_y(cy, ROW), w - 12, pd_tr(sec->heading), PD_VALUE, PD_VALUE_SHADOW);
+        if (pd_style) { // the style's section band (StyledGroupTitle); none for a page's untitled first part
+            if (*sec->heading) pd_section_title(c, x, cy, w, ROW, pd_tr(sec->heading));
+        } else
+            pd_text_fit(c, x + 6, pd_text_y(cy, ROW), w - 12, pd_tr(sec->heading), PD_VALUE, PD_VALUE_SHADOW);
         cy += ROW;
         if (*sec->note) {
             cy += LINE * pd_text_wrap(c, x + 6, cy, w - 12, LINE, 3, pd_tr(sec->note), PD_MUTED, PD_MUTED_SHADOW);
@@ -583,6 +586,26 @@ static int draw_pages(struct pd_ui* ui, struct pd_canvas* c, const char* const* 
     // chip already says so), the open page the white row.
     int colW = c->w * 30 / 100;
     int py = CONTENT_Y;
+    if (pd_style) {
+        // The app's GUIDE in its RETRO look: the pages as tabs down the left on the backdrop (as SETTINGS' rail), as
+        // wide as the longest name, the open one pressed in.
+        int tw = 0;
+        for (int i = 0; i < count; i++)
+            if (pd_text_width(labels[i]) > tw) tw = pd_text_width(labels[i]);
+        if (tw + 16 < colW) colW = tw + 16;
+        const int gap = 3, n = count > 0 ? count : 1, room = c->h - py - MARGIN - gap * (n - 1);
+        int th = room / n;
+        if (th > 30) th = 30;
+        for (int i = 0; i < count; i++) {
+            const int ty = py + i * (th + gap);
+            const bool open = ui->guidePage == i || ui->pressedId == HIT_GUIDE_PAGE + i;
+            pd_chip_face(c, MARGIN, ty, colW, th, open);
+            pd_text_fit(c, MARGIN + 8, pd_text_y(ty, th - (open ? 1 : 2)), colW - 14, labels[i], pd_chip_text(open), pd_chip_shadow(open));
+            if (ui->guideController && ui->guideRowFocus < 0 && ui->guidePageFocus == i) guide_focus(c, MARGIN, ty, colW, th);
+            ui_add_hit(ui, MARGIN, ty, colW, th, HIT_GUIDE_PAGE + i);
+        }
+        return colW;
+    }
     int pf = pd_list_box(c, MARGIN, py, colW, c->h - py - MARGIN);
     int rowH = (c->h - py - MARGIN - 2 * pf) / (count > 0 ? count : 1);
     if (rowH > 26) rowH = 26;
