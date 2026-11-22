@@ -43,6 +43,24 @@ endif()
 target_include_directories(pokedaisy-linux PRIVATE ../third_party/mgba/src/platform/libretro ${SDL2_INCLUDE_DIR})
 target_compile_options(pokedaisy-linux PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(pokedaisy-linux PRIVATE pd_host_ui pd_puff ${SDL2_LIBRARY} m ${CMAKE_DL_LIBS})
+# PC fan games (Pokemon Essentials) on the mkxp-z libretro core, which draws with OpenGL: an offscreen EGL context
+# (hw_gl.c). Off by default while it's a spike (docs/specs/pc-fan-games.md).
+option(POCKET_PC_GAMES "PC fan games on the mkxp-z core (needs EGL)" OFF)
+if(POCKET_PC_GAMES)
+  find_library(EGL_LIBRARY NAMES EGL REQUIRED)
+  target_sources(pokedaisy-linux PRIVATE hw_gl.c pc_mailbox.c)
+  target_compile_definitions(pokedaisy-linux PRIVATE POCKET_PC_GAMES)
+  target_link_libraries(pokedaisy-linux PRIVATE ${EGL_LIBRARY})
+  # The companion's Ruby preload scripts, built into the binary and installed into the core's Scripts/Preload.
+  file(GLOB PC_PRELOADS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/*.rb)
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h
+    COMMAND ${CMAKE_COMMAND} -DOUT=${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h -DDIR=${CMAKE_CURRENT_SOURCE_DIR}/pc_games
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/embed.cmake
+    VERBATIM
+    DEPENDS ${PC_PRELOADS} ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/embed.cmake)
+  target_sources(pokedaisy-linux PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h)
+  target_include_directories(pokedaisy-linux PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 include(CTest)
 option(POCKET_DSPERATE "Optional DSperate Linux backend" OFF)
 if(POCKET_DSPERATE)

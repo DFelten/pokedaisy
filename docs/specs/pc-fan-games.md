@@ -1,6 +1,6 @@
 # PC fan games (Pokemon Essentials): feasibility spike
 
-Working notes, 2026-11-17. Nothing is built yet; this is whether and how. Not player-facing (no manual / NEW tags).
+Working notes, 2026-11-17: whether and how, then the first spike's results (Linux, "Spike results" below). Not player-facing (no manual / NEW tags).
 
 ## Verdict
 
@@ -127,8 +127,8 @@ Names, dex text, sprites and maps come **from the player's game folder** (PBS fi
 
 - **Per-game adapters.** Essentials globals and classes changed between v18, v19, v20 and v21, and the big games
   rewrote further. Budget one adapter per game, checked on a save from that game.
-- **Speed on handhelds.** Ruby in WASM through wasm2c is slower than native MRI. Not measured. Infinite Fusion is the
-  worst case (huge sprite sets, big bitmaps past Mali's 16k texture limit would fail). Measure on the RP6 / Thor early.
+- **Speed on handhelds.** Ruby in WASM through wasm2c is slower than native MRI. Not measured on a handheld yet (see
+  the spike's results). Infinite Fusion is the worst case (huge sprite sets, big bitmaps past Mali's 16k texture limit would fail). Measure on the RP6 / Thor early.
 - **The libretro branch lives on a fork**, not mkxp-z's `dev`; its issues go to mkxp-z. Pin a commit, as with melonDS.
 - **WASI SDK 30 pinned** for state compatibility: CI needs that exact toolchain, and a core update can break old states.
 - **Saves** live in the core's folder; RESUME's "state older than the save" check needs a per-game equivalent.
@@ -136,15 +136,64 @@ Names, dex text, sprites and maps come **from the player's game folder** (PBS fi
   support, and keep the BlockedGames mechanism ready. Uranium was taken down by a DMCA notice in 2016.
 - **Win32API** in pre-v19 games: `win32_wrap.rb` covers some; the rest is per game.
 
+## Spike results (2026-11-17, Linux x86_64, 4 cores, Mesa llvmpipe: OpenGL on the CPU)
+
+The core built from white-axe/mkxp-z `libretro` (650cb08) + `third_party/patches/mkxp-z-libretro-pokedaisy.patch`,
+how in `native-capture/pc_probe/README.md`. Infinite Fusion 6.4.5 (its public repo) in `pc_probe` and in
+`pokedaisy-linux` built with `-DPOCKET_PC_GAMES=ON`:
+
+- **It runs.** Boots to the title and into a new game; draws at 512x384 (the core's max is 640x480). The first 120
+  frames take ~15 s (the game compiling its scripts), then 1.8-4 ms a frame here. A handheld is still unmeasured.
+- **Three things the game needed**, all in our preload `linux/pc_games/pokedaisy_ruby32_compat.rb`:
+  - Ruby 3.2 removed `File.exists?` (the core runs Ruby 3.3; the game's own build, 3.0 / 3.1).
+  - The core's `Kernel#caller` takes no arguments, though native mkxp-z's takes any. Essentials' `echoln` calls
+    `caller(1..1)`. Report upstream.
+  - mkxp-z's `HTTPLite` isn't in the libretro build. A stub answers "offline", so the game takes its no-internet path:
+    no Mystery Gift, Wonder Trade or sprite downloads.
+- **The mailbox works.** `pokedaisy_companion.rb` publishes ~1 KB of JSON 4 times a second: trainer, money, badges,
+  party (species, nickname, level, HP, status, nature, ability, stats, moves + PP, held item, egg / shiny; fusions too,
+  e.g. CHARSAUR = B1H4, dex 505), bag pockets, map id / name / position, battle flag, scene. The host finds it once by
+  its magic (250 ms over the 400 MB heap here; once per load), then reads in place: `linux/pc_mailbox.c` writes it to
+  `DATA/pc-companion.json`.
+- **Commands work too.** `retro_cheat_set` runs a line of Ruby in the game: that's how the test gave the party and
+  items. It's the channel for HEAL / PC / items later.
+- **Save states work with our patch.**
+  - Raw size: the game's Ruby heap is 396-414 MB, so states need `mkxp-z_saveStateSize` 512. A state is 512 MB raw:
+    280-480 ms to save, 75-260 ms to load in the same session, 0.7-0.9 s into a fresh core. gzip -1 makes it 99 MB in
+    3.8 s.
+  - Same-session load: refused while the game held a directory stream open (Infinite Fusion does), and the failure
+    path then asserted in the core. Our patch closes such streams first, and fixes an index typo in that loop.
+  - Fresh core: loading before the first `retro_run` traps in the WASM. After one frame it works, which RESUME must
+    respect.
+  - Threaded audio off.
+  - Checked: money and party back as saved after changing both.
+- A frontend must call `retro_unload_game` before `retro_deinit`; without it the core crashed in its audio destructor
+  at exit.
+- `pokedaisy-linux`: `hw_gl.c` gives the core an offscreen EGL context and FBO, reads each frame back into the frame
+  texture the other cores fill (filters, overlay, menus unchanged), and brackets every core call so SDL's GL context
+  is current again afterwards. A `Game.ini` / `mkxp.json` / `.mkxpz` opens `mkxp-z_libretro.so`. Our preloads are built
+  into the binary and installed into the core's `Scripts/Preload`; states, threaded audio and preload options are set
+  by the host. Off by default: `-DPOCKET_PC_GAMES=ON`.
+
+What this changes in the risks:
+
+- **Memory** is the big one now. ~400 MB of heap for Infinite Fusion, a 512 MB state buffer, plus the frame and
+  textures: too much for a 2 GB handheld, and states want compression and fewer slots.
+- **Ruby version drift** is real but cheap: one preload of shims so far.
+
 ## Next steps
 
-1. Build the libretro core (stage 1 + Linux x86_64 stage 2) here; run Infinite Fusion from its public repo in a stock
-   libretro frontend to see it boot, its fps and a state round trip.
-2. Add GL hardware rendering to `pokedaisy-linux`; load the core from beside the binary like the GBA ones.
-3. Write the preload script for Infinite Fusion (19.1, `$Trainer`) and try the mailbox; draw PARTY / BAG from it.
-4. Build the core for Android arm64 and time Infinite Fusion on the RP6 before going further on Android.
+1. A companion in `pokedaisy-linux` drawn from the snapshot: PARTY and BAG first (the host's canvas, `3ds/core`'s
+   look), then the HUD's party icons. Sprites come from the game folder (`Graphics/Battlers`, `Graphics/Icons`).
+2. Build the core for Android arm64 and Linux aarch64 (`Makefile.libretro`'s platforms) and time Infinite Fusion on the
+   RP6 and a TrimUI: boot, ms a frame, heap, state save / load.
+3. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
+   with the patch.
+4. States: compress them (zstd), keep a slot count that fits the storage, and back up the core's own save folder
+   (`<saves>/mkxp-z/Saves/<title>/`) like every battery save.
+5. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
 
-Behind a feature flag (`FeatureFlags.pcGames`, off) from the first commit, like co-op and 3DS.
+Behind a feature flag (`FeatureFlags.pcGames`, off) when it reaches the app, like co-op and 3DS.
 
 ## Sources
 

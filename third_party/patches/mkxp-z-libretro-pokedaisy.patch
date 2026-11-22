@@ -1,0 +1,28 @@
+diff --git a/binding-sandbox/sandbox-serial-wasi.h b/binding-sandbox/sandbox-serial-wasi.h
+index 020ede4..8151379 100644
+--- a/binding-sandbox/sandbox-serial-wasi.h
++++ b/binding-sandbox/sandbox-serial-wasi.h
+@@ -137,6 +137,14 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+     if (!::sandbox_deserialize(size, data, max_size)) return false;
+     if (size < fdtable.size() && (fdtable[size].type == wasi_fd_type::FS || fdtable[size].type == wasi_fd_type::STDIN || fdtable[size].type == wasi_fd_type::STDOUT || fdtable[size].type == wasi_fd_type::STDERR)) return false;
+ 
++    // Directory, file and address-info streams the running game still has open don't survive a load: close them
++    // first (the state reopens what it had). A load over one (Infinite Fusion keeps a Dir stream open) was refused,
++    // and the failure path then asserted in ~wasi_instance.
++    for (uint32_t i = 0; i < fdtable.size(); ++i) {
++        if (fdtable[i].type == wasi_fd_type::FSDIRSTREAM || fdtable[i].type == wasi_fd_type::FSFILESTREAM || fdtable[i].type == wasi_fd_type::AISTREAM) {
++            deallocate_file_descriptor(i);
++        }
++    }
+     for (uint32_t i = fdtable.size(); i > size;) {
+         deallocate_file_descriptor(--i);
+     }
+@@ -153,7 +161,7 @@ bool wasi_instance::sandbox_deserialize(const void *&data, mkxp_sandbox::wasm_si
+             if (!::sandbox_deserialize(num_free_handles, data, max_size)) return false;
+             if (i + num_free_handles > size || i + num_free_handles < i) return false;
+             for (uint32_t j = i; j < i + num_free_handles; ++j) {
+-                if (fdtable[i].type != wasi_fd_type::FSDIR && fdtable[i].type != wasi_fd_type::FSFILE) {
++                if (fdtable[j].type != wasi_fd_type::FSDIR && fdtable[j].type != wasi_fd_type::FSFILE) {
+                     continue;
+                 }
+                 deallocate_file_descriptor(j);

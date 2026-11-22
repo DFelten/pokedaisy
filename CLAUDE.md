@@ -226,6 +226,13 @@ companion (`companion.cpp`, Gen4Reader.kt's rules), the shared quick menu and pa
 from the Kotlin (Gen4Reader / Gen4TablesPlatinum / Gen4TownMapPlatinum / NdsArt / Gen4Dex ...) by `gen_data.py`: after
 changing those, run it (`--check` fails in `.github/workflows/linux-ds-experiment.yml`). DSperate states carry the save;
 loading one keeps the battery save in memory (`load_state_keeping_save`), like the GBA host.
+**PC fan games on Linux** (spike, opt-in `-DPOCKET_PC_GAMES=ON`, 2026-11-17; `docs/specs/pc-fan-games.md`): Pokemon Essentials games
+(Infinite Fusion first) on the mkxp-z libretro core (white-axe's `libretro` branch + `third_party/patches/mkxp-z-libretro-pokedaisy.patch`,
+built per `native-capture/pc_probe/README.md`; never in the repo). The core draws with OpenGL: `hw_gl.c` (offscreen EGL + FBO, read back
+into the host's frame texture, every core call bracketed so SDL's context comes back). The companion's data comes from our Ruby preloads
+(`linux/pc_games/*.rb`, built into the binary and installed into the core's `Scripts/Preload`): a JSON mailbox in the Ruby heap that
+`pc_mailbox.c` finds by its magic, never by address. Run a frame before loading a state; call `retro_unload_game` before `retro_deinit`.
+`native-capture/pc_probe` drives the core headless (frames, states, mailbox, `cheat` = Ruby run in the game).
 
 ## Testing: quick by default, full runs only with the user's OK
 
