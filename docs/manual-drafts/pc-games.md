@@ -14,7 +14,7 @@ keywords: [pc games, fan games, essentials, rpg maker, mkxp, mkxp-z, joiplay, ga
 > Delete this note when it moves.
 
 Some fan games are made for computers rather than for a console. Most of them are built with Pokémon Essentials, a kit
-for making these games. PokeDaisy can play the ones made with Essentials version 19 or newer.
+for making these games. PokeDaisy can play the ones made with Essentials version 19 or newer, and Pokémon Reborn and Pokémon Rejuvenation.
 
 ## What you need
 

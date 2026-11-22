@@ -3,6 +3,7 @@ package com.pokedaisy.app
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_FEMALE
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_NONE
 import com.pokedaisy.app.companion.data.GameKind
+import com.pokedaisy.app.companion.data.POCKET_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_KEY_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_MEDICINE
 import com.pokedaisy.app.companion.data.STAT_SPEED
@@ -200,6 +201,31 @@ class PcCompanionTest {
             org.json.JSONObject(PcCompanionSample.JSON).apply { remove("wild") }.toString(),
         )
         assertNull(com.pokedaisy.app.companion.data.PcGuide.guide)
+    }
+
+    @Test fun aPocketsOwnKind() {
+        // The Reborn engine's sixth pocket is Crystals, not Mail: the preload names each pocket's kind.
+        val json = org.json.JSONObject(PcCompanionSample.JSON).apply {
+            getJSONArray("bag").getJSONObject(5).put("name", "Crystals").put("kind", "items")
+                .put("items", org.json.JSONArray().put(org.json.JSONObject().put("name", "Shiny Crystal").put("qty", 1)))
+        }.toString()
+        val v = PcCompanion(tmp.newFolder(), tmp.newFolder()).snapshot(json)!!
+        assertEquals(POCKET_ITEMS, v.items.first { it.name == "Shiny Crystal" }.pocket)
+        // Without one, Essentials' order.
+        assertEquals(POCKET_KEY_ITEMS, v.items.first { it.name == "Bicycle" }.pocket)
+    }
+
+    @Test fun filesInAnyCase() {
+        // Their scripts ask for POTION where the file is potion.png (their own mkxp-z build forgives it).
+        val game = tmp.newFolder("cases")
+        File(game, "Graphics/Icons").mkdirs()
+        File(game, "Graphics/Icons/potion.png").writeBytes(byteArrayOf(1))
+        val c = PcCompanion(game, tmp.newFolder())
+        // (Found by its listed name on a case-sensitive disk, as asked on one that isn't: the same file either way.)
+        assertEquals(listOf<Byte>(1), c.gameFile("Graphics/Icons/POTION.png")?.readBytes()?.toList())
+        assertEquals(listOf<Byte>(1), c.gameFile("Graphics/Icons/potion.png")?.readBytes()?.toList())
+        assertNull(c.gameFile("Graphics/Icons/ETHER.png"))
+        assertNull(c.gameFile("Graphics/Nowhere/potion.png"))
     }
 
     @Test fun noPictureNoMap() {

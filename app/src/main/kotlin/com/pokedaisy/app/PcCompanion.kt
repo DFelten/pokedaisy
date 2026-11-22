@@ -193,7 +193,7 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
     private fun mapArt(rel: String, prefix: String, pictures: Boolean): String? {
         if (rel.isEmpty() || rel == "null") return null
         val bases = if (pictures) listOf("Graphics/Pictures/$rel", "Graphics/UI/Town Map/$rel") else listOf(rel)
-        val file = bases.flatMap { listOf(it, "$it.png", "$it.PNG") }.map { File(gameDir, it) }.firstOrNull { it.isFile } ?: return null
+        val file = bases.flatMap { listOf(it, "$it.png") }.firstNotNullOfOrNull { gameFile(it) } ?: return null
         val name = "$prefix${crc("${file.path}|${file.length()}|${file.lastModified()}")}"
         val out = File(mapDir, "$name.png")
         if (!out.isFile) runCatching {
@@ -316,12 +316,25 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
                     name = name,
                     quantity = it.optInt("qty"),
                     iconAsset = itemIcon(it.optString("icon").takeIf { s -> s.isNotEmpty() && s != "null" }),
-                    pocket = kinds.getOrElse(p) { POCKET_ITEMS },
+                    // The pocket's kind where the preload names it (the Reborn engine's order is its own), else Essentials'.
+                    pocket = pocketKind(pocket.optString("kind")) ?: kinds.getOrElse(p) { POCKET_ITEMS },
                     description = it.optString("desc").takeIf { s -> s != "null" }.orEmpty(),
                 )
             }
         }
         return out
+    }
+
+    private fun pocketKind(kind: String): Int? = when (kind) {
+        "items" -> POCKET_ITEMS
+        "medicine" -> POCKET_MEDICINE
+        "balls" -> POCKET_POKE_BALLS
+        "tms" -> POCKET_TM_HM
+        "berries" -> POCKET_BERRIES
+        "mail" -> POCKET_MAIL
+        "battle" -> POCKET_BATTLE_ITEMS
+        "key" -> POCKET_KEY_ITEMS
+        else -> null
     }
 
     // ---- icons ---------------------------------------------------------------------------------------------------
@@ -333,11 +346,14 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
         val head = icon.optString("head").takeIf { it.isNotEmpty() && it != "null" }
         val body = icon.optString("body").takeIf { it.isNotEmpty() && it != "null" }
         val offset = icon.optInt("offset", 10)
-        val key = file ?: if (head != null && body != null) "$head|$body|$offset" else return null
+        // A row of a bigger sheet (the Reborn engine's: a 128 x 64 row a form, shiny ones to the right).
+        val cell = if (icon.has("w") && icon.has("h")) intArrayOf(icon.optInt("x"), icon.optInt("y"), icon.optInt("w"), icon.optInt("h")) else null
+        val key = (file?.let { f -> cell?.let { "$f|${it.joinToString(",")}" } ?: f })
+            ?: if (head != null && body != null) "$head|$body|$offset" else return null
         val name = "m${crc(key)}.png"
         val out = File(iconDir, name)
         if (!out.isFile) {
-            val sheet = load(file ?: head!!) ?: return null
+            val sheet = (load(file ?: head!!) ?: return null).let { s -> cell?.let { crop(s, it) } ?: s }
             val px = IntArray(sheet.width * sheet.height).also { sheet.getPixels(it, 0, sheet.width, 0, 0, sheet.width, sheet.height) }
             val h = sheet.height
             if (file == null) {
@@ -371,12 +387,31 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
         return "pc/$name"
     }
 
+    /** [cell] (x, y, w, h) of [sheet]; a row past its end is its first (their pbPokemonIconBitmap's rule). */
+    private fun crop(sheet: Bitmap, cell: IntArray): Bitmap? {
+        val (x, y0, w, h) = cell.toList()
+        val y = if (y0 + h > sheet.height) 0 else y0
+        if (w <= 0 || h <= 0 || x + w > sheet.width || y + h > sheet.height) return if (x == 0) sheet else null
+        return runCatching { Bitmap.createBitmap(sheet, x, y, w, h) }.getOrNull()
+    }
+
     /** A PNG from the game's folder; Essentials hands paths without their extension. */
     private fun load(rel: String): Bitmap? {
         val opts = BitmapFactory.Options().apply { inScaled = false; inPreferredConfig = Bitmap.Config.ARGB_8888 }
-        val f = File(gameDir, rel).takeIf { it.isFile } ?: File(gameDir, "$rel.png").takeIf { it.isFile } ?: return null
+        val f = gameFile(rel) ?: gameFile("$rel.png") ?: return null
         return runCatching { BitmapFactory.decodeFile(f.path, opts) }.getOrNull()
     }
+
+    /** [rel] in the game's folder, its name matched in any case where it isn't there as given: the Reborn engine's
+     * scripts ask for POTION where the file is potion.png, which their own mkxp-z build forgives. */
+    internal fun gameFile(rel: String): File? {
+        File(gameDir, rel).takeIf { it.isFile }?.let { return it }
+        val parent = File(gameDir, rel).parentFile ?: return null
+        val names = folderNames.getOrPut(parent.path) { parent.list()?.associateBy { it.lowercase() }.orEmpty() }
+        return names[File(rel).name.lowercase()]?.let { File(parent, it) }?.takeIf { it.isFile }
+    }
+
+    private val folderNames = HashMap<String, Map<String, String>>()
 
     private fun write(out: File, bitmap: Bitmap): Boolean = runCatching {
         val tmp = File(out.path + ".tmp")

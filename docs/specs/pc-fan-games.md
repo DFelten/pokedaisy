@@ -378,8 +378,40 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   run / turbo / mute buttons: never pressed), `System.file_exist?` (with mkxp.json's `patches` folders) and a sixth
   `Audio.bgm_play` argument (Rejuvenation's fade-in probe: left off, so it plays without the fade). A stand-in applies
   only when the real library fails to load. The companion preload runs in both without an error; its snapshot is empty.
+- **The companion reads them** (the same day): `PokeDaisyReborn` in the companion preload, which the readers hand over to
+  while `$cache` has Pokémon data and there's no `GameData`. Types by their place in `$cache.types`; a Pokémon's name,
+  types, stats, IVs / EVs (arrays, the stats' order), nature (its place in `$cache.natures`: Gen 3's numbering), ability
+  and moves (`$cache.moves`); the bag's pockets with a `kind` each (their sixth is Crystals / Enhancements, not Mail:
+  `PcCompanion` takes the kind over the place), counts from `contents`; the Town Map from `$cache.town_map` (a region's
+  `{name, filename}` by number, a `TownMapData` per tile by `[x, y]`, Essentials' own tile rule, the spot moved through a big
+  map by `MapSize` as their RegionMap does); HERE from `@enctypes` (species to `[chance, min, max]` lists; the grass list
+  by their clock, as `pbEncounterType` picks it; Rejuvenation's `[species, :Season]` keys); party icons as
+  `pbPokemonIconBitmap` finds them (Reborn's `Graphics/Icons/<species>`, Rejuvenation's `Graphics/Icons/Pokemon/icon<dex>`:
+  a 128 x 64 row a form, which the icon's `x` / `y` / `w` / `h` crop); Rejuvenation's genders as letters and its Pokédex's
+  `seen?` / `owned?`, Reborn's `dexList` hashes. Their file names differ in case from what their scripts ask for
+  (`POTION` / `potion.png`), so `PcCompanion.gameFile` matches in any case. Their battle scene runs its own loops:
+  `pbFrameUpdate(cw)` for the picks, `commandwindow` / `fightwindow`, the fight window's `setIndex`, a switch answering
+  their scene's `pbSwitch` (Reborn: the party index) or `pbSwitchPlayer` (Rejuvenation: an index per battler) after the
+  battle's own `pbCanSwitch?` (Rejuvenation's takes `showMessage:`), the bag their battle's or scene's `pbItemMenu`,
+  Rejuvenation's second fight menu `pbFightMenuDX`. Checked in both games in the emulator, with the probe's `cheat` setting
+  up what their New Game does (a trainer of a player type, a map from their map factory, a party, a bag): party, bag,
+  place, Town Map and HERE read right, icons and names the game's; then in a real new game of each (title, New Game, the
+  intro map), a wild battle started from the next frame update: the battle and its waiting menu read, and the picks went
+  through the games' own menus and checks (their battle messages: "used Quick Attack!", "that's enough! Come back! Go for
+  it, Eevee!", "Got away safely!"). A level 30 Pokémon of a trainer with no badges ignores orders: that's their rule.
+- More of their builds' calls, found by asking the running games for every `Audio` / `Graphics` / `System` / `Input`
+  method their scripts use: `Audio.se_play_position` (played plainly, as on JoiPlay), `Graphics.onStartBattle` /
+  `onEndBattle` (nothing), `TilemapUtils.updateAutoTiles` (nothing: the core's tilemaps animate themselves; without it
+  Reborn's map scene failed), `Input.shiftKeyPressed?` / `shiftKeyTriggered?` (SHIFT), `isComboKeyPressed?` /
+  `modifierKeyPressed?` / `repeatexAny?` (never), `triggerGamepad?` (`trigger?`); and a listing of the sandbox's root, which
+  can't be listed, is empty (Rejuvenation's New Game looks beside its save folder for your Reborn / Where Love Lies saves).
+- **Rejuvenation's states don't load back** (`retro_unserialize` returns false early, within ~40 ms, with no message; not the
+  state's size: 1 GB of room did the same). Reborn's load fine (35 ms from a 512 MB state). So a Rejuvenation resume state
+  would be set aside: to find in the core (its MP3 music, or another open resource the serializer can't restore).
 - Not yet: playing in (a new game, a save), states (their heaps), timings on a device, their updater's `patch/` files
-  (our core reads the game folder alone; the downloads ship it empty).
+  (our core reads the game folder alone; the downloads ship it empty); Rejuvenation's cross-game bonuses (it can't see
+  your Reborn save). A cheat that runs the game's own loop (a battle) runs again inside it until the sandbox overflows: the
+  core clears a cheat only once it returns, so a test starts one from the next frame update instead.
 
 ## Next steps
 

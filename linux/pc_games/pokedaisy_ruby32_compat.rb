@@ -186,9 +186,63 @@ end
 # plays its music without the fade.
 module Audio
   class << self
-    unless method_defined?(:__pokedaisy_bgm_play)
+    if method_defined?(:bgm_play) && !method_defined?(:__pokedaisy_bgm_play)
       alias_method :__pokedaisy_bgm_play, :bgm_play
       def bgm_play(*args) = __pokedaisy_bgm_play(*args.first(5))
+    end
+  end
+end
+
+# Their builds' TilemapUtils.updateAutoTiles steps every map's animated tiles at once; the libretro core's Tilemap#update
+# animates its own, so here it has nothing to do (Rejuvenation already checks for it; Reborn calls it unless on JoiPlay).
+unless defined?(TilemapUtils)
+  module TilemapUtils
+    def self.updateAutoTiles; end
+  end
+end
+
+# More of their builds' calls, found by asking the running games for every Audio / Graphics / System / Input method their
+# scripts use (only the ones the libretro core hasn't got, each only if missing):
+module Audio
+  class << self
+    # A sound placed on the map: played plainly, as their scripts do on JoiPlay.
+    unless method_defined?(:se_play_position)
+      def se_play_position(name, volume = 100, pitch = 100, *_where) = se_play(name, volume, pitch)
+    end
+  end
+end
+
+module Graphics
+  class << self
+    # Their build's battle start / end hooks (Reborn's field effects call them): nothing to do here.
+    def onStartBattle(*_args); end unless method_defined?(:onStartBattle)
+    def onEndBattle(*_args); end unless method_defined?(:onEndBattle)
+  end
+end
+
+module Input
+  class << self
+    # Shift is the core's SHIFT button; key combos and other modifiers are never held; a pad's trigger is the button's.
+    def shiftKeyPressed? = press?(Input::SHIFT) unless method_defined?(:shiftKeyPressed?)
+    def shiftKeyTriggered? = trigger?(Input::SHIFT) unless method_defined?(:shiftKeyTriggered?)
+    def isComboKeyPressed? = false unless method_defined?(:isComboKeyPressed?)
+    def modifierKeyPressed? = false unless method_defined?(:modifierKeyPressed?)
+    def triggerGamepad?(button) = trigger?(button) unless method_defined?(:triggerGamepad?)
+    def repeatexAny?(*_keys) = false unless method_defined?(:repeatexAny?)
+  end
+end
+
+# The sandbox's root can't be listed; a game that looks beside its own save folder (Rejuvenation's New Game looks for
+# your Reborn and Where Love Lies saves in the folder above, "/" here) finds nothing there, as on a PC with no such saves.
+class << Dir
+  %i[each_child children entries].each do |m|
+    next if method_defined?(:"__pokedaisy_#{m}")
+    alias_method :"__pokedaisy_#{m}", m
+    define_method(m) do |path, *args, **kw, &block|
+      send(:"__pokedaisy_#{m}", path, *args, **kw, &block)
+    rescue Errno::ENOENT
+      raise unless path.to_s.squeeze("/") == "/"
+      m == :each_child ? nil : []
     end
   end
 end
