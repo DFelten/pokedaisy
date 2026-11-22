@@ -14,7 +14,9 @@ module PokeDaisyCompanion
   CAPACITY = 256 * 1024
   HEADER = 24
   EVERY = 15 # frames between snapshots (4 a second at 60 fps)
-  VERSION = 2
+  VERSION = 3
+  # Essentials' stat keys, in the order "stats" sends them.
+  STAT_KEYS = [:HP, :ATTACK, :DEFENSE, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :SPEED]
 
   @buf = nil
   @seq = 0
@@ -138,6 +140,9 @@ module PokeDaisyCompanion
       "natureId" => try { p.nature.id_number }, # Essentials numbers natures as Gen 3 does (HARDY 0 .. QUIRKY 24)
       "ability" => try { p.ability.name },
       "stats" => try { [p.totalhp, p.attack, p.defense, p.spatk, p.spdef, p.speed] },
+      # In the stats' order; Essentials keeps them as hashes by stat (v19+).
+      "ivs" => try { STAT_KEYS.map { |k| p.iv[k] } },
+      "evs" => try { STAT_KEYS.map { |k| p.ev[k] } },
       "moves" => try {
         p.moves.map { |m|
           data = try { GameData::Move.get(m.id) }
@@ -158,6 +163,7 @@ module PokeDaisyCompanion
         "items" => pk.map { |it|
           id = it[0]
           { "name" => try { GameData::Item.get(id).name } || id.to_s, "qty" => it[1],
+            "desc" => cached([:desc, id]) { GameData::Item.get(id).description },
             "icon" => cached([:item, id]) { GameData::Item.icon_filename(id) } }
         },
       }

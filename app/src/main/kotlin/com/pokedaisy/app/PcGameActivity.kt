@@ -14,11 +14,8 @@ import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,11 +28,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.pokedaisy.app.companion.data.GameKind
+import com.pokedaisy.app.companion.data.SnapshotView
+import com.pokedaisy.app.companion.data.activeGame
 import com.pokedaisy.app.companion.i18n.tr
+import com.pokedaisy.app.companion.ui.CompanionBack
+import com.pokedaisy.app.companion.ui.CompanionScreen
+import com.pokedaisy.app.companion.ui.OwnItemNames
 import com.pokedaisy.app.companion.ui.AppBackdrop
 import com.pokedaisy.app.companion.ui.OptionColors
-import com.pokedaisy.app.companion.ui.OptionListWindow
-import com.pokedaisy.app.companion.ui.OptionRows
 import com.pokedaisy.app.companion.ui.OptionTitleWindow
 import com.pokedaisy.app.companion.ui.rememberGbaTextMetrics
 import com.pokedaisy.app.companion.ui.theme.AppTheme
@@ -48,7 +49,8 @@ import kotlin.concurrent.thread
 /**
  * PC fan games (FeatureFlags.pcGames, a prototype; docs/specs/pc-fan-games.md): one Pokemon Essentials game on the
  * mkxp-z core ([PcCore]), drawn on this activity's GL thread. The game alone on the main screen; with a second screen
- * a small companion there (the party, from the game's own data through our preload's mailbox). BACK twice closes it;
+ * the companion there ([CompanionScreen]: PARTY with its summaries, and the bag), built from the game's own data through
+ * our preload's mailbox ([PcCompanion]). BACK goes back in the companion first, then twice closes the game;
  * the games save in their own menus (their save folder is backed up before each start, [PcGames.backupSaves]).
  *
  * Resume: each pause and close writes a resume state ([PcGames.resumeState], the Ruby heap, ~100 MB gzipped) with the
@@ -79,7 +81,10 @@ class PcGameActivity : ComponentActivity() {
 
     /** What the overlay says (loading, an error), null once the game shows. */
     private var notice by mutableStateOf<String?>(tr("LOADING..."))
-    private var party by mutableStateOf<Party?>(null)
+    /** What the companion on the second screen shows ([PcCompanion]); LOADING until the game's data comes in. */
+    private var snapshot by mutableStateOf(SnapshotView(connected = true, game = GameKind.ESSENTIALS))
+    private var companion: PcCompanion? = null
+    private val companionBack = CompanionBack()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,6 +117,7 @@ class PcGameActivity : ComponentActivity() {
     }
 
     private fun startGame(root: FrameLayout, core: File, ini: File, sys: File, saves: File) {
+        companion = PcCompanion(ini.parentFile ?: filesDir, filesDir)
         val view = GLSurfaceView(this)
         view.setEGLContextClientVersion(3)
         view.preserveEGLContextOnPause = true
@@ -183,7 +189,10 @@ class PcGameActivity : ComponentActivity() {
         thread(name = "pc-mailbox", isDaemon = true) {
             while (!closing && !isDestroyed) {
                 if (resumed && started) {
-                    PcCore.pcMailbox()?.let { bytes -> Party.parse(String(bytes, Charsets.UTF_8))?.let { runOnUiThread { party = it } } }
+                    val c = companion
+                    PcCore.pcMailbox()?.let { bytes ->
+                        c?.snapshot(String(bytes, Charsets.UTF_8))?.let { view -> runOnUiThread { if (!isDestroyed) snapshot = view } }
+                    }
                 }
                 SystemClock.sleep(1000)
             }
@@ -234,7 +243,10 @@ class PcGameActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         resumed = true
-        OptionColors.inGame = false
+        // The companion's look and lookups: a PC game's (its types, its bag's names: PcCompanion).
+        activeGame = GameKind.ESSENTIALS
+        OptionColors.inGame = true
+        OwnItemNames.lookup = itemNames
         goImmersive()
         gl?.onResume()
         audio?.play()
@@ -261,7 +273,11 @@ class PcGameActivity : ComponentActivity() {
         closing = true
         audio?.release()
         audio = null
+        if (OwnItemNames.lookup === itemNames) OwnItemNames.lookup = null
     }
+
+    /** The bag's names by the ids [PcCompanion] gave its rows. */
+    private val itemNames: (Int) -> String? = { id -> companion?.itemNames?.get(id) }
 
     private fun goImmersive() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -275,7 +291,7 @@ class PcGameActivity : ComponentActivity() {
         if (presentation != null) return
         val display = (if (Prefs(this).singleScreen) null else Screens.second(this)) ?: return
         presentation = DualScreenPresentation(this, display) { ctx: Context ->
-            ComposeView(ctx).apply { setContent { AppTheme { PartyPanel() } } }
+            ComposeView(ctx).apply { setContent { AppTheme { CompanionScreen(snapshot = snapshot, back = companionBack) } } }
         }.also { runCatching { it.show() } }
     }
 
@@ -303,7 +319,7 @@ class PcGameActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-            if (event.action == KeyEvent.ACTION_UP) {
+            if (event.action == KeyEvent.ACTION_UP && !companionBack.back()) {
                 val now = SystemClock.uptimeMillis()
                 if (now - lastBack < 2000 || !started) closeGame() else {
                     lastBack = now
@@ -346,48 +362,6 @@ class PcGameActivity : ComponentActivity() {
         Box(Modifier.fillMaxSize()) {
             AppBackdrop()
             OptionTitleWindow(text, rememberGbaTextMetrics(), Modifier.align(Alignment.Center).padding(32.dp), titleMaxLines = 3)
-        }
-    }
-
-    @Composable
-    private fun PartyPanel() {
-        val m = rememberGbaTextMetrics()
-        val p = party
-        Box(Modifier.fillMaxSize()) {
-            AppBackdrop()
-            Column(Modifier.fillMaxSize().padding(m.u * 8), verticalArrangement = Arrangement.spacedBy(m.u * 6)) {
-                OptionTitleWindow(p?.map ?: "POKéDAISY", m, Modifier.fillMaxWidth(), trailing = p?.money)
-                if (p != null && p.rows.isNotEmpty()) {
-                    OptionListWindow(m, Modifier.fillMaxWidth()) {
-                        OptionRows(p.rows.map { Triple(it.first, it.second, {}) }, m, dividers = true)
-                    }
-                }
-            }
-        }
-    }
-
-    /** The party as the companion shows it, from the mailbox's JSON (linux/pc_games/pokedaisy_companion.rb). */
-    class Party(val map: String?, val money: String?, val rows: List<Pair<String, String>>) {
-        companion object {
-            fun parse(json: String): Party? = runCatching {
-                val o = JSONObject(json)
-                val trainer = o.optJSONObject("trainer")
-                val list = o.optJSONArray("party")
-                val rows = (0 until (list?.length() ?: 0)).map { i ->
-                    val mon = list!!.getJSONObject(i)
-                    val name = mon.optString("name").ifEmpty { mon.optString("species") }
-                    val value = if (mon.optBoolean("egg")) tr("EGG") else {
-                        val status = mon.optString("status").takeIf { it.isNotEmpty() && it != "NONE" && it != "null" }
-                        tr("Lv{0}", mon.optInt("level")) + "  ${mon.optInt("hp")}/${mon.optInt("totalhp")}" + (status?.let { "  $it" } ?: "")
-                    }
-                    name to value
-                }
-                Party(
-                    map = o.optJSONObject("map")?.optString("name")?.takeIf { it.isNotEmpty() },
-                    money = trainer?.takeIf { it.has("money") }?.let { "$${it.optInt("money")}" },
-                    rows = rows,
-                )
-            }.getOrNull()
         }
     }
 }

@@ -295,8 +295,15 @@ gzips it on a thread of its own to `pc/states/<folder>.resume.gz`, then a sideca
 only while the fingerprint holds, else it's set aside as `.replaced`. The game's own quit drops it. Texts: `TrPcGames.kt`. Manual: a
 draft, `docs/manual-drafts/pc-games.md`.
 
-Not yet: touch controls, sharp scaling, the real companion (PARTY's slots, summary, BAG), HUD, NEW tag, and a way for players to get
-the core.
+The companion (2026-11-23): the second screen is the real `CompanionScreen`, PARTY (slots, summaries, STATS) and BAG, from a
+`SnapshotView` that `PcCompanion` builds from the mailbox under `GameKind.ESSENTIALS` (`isPcGame`: those two tabs, no gear). Names,
+moves, abilities and items are the game's strings; its types and chart go into `PcGameTypes`, which `activeTypeNames` /
+`activeTypeEffectiveness` read while it runs; the bag's names reach the bag through `OwnItemNames`. Icons are the game's PNGs rebuilt
+into `rom-art/pc/` (a party icon as the companion's 32 x 64 sheet, a fusion's as Infinite Fusion's createFusionIcon draws it). The
+preload sends IVs / EVs and item descriptions now (snapshot VERSION 3). `PcCompanionTest`, `PcCompanionScreenshotTest`.
+
+Not yet: touch controls, sharp scaling, the companion's other tabs and battle helper, HUD, NEW tag, and a way for players to get the
+core.
 
 ## Next steps
 

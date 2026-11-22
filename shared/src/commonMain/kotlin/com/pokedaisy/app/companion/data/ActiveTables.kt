@@ -33,7 +33,10 @@ enum class GameKind { FIRERED, EMERALD, UNBOUND, GAIA, RADICAL_RED, ODYSSEY, HEA
     /** A 3DS game (docs/3DS_GAMES_PLAN.md): its companion reads Azahar's memory, PARTY and BAG so far. Y is X's code
      * with its own version's Pokemon ([isXy]: everything else the same). Omega Ruby / Alpha Sapphire run X's engine
      * at their own addresses ([isOras]); Sun / Moon are Gen 7's ([isSm]). */
-    POKEMON_X, POKEMON_Y, POKEMON_OMEGA_RUBY, POKEMON_ALPHA_SAPPHIRE, POKEMON_SUN, POKEMON_MOON }
+    POKEMON_X, POKEMON_Y, POKEMON_OMEGA_RUBY, POKEMON_ALPHA_SAPPHIRE, POKEMON_SUN, POKEMON_MOON,
+    /** A PC fan game made with Pokémon Essentials (PcGameActivity, FeatureFlags.pcGames): its companion is built from the
+     * game's own data, sent by our Ruby preload (linux/pc_games/pokedaisy_companion.rb), never from tables of ours. */
+    ESSENTIALS }
 
 /** Pokemon X or Y: one engine, one companion, one look (2026-11-15: Y's addresses all X's, headless). */
 val GameKind?.isXy: Boolean get() = this == GameKind.POKEMON_X || this == GameKind.POKEMON_Y
@@ -46,6 +49,9 @@ val GameKind?.isSm: Boolean get() = this == GameKind.POKEMON_SUN || this == Game
 
 /** A 3DS game (any of them): the companion's 3DS tabs, the smooth look, the battle corner. */
 val GameKind?.isN3ds: Boolean get() = isXy || isOras || isSm
+
+/** A PC fan game ([GameKind.ESSENTIALS]): names, types, moves and icons all come with its own data. */
+val GameKind?.isPcGame: Boolean get() = this == GameKind.ESSENTIALS
 
 /**
  * Games with an auto-run of their own, on by default: holding B walks there, so AUTO-RUN's flip of B walked and B ran
@@ -158,6 +164,7 @@ private inline val origin get() = originHeartGold && activeGame == GameKind.HEAR
 @Volatile
 var heartfeltGold = false
 private inline val heartfelt get() = heartfeltGold && activeGame == GameKind.HEARTGOLD
+private inline val pcGame get() = activeGame == GameKind.ESSENTIALS
 
 /** Sacred Gold / Storm Silver are running (they run as HEARTGOLD / SOULSILVER, their tables from the cart:
  * [SacredGold.data]). Set with [activeGame] by the Poller. */
@@ -561,6 +568,8 @@ private val speciesTypeDataEmeraldLegacy: Map<Int, SpeciesTypes> by lazy {
 }
 private const val SPECIES_DEOXYS = 410
 val activeTypeEffectiveness: Map<Int, Int> get() = when {
+    // A PC fan game: the chart its own data sends.
+    pcGame -> PcGameTypes.chart
     // Origin HeartGold: Gen 6's chart, Fairy as 9, read from its cart.
     origin -> OriginHeartGold.data?.typeChart ?: typeEffectivenessGlazed
     heartfelt -> HeartfeltGold.data?.typeChart ?: typeEffectivenessGlazed
@@ -601,6 +610,7 @@ val activeTypeEffectiveness: Map<Int, Int> get() = when {
     else -> frHack?.typeChart ?: typeEffectiveness
 }
 val activeTypeNames: Map<Int, String> get() = when {
+    pcGame -> PcGameTypes.names
     origin -> OriginHeartGold.typeNames
     heartfelt -> HeartfeltGold.typeNames
     renegade -> RenegadePlatinum.typeNames
@@ -918,4 +928,5 @@ fun GameKind.displayName(): String = when (this) {
     GameKind.POKEMON_ALPHA_SAPPHIRE -> "Pokémon Alpha Sapphire"
     GameKind.POKEMON_SUN -> "Pokémon Sun"
     GameKind.POKEMON_MOON -> "Pokémon Moon"
+    GameKind.ESSENTIALS -> "PC fan game"
 }

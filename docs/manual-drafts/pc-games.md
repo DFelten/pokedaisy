@@ -36,7 +36,8 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 
 - The buttons and the stick work as in the game itself: A to pick, B to go back.
 - Press BACK twice to close the game.
-- With a second screen, it shows your team, where you are and your money.
+- With a second screen, the companion is there: your team (tap one for its summary, its moves and its stats) and your
+  bag, every name and type as the game has them.
 
 ## Your progress
 
@@ -51,5 +52,5 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 ## What doesn't work yet
 
 - Touch controls on screen.
-- The full companion: the party pages, the bag and the other tabs.
+- The companion's other tabs (the map, the guide, the battle helper) and its settings.
 - Games made with older versions of Essentials.
