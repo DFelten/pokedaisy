@@ -44,7 +44,14 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
   - [ ] UI SIZE for big monitors (Android's FONT SIZE): the companion's rows per screen height
   - [ ] Portrait windows: a canvas past 480 rows
 - [ ] **1. Look** (SUMMARY MINT under `retroStylePalette`'s blues, as Android since 2026-11-22)
-  - [ ] Title window joined to the list window, section bands, banded rows, folder tabs, key buttons (`drawKey`)
+  - [x] The palette in C (`pd_style.c`'s `RETRO`, light and dark), moved to a THEME's hue (`rehue` = NightColors.kt's
+        `rehued`), turned on by the desktop cores (`pd_style_enable`; the 3DS keeps the OPTION look, pixel for pixel)
+  - [x] Header bands (`pd_header_box`: SETTINGS, POKéDEX, SAVE STATES, NUZLOCKE, pick-lists, FLY / PLACES, notices),
+        the list window's frame, striped rows, full-width section bands (`pd_section_title`), tab chips and the settings
+        rail as keys (`pd_chip_face`), buttons as keys (`ui_button`); title windows stay white as in the app
+  - [ ] The rest of the buttons (summary STATS / INFO, the dex's NATIONAL and sections, the MORE grid's tiles), the
+        DS core (`linux/libretro-ds/companion_ui.cpp`), the game list (`linux/library.c`)
+  - [ ] Folder tabs on the window's side (`FolderTab`), the header joined to its list (`OptionTitleWindow(joined)`)
   - [ ] Data in cells (`HeadCell` / `CellColors`): battle INFO / SUGGESTIONS, the summary's moves, the move page
   - [ ] `PanelHeader` bands, `GameTag` tags (12 px, notched corners, #424242 shadow)
   - [ ] Themes move the whole palette (`themedStylePalette`, `rehued`), the focus ring in the theme's opposite colour

@@ -1477,6 +1477,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
     if (settings.zoom < 1)
       settings.zoom = 1;
   }
+  // The app's RETRO look (SUMMARY MINT in PokeDaisy's blues) on the desktop: the 3DS keeps the OPTION windows.
+  pd_style_enable(true);
   pd_look_apply(&game, &settings); // DARK MODE (pd_game_detect applied the game's windows with no settings)
   autoRunFlip = 0;
   read_options(); // the frontend's ASPECT, over the file's own

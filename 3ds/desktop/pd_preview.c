@@ -305,6 +305,14 @@ int main(int argc, char** argv) {
     struct pd_settings settings = { .screenMode = PD_SCREEN_SHARP, .ffSpeed = 2 };
     struct pd_ui ui;
     pd_ui_init(&ui, &settings);
+    // PD_PREVIEW_WINDOW: the desktop cores' look (pd_style_enable), DARK MODE with PD_PREVIEW_DARK=1, a THEME by id with
+    // PD_PREVIEW_THEME (20 CHERRY, 23 MINT ...).
+    if (bareShot) {
+        pd_style_enable(true);
+        settings.darkMode = getenv("PD_PREVIEW_DARK") != NULL;
+        if (getenv("PD_PREVIEW_THEME")) settings.theme = atoi(getenv("PD_PREVIEW_THEME"));
+        pd_look_apply(&game, &settings);
+    }
     shotUi = &ui;
     pd_ui_update(&ui, &snap);
 

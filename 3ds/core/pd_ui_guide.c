@@ -696,8 +696,8 @@ void ui_guide_notice(struct pd_ui* ui, struct pd_canvas* c) {
     pd_dim(c, 0xE6);
     ui_add_hit(ui, 0, 0, c->w, c->h, HIT_SCRIM);
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y + 4;
-    int f = pd_title_box(c, x, y, w, 24, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("BEFORE YOU READ"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, 24);
+    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("BEFORE YOU READ"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     y += 28;
     char text[400];
     snprintf(text, sizeof(text),

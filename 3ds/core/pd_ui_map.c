@@ -315,8 +315,8 @@ void ui_fly_overlay(struct pd_ui* ui, struct pd_canvas* c) {
     pd_dim(c, 0xE6);
     ui_add_hit(ui, 0, 0, c->w, c->h, HIT_SCRIM);
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y;
-    int f = pd_title_box(c, x, y, w, 24, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("FLY"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, 24);
+    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("FLY"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     y += 28;
     int lf = pd_list_box(c, x, y, w, c->h - y - MARGIN);
     int ix = x + lf, iy = y + lf + 1, iw = w - 2 * lf, ih = c->h - y - MARGIN - 2 * lf - 2;
@@ -342,8 +342,8 @@ void ui_places_overlay(struct pd_ui* ui, struct pd_canvas* c, const struct pd_ga
     pd_dim(c, 0xE6);
     ui_add_hit(ui, 0, 0, c->w, c->h, HIT_SCRIM);
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y;
-    int f = pd_title_box(c, x, y, w, 24, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("PLACES"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, 24);
+    pd_text(c, x + f + 6, pd_text_y(y, 24), pd_tr("PLACES"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     y += 28;
     int lf = pd_list_box(c, x, y, w, c->h - y - MARGIN);
     int ix = x + lf, iy = y + lf + 1, iw = w - 2 * lf, ih = c->h - y - MARGIN - 2 * lf - 2;

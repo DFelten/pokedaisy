@@ -57,9 +57,9 @@ static void title(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
                   const int* list, int n, bool national) {
     bool one = !ui->dexSource && pd_dex_gb_count(g) > 0; // a Game Boy dex has the one list
     int x = MARGIN, w = c->w - 2 * MARGIN - (one ? 0 : TOGGLE_W + 4);
-    int f = pd_title_box(c, x, CONTENT_Y, w, TITLE_H, PD_TITLE_FILL);
+    int f = pd_header_box(c, x, CONTENT_Y, w, TITLE_H);
     int ty = pd_text_y(CONTENT_Y, TITLE_H);
-    pd_text(c, x + f + 6, ty, pd_tr("POKéDEX"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    pd_text(c, x + f + 6, ty, pd_tr("POKéDEX"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     int seen = ui->dexSource?ui->dexSource->seenCount:0, caught = ui->dexSource?ui->dexSource->caughtCount:0;
     for (int i = 0; !ui->dexSource && i < n; i++) {
         seen += pd_dex_seen(s, list[i]);
@@ -107,7 +107,7 @@ int pd_ui_dex_filters(struct pd_ui* ui, struct pd_canvas* c, const int counts[4]
     // The 3DS's sidebar (PokedexScreen's left column): TYPE and NAME under the four, rows as dense as the lists'.
     const bool extra = ui && !ui->handheldDex;
     const int rowH = tall ? 23 : extra ? pd_list_row(18) : 18, lineStep = 16;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
     int lf = 0; // the list window's frame (thicker than the title's)
     for (int i = 0; i < pd_cur->listCount; i++) lf += pd_cur->list[i].width;
     int headingH = extra ? 2 * lf + rowH + 2 : 46; // the 3DS's: SEEN and OWN on one line
@@ -116,7 +116,7 @@ int pd_ui_dex_filters(struct pd_ui* ui, struct pd_canvas* c, const int counts[4]
     // leave it room; ALL and CAUGHT still say the counts).
     if (extra && y + TITLE_H + gap + headingH + gap + 2 * lf + 2 + (DEX_FILTERS + 2) * rowH + (region ? gap + buttonH : 0) > c->h - MARGIN)
         headingH = 0;
-    pd_text(c, x + f + 5, pd_text_y(y, TITLE_H), pd_tr("POKéDEX"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    pd_text(c, x + f + 5, pd_text_y(y, TITLE_H), pd_tr("POKéDEX"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     const int countsY = y + TITLE_H + gap;
     f = headingH ? pd_list_box(c, x, countsY, w, headingH) : lf;
     const int innerX = x + f, innerW = w - 2 * f;
@@ -815,8 +815,8 @@ void ui_dex_pick_overlay(struct pd_ui* ui, struct pd_canvas* c) {
     const bool type = ui->dexPickKind == 1;
     const int current = type ? ui->dexType : ui->dexLetter;
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), type ? pd_tr("TYPE") : pd_tr("NAME"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), type ? pd_tr("TYPE") : pd_tr("NAME"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     y += TITLE_H + 4;
     const int cols = type ? 3 : 6, rows = (pickCount + cols - 1) / cols, cellH = pd_list_row(20);
     int lf = pd_list_box(c, x, y, w, rows * cellH + 14);

@@ -84,6 +84,7 @@ int ui_settings_follow(int scroll, int y, int height) {
 #define ROW_ARROW 8   // the labels' indent: the cursor's arrow sits in it
 static int rowParity;
 static const char* pendingGroup; // a group whose heading waits for its first row (an empty group draws none)
+static int sectionW;             // the rows' width, for a section's band (pd_section_title)
 static void group(struct pd_canvas* c, int x, int* y, const char* title);
 static void flush_group(struct pd_canvas* c, int x, int* y) {
     if (!pendingGroup) return;
@@ -93,7 +94,7 @@ static void flush_group(struct pd_canvas* c, int x, int* y) {
 }
 void ui_list_row_back(struct pd_canvas* c, int x, int y, int w, int index, bool cursor) {
     if (cursor) pd_fill(c, x - 4, y, w + 8, ROW_H, PD_ROW_SELECTED);
-    else if (index & 1) pd_fill(c, x - 4, y, w + 8, ROW_H, pd_mix(PD_LIST_FILL, PD_LABEL, 20));
+    else if (index & 1) pd_fill(c, x - 4, y, w + 8, ROW_H, pd_style ? pd_style->stripe : pd_mix(PD_LIST_FILL, PD_LABEL, 20));
     if (cursor) pd_triangle(c, x - 1, y + ROW_H / 2 - 4, 4, PD_RIGHT, PD_VALUE);
 }
 
@@ -160,9 +161,7 @@ static void group(struct pd_canvas* c, int x, int* y, const char* title) {
     }
     rowParity = 0;
     *y += 3;
-    // Gen 1's value colour is the rows' black: its titles are a black band (groupTitleFill).
-    if (pd_cur->groupTitleFill != PD_NO_SHADOW) pd_fill(c, x - 4, *y + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
-    pd_text(c, x, pd_text_y(*y, ROW_H), title, pd_cur->groupTitleText, pd_cur->groupTitleShadow);
+    pd_section_title(c, x - 4, *y, sectionW + 8, ROW_H, title);
     *y += ROW_H;
 }
 
@@ -184,9 +183,10 @@ static void group_rail(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int 
     for (int i = 0, ty = y; i < groupCount; i++) {
         int th = th0 + (i < room - th0 * n ? 1 : 0);
         bool on = i == selected || ui->pressedId == HIT_SETTINGS_GROUP + i;
-        pd_layered_two_tone(c, x, ty, w, th, 3, pd_cur->chip, pd_cur->chipCount, on ? pd_cur->tabSelectedFill : pd_cur->tabIdleFill, 0);
+        pd_chip_face(c, x, ty, w, th, on);
         pd_text_fit(c, x + 4 + (w - 8 - pd_text_width(groupName[i]) > 0 ? (w - 8 - pd_text_width(groupName[i])) / 2 : 0),
-                    pd_text_y(ty, th), w - 8, groupName[i], on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
+                    pd_text_y(ty, th), w - 8, groupName[i], pd_style ? pd_chip_text(on) : on ? PD_VALUE : PD_LABEL,
+                    pd_style ? pd_chip_shadow(on) : on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
         ui_add_hit(ui, x, ty, w, th, HIT_SETTINGS_GROUP + i);
         ty += th + gap;
     }
@@ -316,9 +316,9 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         for (unsigned i = 0; i < sizeof(LABELS) / sizeof(*LABELS); i++)
             if (pd_text_width(LABELS[i]) + 12 > railW) railW = pd_text_width(LABELS[i]) + 12;
     }
-    int f = pd_title_box(c, x, CONTENT_Y, w, TITLE_H, PD_TITLE_FILL);
+    int f = pd_header_box(c, x, CONTENT_Y, w, TITLE_H);
     int ty = pd_text_y(CONTENT_Y, TITLE_H);
-    pd_text(c, x + f + 6, ty, ui->optionSource ? ui->optionSource->title : pd_tr("SETTINGS"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    pd_text(c, x + f + 6, ty, ui->optionSource ? ui->optionSource->title : pd_tr("SETTINGS"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     int right = x + w - f - 6;
     // The 3DS's battery at the title window's right.
     if (host && host->batteryPct >= 0 && host->fullSettings) {
@@ -330,7 +330,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         int tx = x + f + 6 + pd_text_width(pd_tr("SETTINGS")) + 12;
         int tw = pd_text_width(g->title);
         if (tw > right - tx) tw = right - tx;
-        pd_text_fit(c, right - tw, ty, tw, g->title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+        pd_text_fit(c, right - tw, ty, tw, g->title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
     }
 
     int lh = c->h - LIST_Y - MARGIN;
@@ -369,10 +369,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
                 continue;
             }
             if (row->heading) { // a group's title, as group() draws it
-                const char* title = pd_tr(row->label);
-                if (pd_cur->groupTitleFill != PD_NO_SHADOW)
-                    pd_fill(c, ix - 4, ry + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
-                pd_text(c, ix, pd_text_y(ry, ROW_H), title, pd_cur->groupTitleText, pd_cur->groupTitleShadow);
+                pd_section_title(c, ix - 4, ry, iw + 8, ROW_H, pd_tr(row->label));
                 continue;
             }
             ui_list_row_back(c, ix, ry, iw, parity++, i == selected);
@@ -386,6 +383,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         return;
     }
     pd_clip(c, x + lf, listTop, w - 2 * lf, listBottom - listTop);
+    sectionW = iw;
     if (lastTotal >= 0) ui->settingsScroll = ui_clamp_scroll(ui->settingsScroll, lastTotal, listBottom - listTop);
     int y = listTop - ui->settingsScroll;
     char buf[40];
@@ -608,8 +606,8 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
 
 static void title_window(struct pd_canvas* c, int y, const char* title) {
     int x = MARGIN, w = c->w - 2 * MARGIN;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr(title), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr(title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
 }
 
 static void pick_list(struct pd_ui* ui, struct pd_canvas* c, const char* title, const char* const* options, int n,

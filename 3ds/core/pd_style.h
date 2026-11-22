@@ -82,6 +82,39 @@ extern uint32_t pd_gb_ink, pd_gb_paper;
 #define PD_BACKDROP_B (pd_backdrop_colors[1])
 #define PD_BACKDROP_BAND (pd_backdrop_colors[2])
 
+// SUMMARY MINT in PokeDaisy's blues, the app's RETRO look (UiStyle.kt's retroStylePalette, 2026-11-22): a framed blue
+// header over a white list window, full-width section bands, rows banded in [stripe], tabs and buttons as keys (a two-tone
+// face standing on a [depth] edge). A host turns it on (pd_style_enable: the desktop cores); off, the windows are the
+// FireRed OPTION screen's as before (the 3DS for now). A Game Boy game keeps its own windows either way.
+struct pd_key {
+    uint32_t outline, face, low, depth, text, shadow, shine; // shine PD_NO_SHADOW = none
+    bool pressed;                                            // the open tab: it sits down on its edge
+};
+struct pd_style_colors {
+    uint32_t headerFill, headerText, headerShadow; // the header band over a list (OptionTitleWindow: headerFill / Layers)
+    struct pd_layer header[2];
+    uint32_t sectionFill, sectionText, sectionShadow, stripe, well;
+    struct pd_key button, tab, tabOpen;
+};
+extern const struct pd_style_colors* pd_style; // NULL = the OPTION look
+void pd_style_enable(bool on);
+// A key filling the box (the app's drawKey): its outline, the depth edge along the bottom, the two-tone face, the shine.
+void pd_key(struct pd_canvas* c, int x, int y, int w, int h, const struct pd_key* k);
+// A tab chip's face, its label's colour and shadow: a key in the style, the OPTION chip without.
+void pd_chip_face(struct pd_canvas* c, int x, int y, int w, int h, bool open);
+uint32_t pd_chip_text(bool open);
+uint32_t pd_chip_shadow(bool open);
+// A section's title (a settings group, a list's heading) at row (x, y) of a row [w] wide and [h] tall: the style's band
+// across the row (StyledGroupTitle), else the OPTION screen's red title (Gen 1's black band). Returns the text's x.
+void pd_section_title(struct pd_canvas* c, int x, int y, int w, int h, const char* title);
+
+// A screen's or a list's title bar (the app's OptionTitleWindow: headerFill / headerLayers): the style's blue band, the
+// title window without the style. Its text in PD_HEADER_TEXT / PD_HEADER_SHADOW. Returns the frame's width.
+int pd_header_box(struct pd_canvas* c, int x, int y, int w, int h);
+#define PD_HEADER_TEXT (pd_style ? pd_style->headerText : pd_cur->titleText)
+#define PD_HEADER_SHADOW (pd_style ? pd_style->headerShadow : pd_cur->titleShadow)
+#define PD_HEADER_FILL (pd_style ? pd_style->headerFill : pd_cur->titleFill)
+
 // The white title window and the grey list window; each returns its frame's width.
 int pd_title_box(struct pd_canvas* c, int x, int y, int w, int h, uint32_t fill);
 int pd_list_box(struct pd_canvas* c, int x, int y, int w, int h);
