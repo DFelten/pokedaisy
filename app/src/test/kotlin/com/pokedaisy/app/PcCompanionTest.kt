@@ -17,6 +17,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 
 /** A PC fan game's data into the companion's snapshot ([PcCompanion]): names, the game's own types and chart, stats in
  * the companion's order, Essentials' pockets. */
@@ -24,7 +25,10 @@ class PcCompanionTest {
     @get:Rule val tmp = TemporaryFolder()
 
     @Before fun game() { activeGame = GameKind.ESSENTIALS }
-    @After fun reset() { activeGame = GameKind.FIRERED }
+    @After fun reset() {
+        activeGame = GameKind.FIRERED
+        com.pokedaisy.app.companion.data.PcTownMap.clear()
+    }
 
     private fun view() = PcCompanion(tmp.newFolder("game"), tmp.newFolder("files")).snapshot(PcCompanionSample.JSON)!!
 
@@ -142,6 +146,42 @@ class PcCompanionTest {
             "PokeDaisyCompanion.request(:fight, 2)", "PokeDaisyCompanion.request(:action, 3)",
             "PokeDaisyCompanion.request(:back)", "PokeDaisyCompanion.request(:switch, 2)",
         ), sent)
+    }
+
+    @Test fun theTownMap() {
+        val game = tmp.newFolder("tm")
+        val files = tmp.newFolder("tmf")
+        File(game, "Graphics/Pictures").mkdirs()
+        File(game, "Graphics/Pictures/town_map.png").writeBytes(byteArrayOf(1, 2, 3))
+        File(game, "Graphics/Pictures/town_head.png").writeBytes(byteArrayOf(4, 5))
+        val c = PcCompanion(game, files)
+        val v = c.snapshot(PcCompanionSample.JSON)!!
+        val m = com.pokedaisy.app.companion.data.PcTownMap.model!!
+        // The player's tile and the place the map names there.
+        assertEquals(4 to 6, v.regionMapTile)
+        assertEquals("Route 2", m.sections[v.regionMapSectionId]?.name)
+        assertEquals("Route 2", v.location.mapSecName)
+        // The game's picture and mark, copied as they are where the MAP tab reads them.
+        val picture = m.images.single()
+        assertEquals(listOf<Byte>(1, 2, 3), File(files, "rom-art/regionmap/$picture.png").readBytes().toList())
+        assertTrue(File(files, "rom-art/regionmap/${com.pokedaisy.app.companion.data.PcTownMap.head}.png").isFile)
+        // A switched-off place has no name yet.
+        assertNull(m.pick(0, 12, 2))
+        // Off every named tile: the game's own map name, the mark still on its tile.
+        val off = c.snapshot(org.json.JSONObject(PcCompanionSample.JSON).apply {
+            getJSONObject("townMap").put("x", 6).put("y", 7)
+            getJSONObject("map").put("name", "Quiet Path")
+        }.toString())!!
+        assertEquals(com.pokedaisy.app.companion.data.PcTownMap.PLAYER_ONLY, off.regionMapSectionId)
+        assertEquals("Quiet Path", off.location.mapSecName)
+        assertEquals(6 to 7, off.regionMapTile)
+    }
+
+    @Test fun noPictureNoMap() {
+        // The game's folder has no Town Map picture: no MAP tab, the place by the game's map name.
+        val v = view()
+        assertNull(com.pokedaisy.app.companion.data.PcTownMap.model)
+        assertNull(v.regionMapTile)
     }
 
     @Test fun noBattleNoBattleFields() {

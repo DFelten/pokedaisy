@@ -333,7 +333,8 @@ fun CompanionScreen(
             // A 3DS game: what its reader has so far (docs/3DS_GAMES_PLAN.md).
             if (game.isN3ds) return@filter id in N3DS_TABS
             // A PC fan game: what its own data sends (linux/pc_games/pokedaisy_companion.rb).
-            if (game.isPcGame) return@filter id in PC_GAME_TABS
+            // Its MAP once the game's Town Map has the player's region (PcTownMap).
+            if (game.isPcGame) return@filter id in PC_GAME_TABS || id == "MAP" && com.pokedaisy.app.companion.data.PcTownMap.model != null
             when (id) {
                 "DEX" -> dex != null || id in cachedTabs
                 "GUIDE" -> guide != null || id in cachedTabs

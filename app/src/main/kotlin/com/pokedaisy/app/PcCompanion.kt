@@ -27,6 +27,7 @@ import com.pokedaisy.app.companion.data.POCKET_MEDICINE
 import com.pokedaisy.app.companion.data.POCKET_POKE_BALLS
 import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.PcGameTypes
+import com.pokedaisy.app.companion.data.PcTownMap
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.TYPE_NONE
 import com.pokedaisy.app.companion.data.typeMatchups
@@ -39,7 +40,8 @@ import java.util.zip.CRC32
 /**
  * A PC fan game's companion data ([GameKind.ESSENTIALS]): the snapshot our preload sends from the game
  * (linux/pc_games/pokedaisy_companion.rb, through [PcCore.pcMailbox]) turned into the [SnapshotView] the real
- * companion draws - PARTY with its summaries and the bag, every name and type the game's own. Party and item icons are
+ * companion draws - PARTY with its summaries, the bag and the MAP ([PcTownMap]: the game's own Town Map picture and
+ * places), every name and type the game's own. Party and item icons are
  * the game's PNGs, rebuilt into the art cache the companion already reads ([iconDir]): a party icon as the companion's
  * 32 x 64 two-frame sheet, a fusion's put together the way Infinite Fusion's createFusionIcon does (linux/pc_companion.c).
  *
@@ -49,7 +51,15 @@ import java.util.zip.CRC32
 class PcCompanion(private val gameDir: File, filesDir: File) {
     /** Where [com.pokedaisy.app.companion.ui.GameArt] finds rom-art files ([com.pokedaisy.app.companion.data.RomArt.file]). */
     private val iconDir = File(filesDir, "rom-art/pc").apply { mkdirs() }
+    /** The Town Map's picture and the player's mark, where [com.pokedaisy.app.companion.ui.regionMapBitmap] reads them. */
+    private val mapDir = File(filesDir, "rom-art/regionmap/pc")
     private var lastTypes: String? = null
+    private var lastTownMap: String? = null
+
+    init {
+        // Another game's map must not show before this one's first snapshot.
+        PcTownMap.clear()
+    }
 
     /** The bag's names by the [ItemView.itemId]s [snapshot] made up (the companion's item names lookup). */
     @Volatile var itemNames: Map<Int, String> = emptyMap()
@@ -72,6 +82,7 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
         val items = o.optJSONArray("bag")?.let { bag(it, names) }.orEmpty()
         itemNames = names
         val map = o.optJSONObject("map")
+        val town = townMap(o.optJSONObject("townMap"))
         // The battle (pbStartBattle's own object): the battlers on each side as the battle has them, each move's verdict
         // on the other side, and a trainer's whole team for the FOE TEAM strip.
         val battle = o.optJSONObject("battle")
@@ -86,7 +97,11 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             frameCounter = o.optLong("frame"),
             party = party,
             items = items,
-            location = LocationView(map?.optString("name").orEmpty(), null, 0, 0, 0, 0),
+            // The Town Map's name for the place (as the GBA games' map sections: a town's, not its buildings'), else the
+            // game's own map name.
+            location = LocationView(town?.name ?: map?.optString("name").orEmpty(), null, 0, 0, 0, 0),
+            regionMapSectionId = town?.section ?: 0,
+            regionMapTile = town?.tile,
             x = map?.optInt("x") ?: 0,
             y = map?.optInt("y") ?: 0,
             money = trainer?.takeIf { it.has("money") }?.optLong("money"),
@@ -111,6 +126,55 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             battleActiveBattler = battle?.optInt("menuBattler") ?: 0,
         )
     }
+
+    /** Where the player is on the Town Map: the place's section ([PcTownMap.build]'s), its name (null where the map
+     * names none) and the tile. */
+    private class TownSpot(val section: Int, val name: String?, val tile: Pair<Int, Int>)
+
+    /** [PcTownMap]'s model for the player's region, rebuilt when the region, its shown places, its picture or the mark
+     * change; then where the player is on it. Null without a position (the model stays: the last region's map). */
+    private fun townMap(t: JSONObject?): TownSpot? {
+        t ?: return null
+        val key = listOf(t.optInt("region"), t.optString("picture"), t.optJSONArray("hidden")?.toString(), t.optString("head"),
+            t.optJSONArray("points")?.length()).joinToString("|")
+        if (key != lastTownMap) {
+            lastTownMap = key
+            val points = t.optJSONArray("points")?.let { a ->
+                (0 until a.length()).mapNotNull { i ->
+                    val p = a.optJSONArray(i) ?: return@mapNotNull null
+                    PcTownMap.Point(p.optInt(0, -1), p.optInt(1, -1), text(p, 2).orEmpty(), text(p, 3))
+                }
+            }.orEmpty()
+            PcTownMap.head = mapArt(t.optString("head"), "h", pictures = false)
+            PcTownMap.set(mapArt(t.optString("picture"), "t", pictures = true)?.let {
+                PcTownMap.build(it, t.optInt("tile", 16), t.optInt("centre"), points, ints(t.optJSONArray("hidden")).toSet())
+            })
+        }
+        val model = PcTownMap.model ?: return null
+        val x = t.optInt("x")
+        val y = t.optInt("y")
+        val section = PcTownMap.sectionAt(model, x, y)
+        return TownSpot(section, model.sections[section]?.name?.takeIf { it.isNotEmpty() }, x to y)
+    }
+
+    /** A Town Map picture ([pictures]: a name under Graphics/Pictures, or v21's Graphics/UI/Town Map) or the player's
+     * mark (a path from the game's folder), copied as it is into [mapDir]; its regionmap asset ("pc/t<crc>"), null = none. */
+    private fun mapArt(rel: String, prefix: String, pictures: Boolean): String? {
+        if (rel.isEmpty() || rel == "null") return null
+        val bases = if (pictures) listOf("Graphics/Pictures/$rel", "Graphics/UI/Town Map/$rel") else listOf(rel)
+        val file = bases.flatMap { listOf(it, "$it.png", "$it.PNG") }.map { File(gameDir, it) }.firstOrNull { it.isFile } ?: return null
+        val name = "$prefix${crc("${file.path}|${file.length()}|${file.lastModified()}")}"
+        val out = File(mapDir, "$name.png")
+        if (!out.isFile) runCatching {
+            mapDir.mkdirs()
+            val tmp = File(out.path + ".tmp")
+            file.copyTo(tmp, overwrite = true)
+            tmp.renameTo(out)
+        }
+        return if (out.isFile) "pc/$name" else null
+    }
+
+    private fun text(a: JSONArray, i: Int): String? = if (a.isNull(i)) null else a.optString(i).takeIf { it.isNotEmpty() }
 
     /** A side's battlers ([mon], then the battle's stats, stages, item and ability) with each one's party index. */
     private fun battlers(a: JSONArray?, slotBase: Int): List<Pair<MonView, Int>> = a?.let {

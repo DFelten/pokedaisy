@@ -2,7 +2,7 @@ package com.pokedaisy.app
 
 /**
  * A PC fan game's companion snapshot as our preload sends it (linux/pc_games/pokedaisy_companion.rb, VERSION 3), with
- * the invented creatures of the manual and the site (website/src/lib/creatures.js) and a short type table in Essentials'
+ * the invented creatures of the manual and the site (website/src/lib/creatures.js), a Town Map of invented places (its picture: the test's own) and a short type table in Essentials'
  * numbering (Fire 10, Water 11, Grass 12, Electric 13, Fairy 18, a fusion game's own 20). No icons: no game folder.
  */
 object PcCompanionSample {
@@ -50,6 +50,11 @@ object PcCompanionSample {
        {"name":"Key Items","items":[{"name":"Bicycle","qty":1}]}
      ],
      "map":{"id":42,"name":"Route 2","x":12,"y":30},
+     "townMap":{"region":0,"x":4,"y":6,"picture":"town_map","tile":16,"centre":8,"head":"Graphics/Pictures/town_head",
+       "hidden":[7],
+       "points":[[4,3,"Petal Town",null],[5,3,"Petal Town",null],[4,4,"Route 2",null],[4,5,"Route 2",null],[4,6,"Route 2",null],
+                 [4,9,"Clover City",null],[9,9,"Mossy Cave","Moss Tower"],[12,2,"Secret Island",null],[7,9,"Route 3",null],
+                 [8,9,"Route 3",null]]},
      "inBattle":false,"scene":"Scene_Map"}
     """.trimIndent()
 

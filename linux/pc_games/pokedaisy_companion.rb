@@ -14,7 +14,7 @@ module PokeDaisyCompanion
   CAPACITY = 256 * 1024
   HEADER = 24
   EVERY = 15 # frames between snapshots (4 a second at 60 fps)
-  VERSION = 5
+  VERSION = 6
   # Essentials' stat keys, in the order "stats" sends them.
   STAT_KEYS = [:HP, :ATTACK, :DEFENSE, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :SPEED]
   # A battler's stat stages, in the order the companion keeps them (its battle stats, then accuracy and evasion).
@@ -250,9 +250,13 @@ module PokeDaisyCompanion
     put_u32(16, @seq)                    # even: done
   end
 
+  # JSON already written (a Town Map's places: built once, sent as they are each time).
+  Raw = Struct.new(:json)
+
   # --- a tiny JSON encoder ---
   def self.j(v)
     case v
+    when Raw then v.json
     when nil then "null"
     when true then "true"
     when false then "false"
@@ -369,6 +373,73 @@ module PokeDaisyCompanion
     }.compact
   end
 
+  # --- the Town Map ---
+  # Where the player is on the game's Town Map (the map's metadata: [region, x, y]) and that region's map: its picture,
+  # the size of a tile and where a tile's middle is, its places' tiles, the ones whose switch is still off (the game
+  # leaves them unnamed) and the player's mark. nil off the Town Map (a map without a position).
+  def self.town_map
+    md = try { GameData::MapMetadata.try_get($game_map.map_id) }
+    pos = md ? try { md.town_map_position } : nil
+    return nil unless pos.is_a?(Array) && pos.size >= 3
+    data = town_map_region(pos[0])
+    return nil unless data
+    picture = data[:picture]
+    # Infinite Fusion's Town Map (Marin's Better Region Map) draws map/map_postgame once the story is over.
+    if defined?(BetterRegionMap) && picture.to_s =~ /\Amap\/map(\.png)?\z/i && try { isPostgame? }
+      picture = "map/map_postgame"
+    end
+    {
+      "region" => pos[0], "x" => pos[1], "y" => pos[2], "picture" => picture,
+      "tile" => data[:tile], "centre" => data[:centre], "head" => town_map_head,
+      "hidden" => data[:switched].reject { |_, sw| try { $game_switches[sw] } }.map(&:first),
+      "points" => Raw.new(data[:json]),
+    }
+  end
+
+  # A region's Town Map, built once: v20+ keep it as GameData::TownMap, v19 in town_map.dat ([name, picture, points]).
+  # A point is [x, y, name, point of interest, fly destination..., switch].
+  def self.town_map_region(region)
+    @town_maps ||= {}
+    return @town_maps[region] if @town_maps.key?(region)
+    @town_maps[region] = try {
+      if defined?(GameData::TownMap) && GameData::TownMap.respond_to?(:get)
+        tm = GameData::TownMap.get(region)
+        file = tm.filename
+        points = tm.point
+      else
+        d = pbLoadTownMapData[region]
+        file = d[1]
+        points = d[2]
+      end
+      points ||= []
+      if defined?(BetterRegionMap)
+        tile = (try { BetterRegionMap::TileWidth } || 16).to_i
+        centre = tile / 2 # its sprites sit on tile * size + size / 2
+      else
+        tile = (try { PokemonRegionMap_Scene::SQUAREWIDTH } || try { PokemonRegionMap_Scene::SQUARE_WIDTH } || 16).to_i
+        centre = 0 # Essentials' own: -size / 2 + tile * size, a sprite one tile wide
+      end
+      {
+        picture: file, tile: tile, centre: centre,
+        switched: points.each_with_index.select { |pt, _| pt[7].is_a?(Integer) && pt[7] > 0 }.map { |pt, i| [i, pt[7]] },
+        json: j(points.map { |pt| [pt[0], pt[1], place_name(pt[2]), place_name(pt[3])] }),
+      }
+    }
+  end
+
+  # A place's name in the player's language (the game's PlaceNames messages), else as the data has it.
+  def self.place_name(n)
+    return nil if n.nil? || n == ""
+    try { pbGetMessageFromHash(MessageTypes::PlaceNames, n) } || n
+  end
+
+  # The player's mark on the Town Map: Better Region Map's own, else the trainer type's map icon.
+  def self.town_map_head
+    return "Graphics/Pictures/map/location_icon" if defined?(BetterRegionMap)
+    t = (defined?($Trainer) && $Trainer) || (defined?($player) && $player)
+    t ? try { GameData::TrainerType.player_map_icon_filename(t.trainer_type) } : nil
+  end
+
   def self.snapshot
     out = { "v" => VERSION, "frame" => (Graphics.frame_count rescue 0), "typeTable" => type_table }
     t = (defined?($Trainer) && $Trainer) || (defined?($player) && $player)
@@ -388,6 +459,8 @@ module PokeDaisyCompanion
         "name" => try { pbGetMapNameFromId($game_map.map_id) },
         "x" => try { $game_player.x }, "y" => try { $game_player.y },
       }
+      tm = try { town_map }
+      out["townMap"] = tm if tm
     end
     out["inBattle"] = try { $game_temp ? !!$game_temp.in_battle : false } || false
     # Its own guard: whatever a battle does, the party and bag above still go out.

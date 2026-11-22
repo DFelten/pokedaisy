@@ -245,7 +245,8 @@ thread through `cpp/pk_pc.c` (libretro host, GLES 3.2 into our FBO, blitted to t
 `PcGames`: the core from `<external files>/pc/cores/` copied into private files before `dlopen` (never bundled), games in `pc/games/`
 (a TOOLS card each), saves in `pc/saves/` backed up before each start; our preloads ride along as `assets/pc_preload/*.rb` (a Sync task
 from `linux/pc_games`). Resume states (`pcSaveState` / `pcLoadState`, gzip, `pc/states/`) load only while the save folders'
-fingerprint beside them holds (`PcGames.savesFingerprint`), like `pkStateMatchesSave`. Its second screen is the real `CompanionScreen` (PARTY + BAG, `GameKind.ESSENTIALS` / `isPcGame`)
+fingerprint beside them holds (`PcGames.savesFingerprint`), like `pkStateMatchesSave`. Its second screen is the real `CompanionScreen` (PARTY + BAG, + MAP from the game's Town Map: `PcTownMap`, the picture copied into
+`rom-art/regionmap/pc/`, `GameKind.ESSENTIALS` / `isPcGame`)
 over `PcCompanion`'s `SnapshotView` from the mailbox: the game's own strings, its types / chart through `PcGameTypes` (what
 `activeTypeNames` / `activeTypeEffectiveness` read while it runs), the bag's names through `OwnItemNames`, icons rebuilt from its PNGs
 into `rom-art/pc/`. In a battle the BATTLE tab (INFO / SUGGESTIONS, read-only) is fed by the preload's wrapper round

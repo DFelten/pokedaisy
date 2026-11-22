@@ -319,7 +319,21 @@ pick and `Input.trigger?` answers the game's next USE (or BACK) once, within 10 
 `pbCanSwitch?` / `pbRegisterSwitch` block with no party screen (every message there is guarded `if partyScene`), a refusal opening
 the game's screen. Picks older than 180 frames are dropped. Checked against Essentials 19's loops in plain Ruby; not yet in a game.
 
-Not yet: sharp scaling, the companion's map / guide, picks in double battles, HUD, NEW tag, and a way for players to get the core.
+The MAP tab (2026-11-23): the snapshot's `townMap` (VERSION 6) is where the player is on the game's own Town Map (the map's
+metadata, `town_map_position`: region, x, y) and that region's map: its picture (a name under `Graphics/Pictures`, v21's
+`Graphics/UI/Town Map`; Infinite Fusion's Better Region Map swaps in `map/map_postgame` after the story), the tile size and where a
+tile's middle is (Essentials' own map centres a tile's sprites on tile * 16; Marin's Better Region Map, Infinite Fusion's, on
+tile * 16 + 8: checked on its `map/map.png`, Pallet Town's (31, 13) on its red square), every point (x, y, name, point of interest,
+built into JSON once per region), the points whose switch is off (the game leaves them unnamed) and the player's mark (Better Region
+Map's `location_icon`, else the trainer type's map icon). `PcCompanion` copies the picture and the mark into `rom-art/regionmap/pc/`
+and `PcTownMap` makes the region the MAP tab's model (`activeRegionMap`): a section per place name on a 16-bit grid, points of
+interest a second layer (FireRed's dungeons), a place filling a rectangle framed as one; the player's place names the location (a
+town's, as the GBA games' map sections), off every named tile the game's own map name. Checked in plain Ruby against Infinite
+Fusion's real `town_map.dat` (278 points, two behind switches) with both tile rules, and by `PcTownMapTest` / `PcCompanionTest` /
+`PcCompanionScreenshotTest` over a drawn stand-in; not yet in a game.
+
+Not yet: sharp scaling, the companion's guide, picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
+for players to get the core.
 
 ## Next steps
 
