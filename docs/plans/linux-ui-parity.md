@@ -84,7 +84,7 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
 - Portrait: the menu canvas stops at 480 rows (`CANVAS_MAX_H`), so an 800x1280 window shows 400x480 at 2x with a third
   of the window empty.
 - The host's rows (A/B BUTTONS, LCD FILTER ...) aren't translated (FULLSCREEN is, in `3ds/tools/tr_3ds.txt`).
-- `make -C 3ds preview` and `test-scroll` already fail on dev (2026-11-23): the script's tap on SAVE STATE (id 602) finds
-  no row since SETTINGS was regrouped. To fix with phase 3.
+- `make -C 3ds preview` and `test-scroll` failed on dev (2026-11-23): the script's tap on SAVE STATE (id 602) found no
+  row since SETTINGS was regrouped (the row sits past the list's view). Fixed: the script scrolls to it first.
 - `3ds/tools/parity_audit.py` covers the per-game data side of parity (which ROM has which tab / table); this plan is the
   UI side.

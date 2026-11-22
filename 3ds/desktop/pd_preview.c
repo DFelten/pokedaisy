@@ -393,6 +393,9 @@ int main(int argc, char** argv) {
     shot(out, name, "pick-screen", px);
     tap(&p, HIT_OPTION + PD_SCREEN_STRETCH, 0);
     printf("action %d, screen mode %d\n", pd_ui_take_action(&ui), settings.screenMode);
+    // SAVE STATE sits at the list's end (the regrouped SETTINGS): scrolled to, as a player would.
+    ui.settingsScroll = 100000;
+    draw(&p);
     tap(&p, HIT_SETTING + SETTING_SAVE_STATE, 0);
     shot(out, name, "confirm-save", px);
     tap(&p, HIT_YES, 0);
