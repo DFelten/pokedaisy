@@ -289,8 +289,14 @@ ring; the buttons and left stick as a RetroPad; BACK twice closes. A TOOLS card 
 (party, map, money) from the mailbox, read once a second on a background thread. The games' save folders are backed up first.
 Infinite Fusion booted in it on the Thor: ~5.5 s to load the game from shared storage, then the intro and the title, A taking.
 
-Not yet: resume / states, touch controls, sharp scaling, the real companion (PARTY's slots, summary, BAG), HUD, the manual, the
-strings' translations.
+Resume (2026-11-23, not yet tried on a device): each pause / close takes the heap (`pcSaveState`, ~0.2 s on the GL thread) and
+gzips it on a thread of its own to `pc/states/<folder>.resume.gz`, then a sidecar with the save folders' fingerprint
+(`PcGames.savesFingerprint`: every save file's path, size and CRC32); a fresh launch with RESUME GAMES on loads it after the first frame
+only while the fingerprint holds, else it's set aside as `.replaced`. The game's own quit drops it. Texts: `TrPcGames.kt`. Manual: a
+draft, `docs/manual-drafts/pc-games.md`.
+
+Not yet: touch controls, sharp scaling, the real companion (PARTY's slots, summary, BAG), HUD, NEW tag, and a way for players to get
+the core.
 
 ## Next steps
 

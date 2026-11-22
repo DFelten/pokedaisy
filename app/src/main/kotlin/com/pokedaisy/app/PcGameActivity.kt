@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.pokedaisy.app.companion.i18n.tr
 import com.pokedaisy.app.companion.ui.AppBackdrop
 import com.pokedaisy.app.companion.ui.OptionColors
 import com.pokedaisy.app.companion.ui.OptionListWindow
@@ -77,7 +78,7 @@ class PcGameActivity : ComponentActivity() {
     @Volatile private var pendingResume: File? = null
 
     /** What the overlay says (loading, an error), null once the game shows. */
-    private var notice by mutableStateOf<String?>("LOADING...")
+    private var notice by mutableStateOf<String?>(tr("LOADING..."))
     private var party by mutableStateOf<Party?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,7 +91,7 @@ class PcGameActivity : ComponentActivity() {
         root.addView(ComposeView(this).apply { setContent { AppTheme { Notice() } } })
         setContentView(root)
         if (ini == null || !ini.isFile) {
-            notice = "NO GAME FOUND"
+            notice = tr("NO GAME FOUND")
             return
         }
         thread(name = "pc-prepare") {
@@ -101,9 +102,9 @@ class PcGameActivity : ComponentActivity() {
             pendingResume = if (backedUp) resumeToLoad(ini) else null
             runOnUiThread {
                 when {
-                    core == null -> notice = "NO CORE: put ${PcGames.CORE_NAME} in Android/data/$packageName/files/pc/cores/"
-                    sys == null -> notice = "COULDN'T SET UP THE GAME'S FILES"
-                    !backedUp -> notice = "COULDN'T BACK UP THE SAVES: the game stays closed"
+                    core == null -> notice = tr("NO CORE: put {0} in {1}", PcGames.CORE_NAME, "Android/data/$packageName/files/pc/cores/")
+                    sys == null -> notice = tr("COULDN'T SET UP THE GAME'S FILES")
+                    !backedUp -> notice = tr("COULDN'T BACK UP THE SAVES: the game stays closed")
                     else -> startGame(root, core, ini, sys, saves)
                 }
             }
@@ -132,9 +133,9 @@ class PcGameActivity : ComponentActivity() {
                 runOnUiThread {
                     if (ok) {
                         startAudio(PcCore.pcSampleRate())
-                        if (pendingResume == null) notice = null else notice = "RESUMING..."
+                        if (pendingResume == null) notice = null else notice = tr("RESUMING...")
                         startMailbox()
-                    } else notice = "THE GAME DIDN'T START (logcat pokedaisy/pc)"
+                    } else notice = tr("THE GAME DIDN'T START")
                 }
             }
 
@@ -306,7 +307,7 @@ class PcGameActivity : ComponentActivity() {
                 val now = SystemClock.uptimeMillis()
                 if (now - lastBack < 2000 || !started) closeGame() else {
                     lastBack = now
-                    android.widget.Toast.makeText(this, "Press BACK again to close the game", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(this, tr("Press BACK again to close the game"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
             return true
@@ -375,9 +376,9 @@ class PcGameActivity : ComponentActivity() {
                 val rows = (0 until (list?.length() ?: 0)).map { i ->
                     val mon = list!!.getJSONObject(i)
                     val name = mon.optString("name").ifEmpty { mon.optString("species") }
-                    val value = if (mon.optBoolean("egg")) "EGG" else {
+                    val value = if (mon.optBoolean("egg")) tr("EGG") else {
                         val status = mon.optString("status").takeIf { it.isNotEmpty() && it != "NONE" && it != "null" }
-                        "Lv${mon.optInt("level")}  ${mon.optInt("hp")}/${mon.optInt("totalhp")}" + (status?.let { "  $it" } ?: "")
+                        tr("Lv{0}", mon.optInt("level")) + "  ${mon.optInt("hp")}/${mon.optInt("totalhp")}" + (status?.let { "  $it" } ?: "")
                     }
                     name to value
                 }

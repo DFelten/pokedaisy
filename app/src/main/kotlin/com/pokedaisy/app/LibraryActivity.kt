@@ -537,7 +537,7 @@ class LibraryActivity : ComponentActivity() {
     private fun pcGameTools(): List<com.pokedaisy.app.companion.ui.LibraryTool> {
         if (!FeatureFlags.pcGames(this)) return emptyList()
         return PcGames.list(this).map { game ->
-            com.pokedaisy.app.companion.ui.LibraryTool("PC", game.title.uppercase(), "A PC fan game (prototype)", null) {
+            com.pokedaisy.app.companion.ui.LibraryTool("PC", game.title.uppercase(), "A PC fan game", null) {
                 startActivity(Intent(this, PcGameActivity::class.java).putExtra(PcGameActivity.EXTRA_GAME, game.ini.path))
             }
         }
