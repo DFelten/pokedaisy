@@ -1892,10 +1892,21 @@ static void face(struct pd_canvas *c, int x, int y, char letter) {
 }
 
 static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *title, const char *const *rows, int n, int cursor) {
-  int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+  int f;
+  if (pd_style && title) {
+    // The style's pick-list: the title in a header band, the rows in a list window under it, where the callers' taps are.
+    f = 0;
+    for (int i = 0; i < pd_cur->titleCount; i++)
+      f += pd_cur->title[i].width;
+    int hf = pd_header_box(c, x, y, w, 26);
+    pd_text_fit(c, x + hf + 6, pd_text_y(y, 26), w - 2 * hf - 12, title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
+    pd_list_box(c, x, y + 27, w, h - 27);
+  } else
+    f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
   int ry = y + f + 4;
   if (title) {
-    pd_text_fit(c, x + f + 8, ry, w - 2 * f - 16, title, PD_VALUE, PD_VALUE_SHADOW);
+    if (!pd_style)
+      pd_text_fit(c, x + f + 8, ry, w - 2 * f - 16, title, PD_VALUE, PD_VALUE_SHADOW);
     ry += 24;
   }
   for (int i = 0; i < n; i++) {
@@ -1922,7 +1933,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
     for (int i = 0; i < n; i++)
       w += 22 + pd_text_width(gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1]) + 10;
     int h = 28, x = c->w - M - w, y = c->h - M - h;
-    int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+    int f = pd_style ? pd_list_box(c, x, y, w, h) : pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
     int lx = x + f + 5;
     for (int i = 0; i < n; i++) {
       const char *k = gamesPage ? GAMES_LEGEND[i][0] : PAGE_LEGEND[i][0], *l = gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1];
@@ -1950,7 +1961,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   }
   if (SDL_GetTicks() < noticeUntil) {
     int w = pd_text_width(notice) + 24, h = 28, x = (c->w - w) / 2, y = c->h - M - h - 36;
-    int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+    int f = pd_style ? pd_list_box(c, x, y, w, h) : pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
     pd_text(c, x + f + 8, pd_text_y(y, h), notice, PD_LABEL, PD_LABEL_SHADOW);
   }
 }
