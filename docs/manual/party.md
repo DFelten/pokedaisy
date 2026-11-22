@@ -3,7 +3,7 @@ title: Party and summaries
 summary: Your team at a glance, each Pokémon's full summary, its exact IVs and EVs, which new moves are worth learning, and the POKéMON CENTER's services anywhere.
 section: companion
 order: 2
-keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special]
+keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, move replacement, replacement, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special]
 ---
 
 The `PARTY` tab is your team, live. Glance down and you know who's hurt, who's poisoned and who's about to level up, without pausing to open the game's menu.
@@ -32,11 +32,13 @@ These controls also work in the supported English version of Pokémon Unbound. C
 
 Tap any slot to open that Pokémon's summary. It fills the tab:
 
-- **Top left**: name, gender (a nicknamed Pokémon's kind comes after its name), icon, level, status, types, the HP bar, and an EXP bar. `NEXT` is how much experience it still needs for the next level (`MAX` at level 100).
+- **Top left**: name, gender (a nicknamed Pokémon's kind comes after its name), icon, level, status, types, the HP bar, and an EXP bar. An egg also shows the kind it will hatch into after `EGG`, with that kind's types; its `STATS` page has its IVs and the stats it will hatch with. `NEXT` is how much experience it still needs for the next level (`MAX` at level 100).
 - **Bottom left**: `WEAK TO`, `RESISTS` and `IMMUNE TO`, with the multiplier on each type (2x, ½x, 0x and so on). It's the quickest way to see what to keep this Pokémon away from.
 - **Right**: its four moves, the way the later handheld games list them: the type tag and the move's name on top, then an icon for its kind, its power (`PWR`) and `PP` left out of its most. The icon tells a physical move (a burst) from a special one (rings) and a status move (a grey dot), in the games where PokeDaisy knows the split. Tap a move for [its own page](#a-moves-own-page).
 
 ![EMBERPUP's summary: level, HP and EXP on the left above its weaknesses and resistances, its four moves on the right](shots/companion-summary.png "A Pokémon's summary")
+
+In games where the companion can use items, you can drag one of the four moves onto another to change their order: the move takes its PP and PP Ups with it, in your game too. Not in a battle or while a game menu is open. Save in the game to keep it.
 
 If the Pokémon holds an item, its `ITEM` line shows it. In games where the companion can use items, a `TAKE` button puts the item back in your bag, after asking first. When the bag has no room for it, the line says `BAG FULL` instead, just as the game would refuse. Mail is the exception: `TAKE` sends the letter to your PC's mailbox instead of the bag, and says so if the mailbox is full.
 
@@ -124,6 +126,8 @@ Each entry shows the move's type, power, accuracy (`ACC`) and PP, and a verdict:
 | `FORGET` and a move name | Worth learning, in place of that move. |
 | `SKIP` | Not better than what it already knows. |
 | `LEARNED` | It already knows this one. |
+
+When the game itself asks which move to forget, Emerald shows the same advice in a small card at the top right of the game screen: `MOVE REPLACEMENT`, then `FORGET` and the move you would lose beside `LEARN` and the new move, each move in its type's colour. It needs no tab switch, and it goes away with the game's screen. Turn it off with `MOVE ADVICE` in SETTINGS > HUD.
 
 Tap an entry to see why. The reasons are short and specific, such as `NEW 2x ON` and the types it would start hitting hard, `YOUR TYPE: x1.5`, `ACCURACY 70%`, or that the move runs on its weaker attacking stat. The move it would replace gets a red `FORGET` tag on the left, so you can see exactly what you'd give up. Tap the entry again to close it.
 

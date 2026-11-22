@@ -30,15 +30,33 @@ mkdir -p roms saves states
 export POCKET_FULLSCREEN=1
 # SELECT+START is PortMaster's exit (gptokeyb): the host menu opens with the Menu / Guide button here.
 export POCKET_MENU_COMBO=off
-# The game list also shows the firmware's own Game Boy / Color / Advance and Nintendo DS folders.
+# The game list also shows the firmware's own Game Boy / Color / Advance and Nintendo DS folders: at the roms root
+# (ROCKNIX, Knulli, AmberELEC: roms/gba) or in its ROMS folder (muOS: ROMS/GBA). An SD card is often FAT, where gba and
+# GBA are one folder, so a folder is listed once (by device and inode).
 ROM_DIRS=""
-for d in gba gb gbc nds "Game Boy Advance" "Game Boy Color" "Game Boy" "Nintendo DS"; do
-  [ -d "/$directory/$d" ] && ROM_DIRS="$ROM_DIRS${ROM_DIRS:+:}/$directory/$d"
+SEEN=" "
+for base in "/$directory" "/$directory/ROMS" "/$directory/Roms" "/$directory/roms"; do
+  for d in gba gb gbc nds GBA GB GBC NDS "Game Boy Advance" "Game Boy Color" "Game Boy" "Nintendo DS"; do
+    [ -d "$base/$d" ] || continue
+    id=$(stat -L -c '%d:%i' "$base/$d" 2> /dev/null || echo "$base/$d")
+    case "$SEEN" in *" $id "*) continue ;; esac
+    SEEN="$SEEN$id "
+    ROM_DIRS="$ROM_DIRS${ROM_DIRS:+:}$base/$d"
+  done
 done
 export POCKET_ROM_DIRS="$ROM_DIRS"
 # shellcheck disable=SC2154
 export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
-# gptokeyb gives PortMaster's exit hotkey; the game list's B and the game menu's quit work too.
+# ROCKNIX writes that mapping from EmulationStation's in its controller layout: Nintendo (its default) names the buttons
+# by their labels, so the button marked A is the game's A; Xbox leaves them at an Xbox pad's places.
+if [ -f /storage/.config/PortMaster/mapper.txt ] && [ -f /etc/profile.d/001-functions ]; then
+  # shellcheck source=/dev/null
+  layout="$(. /etc/profile.d/001-functions > /dev/null 2>&1; get_setting controller_layout 2> /dev/null)"
+  if [ -z "$layout" ] || [ "$layout" = "nintendo" ]; then
+    export POCKET_FACE_LABELS=1
+  fi
+fi
+# gptokeyb gives PortMaster's exit hotkey; the game list's START (it asks first) and the game menu's QUIT work too.
 if [ -n "$GPTOKEYB" ]; then
   $GPTOKEYB "pokedaisy-linux" &
 fi

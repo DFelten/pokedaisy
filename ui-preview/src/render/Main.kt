@@ -1008,7 +1008,7 @@ fun platformLibrary(view: com.pokedaisy.app.companion.data.LibraryView = com.pok
 val pcBoxesStarts = com.pokedaisy.app.companion.ui.FocusStarts()
 
 fun pcBoxes(
-    icons: Boolean = false, ds: Boolean = false, missing: Boolean = false, black: Boolean = false,
+    icons: Boolean = false, sprites: Boolean = false, ds: Boolean = false, missing: Boolean = false, black: Boolean = false,
     setup: com.pokedaisy.app.companion.ui.PcBoxesState.() -> Unit = {},
 ): () -> (@Composable () -> Unit) = {
     val state = (if (black) pcBoxesBlackDemo() else if (ds) pcBoxesDsDemo() else if (missing) missingTargetDemo() else pcBoxesDemo()).apply(setup)
@@ -1016,7 +1016,7 @@ fun pcBoxes(
         androidx.compose.runtime.CompositionLocalProvider(com.pokedaisy.app.companion.ui.LocalFocusStarts provides pcBoxesStarts) {
             com.pokedaisy.app.companion.ui.PcBoxesScreen(
                 state, if (black) "Pokémon Black" else if (ds) "Pokémon HeartGold" else "Pokémon FireRed", com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(), onBack = {}, onSave = {},
-                icons = if (icons) demoIcons else null, onTrade = if (black) null else ({}),
+                icons = if (icons) demoIcons else null, sprites = if (sprites) demoSprites else null, onTrade = if (black) null else ({}),
                 onMissing = { state.missing = if (black) missingBlackDemo(state) else missingDemo(state) },
             )
         }
@@ -2573,6 +2573,9 @@ fun main(args: Array<String>) {
         Shot("pc-boxes-page", tw, th, td, pcBoxes(icons = true)) {
             onAllNodesWithText("CHARIZARD")[0].performClick(); onNodeWithText("CHANGE").performClick()
         },
+        Shot("pc-boxes-page-sprite", tw, th, td, pcBoxes(icons = true, sprites = true)) {
+            onAllNodesWithText("CHARIZARD")[0].performClick(); onNodeWithText("CHANGE").performClick()
+        },
         Shot("pc-boxes-page-stats", tw, th, td, pcBoxes(icons = true)) {
             onAllNodesWithText("CHARIZARD")[0].performClick(); onNodeWithText("CHANGE").performClick(); onNodeWithText("STATS").performClick()
         },
@@ -2637,6 +2640,11 @@ fun main(args: Array<String>) {
         Shot("pc-boxes-bag", tw, th, td, pcBoxes()) { onNodeWithText("BAG").performClick() },
         Shot("pc-boxes-bag-tm", tw, th, td, pcBoxes()) { onNodeWithText("BAG").performClick(); onNodeWithText("TMs & HMs").performClick() },
         Shot("pc-boxes-bag-amount", tw, th, td, pcBoxes()) { onNodeWithText("BAG").performClick(); onNodeWithText("POTION").performClick() },
+        // The amount set: the list shows it at once (it kept the old one until the editor was opened again, Discord 1.6.1).
+        Shot("pc-boxes-bag-amount-set", tw, th, td, pcBoxes()) {
+            onNodeWithText("BAG").performClick(); onNodeWithText("POTION").performClick(); mainClock.advanceTimeBy(1000)
+            onNodeWithText("MAX").performClick(); mainClock.advanceTimeBy(1000); onNodeWithText("OK").performClick()
+        },
         Shot("pc-boxes-bag-add", tw, th, td, pcBoxes()) {
             // Taps a moment apart: two quick ones read as a double tap and the second is lost.
             onNodeWithText("BAG").performClick(); onAllNodesWithText("BERRIES")[0].performClick(); mainClock.advanceTimeBy(1000); onNodeWithText("ADD ITEM").performClick()

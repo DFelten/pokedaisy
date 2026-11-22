@@ -456,6 +456,10 @@ class PokeDaisyActivity : Activity() {
     private val tipWildEnds = ArrayDeque<Long>()
     private val hudUpright = androidx.compose.runtime.mutableStateOf(false)
     private val hudClear = androidx.compose.runtime.mutableStateOf(0 to 0)
+    /** Bumped when a savestate loads: the item toast starts its bag baseline over. */
+    private val itemToastReset = androidx.compose.runtime.mutableIntStateOf(0)
+    /** ITEM POPUPS (SETTINGS > COMPANION). */
+    private val itemToastOn = androidx.compose.runtime.mutableStateOf(true)
     private val hudFrame = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)
     /** Where the HUD keeps to while touch controls show held sideways, when the game's own picture gives it no frame
      * (EXPAND): the game's middle columns ([syncHudClear]). */
@@ -949,7 +953,35 @@ class PokeDaisyActivity : Activity() {
                 runOnUiThread { done(r) }
             }
         }
+        // The summary's moves: SetMonData on the party record, so the game re-encrypts it and its checksum follows.
+        override fun canReorderMoves() = !romIsNds && !romIsGameBoy && ::engine.isInitialized && engine.running &&
+            !telemetry.snapshot.value.inBattle && fieldItemSupport()?.fns?.let { it.party != null && it.bagActions } == true
+        override fun reorderMoves(
+            slot: Int, personality: Long, from: Int, to: Int,
+            done: (com.pokedaisy.app.companion.data.MoveOrderResult) -> Unit,
+        ) = onGame(com.pokedaisy.app.companion.data.MoveOrderResult.FAILED, done) { s, calls, busy ->
+            com.pokedaisy.app.companion.data.reorderMoves(s.fns, slot, personality, from, to, busy, calls)
+        }
         override fun canSwapBox() = com.pokedaisy.app.companion.data.boxSwapFor(fieldItemSupport()?.fns, com.pokedaisy.app.companion.data.activeNativeConfig) != null
+
+        override fun canSortBoxes() = canSwapBox()
+
+        override fun sortBoxes(done: (com.pokedaisy.app.companion.data.BoxSortResult) -> Unit) {
+            val inBattle = telemetry.snapshot.value.inBattle
+            // Sorted by Pokédex number: the ROM's species -> dex table, read here (off the emu thread) before the sort needs it.
+            val dex = com.pokedaisy.app.companion.data.activeNativeConfig?.pokedex
+            Thread {
+            val dexOf: (Int) -> Int = dex?.let { t -> { s: Int -> com.pokedaisy.app.companion.data.PokedexSource.nationalOf(t, s) } } ?: { 0 }
+            dexOf(1)
+            onGame(com.pokedaisy.app.companion.data.BoxSortResult.FAILED, { r ->
+                done(if (inBattle && r == com.pokedaisy.app.companion.data.BoxSortResult.NOT_NOW) com.pokedaisy.app.companion.data.BoxSortResult.IN_BATTLE else r)
+            }) { s, calls, busy ->
+                val fns = com.pokedaisy.app.companion.data.boxSwapFor(s.fns, com.pokedaisy.app.companion.data.activeNativeConfig)
+                    ?: return@onGame com.pokedaisy.app.companion.data.BoxSortResult.FAILED
+                com.pokedaisy.app.companion.data.sortBoxes(s.fns, fns, busy, calls, dexOf)
+            }
+            }.start()
+        }
 
         override fun swapBox(
             box: Int, slot: Int, boxPersonality: Long, partySlot: Int, partyPersonality: Long,
@@ -2002,6 +2034,11 @@ class PokeDaisyActivity : Activity() {
             battleRetryOn = on
         }
         override fun answerBattleRetry(retry: Boolean) = this@PokeDaisyActivity.answerBattleRetry(retry)
+        override val itemPopups get() = Prefs(this@PokeDaisyActivity).itemPopups
+        override fun setItemPopups(on: Boolean) {
+            Prefs(this@PokeDaisyActivity).itemPopups = on
+            itemToastOn.value = on
+        }
         override val lastBallButton get() = Prefs(this@PokeDaisyActivity).lastBallButton
         override fun setLastBallButton(on: Boolean) {
             Prefs(this@PokeDaisyActivity).lastBallButton = on
@@ -2782,6 +2819,7 @@ class PokeDaisyActivity : Activity() {
         repelRefillOn = Prefs(this).repelRefill
         shinyAlertOn = Prefs(this).shinyAlert
         lastBallOn = Prefs(this).lastBallButton
+        itemToastOn.value = Prefs(this).itemPopups
         battleRetryOn = Prefs(this).battleRetry
         retryTaken = false
         retryLost = false
@@ -2909,7 +2947,11 @@ class PokeDaisyActivity : Activity() {
                     Hotkeys.Action.UNDO_LOAD -> if (ok) tr("Undid load") else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Nothing to undo")
                     else -> ""
                 }
-                if (msg.isNotEmpty()) runOnUiThread { showHud(msg) }
+                val reloaded = ok && (action == Hotkeys.Action.LOAD_STATE || action == Hotkeys.Action.UNDO_LOAD)
+                if (msg.isNotEmpty() || reloaded) runOnUiThread {
+                    if (reloaded) itemToastReset.intValue++
+                    if (msg.isNotEmpty()) showHud(msg)
+                }
             }
             onSlotChanged = { slot ->
                 val text = if (states?.exists(slot) == true) tr("Slot {0} (used)", slot) else tr("Slot {0} (empty)", slot)
@@ -4952,7 +4994,7 @@ class PokeDaisyActivity : Activity() {
                 // POKéMON PICTURES (Crystal): the HUD's party shows the front pictures too.
                 com.pokedaisy.app.companion.ui.LocalPokemonPictures provides snap.pokedex?.tables?.takeIf {
                     // The switch's version first: Prefs isn't Compose state, and a flip should show at once.
-                    com.pokedaisy.app.companion.ui.PokemonPicturesSwitch.version >= 0 &&
+                    com.pokedaisy.app.companion.PokemonPicturesSwitch.version >= 0 &&
                         hudPrefs.pokemonPictures && com.pokedaisy.app.companion.ui.pokemonPicturesOffered(snap.game)
                 },
             ) { com.pokedaisy.app.companion.ui.FieldHud(
@@ -4971,6 +5013,11 @@ class PokeDaisyActivity : Activity() {
                 onTap = { com.pokedaisy.app.companion.FeatureTips.used(TipId.HUD) },
                 onPanel = { hudPanelOpen.value = it },
             ) }
+            // MOVE ADVICE: the card over the game while its summary asks which move to forget (also in a battle or a menu,
+            // where the HUD itself is hidden).
+            if (hudOn.value && !hudUpright.value && snap.moveLearning != null && hudStyle.value.shows(com.pokedaisy.app.companion.FieldHudPart.MOVE_ADVICE)) {
+                com.pokedaisy.app.companion.ui.MoveLearningHudCard(snap, hudStyle.value)
+            }
             // A DS game: the game's own buttons over the end of its text box, driven like Gen 3's menus.
             if (romIsNds) {
                 // A DS battle's menu is drawn by the floating window's view, under its dim ([buildDsStageViews]).
@@ -5040,6 +5087,11 @@ class PokeDaisyActivity : Activity() {
                         kotlinx.coroutines.delay(500)
                     }
                 }
+                // ITEM POPUPS: a bag gain, a small card top centre (clear of the HUD's corners and the area's name).
+                if (itemToastOn.value) com.pokedaisy.app.companion.ui.ItemToastHost(
+                    snap.items, snap.connected, snap.hasData, itemToastReset.intValue, snap.frameCounter,
+                    androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.TopCenter).padding(top = clearTop + 8.dp),
+                )
                 if (!companionSeen) {
                     val clearBottom = with(androidx.compose.ui.platform.LocalDensity.current) { hudClear.value.second.toDp() }
                     com.pokedaisy.app.companion.ui.AchievementIndicators(
