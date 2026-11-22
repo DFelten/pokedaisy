@@ -135,11 +135,14 @@ static void test_handheld_navigation(void) {
     assert(pd_ui_settings_control(&ui, 1, false));
     assert(ui.settingsNavId == HIT_SETTING + SETTING_HUD);
     assert(pd_ui_settings_control(&ui, 20, false));
-    // The last row: LANGUAGE, under the game's own rows; TAB BAR above it.
+    // The last row: LANGUAGE (APP, the app's last group). Above it CONTROLS' HUD CURSOR BUTTON, QUICK MENU BUTTON and QUICK
+    // MENU, then COMPANION's TAB BAR (the app's groups and order).
     assert(ui.settingsNavId == HIT_SETTING + SETTING_LANGUAGE && ui.settingsScroll > 0);
     pd_ui_draw(&ui, &canvas, &game, &snap, &host);
     assert(has(&ui, ui.settingsNavId));
     assert(pd_ui_settings_control(&ui, -1, false));
+    assert(ui.settingsNavId == HIT_SETTING + SETTING_HUD_BTN);
+    assert(pd_ui_settings_control(&ui, -3, false));
     assert(ui.settingsNavId == HIT_SETTING + SETTING_TAB_BAR);
     pd_ui_draw(&ui, &canvas, &game, &snap, &host);
     assert(has(&ui, ui.settingsNavId));
@@ -179,7 +182,12 @@ int main(void) {
         pd_ui_draw(&ui,&c,&game,&snap,&host);assert(has(&ui,HIT_SETTING+SETTING_SCREEN));
         host.hideScreenMode=true;pd_ui_draw(&ui,&c,&game,&snap,&host);
         assert(!has(&ui,HIT_SETTING+SETTING_SCREEN));
-        for(int row=SETTING_FF;row<=SETTING_LEAVE;row++)assert(has(&ui,HIT_SETTING+row));
+        // FAST-FORWARD heads the list (FF / SPEED, the app's first group); SAVE / LOAD / LEAVE end it, under a line (as
+        // the app's CLOSE GAME / RESTART GAME), shown once it's scrolled down.
+        assert(has(&ui,HIT_SETTING+SETTING_FF));
+        ui.settingsScroll=10000;pd_ui_draw(&ui,&c,&game,&snap,&host);
+        for(int row=SETTING_SAVE_STATE;row<=SETTING_LEAVE;row++)assert(has(&ui,HIT_SETTING+row));
+        ui.settingsScroll=0;pd_ui_draw(&ui,&c,&game,&snap,&host);
         for(int i=0;i<ui.hitCount;i++)if(ui.hits[i].id==HIT_SETTING+SETTING_FF) {
             struct pd_hit h=ui.hits[i];pd_ui_touch(&ui,h.x+1,h.y+1,true);pd_ui_touch(&ui,h.x+1,h.y+1,false);break;
         }
