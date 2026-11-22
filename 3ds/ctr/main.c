@@ -36,6 +36,7 @@
 #include "../core/pd_save.h"
 #include "../core/pd_settings.h"
 #include "../core/pd_style.h"
+#include "../core/pd_tr.h"
 #include "../host/pd_session.h"
 #include "../host/pd_mixer.h"
 #include "../emu/pd_armgba.h"
@@ -174,7 +175,9 @@ static ndspWaveBuf* audio_next(void) {
 }
 
 static void audio_send(ndspWaveBuf* b) {
-    DSP_FlushDataCache(b->data_pcm16, AUDIO_SAMPLES * 2 * sizeof(int16_t));
+    // The kernel's own cache clean: DSP_FlushDataCache is a request to the dsp service, and on an Old 3DS XL each
+    // one waited ~5 ms for its answer, a third of every frame (gpSP's profiler, 2026-11-21).
+    svcStoreProcessDataCache(CUR_PROCESS_HANDLE, (u32) b->data_pcm16, AUDIO_SAMPLES * 2 * sizeof(int16_t));
     ndspChnWaveBufAdd(0, b);
 }
 
@@ -450,6 +453,10 @@ static void core1_back(void) {
     host_log("core 1 back to the screens: %s", gpu_core1_back() ? "drawn on core 1" : "drawn on the game's core");
 }
 
+// The New 3DS gave a CIA launch less than the 124 MB it asks for (host_cia_short_of_memory).
+#define CIA_SHORT_WHY "the 3DS gave PokeDaisy less memory than it asks for this time. Close PokeDaisy from the HOME Menu and " \
+                      "start it again"
+
 static void game_failed(const char* title, const char* why) {
     host_lent_code_release();
     core1_back();
@@ -624,7 +631,8 @@ static bool run_game(const char* file) {
 
     // Every core reads the game into the buffer reserved at start: without it nothing can run, so say so plainly.
     if (!host_rom_arena_ready()) {
-        game_failed("The game didn't start:", "there was no room for the 32 MB game buffer when PokeDaisy started");
+        game_failed("The game didn't start:", host_cia_short_of_memory() ? CIA_SHORT_WHY
+                                                                          : "there was no room for the 32 MB game buffer when PokeDaisy started");
         return true;
     }
     struct VFile* rom = VFileOpen(romPath, O_RDONLY);
@@ -644,23 +652,31 @@ static bool run_game(const char* file) {
     size_t nameLen = strlen(file);
     bool gbName = (nameLen > 3 && !strcasecmp(file + nameLen - 3, ".gb")) || (nameLen > 4 && !strcasecmp(file + nameLen - 4, ".gbc"));
     bool armgba = !gbName && pd_armgba_wants(header, sizeof(header));
-    // The game's GBA CORE (X in the library): MGBA plays it on mGBA, GPSP on gpSP; AUTO and ARMGBA on armGBA.
-    bool gpsp = armgba && pickedCore == PD_CORE_GPSP;
+    // The game's GBA CORE (X in the library): MGBA plays it on mGBA, GPSP on gpSP, ARMGBA on armGBA. AUTO is armGBA on a
+    // New 3DS and gpSP on an Old 3DS with room for a 32 MB game (the CIA): there armGBA ran FireRed at 36-42 FPS, gpSP
+    // drawn with the game at 52-55 (the dev build's Old 3DS mode, 2026-11-20). The .3dsx's 16 MB buffer keeps armGBA.
+    bool autoGpsp = pickedCore == PD_CORE_AUTO && !host_is_new_3ds() && host_rom_arena_size() >= (32u << 20);
+    bool gpsp = armgba && (pickedCore == PD_CORE_GPSP || autoGpsp);
     if (armgba && (pickedCore == PD_CORE_MGBA || gpsp)) armgba = false;
 #ifdef PD_DEV
-    // The dev build's switch for comparing the cores: sdmc:/pokedaisy-dev/armgba/mgba runs GBA games on mGBA.
+    // The dev build's switch for comparing the cores: sdmc:/pokedaisy-dev/armgba/mgba runs GBA games on mGBA (also
+    // where AUTO would have picked gpSP).
     {
         FILE* useMgba = fopen("sdmc:" WORK_DIR "/mgba", "rb");
         if (useMgba) {
             fclose(useMgba);
             armgba = false;
+            gpsp = false;
         }
     }
 #endif
     // An Old 3DS's .3dsx has room for a 16 MB game buffer only (host.c's host_rom_arena_init): say what to do instead.
     if (host_rom_arena_size() < (32u << 20)) {
         const char* why = NULL;
-        if ((size_t) rom->size(rom) > host_rom_arena_size())
+        // A CIA launch the New 3DS gave less memory than it asked for: a restart from HOME, not the CIA, is the way out.
+        if (host_cia_short_of_memory() && ((size_t) rom->size(rom) > host_rom_arena_size() || gpsp))
+            why = CIA_SHORT_WHY;
+        else if ((size_t) rom->size(rom) > host_rom_arena_size())
             why = "this game is bigger than 16 MB, and the .3dsx only gets room for a 16 MB game on this 3DS. Install the CIA "
                   "to play it";
         else if (gpsp)
@@ -836,7 +852,7 @@ static bool run_game(const char* file) {
     session.host = (struct pd_host_info) { .count = 2 };
     session.host.labels[0] = "FILE";
     snprintf(session.host.values[0], sizeof(session.host.values[0]), "%s", file);
-    session.host.labels[1] = "SPEED";
+    session.host.labels[1] = "SPEED|emulation";
     snprintf(session.host.values[1], sizeof(session.host.values[1]), "-");
     pd_session_start(&session, core, gpu_game_buffer(), &settings, &files);
     if (pickedSha1[0] && strcasecmp(session.game.sha1, pickedSha1))
@@ -1623,6 +1639,20 @@ static bool pick_rom(char* out, size_t outLen) {
     return running && picked;
 }
 
+// LANGUAGE's AUTO without a game (or with a game in a language the menus don't have): the console's own language.
+static void read_system_language(void) {
+    u8 lang = CFG_LANGUAGE_EN, region = CFG_REGION_EUR;
+    if (R_SUCCEEDED(cfguInit())) {
+        CFGU_GetSystemLanguage(&lang);
+        CFGU_SecureInfoGetRegion(&region);
+        cfguExit();
+    }
+    pd_tr_set_system(lang == CFG_LANGUAGE_FR ? PD_LANG_FR : lang == CFG_LANGUAGE_DE ? PD_LANG_DE :
+                     lang == CFG_LANGUAGE_IT ? PD_LANG_IT : lang == CFG_LANGUAGE_ES ? PD_LANG_ES :
+                     // A US console's Portuguese is Brazil's (the app's ofLocale: pt-BR), a European one's Portugal's.
+                     lang == CFG_LANGUAGE_PT ? (region == CFG_REGION_USA ? PD_LANG_BR : PD_LANG_PT) : PD_LANG_EN);
+}
+
 int main(void) {
     // First, while the heap is whole: the 32 MB every game is read into.
     bool arena = host_rom_arena_init();
@@ -1641,7 +1671,12 @@ int main(void) {
              (unsigned long) (linearSpaceFree() >> 10), (unsigned long) (host_heap_free() >> 10));
     // The New 3DS's 804 MHz mode (a no-op on the original models; off for the dev build's Old 3DS stand-in).
     if (!host_old_3ds_stand_in()) osSetSpeedupEnable(true);
+    read_system_language();
     mLogSetDefaultLogger(&silentLogger);
+    // The CIA asks a New 3DS for its 124 MB mode (pokedaisy.rsf), which some launches didn't get: what this one got.
+    if (host_is_new_3ds() && !envIsHomebrew())
+        host_log("New 3DS CIA: asked for 124 MB, got %lu KiB (%s)", (unsigned long) osGetMemRegionSize(MEMREGION_APPLICATION) >> 10,
+                 host_cia_short_of_memory() ? "LESS: a restart from HOME may get it" : "as asked");
     if (!arena || host_rom_arena_size() < (32u << 20)) {
         char report[256];
         host_memory_report(report, sizeof report);

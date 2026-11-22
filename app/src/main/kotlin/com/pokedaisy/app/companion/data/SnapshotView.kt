@@ -61,6 +61,11 @@ data class MonView(
     val renamed: Boolean get() = nickname != null && !nickname.equals(name, ignoreCase = true)
 }
 
+/** An egg's hatch species' name for the summary's "EGG / name"; null when only the egg's placeholder id is known. */
+val MonView.eggHatchName: String? get() =
+    if (!isEgg || species <= 0 || species == SPECIES_EGG_VANILLA || species == activeNativeConfig?.eggSpecies) null
+    else speciesName(species)
+
 /** [total] EXP; this level starts at [levelStart], the next at [nextLevel] (== levelStart at Lv100). */
 data class ExpProgress(val total: Long, val levelStart: Long, val nextLevel: Long) {
     val toNext: Long get() = (nextLevel - total).coerceAtLeast(0)
@@ -272,6 +277,8 @@ data class SnapshotView(
     val playerGender: Int = -1,
     /** The CARD tab's data; null = the game gets no card. */
     val trainerCard: TrainerCardInfo? = null,
+    /** The game's move-learning summary is up: that party member is choosing a move to forget. */
+    val moveLearning: MoveLearningPrompt? = null,
     /** Non-null = the copy saved beside the savestate this launch resumed ([SnapshotCache]), shown
      * until the live game's data is in: the data tabs the game had then (DEX / GUIDE / CARD, whose
      * ROM tables aren't cached - they wait on LOADING). */
@@ -364,6 +371,15 @@ fun partyMonView(m: Mon): MonView {
         }
     }
     val isEgg = m.isEgg || isVanillaEgg(m.species)
+    // The egg keeps its hatch species for types / stats; its icon is the egg's, not the hatched Pokémon's.
+    val eggIcon = when {
+        isEgg && activeGame.isGen5 -> NdsArt.BLACK_EGG
+        isEgg && originHeartGold -> NdsArt.ORIGIN_EGG
+        isEgg && activeGame.isDsGame -> 494
+        isEgg && !activeGame.isGameBoyGame && !activeGame.isDsGame ->
+            activeNativeConfig?.eggSpecies?.takeIf { it != 0 } ?: SPECIES_EGG_VANILLA
+        else -> m.species
+    }
     return MonView(
         species = m.species,
         name = if (isEgg) gameCase("Egg") else speciesName(m.species),
@@ -373,13 +389,12 @@ fun partyMonView(m: Mon): MonView {
         maxHp = m.maxHp,
         status = statusLabel(m.status),
         types = monTypes(type1, type2),
-        // A DS game's eggs keep their species: the egg's own icon is NdsArt's 494.
-        iconAsset = if (m.shiny && !isEgg) shinyIconAsset(m.species) else spriteAsset("pokemon", if (isEgg && activeGame.isGen5) NdsArt.BLACK_EGG else if (isEgg && originHeartGold) NdsArt.ORIGIN_EGG else if (isEgg && activeGame.isDsGame) 494 else m.species),
+        iconAsset = if (m.shiny && !isEgg) shinyIconAsset(m.species) else spriteAsset("pokemon", eggIcon),
         genderSymbol = m.genderSymbol,
         moves = moves,
         exp = if (isEgg) null else expProgress(m.species, m.level, m.exp),
         personality = m.personality,
-        stats = if (isEgg) null else m.stats,
+        stats = m.stats,
         heldItemId = m.heldItem,
         nickname = if (isEgg) null else m.nickname,
         shiny = m.shiny && !isEgg,
@@ -613,6 +628,7 @@ fun buildSnapshotView(t: Telemetry): SnapshotView {
         mapType = t.mapType,
         playerGender = t.playerGender,
         trainerCard = t.trainerCard,
+        moveLearning = t.moveLearning,
     )
 }
 
