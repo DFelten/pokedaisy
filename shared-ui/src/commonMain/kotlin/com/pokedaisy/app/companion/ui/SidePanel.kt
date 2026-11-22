@@ -10,12 +10,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -208,6 +216,12 @@ fun SidePanelHost(
         val (ww, wh) = if (fullScreen) constraints.maxWidth to constraints.maxHeight else companionWindowSize(constraints.maxWidth, constraints.maxHeight, outer.density)
         // The window's chrome (frame, X, legend) at the companion's own scale.
         val chrome = Density(sidePanelDensity(ww, wh), outer.fontScale)
+        // No room beside the window (a nearly square screen like the Retroid Pocket Classic's, or the full screen): the
+        // X goes at the end of the companion's top bar, as tall as it ([WithTopBarClose]), not over the bar's battery
+        // and clock. A tab with no bar at its top still gets it on the window's corner.
+        val closePx = (24 * chrome.gbaPixelPx()).roundToInt()
+        val roomBeside = (constraints.maxWidth - ww) / 2 >= closePx + closePx / 2
+        val topClose = remember(onClose) { TopBarClose(onClose) }
         Layout(
             content = {
                 CompositionLocalProvider(
@@ -217,9 +231,12 @@ fun SidePanelHost(
                     LocalFocusStarts provides starts.takeIf { window },
                     // L / R at the tab bar's ends: the buttons that step it.
                     LocalCompanionWindow provides window,
+                    LocalTopBarClose provides topClose.takeIf { window && (fullScreen || !roomBeside) },
                 ) {
                     WindowFrame(window && !fullScreen, Modifier.onFocusChanged { hasFocus = it.hasFocus }) { SidePanelCompanion(compactText, content) }
-                    if (window) WindowCloseButton(onClose, if (fullScreen) FULL_SCREEN_CLOSE_ALPHA else 1f)
+                    if (window && (roomBeside && !fullScreen || topClose.takers == 0)) {
+                        WindowCloseButton(onClose, if (fullScreen) FULL_SCREEN_CLOSE_ALPHA else 1f)
+                    }
                 }
             },
         ) { measurables, constraints ->
@@ -242,6 +259,39 @@ fun SidePanelHost(
                 }
             }
         }
+    }
+}
+
+/**
+ * The window's X for the companion's top bar (the status bar, SETTINGS' title): [SidePanelHost] hands it over through
+ * [LocalTopBarClose] when the window has no room beside it, and draws its own on the corner only while no bar has taken it
+ * ([takers]: a bar counts itself while it's composed).
+ */
+class TopBarClose(val onClose: () -> Unit) {
+    var takers by mutableIntStateOf(0)
+}
+
+/** The X a top bar may carry at its end ([WithTopBarClose]); null outside the window, or with room beside it. */
+val LocalTopBarClose = staticCompositionLocalOf<TopBarClose?> { null }
+
+/**
+ * A top bar of the companion ([bar], given the modifier that sizes it): with the window's X to carry
+ * ([LocalTopBarClose]), the bar narrowed and the X right of it, a square as tall as the bar. Nothing under it takes
+ * the X again.
+ */
+@Composable
+fun WithTopBarClose(bar: @Composable (Modifier) -> Unit) {
+    val close = LocalTopBarClose.current
+    if (close == null) { bar(Modifier); return }
+    DisposableEffect(close) {
+        close.takers++
+        onDispose { close.takers-- }
+    }
+    val u = rememberGbaTextMetrics().u
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        CompositionLocalProvider(LocalTopBarClose provides null) { bar(Modifier.weight(1f)) }
+        Spacer(Modifier.width(u * 3))
+        WindowCloseButton(close.onClose, modifier = Modifier.fillMaxHeight().aspectRatio(1f), shadow = false)
     }
 }
 
@@ -276,18 +326,23 @@ private const val FULL_SCREEN_CLOSE_ALPHA = 0.55f
 
 /** The window's X: a white framed square like the side panel's tabs, top right of the window (the DS touch window's too). */
 @Composable
-internal fun WindowCloseButton(onClose: () -> Unit, alpha: Float = 1f, description: String = tr("Close the companion")) {
+internal fun WindowCloseButton(
+    onClose: () -> Unit, alpha: Float = 1f, description: String = tr("Close the companion"),
+    /** Its size: 24 GBA pixels square, or a top bar's height ([WithTopBarClose]). */
+    modifier: Modifier? = null,
+    /** A drop shadow under it, over the game; none beside a top bar, which has none (the user's call). */
+    shadow: Boolean = true,
+) {
     val m = rememberGbaTextMetrics()
     val u = m.u
     val noRipple = remember { MutableInteractionSource() }
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(u * 24, u * 24)
+        modifier = (modifier ?: Modifier.size(u * 24, u * 24))
             .alpha(alpha)
             .drawBehind {
                 val px = u.toPx()
-                drawPixelRoundRect(Color.Black.copy(alpha = 0.25f), Offset(0f, 2 * px), size, radius = 3 * px, step = px)
+                if (shadow) drawPixelRoundRect(Color.Black.copy(alpha = 0.25f), Offset(0f, 2 * px), size, radius = 3 * px, step = px)
                 drawLayeredBox(OptionColors.titleLayers.inPx(px), OptionColors.titleFill, radius = 3 * px)
             }
             .semantics { contentDescription = description }

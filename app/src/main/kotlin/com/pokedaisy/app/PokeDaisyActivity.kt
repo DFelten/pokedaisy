@@ -556,6 +556,32 @@ class PokeDaisyActivity : Activity() {
     }
     private fun gbField() = gameBoyFields()?.field
 
+    @Volatile private var gbBoxCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
+    /** This game session's save file backed up before its first Game Boy box move (reset on [loadRom]). */
+    @Volatile private var gbBoxesBackedUp = false
+
+    /** The Game Boy game's PC moves (Crystal's current box), their code checked in the cart once per game. */
+    private fun gbBoxField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? {
+        val field = gbField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine ?: return null
+        val calls = field.boxCalls ?: return null
+        gbBoxCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
+        if (!::engine.isInitialized || !engine.running) return null
+        val ok = runCatching { calls.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        Log.i("pokedaisy", "Game Boy PC moves (${field.javaClass.simpleName}): ${if (ok) "code found" else "code not found"}")
+        gbBoxCache = field to ok
+        return field.takeIf { ok }
+    }
+
+    /** The save file backed up (whatever SAVE BACKUPS says): before a Game Boy box change or this session's first move. */
+    private fun backUpSaveNow(r: File): Boolean {
+        val save = SavesLocation.saveFor(this, Prefs(this), r)
+        return runCatching {
+            val newest = SaveBackups.list(save).firstOrNull()
+            SaveBackups.snapshot(save, force = true) != null ||
+                newest != null && SaveBackups.sameSave(newest.readBytes(), save.readBytes())
+        }.getOrDefault(false).also { if (!it) Log.w("pokedaisy", "Game Boy box: no backup of $save") }
+    }
+
     /** A DS game whose Repel steps the reader knows (Platinum, HeartGold / SoulSilver, Black). */
     private fun dsRepelKnown(): Boolean {
         val game = telemetry.snapshot.value.game
@@ -638,8 +664,33 @@ class PokeDaisyActivity : Activity() {
         ) = sharedItemUse.onGame(com.pokedaisy.app.companion.data.MoveOrderResult.FAILED, done) { s, calls, busy ->
             com.pokedaisy.app.companion.data.reorderMoves(s.fns, slot, personality, from, to, busy, calls)
         }
+        override fun canSwapBox() = gbBoxField() != null || !romIsGameBoy && partyActions.canSwapBox()
 
-        override fun canSortBoxes() = partyActions.canSwapBox()
+        override fun boxMovesCurrentOnly() = romIsGameBoy
+
+        override fun canChangeBox() = gbBoxField() != null
+
+        override fun changeBox(box: Int, done: (com.pokedaisy.app.companion.data.BoxChangeResult) -> Unit) {
+            val field = gbBoxField()
+            val r = rom
+            if (field == null || r == null || !::engine.isInitialized || !engine.running) return done(com.pokedaisy.app.companion.data.BoxChangeResult.FAILED)
+            if (telemetry.snapshot.value.inBattle) return done(com.pokedaisy.app.companion.data.BoxChangeResult.IN_BATTLE)
+            // The game saves itself here: the save file is backed up first (whatever SAVE BACKUPS says), or nothing happens.
+            Thread {
+                if (!backUpSaveNow(r)) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.BoxChangeResult.NO_BACKUP) }
+                engine.requestFieldItemJob(false) { calls, busy ->
+                    val res = if (busy) com.pokedaisy.app.companion.data.BoxChangeResult.NOT_NOW
+                    else runCatching { field.changeBox(calls, box) }
+                        .getOrElse { Log.e("pokedaisy", "Game Boy box change failed", it); com.pokedaisy.app.companion.data.BoxChangeResult.FAILED }
+                    // A rewind past it would put the old wCurBox back over the new box in SRAM (the next save loses a box).
+                    if (!busy) MgbaCore.pkRewindDrop()
+                    Log.i("pokedaisy", "Game Boy box change to $box: $res")
+                    runOnUiThread { done(res) }
+                }
+            }.start()
+        }
+
+        override fun canSortBoxes() = !romIsGameBoy && partyActions.canSwapBox()
 
         override fun sortBoxes(done: (com.pokedaisy.app.companion.data.BoxSortResult) -> Unit) {
             val inBattle = telemetry.snapshot.value.inBattle
@@ -654,6 +705,54 @@ class PokeDaisyActivity : Activity() {
                     val fns = com.pokedaisy.app.companion.data.boxSwapFor(s.fns, com.pokedaisy.app.companion.data.activeNativeConfig)
                         ?: return@onGame com.pokedaisy.app.companion.data.BoxSortResult.FAILED
                     com.pokedaisy.app.companion.data.sortBoxes(s.fns, fns, busy, calls, dexOf)
+                }
+            }.start()
+        }
+
+        override fun swapBox(
+            box: Int, slot: Int, boxPersonality: Long, partySlot: Int, partyPersonality: Long,
+            done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
+        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.swap(g, cfg, slot, boxPersonality, partySlot, partyPersonality) }
+        else partyActions.swapBox(box, slot, boxPersonality, partySlot, partyPersonality, done)
+
+        override fun depositToBox(
+            partySlot: Int, partyPersonality: Long, box: Int,
+            done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
+        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.deposit(g, cfg, partySlot, partyPersonality) }
+        else partyActions.depositToBox(partySlot, partyPersonality, box, done)
+
+        override fun withdrawFromBox(
+            box: Int, slot: Int, boxPersonality: Long,
+            done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
+        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.withdraw(g, cfg, slot, boxPersonality) }
+        else partyActions.withdrawFromBox(box, slot, boxPersonality, done)
+
+        /** A Game Boy PC move ([move], Gen2BoxSwap.kt) on the emu thread, where the bag's PC could open now. Crystal's
+         * boxes are cart SRAM: a move reaches the save file within frames, the party only at the next in-game save, so
+         * the save file is backed up before this session's first move, or nothing moves. */
+        private fun onGbBoxes(
+            done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
+            move: (com.pokedaisy.app.companion.data.Gen2BoxCalls, com.pokedaisy.app.companion.data.GameCalls,
+                   com.pokedaisy.app.companion.data.Gen2Config) -> com.pokedaisy.app.companion.data.BoxSwapResult,
+        ) {
+            val field = gbBoxField()
+            val r = rom
+            val inBattle = telemetry.snapshot.value.inBattle
+            if (field == null || r == null || !::engine.isInitialized || !engine.running) return done(com.pokedaisy.app.companion.data.BoxSwapResult.FAILED)
+            if (inBattle) return done(com.pokedaisy.app.companion.data.BoxSwapResult.IN_BATTLE)
+            Thread {
+                if (!gbBoxesBackedUp) {
+                    gbBoxesBackedUp = backUpSaveNow(r)
+                    if (!gbBoxesBackedUp) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.BoxSwapResult.FAILED) }
+                }
+                engine.requestFieldItemJob(false) { calls, busy ->
+                    val res = if (busy) com.pokedaisy.app.companion.data.BoxSwapResult.NOT_NOW
+                    else runCatching { field.boxMove(calls) { c, cfg -> move(c, calls, cfg) } }
+                        .getOrElse { Log.e("pokedaisy", "Game Boy box move failed", it); com.pokedaisy.app.companion.data.BoxSwapResult.FAILED }
+                    // A rewind past the move would undo it in RAM but not in SRAM: a Pokemon doubled or lost.
+                    if (!busy) MgbaCore.pkRewindDrop()
+                    Log.i("pokedaisy", "Game Boy box move: $res")
+                    runOnUiThread { done(res) }
                 }
             }.start()
         }
@@ -1040,7 +1139,31 @@ class PokeDaisyActivity : Activity() {
     /** The loaded ROM is a Game Boy / Color cart (no GBA header, no L/R). */
     @Volatile private var romIsGameBoy = false
 
-    private fun followerSupported() = ::engine.isInitialized && engine.playback.followerSupported
+    private fun followerSupported() = ::engine.isInitialized && (gbFollower() || engine.playback.followerSupported)
+
+    /** FOLLOWER on Crystal: the party lead's Pokédex number (Crystal's species ids are its Pokédex numbers; null: none). */
+    @Volatile private var gbFollowerLead: Int? = null
+
+    /** FOLLOWER on Crystal (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
+    private fun gbFollower() = romIsGameBoy && com.pokedaisy.app.companion.data.activeGame ==
+        com.pokedaisy.app.companion.data.GameKind.CRYSTAL && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
+
+    /** Crystal's party icon for a Pokédex number (two 16 x 16 frames, rebuilt from the cart into rom-art), or null. */
+    private fun gbFollowerIcon(dex: Int): IntArray? {
+        val f = com.pokedaisy.app.companion.data.RomArt.dir(filesDir.toOkioPath()) /
+            "${com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS}/$dex.png"
+        val bytes = runCatching { okio.FileSystem.SYSTEM.read(f) { readByteArray() } }.getOrNull() ?: return null
+        val img = com.pokedaisy.app.companion.data.RomArt.Image.decodePng(bytes) ?: return null
+        return img.argb.takeIf { img.width == 16 && img.height == 32 }
+    }
+
+    /** The engine's Crystal follower: the lead's icon while the row is on (the GBA follower is the shared GameFollower's). */
+    private fun applyGbFollower() {
+        if (!::engine.isInitialized) return
+        val n = gbFollowerLead
+        val icon = if (Prefs(this).follower && gbFollower() && n != null) gbFollowerIcon(n) else null
+        if (!(icon contentEquals engine.gbFollower)) engine.gbFollower = icon
+    }
 
     /** DAY AND NIGHT works here: a GBA game (not a Game Boy or DS one) that doesn't change with the time itself. */
     /** HIDE BATTLE MENU works in this game: FireRed, LeafGreen, Emerald, Ruby or Sapphire's engine (their text box, pk_wide.c's
@@ -1277,9 +1400,11 @@ class PokeDaisyActivity : Activity() {
             lookSession.selectText(style)
         }
         override val followerSupported get() = followerSupported()
-        override val followerReady get() = ::engine.isInitialized && engine.playback.follower?.ready == true
+        override val followerReady get() = gbFollower() || ::engine.isInitialized && engine.playback.follower?.ready == true
         override fun setFollower(on: Boolean) {
             if (::engine.isInitialized) engine.playback.follower?.set(on)
+            // Crystal's follower is the activity's (pk_gb_follow.c): the choice saved here too, then its icon sent.
+            if (romIsGameBoy) { Prefs(this@PokeDaisyActivity).follower = on; applyGbFollower() }
         }
         override val dayNightSupported get() = dayNightSupported()
         override val rivalLookSupported get() = lookSession.rivalSupported
@@ -1633,6 +1758,21 @@ class PokeDaisyActivity : Activity() {
             remember(v) { { v.isShown } }
         }
         lookGender.launch { telemetry.snapshot.collect { lookSession.observe(it) } }
+        // FOLLOWER on Crystal: the party lead's icon, from the cart's first scan (Gen2Art), which may land after the party read.
+        lookGender.launch {
+            com.pokedaisy.app.companion.data.RomArt.updates.collect {
+                if (romIsGameBoy) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { applyGbFollower() }
+            }
+        }
+        lookGender.launch {
+            telemetry.snapshot.collect { snap ->
+                if (!romIsGameBoy) return@collect
+                val lead = snap.party.firstOrNull { m -> !m.isEgg }?.species?.takeIf { it in 1..251 }
+                if (lead == gbFollowerLead) return@collect
+                gbFollowerLead = lead
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { applyGbFollower() }
+            }
+        }
         // HIDE BATTLE MENU follows the game being detected, the companion and the second screen.
         lookGender.launch {
             while (true) {
@@ -1773,6 +1913,8 @@ class PokeDaisyActivity : Activity() {
                 else -> false
             }
         }
+        // A DS game keeps its X / Y, which a device with no L3 / R3 gives the QUICK MENU / COMPANION elsewhere.
+        Hotkeys.dsOwnKeys = { if (romIsNds) input.dsOwnKeys() else emptySet() }
         displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         inputManager = getSystemService(Context.INPUT_SERVICE) as android.hardware.input.InputManager
 
@@ -1908,6 +2050,9 @@ class PokeDaisyActivity : Activity() {
         syncExpShareAchievements(false)
         if (::engine.isInitialized) engine.shiny.observe(null)
         syncShinyAchievements()
+        gbBoxCache = null
+        gbBoxesBackedUp = false
+        gbFollowerLead = null
         Prefs(this).let { p ->
             expandOfferUp.value = wideGame != WideScreen.OFF && !p.expandGameOfferSeen &&
                 p.gameAspect != com.pokedaisy.app.companion.GameAspect.WIDE
@@ -2623,6 +2768,7 @@ class PokeDaisyActivity : Activity() {
         stopListeningForFold()
         gameTips.detach()
         Hotkeys.dsActive = { false }
+        Hotkeys.dsOwnKeys = { emptySet() }
         endN3ds()
         // Gone while the game slept (onPause held it): stop it now, as a close would have.
         if (::engine.isInitialized && engine.running) {

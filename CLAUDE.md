@@ -293,6 +293,11 @@ pixel, so there its text was as large for the screen as on a GBA): `LocalTextSte
    rewritten to `Icons.Filled`, a stale incremental cache once faked "Unresolved
    reference" errors — delete `build/kotlin` if errors look impossible).
 
+**Its colours are PokeDaisy's blues since 2026-11-22** (the user's call: `retroStylePalette`, #3D6FE0; `themedStylePalette` moves them
+to a THEME's hue, `Color.rehued`; `uiStylePalette`'s SUMMARY MINT keeps the sampled teal for reference). Top-screen headers (library,
+TOOLS, Settings, every tool: `LibraryHeaderBar`, `ToolHeader`) and Settings HOME's footer (`AppAboutBar`) are full-width bands on the
+screen's edges; a panel's title inside a window is a band across its top (`PanelHeader`, `LocalWindowInset`). The library header drops
+HELP and narrows its buttons when they'd cut POKéDAISY short (`compactActions`).
 **The menus' look is SUMMARY MINT** (2026-11-12, the user's pick of eight looks tried; `theme/UiStyle.kt`, `UiStyles`,
 `OptionColors.style`): the OPTION pieces below drawn over a `UiStylePalette` - Emerald's summary pages (sampled headless): a teal
 header joined to a mint list window (`OptionTitleWindow(joined)`, `WindowGap`), green section bands (`StyledGroupTitle`), banded
@@ -1270,6 +1275,14 @@ SCREEN > DISPLAY OPTIONS (STATUS BAR, SHADERS, OVERLAY, an upright phone's COMPA
 opens from DISPLAY OPTIONS, so BACK returns there (`Page.parent`, SettingsActivity's `goBack`). A row that opens a page of its own (not a pick-list) sets
 `SettingRow.opensPage`: a pixel chevron (`PixelIcons.chevronRight`) at its right end. Sub-pages and pick-lists get the title window's back arrow (`onBack`). The tabs not in the tab bar used to sit under the
 list as a second row of chips (TOOLS); they're the MORE tab now.
+**QUALITY OF LIFE** (companion GAMEPLAY, 2026-11-22, the user's call): WILD ENCOUNTERS, INSTANT TEXT, AUTO-RUN, RUN INDOORS, AUTO REFILL,
+REUSABLE TMS, NO HMS NEEDED, EXP SHARE, LEVEL CAP, TRADE EVOS, SHINY ODDS, SHINY ALERT, BOSS RETRY, LOW HP BEEP and FIELD POISON live on
+`Page.QOL`: `homeRows` still builds them, `withQolPage` moves them off HOME (`QOL_ROWS`; the row counts those changed from the game's
+own way, `QOL_UNUSED`). A new helper of that kind goes in `QOL_ROWS`. **D-pad after a tap** (`FocusJump`, SettingRows.kt): a focus
+asked for in touch mode doesn't take, so a tap parks a target - `target` (a group tab's first row, a pick-list's choice: the press
+lands there) or `from` (the last thing tapped, set by `soundClickable` / `menuClickable` / the library's cards: the press moves on
+from it) - which SettingsActivity / LibraryActivity / `sendFocusKey` take on the next D-pad press, after `leaveTouchMode`. L / R step
+the top-screen Settings' group tabs (`LocalGroupStep`). The launcher's pieces take no Compose focus (`LocalKeyDriven`).
 **DESCRIPTIONS / GROUP TABS** (2026-11-15, the first two rows of HOME on both screens, NEW tag `SETTINGS_LOOK`; `SettingsLook` in SettingRows.kt, Compose state, `Prefs.settingsDescriptions` / `settingsTabs` loaded by PokeDaisyApp): `GroupedRows` drops rows' subtitles (a featured group's tagline stays) and its `GroupTabs`. ui-preview resets both before each shot.
 **Settings round (2026-11-01, the user's calls)**: the top-screen Settings draws a step smaller (`LocalTextStep` -1 for the whole
 activity); rows whose label says it all carry no subtitle; a row can be a slider (`SettingRow.slider` -> `SettingSlider` /
@@ -1749,6 +1762,12 @@ BACK tap (`companionBackTap`); connect / disconnect show a HUD notice. Not tried
 Analog L2 / R2 (Retroid's triggers send no keys) are the BUTTON_L2 / R2 keys past half way (`triggerKey`): hotkeys first
 (their switch and bindings), then the game's controls, and the top-screen rebind capture takes them too. They used to be
 hard-wired to FF / slow-mo holds, which ignored HOTKEYS OFF and any rebinding (issue #54).
+**No L3 / R3** (`Hotkeys.noStickClicks`, found by PokeDaisyApp at start: the Retroid Pocket Classic by name - its driver lists
+stick buttons it doesn't have - else a gamepad without them): QUICK MENU on Y and COMPANION on X by default (an old file's L3 QUICK
+MENU moves too), START 2 / SELECT 2 lose X / Y (`GbaControls`' `x_y_to_hotkeys` mark); a DS game keeps its X / Y (`Hotkeys.dsOwnKeys`:
+a hotkey made only of them is off there). The companion window's X sits at the end of its top bar, as tall as it, where the window
+has no room beside it (`WithTopBarClose`, `LocalTopBarClose`). The HUD stays up through a map's name sign while FREE FLIGHT flies
+(`GameSession.observeField(flying)`).
 **Device BACK**: a BACK tap (from either screen - the Presentation forwards every key to
 `PokeDaisyActivity`) is the companion's back; a hold still leaves the game. Anything that
 opens over / inside a tab registers `CompanionBackHandler` (`companion/ui/CompanionBack.kt`,
@@ -2465,7 +2484,12 @@ window's cost 160 ms a frame) - `pixelClip` (smooth while LIGHT COMPANION is on)
 instead of clipping. Composition must not touch the disk or a system service (`MonArt.available` is cached, `secondScreen()` kept half a
 second): SETTINGS' getters run row by row. The touch pad (and, with LIGHT COMPANION, the companion window) sits in an offscreen layer
 the renderer keeps. A view over the stage keeps a fixed size (`WRAP_CONTENT` with changing text re-measured the whole stage). The
-`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet).
+`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet). **The Retroid Pocket Classic** (2026-11-22): a pixel
+staircase drawn as a path is painted into a mask on the CPU and uploaded (77 MB of them in SETTINGS): `drawPixelRoundRect` / `Frame`
+draw rows of rectangles (`Stairs`, PixelShapes.kt) - never `drawPath` a big staircase. `DaisyBackdrop` moves 4 times a second in an
+offscreen layer (at 60 it repainted the screen behind still menus). SETTINGS' home lists are lazy (`GroupedRows(groupTabs, lazy)`;
+ui-preview turns that off, `SettingsLook.lazyHome`). Its firmware names a missing `telephony-common.jar` in BOOTCLASSPATH, so no app
+there gets AOT code (`pm art dump`: `verify`): everything runs interpreted / JIT, one thread maxed at ~12% total CPU.
 **Crash reports** (`CrashReports.kt`, Firebase Crashlytics + -ndk): opt-in, off by default (manifest
 `firebase_crashlytics_collection_enabled=false`); on via Settings > CRASH REPORTS or the Library's one-time ask
 (`CrashReports.shouldAsk`: third app open - `PokeDaisyApp` counts process starts - and 48 h after
@@ -2518,8 +2542,9 @@ fails while it's stale: `UPDATE_SITE_DATA=1 ./gradlew :app:testDebugUnitTest --t
 **Website** (`website/`, Astro, static, Node 22.23.4+): its ROM check (`src/lib/compat.js`) runs
 `isSupported`'s rules in the browser over that JSON - the ROM is never uploaded; keep the two in step.
 Deployed to Firebase Hosting (`pokedaisy.com`) by `.github/workflows/website.yml` **only with an app release**
-(the user's rule: the site never lists games the downloadable APK can't run): a published, non-pre-release release
-deploys its tag's `website/`; pushes to main only build + test; a manual run takes a release tag (redeploy / roll
+(the user's rule: the site never lists games the downloadable APK can't run, except the newest beta's, tagged BETA with how
+to get it - the user's call, 2026-11-22: `src/lib/beta.js` / `betaRelease.js`, read from the beta's tag on GitHub at build
+time): a published, non-pre-release release deploys its tag's `website/`, a published pre-release the newest release's again; pushes to main only build + test; a manual run takes a release tag (redeploy / roll
 back). A site-only fix therefore waits for the next release (or a manual run of the current tag after moving it); the checker's ASK FOR SUPPORT opens the feedback form, prefilled through its #hash.
 The site's game matrix is README's Supported games table; a row of all "—" means detected but no companion yet,
 so the export lists it under `inProgress` - off the matrix, and "in progress" in the ROM check (none since R.O.W.E.

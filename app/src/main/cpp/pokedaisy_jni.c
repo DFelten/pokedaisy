@@ -38,6 +38,7 @@
 #include "pk_wide.h"
 #include "pk_flight.h"
 #include "pk_gb_field.h"
+#include "pk_gb_follow.h"
 #include "pk_gb_audio.h"
 #include "pk_host.h"
 #include "nds/pk_nds.h"
@@ -223,6 +224,35 @@ Java_com_pokedaisy_app_MgbaCore_pkFollowerSet(JNIEnv* env, jobject thiz, jbyteAr
     (*env)->ReleaseByteArrayElements(env, pal, p, JNI_ABORT);
 }
 
+// FOLLOWER on Crystal (pk_gb_follow.c): whether the cart is one it knows, its two frames (512 ARGB ints, null = none), shown or not.
+JNIEXPORT jboolean JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkGbFollowRuns(JNIEnv* env, jobject thiz) {
+    return g.core && pk_gb_follow_runs(g.core) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkGbFollowSet(JNIEnv* env, jobject thiz, jintArray argb) {
+    if (!argb || (*env)->GetArrayLength(env, argb) != 512) {
+        pk_gb_follow_set(NULL);
+        return;
+    }
+    jint* p = (*env)->GetIntArrayElements(env, argb, NULL);
+    pk_gb_follow_set((const uint32_t*) p);
+    (*env)->ReleaseIntArrayElements(env, argb, p, JNI_ABORT);
+}
+
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkGbFollowShow(JNIEnv* env, jobject thiz, jboolean on) {
+    pk_gb_follow_show(on);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkGbFollowInfo(JNIEnv* env, jobject thiz) {
+    char buf[200];
+    pk_gb_follow_info(buf, sizeof buf);
+    return (*env)->NewStringUTF(env, buf);
+}
+
 // RIDE ON: the vehicle's views + palette (null = none) and whether it's drawn. Emu thread.
 JNIEXPORT void JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkRideSet(JNIEnv* env, jobject thiz, jbyteArray frames, jbyteArray pal, jint width) {
@@ -392,6 +422,13 @@ Java_com_pokedaisy_app_MgbaCore_pkWideScene(JNIEnv* env, jobject thiz) {
 JNIEXPORT void JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkSetRewind(JNIEnv* env, jobject thiz, jint entries) {
     pk_api_set_rewind(entries);
+}
+
+// REWIND's buffer emptied (its size kept): after a change the save file holds that a rewind would undo in RAM alone
+// (Crystal's box moves: its boxes are cart SRAM, which rewind states leave out). Emu thread.
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkRewindDrop(JNIEnv* env, jobject thiz) {
+    pkRewindReset();
 }
 
 // While [on], each frame steps back through the REWIND buffer instead of forward.
@@ -672,7 +709,7 @@ Java_com_pokedaisy_app_MgbaCore_pkWriteBytes(JNIEnv* env, jobject thiz, jlong ad
 // B = `b`, HL = `hl` and comes back to `at`. The emu thread, between frames - Yellow's PC anywhere (GbField.kt).
 JNIEXPORT jboolean JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkGbCallAt(JNIEnv* env, jobject thiz, jint at, jint fn, jint a, jint b, jint hl) {
-    return pk_api_gb_call_at((uint16_t) at, (uint16_t) fn, (uint8_t) a, (uint8_t) b, (uint16_t) hl) ? JNI_TRUE : JNI_FALSE;
+    return pk_api_gb_call_at((uint32_t) at, (uint16_t) fn, (uint8_t) a, (uint8_t) b, (uint16_t) hl) ? JNI_TRUE : JNI_FALSE;
 }
 
 // Same as pkReadBytes, from the FF-music render core: FfMusicRenderer

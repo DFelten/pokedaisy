@@ -247,7 +247,7 @@ fun PcBoxesScreen(
         state.detail?.let { at -> MonPage(state, at, m, small, icons, sprites, onClose = { state.detail = null }) }
         state.missing?.let { v -> if (state.detail == null) MissingPage(state, v, m, small, onGet = { onGet?.invoke(it) }, onClose = { state.missing = null }) }
         if (state.detail == null && state.missing == null) Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("SAVE EDITOR"), m, trailing = gameName, onBack = { if (!saving) state.back(onBack) })
+            ToolHeader(tk("SAVE EDITOR"), "EDIT", m, trailing = gameName, onBack = { if (!saving) state.back(onBack) })
             Spacer(Modifier.height(m.u * 4))
             Row(horizontalArrangement = Arrangement.spacedBy(m.u * 4), verticalAlignment = Alignment.CenterVertically) {
                 // A DS save has its POKéMON page only (its bag and trainer come later).
@@ -363,7 +363,7 @@ internal fun PartyStrip(
     val party = data.partyMons
     OptionListWindow(m, modifier) {
         Column(Modifier.fillMaxWidth()) {
-            title?.let { GbaText(it, OptionColors.groupTitleText, OptionColors.groupTitleShadow, m, Modifier.padding(horizontal = m.u * 4)) }
+            title?.let { PanelHeader(it, m) }
             val rows = (Gen3SaveData.PARTY_SIZE + columns - 1) / columns
             for (row in 0 until rows) Row(Modifier.fillMaxWidth().height(if (icons != null) m.lineHeight * 2.6f else m.lineHeight * 2 + m.u * 6)) {
                 for (col in 0 until columns) {
@@ -518,7 +518,7 @@ internal fun BoxGrid(
     val boxName = data.boxName(box)
     OptionListWindow(cell, modifier) {
         Column(Modifier.fillMaxSize()) {
-            title?.let { GbaText(it, OptionColors.groupTitleText, OptionColors.groupTitleShadow, cell, Modifier.padding(horizontal = m.u * 4)) }
+            title?.let { PanelHeader(it, cell) }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(m.u * 4)) {
                 OptionButton(null, m, onClick = { onBox((box + data.boxCount - 1) % data.boxCount) },
                     pixelIcon = PixelIcons.cursorLeft, modifier = Modifier.semantics { contentDescription = tr("Previous box") })

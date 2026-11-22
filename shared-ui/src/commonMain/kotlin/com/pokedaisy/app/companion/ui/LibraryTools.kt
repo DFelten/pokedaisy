@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -51,7 +52,7 @@ fun ToolsPage(
     /** The dual-screen launcher's cursor (its keys move it, not Compose focus), -1 = none; [onColumns] gets the layout's columns. */
     cursor: Int = -1, onColumns: (Int) -> Unit = {},
 ) {
-    val gap = m.u * 8
+    val gap = m.u * if (LocalShortScreen.current) 4 else 8
     SubcomposeLayout(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(contentPadding)) { c ->
         val g = gap.roundToPx()
         val cols = ((c.maxWidth + g) / (TOOL_CARD_MIN.roundToPx() + g)).coerceIn(1, tools.size.coerceAtLeast(1))
@@ -76,20 +77,22 @@ private fun ToolCard(tool: LibraryTool, m: GbaTextMetrics, small: GbaTextMetrics
     val interaction = remember { MutableInteractionSource() }
     val focused = interaction.collectIsFocusedAsState().value || cursor
     val label = tr(tool.label)
+    val short = LocalShortScreen.current
     Row(
         Modifier
             .fillMaxWidth()
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
             .drawBehind { drawLayeredBox(OptionColors.titleLayers.inPx(u.toPx()), if (focused) OptionColors.rowSelected else OptionColors.titleFill, radius = 3 * u.toPx()) }
+            .keyDrivenFocus()
             .soundClickable(interactionSource = interaction, indication = null, onClick = tool.open)
             .semantics { contentDescription = label }
-            .padding(u * 6),
+            .padding(u * if (short) 4 else 6),
         verticalAlignment = Alignment.Top,
     ) {
         // The icon on the card itself, no well round it, at the rail's grain (not two GBA pixels an icon pixel: the user's call).
         ToolIcons.of(tool.id)?.let { icon ->
-            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * TOOL_ICON))
-            Spacer(Modifier.width(u * 6))
+            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * if (short) SHORT_ICON else TOOL_ICON))
+            Spacer(Modifier.width(u * if (short) 4 else 6))
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,6 +127,8 @@ fun LibraryNav(
     onPick: (LibrarySection) -> Unit,
 ) {
     val u = m.u
+    // A short screen (the RG DS): the icons alone, smaller, so the rail is a strip and the games get the width.
+    val short = LocalShortScreen.current
     val items = @Composable { weighted: Modifier ->
         for (s in LibrarySection.entries) {
             NavItem(s, s == open, m, small, badge = toolsBadge && s == LibrarySection.TOOLS, weighted, cursor = s == cursor) { onPick(s) }
@@ -139,14 +144,15 @@ fun LibraryNav(
         // As wide as its widest label needs (SETTINGS was cut short on the Thor, whose 2.3 density makes the pixel font
         // wider in dp than ui-preview's 2.5), at least NAV_RAIL_ITEM.
         Column(
-            modifier.fillMaxHeight().width(IntrinsicSize.Max).then(frame).padding(start = u * 5, end = u * 10, top = top, bottom = u * 5),
-            verticalArrangement = Arrangement.spacedBy(u * 4),
+            modifier.fillMaxHeight().width(IntrinsicSize.Max).then(frame)
+                .padding(start = u * (if (short) 3 else 5), end = u * (if (short) 6 else 10), top = top, bottom = u * 5),
+            verticalArrangement = Arrangement.spacedBy(u * if (short) 3 else 4),
         ) {
-            items(Modifier.widthIn(min = NAV_RAIL_ITEM).fillMaxWidth())
+            items(Modifier.widthIn(min = if (short) 0.dp else NAV_RAIL_ITEM).fillMaxWidth())
         }
     } else {
         Row(
-            modifier.fillMaxWidth().then(frame).padding(start = u * 5, end = u * 5, top = u * 10, bottom = u * 5),
+            modifier.fillMaxWidth().then(frame).padding(start = u * 5, end = u * 5, top = u * (if (short) 6 else 10), bottom = u * (if (short) 3 else 5)),
             horizontalArrangement = Arrangement.spacedBy(u * 4),
         ) {
             items(Modifier.weight(1f))
@@ -163,14 +169,21 @@ private fun NavItem(
     val interaction = remember { MutableInteractionSource() }
     val focused = interaction.collectIsFocusedAsState().value || cursor
     val label = tr(section.label)
+    val short = LocalShortScreen.current
     Box(
         modifier
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
             // No frame round the items (the user's call): the open one is a white block, the others the window's own grey.
-            .drawBehind { if (on) drawPixelRoundRect(OptionColors.titleFill, radius = 3 * u.toPx(), step = u.toPx()) }
+            .drawBehind {
+                if (!on) return@drawBehind
+                // Without its red label (a short screen) the open one needs the white block's frame to stand out.
+                if (short) drawLayeredBox(OptionColors.titleLayers.inPx(u.toPx()), OptionColors.rowSelected, radius = 3 * u.toPx())
+                else drawPixelRoundRect(OptionColors.titleFill, radius = 3 * u.toPx(), step = u.toPx())
+            }
+            .keyDrivenFocus()
             .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
             .semantics { contentDescription = label }
-            .padding(vertical = u * 5, horizontal = u * 3),
+            .padding(vertical = u * if (short) 4 else 5, horizontal = u * 3),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -181,12 +194,13 @@ private fun NavItem(
             }
             // Finer than the label's GBA pixel (PixelArt keeps whole screen pixels per icon pixel): a 32-pixel drawing, not a
             // blown-up 9-pixel glyph.
-            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * NAV_ICON))
-            Spacer(Modifier.height(u * 3))
-            GbaText(label, if (on) OptionColors.value else OptionColors.label, if (on) OptionColors.valueShadow else OptionColors.labelShadow, small, bold = gameBoldLabels())
+            PixelArt(icon.bitmap, icon.palette, Modifier.size(u * if (short) SHORT_ICON else NAV_ICON))
+            // No room for the names on a short screen; the icons say it (the open one sits in the white block).
+            if (!short) Spacer(Modifier.height(u * 3))
+            if (!short) GbaText(label, if (on) OptionColors.value else OptionColors.label, if (on) OptionColors.valueShadow else OptionColors.labelShadow, small, bold = gameBoldLabels())
         }
         if (badge) Box(
-            Modifier.align(Alignment.TopEnd).size(u * 5)
+            Modifier.align(Alignment.TopEnd).size(u * if (short) 4 else 5)
                 .drawBehind { drawPixelRoundRect(OptionColors.newBadge, radius = size.width / 2, step = u.toPx()) },
         )
     }
@@ -197,6 +211,10 @@ private val TOOL_CARD_MIN: Dp = 300.dp
 
 /** The rail's / bar's icons, in GBA pixels (their 32 pixels a whole screen pixel or two each). */
 private const val NAV_ICON = 36
+
+/** The rail's and tool cards' icons on a short screen ([LocalShortScreen]), in GBA pixels: the 32-pixel drawings a screen
+ * pixel each on the RG DS. */
+private const val SHORT_ICON = 16
 
 /** A tool card's icon, in GBA pixels: about the name and its two lines under it (three screen pixels an icon pixel on a 1080p screen). */
 private const val TOOL_ICON = 36
@@ -652,4 +670,34 @@ internal object ToolIcons {
         ),
         mapOf('k' to OUTLINE, 'h' to Color(0xFFD8E0EC), 's' to Color(0xFFA4AEC0), 'd' to Color(0xFF6E788C)),
     )
+}
+
+/**
+ * A tool's header (SAVE EDITOR, TRADE, PAL PARK...): the app's own header band along the screen's top edge, the whole
+ * width ([LibraryHeaderBar], the user's call, 2026-11-22), its title a step larger with the tool's icon before it, and
+ * [trailing] (whose saves) at its right end. Put inside a page with a [margin] all round, it reaches past it to the
+ * screen's edges, and leaves a gap under it.
+ */
+@Composable
+fun ToolHeader(
+    title: String, toolId: String?, m: GbaTextMetrics, trailing: String? = null, onBack: (() -> Unit)? = null,
+    margin: androidx.compose.ui.unit.Dp = 16.dp,
+) {
+    val big = rememberGbaTextMetrics(1.5f)
+    val gap = m.u * 4
+    LibraryHeaderBar(
+        title, big, onBack = onBack, logo = false,
+        leading = toolId?.let { id -> {
+            ToolIcons.of(id)?.let { PixelArt(it.bitmap, it.palette, Modifier.size(big.lineHeight * 1.15f)) }
+        } },
+        modifier = Modifier.layout { measurable, constraints ->
+            val extra = margin.roundToPx()
+            val w = constraints.maxWidth + 2 * extra
+            val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
+            // Placed over the page's margin (left, right and top), its height counted from the page's top edge, plus a gap.
+            layout(constraints.maxWidth, (placeable.height - extra + gap.roundToPx()).coerceAtLeast(0)) { placeable.place(-extra, -extra) }
+        },
+    ) {
+        trailing?.let { GbaText(it, OptionColors.headerText, OptionColors.headerShadow, m, maxLines = 1) }
+    }
 }

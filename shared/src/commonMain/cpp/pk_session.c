@@ -25,6 +25,7 @@
 #include "pk_host.h"
 #include "pk_ra_memory.h"
 #include "pk_gb_field.h"
+#include "pk_gb_follow.h"
 #include "pk_perf.h"
 #include "pk_rewind.h"
 #include "pk_savevf.h"
@@ -338,6 +339,7 @@ bool pk_api_init(const char* romPath, const char* savePath) {
 
     pthread_rwlock_wrlock(&pk_coreLock);
     g.core = core;
+    pk_gb_follow_forget();   // FOLLOWER checks the new cart on its first frame
     g.romFileVf = romFileVf;
     g.romFile = romFile;
     g.romFileSize = romFileSize;
@@ -434,8 +436,8 @@ int64_t pk_api_call(uint32_t fn, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t
     return (int64_t) result;
 }
 
-bool pk_api_gb_call_at(uint16_t at, uint16_t fn, uint8_t a, uint8_t b, uint16_t hl) {
-    return pk_gb_call_at(g.core, at, fn, a, b, hl, 2);
+bool pk_api_gb_call_at(uint32_t at, uint16_t fn, uint8_t a, uint8_t b, uint16_t hl) {
+    return pk_gb_call_at(g.core, at, fn, a, b, hl, at > 0xFFFFu ? 4 : 2);
 }
 
 int pk_api_cheats_apply(const char* text) {
@@ -632,6 +634,7 @@ void pk_api_run_frame(void) {
     if (g.rewindEntries > 0) {
         if (g.rewinding) {
             // Back one entry, then that frame runs to draw it. At the oldest one, stand still.
+            pk_gb_follow_lost();   // FOLLOWER: rewound frames scroll backwards, no walk to follow
             if (!pk_rewind_restore(&g.rewind, g.core)) {
                 g.audioAvail = 0;
                 return;
@@ -652,6 +655,8 @@ void pk_api_run_frame(void) {
         bool wideNext = g.wide && g.wideCrc && g.viewW > 0 && g.viewH > 0 && g.viewW <= PK_WIDE_MAX_VIEW_W &&
             g.viewH <= PK_WIDE_MAX_VIEW_H && pkWideFrameFits() && !g.wideSkipNext;
         if (sizeof(color_t) == 4) pk_flight_draw((uint32_t*) g.video, (int) g.vw, (int) g.vh, (int) g.vw, !wideNext);
+    } else if (sizeof(color_t) == 4) {
+        pk_gb_follow_frame(g.core, (uint32_t*) g.video, (int) g.vw, (int) g.vh, (int) g.vw);   // FOLLOWER on Crystal
     }
     pkDrainAudio();
     // WIDE: only with a game it knows and a window set. 32-bit colour, like the screen's upload.
@@ -725,6 +730,16 @@ static bool pk_gb_read_banked(struct mCore* core, uint32_t addr, uint8_t* dst, i
     }
     struct GB* gb = core->board;
     uint32_t bank = addr >> 16, off = addr & 0xFFFFu;
+    if (bank >= 0x10u) {
+        // The cart's battery RAM, bank (B - 0x10)'s A000-BFFF (Gen2Reader's cartRam): Gen 2 keeps its PC boxes there.
+        size_t at = (size_t) (bank - 0x10u) * 0x2000u + (off - 0xA000u);
+        if (off < 0xA000u || off + (uint32_t) len > 0xC000u || !gb->memory.sram || at + (size_t) len > gb->sramSize) {
+            memset(dst, 0, (size_t) len);
+        } else {
+            memcpy(dst, gb->memory.sram + at, (size_t) len);
+        }
+        return true;
+    }
     if (bank > 7 || off < 0xD000u || off + (uint32_t) len > 0xE000u || !gb->memory.wram) {
         memset(dst, 0, (size_t) len);
     } else {

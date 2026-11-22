@@ -158,6 +158,8 @@ class SettingsActivity : ComponentActivity() {
     private val touchBack = com.pokedaisy.app.companion.ui.CompanionBack()
     /** HOME's scroll, kept while a sub-page is open so BACK returns to the same rows. */
     private val homeScroll = androidx.compose.foundation.ScrollState(0)
+    /** HOME's list position (it's lazy), kept the same way. */
+    private val homeList = androidx.compose.foundation.lazy.LazyListState()
     /** HOME has put the focus on its first setting (once: coming back from a sub-page keeps where it was). */
     private var homeFocused = false
     /** HOME's first setting, and whether anything on HOME has the focus: a D-pad press with nothing focused goes there
@@ -183,12 +185,44 @@ class SettingsActivity : ComponentActivity() {
         }
         val dpad = event.keyCode == KeyEvent.KEYCODE_DPAD_UP || event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
             event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        // L / R: the previous / next group tab (the user's call), its first row focused.
+        if ((event.keyCode == KeyEvent.KEYCODE_BUTTON_L1 || event.keyCode == KeyEvent.KEYCODE_BUTTON_R1) && !overlays.isOpen) {
+            val step = groupStep.step
+            if (step != null) {
+                if (event.action == KeyEvent.ACTION_DOWN && step(if (event.keyCode == KeyEvent.KEYCODE_BUTTON_L1) -1 else 1)) {
+                    com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row -> leaveTouchMode(this); runCatching { row.requestFocus() } }
+                }
+                return true
+            }
+        }
+        // A group tab tapped, or a pick-list opened by a tap: this press lands on the row they meant, out of touch mode
+        // (a focus asked for in touch mode doesn't take, and the press went to GAMES on the rail).
+        if (dpad && event.action == KeyEvent.ACTION_DOWN) {
+            com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row ->
+                leaveTouchMode(this)
+                if (runCatching { row.requestFocus() }.isSuccess) return true
+            }
+            // The thing last tapped: focus it, and this press moves on from there.
+            com.pokedaisy.app.companion.ui.FocusJump.takeFrom()?.let { tapped ->
+                leaveTouchMode(this)
+                if (runCatching { tapped.requestFocus() }.isSuccess && homeHasFocusAfterTap()) return super.dispatchKeyEvent(event)
+            }
+        }
         if (dpad && event.action == KeyEvent.ACTION_DOWN && screen == Screen.HOME && !homeHasFocus && !overlays.isOpen) {
             val first = homeFirstRow
-            if (first != null && runCatching { first.requestFocus() }.isSuccess) return true
+            if (first != null) {
+                leaveTouchMode(this)
+                if (runCatching { first.requestFocus() }.isSuccess) return true
+            }
         }
         return super.dispatchKeyEvent(event)
     }
+
+    /** After focusing a tapped thing: true when something on the page took it (else HOME's first row should). */
+    private fun homeHasFocusAfterTap(): Boolean = screen != Screen.HOME || homeHasFocus || window.currentFocus?.hasFocus() == true
+
+    /** L / R's way to the HOME list's group tabs. */
+    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** This screen's width / height - the top screen's, for the ASPECT preview. */
     private var screenAspect by mutableFloatStateOf(16f / 9f)
 
@@ -269,6 +303,7 @@ class SettingsActivity : ComponentActivity() {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.pokedaisy.app.companion.ui.LocalTextStep provides -1,
                     com.pokedaisy.app.companion.ui.LocalOverlayStack provides overlays,
+                    com.pokedaisy.app.companion.ui.LocalGroupStep provides groupStep,
                 ) { Root() }
             } }
         }
@@ -327,13 +362,14 @@ class SettingsActivity : ComponentActivity() {
             if (tab && wide) LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
                     com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = true, nm, ns, toolsBadge = toolsNew,
-                    top = 16.dp, onPick = ::pickSection,
+                    top = com.pokedaisy.app.companion.ui.libraryMargin, onPick = ::pickSection,
                 )
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
-            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp)) {
+            // The header along the screen's top edge and HOME's footer along its bottom, both full width (the library's
+            // and TOOLS' look); the page between them keeps its margins.
                 if (tab && screen == Screen.HOME) LibraryLook { nm, _ ->
-                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP })
+                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
                 } else {
                 com.pokedaisy.app.companion.ui.AppPageTitle(
                     title = when (screen) {
@@ -370,8 +406,10 @@ class SettingsActivity : ComponentActivity() {
                         capture.cancel()
                         goBack()
                     },
+                    docked = true,
                 )
                 }
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 when (screen) {
                     Screen.HOME -> HomeScreen(m)
                     Screen.SPEED -> SubRowsScreen(m) { speedRows() }
@@ -402,6 +440,7 @@ class SettingsActivity : ComponentActivity() {
                     Screen.COOP_RELAY -> coop.RelayPage(m, small)
                 }
             }
+            if (screen == Screen.HOME) com.pokedaisy.app.companion.ui.AppAboutBar(BuildConfig.VERSION_NAME, m, ::openUrl)
             if (tab && !wide) LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
                     com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = false, nm, ns, toolsBadge = toolsNew, onPick = ::pickSection,
@@ -947,6 +986,17 @@ class SettingsActivity : ComponentActivity() {
                 prefs.libraryFileNames = !prefs.libraryFileNames
                 revision++
             },
+            // Under a game's name in the list: its file's name where two games' names match (the default), the whole path, or none.
+            SettingRow(
+                tk("GAME PATHS"), com.pokedaisy.app.companion.LibraryPathMode.of(prefs.libraryPathMode).label,
+                subtitle = "What shows under a game's name in the list",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.GAME_PATHS),
+            ) {
+                val modes = com.pokedaisy.app.companion.LibraryPathMode.entries
+                selector = Selector(tk("GAME PATHS"), modes.map { it.label }, com.pokedaisy.app.companion.LibraryPathMode.of(prefs.libraryPathMode).label) { l ->
+                    prefs.libraryPathMode = modes.first { it.label == l }.id
+                }
+            },
             // Leaves out what the companion can't read; the games stay in their folders.
             SettingRow(
                 tk("SUPPORTED ONLY"), onOff(prefs.librarySupportedOnly), subtitle = "Hide games the companion can't read",
@@ -1050,8 +1100,8 @@ class SettingsActivity : ComponentActivity() {
             if (runCatching { firstRow.requestFocus() }.isSuccess) homeFocused = true
         }
         com.pokedaisy.app.companion.ui.AppSettingsHome(rows, m, searchQuery, { searchQuery = it },
-            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll,
-            firstRowFocus = firstRow, footer = { AboutFooter(m) })
+            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll, lazy = homeList,
+            firstRowFocus = firstRow)
     }
 
     /** SHADERS: what the game is drawn through, like the companion's page; the game picks it up on resume. */
@@ -1323,9 +1373,6 @@ class SettingsActivity : ComponentActivity() {
         }.start()
     }
 
-    /** Version, author, Buy Me a Coffee, the Discord and the repo, under the settings list. */
-    @Composable
-    private fun AboutFooter(m: GbaTextMetrics) = com.pokedaisy.app.companion.ui.AppAboutFooter(BuildConfig.VERSION_NAME, m, ::openUrl)
 
     private fun openUrl(url: String) {
         runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }

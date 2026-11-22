@@ -306,16 +306,16 @@ fun MonDetailScreen(
         val evolve = evolves != null && evoTarget != null && !showLearn
         val centers = center != null && centerMon != null && !showLearn
         if (stats || learns || evolve || centers || reorders != null || onDeposit != null || onWithdraw != null) {
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val size = SummaryButtonSize
-                if (stats) TextNavButton(if (showStats) tr("MOVES") else tr("STATS"), StatsPurple, StatsPurpleDark, size) { showStats = !showStats }
-                if (learns) TextNavButton(if (showLearn) tr("MOVES") else tr("LEARN"), SuggestGold, SuggestGoldDark, size) { showLearn = !showLearn; learnPick = 0 }
-                if (evolve) TextNavButton(tr("EVOLVE"), EvolveBlue, EvolveBlueDark, size, badge = itemUse?.evolveBadge) { evolveResult = null; evolveAsk = true }
-                if (reorders != null) TextNavButton(tr("SWITCH"), RunBlue, RunBlueDark, size, badge = partyBadge) { switching = true }
-                if (centers) TextNavButton(tr("CENTER"), CenterPink, CenterPinkDark, size) { centerMenu = true }
-                if (onDeposit != null) TextNavButton(tr("DEPOSIT"), PcGreen, PcGreenDark, size, badge = partyBadge, onClick = onDeposit)
-                if (onWithdraw != null) TextNavButton(tr("WITHDRAW"), PcGreen, PcGreenDark, size, badge = partyBadge, onClick = onWithdraw)
+            val actions = buildList {
+                if (stats) add(SummaryAction(if (showStats) tr("MOVES") else tr("STATS"), StatsPurple, StatsPurpleDark) { showStats = !showStats })
+                if (learns) add(SummaryAction(if (showLearn) tr("MOVES") else tr("LEARN"), SuggestGold, SuggestGoldDark) { showLearn = !showLearn; learnPick = 0 })
+                if (evolve) add(SummaryAction(tr("EVOLVE"), EvolveBlue, EvolveBlueDark, badge = itemUse?.evolveBadge) { evolveResult = null; evolveAsk = true })
+                if (reorders != null) add(SummaryAction(tr("SWITCH"), RunBlue, RunBlueDark, badge = partyBadge) { switching = true })
+                if (centers) add(SummaryAction(tr("CENTER"), CenterPink, CenterPinkDark) { centerMenu = true })
+                if (onDeposit != null) add(SummaryAction(tr("DEPOSIT"), PcGreen, PcGreenDark, partyBadge, onDeposit))
+                if (onWithdraw != null) add(SummaryAction(tr("WITHDRAW"), PcGreen, PcGreenDark, partyBadge, onWithdraw))
             }
+            SummaryButtons(actions, SummaryButtonSize, m, Modifier.fillMaxWidth().height(SummaryButtonSize))
         }
     }
     Column(Modifier.width(SummaryButtonSize).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -615,6 +615,58 @@ internal fun Separator(m: GbaTextMetrics, modifier: Modifier = Modifier, vertica
             },
     )
 }
+
+/** One of the summary's buttons ([SummaryButtons]): its label, colours and what it does. */
+class SummaryAction(val label: String, val fill: Color, val frame: Color, val badge: String? = null, val onClick: () -> Unit)
+
+/**
+ * The summary's buttons in a row: as many as fit, the rest under a MORE button at the end that opens them as a small
+ * pick-list (the user's call, 2026-11-22: a narrow screen cut the last ones off).
+ */
+@Composable
+fun SummaryButtons(actions: List<SummaryAction>, size: Dp, m: GbaTextMetrics, modifier: Modifier = Modifier) {
+    // Written while measuring: the buttons left out, for MORE's list.
+    val hidden = remember { mutableStateOf<List<SummaryAction>>(emptyList()) }
+    var menu by remember { mutableStateOf(false) }
+    val latest by androidx.compose.runtime.rememberUpdatedState(actions)
+    androidx.compose.ui.layout.SubcomposeLayout(modifier) { constraints ->
+        val gap = 8.dp.roundToPx()
+        val loose = androidx.compose.ui.unit.Constraints(maxHeight = constraints.maxHeight)
+        val buttons = actions.mapIndexed { i, a ->
+            subcompose(i) { TextNavButton(a.label, a.fill, a.frame, size, badge = a.badge, onClick = a.onClick) }.first().measure(loose)
+        }
+        val all = buttons.sumOf { it.width } + gap * (buttons.size - 1).coerceAtLeast(0)
+        var shown = buttons.size
+        var more: androidx.compose.ui.layout.Placeable? = null
+        if (all > constraints.maxWidth && buttons.size > 1) {
+            more = subcompose("more") { TextNavButton(tr("MORE"), MoreGrey, MoreGreyDark, size) { menu = true } }.first().measure(loose)
+            var used = more.width
+            shown = 0
+            while (shown < buttons.size && used + gap + buttons[shown].width <= constraints.maxWidth) { used += gap + buttons[shown].width; shown++ }
+        }
+        val left = actions.drop(shown)
+        if (hidden.value.map { it.label } != left.map { it.label } || hidden.value.size != left.size) hidden.value = left
+        val height = (buttons + listOfNotNull(more)).maxOfOrNull { it.height } ?: 0
+        layout(constraints.maxWidth, height) {
+            var x = 0
+            for (i in 0 until shown) { buttons[i].place(x, (height - buttons[i].height) / 2); x += buttons[i].width + gap }
+            more?.place(x, (height - more.height) / 2)
+        }
+    }
+    if (menu) {
+        // By label: the latest actions' (a list kept from the last layout may hold an old onClick).
+        val options = hidden.value.map { it.label }
+        OptionSelector(
+            tr("MORE"), options, "", { it }, m,
+            onPick = { l -> menu = false; latest.firstOrNull { it.label == l }?.onClick?.invoke() },
+            onDismiss = { menu = false },
+        )
+    }
+}
+
+/** MORE's button: a plain grey. */
+private val MoreGrey = Color(0xFF8A93A6)
+private val MoreGreyDark = Color(0xFF4E5566)
 
 /** TRADE EVOLUTIONS' EVOLVE button: the party menu's field-move blue. */
 private val EvolveBlue = Color(0xFF5878E8)

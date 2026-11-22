@@ -229,7 +229,10 @@ fun setupPath(path: String): String = when {
 fun AppSettingsHome(
     rows: List<SettingRow>, m: GbaTextMetrics, query: String, onQuery: (String) -> Unit,
     modifier: Modifier = Modifier, scroll: ScrollState = rememberScrollState(),
-    firstRowFocus: FocusRequester = remember { FocusRequester() }, footer: @Composable () -> Unit = {},
+    firstRowFocus: FocusRequester = remember { FocusRequester() },
+    /** The home list's position, kept by the caller so BACK from a sub-page returns to the same rows. */
+    lazy: androidx.compose.foundation.lazy.LazyListState? = null,
+    footer: @Composable () -> Unit = {},
 ) {
     val shown = filterRows(rows, query)
     val keyboard = LocalSoftwareKeyboardController.current
@@ -256,12 +259,11 @@ fun AppSettingsHome(
                     modifier = Modifier.padding(horizontal = m.u * 8, vertical = m.u * 4),
                 )
             } else if (query.isBlank()) {
-                GroupedRows(rows, m, cursor = -1, onClick = { rows[it].onClick() }, scroll = scroll, firstRowFocus = firstRowFocus, groupTabs = true)
+                GroupedRows(rows, m, cursor = -1, onClick = { rows[it].onClick() }, scroll = scroll, firstRowFocus = firstRowFocus, groupTabs = true, lazy = lazy)
             } else {
                 GroupedRows(shown, m, cursor = -1, onClick = { shown[it].onClick() }, firstRowFocus = firstRowFocus)
             }
         }
-        Spacer(Modifier.height(m.u * 4))
         footer()
     }
 }
@@ -269,7 +271,17 @@ fun AppSettingsHome(
 /** Application title chrome, shared by global settings on both platforms. */
 @Composable
 fun AppPageTitle(title: String, m: GbaTextMetrics, onBack: (() -> Unit)? = null,
-                 home: Boolean = false, onHelp: () -> Unit = {}) {
+                 home: Boolean = false, onHelp: () -> Unit = {},
+                 /** Along the screen's top edge (the top-screen Settings: [LibraryHeaderBar]), not a window in the page. */
+                 docked: Boolean = false) {
+    if (docked) {
+        if (home) LibraryHeaderBar("POKéDAISY", m) {
+            LibraryHeaderIcon(LibraryIcons.HelpOutline, tr("Help"), m, onClick = onHelp)
+        } else LibraryHeaderBar(title, m, onBack = onBack, logo = false)
+        // The library's and TOOLS' gap under the header (LibraryFrame's headerGap), so the pages line up.
+        Spacer(Modifier.height(m.u * 8))
+        return
+    }
     if (home) {
         OptionTitleWindow("POKéDAISY", m,
             leading = { PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight)) }) {
@@ -286,6 +298,35 @@ fun AppPageTitle(title: String, m: GbaTextMetrics, onBack: (() -> Unit)? = null,
 object AppLinks {
     const val REPO_URL = "https://github.com/lidor30/pokedaisy"
     const val COFFEE_URL = "https://buymeacoffee.com/lidor30g"
+}
+
+/**
+ * Settings HOME's footer docked to the screen's bottom edge, as wide as Settings: the version and the links on a band a
+ * little tinted toward the header, a line along its top.
+ */
+@Composable
+fun AppAboutBar(version: String, m: GbaTextMetrics, onOpenUrl: (String) -> Unit) {
+    val small = rememberGbaTextMetrics(textScale = 1f)
+    val u = m.u
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .drawBehind {
+                drawRect(androidx.compose.ui.graphics.lerp(OptionColors.titleFill, OptionColors.headerFill, if (OptionColors.dark) 0.18f else 0.12f))
+                drawRect(OptionColors.headerLayers.first().first, size = androidx.compose.ui.geometry.Size(size.width, u.toPx()))
+            }
+            .padding(horizontal = 16.dp + u * 4, vertical = u * 8),
+    ) {
+        GbaText(
+            tr("POKéDAISY {0}  ·  by {1}", version, "Lidor Itzhari (@lidor30)"),
+            OptionColors.label, OptionColors.labelShadow, small, modifier = Modifier.weight(1f),
+        )
+        FooterLink(tr("Buy me a coffee"), m, small, Modifier.padding(start = u * 6), { CoffeeCup() }) { onOpenUrl(AppLinks.COFFEE_URL) }
+        GbaText("  ·  ", OptionColors.label, OptionColors.labelShadow, small)
+        FooterLink("Discord", m, small, icon = { DiscordMark() }) { onOpenUrl(Discord.URL) }
+        GbaText("  ·  ", OptionColors.label, OptionColors.labelShadow, small)
+        FooterLink("GitHub", m, small, icon = { GitHubMark() }) { onOpenUrl(AppLinks.REPO_URL) }
+    }
 }
 
 @Composable

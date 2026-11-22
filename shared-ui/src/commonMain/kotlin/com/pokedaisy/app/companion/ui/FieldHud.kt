@@ -39,6 +39,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -1307,11 +1308,12 @@ private fun HudButtons(p: HudParts, vertical: Boolean, framed: Boolean = true, m
         p.touch?.let { openTouch -> add { HudButton(TOUCH_ICON, TOUCH_COLORS, tk("TOUCH"), null, p.m, framed, onClick = openTouch) } }
         // One screen: the side panel's open tab, as one of these buttons while the HUD is up (SidePanel.tabInHud).
         p.companion?.let { openCompanion ->
-            add { HudButton(COMPANION_ICON, mapOf('1' to ink.text), tk("COMPANION"), null, p.m, framed, onClick = openCompanion) }
+            add { HudButton(COMPANION_ICON, mapOf('1' to ink.text), tk("COMPANION"), null, p.m, framed, square = false, onClick = openCompanion) }
         }
     }
     if (vertical) Column(verticalArrangement = Arrangement.spacedBy(u * 3)) { buttons.forEach { it() } }
-    else Row(horizontalArrangement = Arrangement.spacedBy(u * 3)) { buttons.forEach { it() } }
+    // One height for the row: the square buttons', which COMPANION takes too.
+    else Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(u * 3)) { buttons.forEach { it() } }
 }
 
 /** A square button: pixel [icon] over a small label; [badge] a red count on its corner; [inGame] a small arrow in its
@@ -1319,15 +1321,21 @@ private fun HudButtons(p: HudParts, vertical: Boolean, framed: Boolean = true, m
 @Composable
 private fun HudButton(
     icon: List<String>, colors: Map<Char, Color>, label: String, badge: String?, m: GbaTextMetrics, framed: Boolean,
-    inGame: Boolean = false, onClick: () -> Unit,
+    inGame: Boolean = false,
+    /** Square (PC, BAG, WILD...: the user's call, 2026-11-22), else its own width at the row's height (COMPANION). */
+    square: Boolean = true,
+    onClick: () -> Unit,
 ) {
     val u = m.u
     val small = rememberGbaTextMetrics(0.75f)
-    Box {
+    Box(if (square) Modifier else Modifier.fillMaxHeight()) {
         Column(
-            (if (framed) Modifier.hudPanel(u) else Modifier).soundClickable(onClick = onClick)
+            // As wide as it is tall, the icon and label in its middle; or the row's height ([HudButtons]).
+            (if (square) Modifier.hudSquare() else Modifier.fillMaxHeight())
+                .then(if (framed) Modifier.hudPanel(u) else Modifier).soundClickable(onClick = onClick)
                 .widthIn(min = u * 34).padding(horizontal = u * 3).padding(top = u * 4, bottom = u * 4 + hudEdge(u)),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             PixelArt(icon, colors, Modifier.size(u * 16))
             // The label in the room under the icon, with as much under it (not pressed against the button's edge).
@@ -1339,6 +1347,28 @@ private fun HudButton(
         }
         badge?.let { Box(Modifier.align(Alignment.TopEnd).offset(x = u * 3, y = -u * 3)) { OptionBadge(it, m) } }
     }
+}
+
+/** A box as wide as it is tall: the larger of its content's width and height, both ways - its intrinsic size too, so
+ * a row's other buttons ([HudButton]'s `square` false) can take its height. */
+private fun Modifier.hudSquare(): Modifier = this.then(HudSquare)
+
+private object HudSquare : androidx.compose.ui.layout.LayoutModifier {
+    private fun side(m: androidx.compose.ui.layout.IntrinsicMeasurable): Int {
+        val w = m.maxIntrinsicWidth(Constraints.Infinity)
+        return maxOf(w, m.maxIntrinsicHeight(w))
+    }
+    override fun androidx.compose.ui.layout.MeasureScope.measure(
+        measurable: androidx.compose.ui.layout.Measurable, constraints: Constraints,
+    ): androidx.compose.ui.layout.MeasureResult {
+        val side = side(measurable).coerceAtMost(minOf(constraints.maxWidth, constraints.maxHeight))
+        val placeable = measurable.measure(Constraints.fixed(side, side))
+        return layout(side, side) { placeable.place(0, 0) }
+    }
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicWidth(m: androidx.compose.ui.layout.IntrinsicMeasurable, height: Int) = side(m)
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(m: androidx.compose.ui.layout.IntrinsicMeasurable, height: Int) = side(m)
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicHeight(m: androidx.compose.ui.layout.IntrinsicMeasurable, width: Int) = side(m)
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicHeight(m: androidx.compose.ui.layout.IntrinsicMeasurable, width: Int) = side(m)
 }
 
 // ---- Minimap ------------------------------------------------------------------------------------
@@ -1766,7 +1796,10 @@ private fun HudBagPanel(
     }
 }
 
-/** WILD: this map's wild Pokémon by method - icon, name (??? until seen), levels, how often, a ball once caught. */
+/**
+ * WILD: this map's wild Pokémon by method - icon, name (??? until seen, a tap shows it, like GUIDE > HERE's), levels,
+ * how often, a ball once caught.
+ */
 @Composable
 private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaTextMetrics, dock: Boolean, top: Boolean, inset: PaddingValues, kept: Boolean, onKeep: () -> Unit, onClose: () -> Unit) {
     val u = m.u
@@ -1774,6 +1807,8 @@ private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaText
     val icon = hudIconSize(m)
     val (align, place) = panelPlace(dock, top, u, inset)
     val c = ink
+    // Unseen species tapped open on this map (a tap again hides it); a new map starts hidden again.
+    val revealed = remember(snapshot.mapGroup, snapshot.mapNum) { mutableStateListOf<Int>() }
     HudPanelScrim(onClose, align, clear = kept) { window ->
         Column(place.width(u * 200).hudPanel(u).then(window).padding(u * 6), verticalArrangement = Arrangement.spacedBy(u * 2)) {
             PanelHeading(GRASS_ICON, GRASS_COLORS, tk("WILD POKéMON"), m, onClose) {
@@ -1786,13 +1821,17 @@ private fun HudWildPanel(snapshot: SnapshotView, wild: List<HudWild>, m: GbaText
                 wild.groupBy { it.method }.forEach { (method, list) ->
                     GbaText(tr(method), c.accent, c.accentShadow, small, Modifier.padding(top = u * 2))
                     list.forEach { w ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            // An unseen Pokémon stays hidden, like GUIDE > HERE's.
+                        val shown = w.seen || w.species in revealed
+                        val tap = if (w.seen) Modifier else Modifier.soundClickable {
+                            if (w.species in revealed) revealed.remove(w.species) else revealed.add(w.species)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().then(tap)) {
+                            // An unseen Pokémon stays hidden until tapped, like GUIDE > HERE's.
                             Box(Modifier.size(icon), contentAlignment = Alignment.Center) {
-                                if (w.seen) { if (LocalPokemonPictures.current != null) SpeciesPicture(w.species, null, icon, fit = true) else HudSpecies(spriteAsset("pokemon", w.species), icon) } else GbaText("?", c.muted, c.shadow, m)
+                                if (shown) { if (LocalPokemonPictures.current != null) SpeciesPicture(w.species, null, icon, fit = true) else HudSpecies(spriteAsset("pokemon", w.species), icon) } else GbaText("?", c.muted, c.shadow, m)
                             }
                             Spacer(Modifier.width(u * 2))
-                            GbaText(if (w.seen) speciesName(w.species) else "???", c.text, c.shadow, m, Modifier.weight(1f))
+                            GbaText(if (shown) speciesName(w.species) else "???", c.text, c.shadow, m, Modifier.weight(1f))
                             if (w.caught) {
                                 PixelArt(PixelIcons.pokeBall, CAUGHT_BALL, Modifier.size(u * 9))
                                 Spacer(Modifier.width(u * 4))

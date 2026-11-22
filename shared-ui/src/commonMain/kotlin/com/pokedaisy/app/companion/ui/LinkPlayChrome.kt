@@ -72,7 +72,7 @@ fun LinkPlayMessage(text: String, m: GbaTextMetrics) {
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("LINK PLAY"), m)
+            ToolHeader(tk("LINK PLAY"), "LINK", m)
             Spacer(Modifier.height(m.u * 4))
             OptionListWindow(m, Modifier.fillMaxWidth()) {
                 GbaText(text, OptionColors.label, OptionColors.labelShadow, m, maxLines = Int.MAX_VALUE,

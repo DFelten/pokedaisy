@@ -71,7 +71,7 @@ bool pk_api_call_safe(void);
 int64_t pk_api_call(uint32_t fn, uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3);
 /** Let a GB game reach [at], then arrange its call of [fn] with A/B/HL (at most two HALT waits).
  * Returns once scheduled, not when fn returns. Game thread between frames; false on GBA/no game. */
-bool pk_api_gb_call_at(uint16_t at, uint16_t fn, uint8_t a, uint8_t b, uint16_t hl);
+bool pk_api_gb_call_at(uint32_t at, uint16_t fn, uint8_t a, uint8_t b, uint16_t hl);
 
 /** Table lookup needs no running core. */
 bool pk_api_field_knows(uint32_t crc);

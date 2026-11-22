@@ -96,11 +96,16 @@ class GameSession(
         menuOpen = gba && FfMenuWatch.tick(reader) && !ShopWatch.isOpen(reader) || dsMenu
     }
 
-    /** Positive field detection; fades keep the prior value, field re-entry settles for twenty frames. */
-    fun observeField(screen: Boolean, wideScene: Int, battleState: Int, holdPicture: Boolean) {
+    /**
+     * Positive field detection; fades keep the prior value, field re-entry settles for twenty frames. [flying] (FREE
+     * FLIGHT up): the controls are locked and nothing can open, so a new area's name sign doesn't read as a text box
+     * over the field - the HUD stayed hidden through each sign and for twenty frames after it (the user's report,
+     * 2026-11-22: it blinked out on every map crossing).
+     */
+    fun observeField(screen: Boolean, wideScene: Int, battleState: Int, holdPicture: Boolean, flying: Boolean = false) {
         if (wideScene == SCENE_FADE) return
         val field = screen && !holdPicture && battleState == BATTLE_INPUT_NONE &&
-            (wideScene == -1 || wideScene == SCENE_FIELD)
+            (wideScene == -1 || wideScene == SCENE_FIELD || flying && (wideScene == SCENE_TEXT || wideScene == SCENE_OVERLAY))
         fieldFrames = if (field) (fieldFrames + 1).coerceAtMost(FIELD_SETTLE_FRAMES) else 0
         onField = fieldFrames >= FIELD_SETTLE_FRAMES
     }
@@ -120,6 +125,8 @@ class GameSession(
         private const val CALL_WAIT_FRAMES = 120
         private const val FIELD_SETTLE_FRAMES = 20
         private const val SCENE_FIELD = 0
+        private const val SCENE_TEXT = 1
+        private const val SCENE_OVERLAY = 2
         private const val SCENE_FADE = 5
     }
 }

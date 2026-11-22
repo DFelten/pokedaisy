@@ -12,6 +12,13 @@ enum class LibrarySort(val id: Int, val label: String) {
     companion object { fun of(id: Int) = entries.firstOrNull { it.id == id } ?: NAME }
 }
 
+/** Settings > GAME PATHS: what the library's list shows under a game's name (Prefs.libraryPathMode, by [id]). [MATCHING]
+ * (the default, the user's call): the file's name, only for games whose shown names are the same. */
+enum class LibraryPathMode(val id: Int, val label: String) {
+    MATCHING(0, "WHEN NAMES MATCH"), FULL(1, "FULL PATH"), OFF(2, "OFF");
+    companion object { fun of(id: Int) = entries.firstOrNull { it.id == id } ?: MATCHING }
+}
+
 /** Library choices, favorites, history, sorting and filtering for both hosts. Storage codecs preserve installed formats. */
 class LibraryPreferences private constructor(private val storage: Storage, private val now: () -> Long) {
     private data class Storage(val prefs: com.pokedaisy.app.Prefs, val added: LibraryAddedDates)

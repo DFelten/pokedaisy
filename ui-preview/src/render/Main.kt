@@ -475,6 +475,11 @@ fun snapshot() = SnapshotView(
     ),
 )
 
+/** Companion SETTINGS' QUALITY OF LIFE page opened (its rows live there, off HOME). */
+private fun SkikoComposeUiTest.openQol() {
+    onNodeWithText(com.pokedaisy.app.companion.i18n.tr("QUALITY OF LIFE")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+}
+
 class Shot(
     val name: String,
     val w: Int,
@@ -1542,6 +1547,8 @@ fun main(args: Array<String>) {
         runCatching { com.pokedaisy.app.Prefs(android.content.Context()).appLanguage = code }
         com.pokedaisy.app.companion.i18n.L10n.apply(code, null)
     }
+    // The shots scroll to SETTINGS rows off screen, which a lazy list hasn't composed (SettingsLook.lazyHome).
+    com.pokedaisy.app.companion.ui.SettingsLook.lazyHome = false
     // -Pdark=true: DARK MODE on for every shot.
     if (System.getProperty("dark") == "true") com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
     // -Pfont=SMOOTH: that FONT for every shot.
@@ -1767,7 +1774,7 @@ fun main(args: Array<String>) {
         Shot("$g-settings-after-swap", bw, bh, bd, companion("SETTINGS", settingsRow = "SWAP SCREENS")),
         // APP > TIPS, with its NEW tag.
         Shot("$g-settings-tips", bw, bh, bd, companion("SETTINGS", settingsRow = "TIPS")),
-        Shot("$g-settings-autorun", bw, bh, bd, companion("SETTINGS", settingsRow = "AUTO-RUN")),
+        Shot("$g-settings-autorun", bw, bh, bd, companion("SETTINGS")) { openQol(); onNodeWithText("AUTO-RUN").performScrollTo() },
         Shot("$g-settings-flystyle", bw, bh, bd, companion("SETTINGS", settingsRow = "FLY STYLE")),
         Shot("$g-settings-rideon", bw, bh, bd, companion("SETTINGS", settingsRow = "RIDE ON")),
         Shot("$g-settings-battleview", bw, bh, bd, companion("SETTINGS", settingsRow = "BATTLE VIEW")),
@@ -2131,7 +2138,11 @@ fun main(args: Array<String>) {
         Shot("$g-settings-volume-popup", bw, bh, bd, companion("SETTINGS")) {
             onNodeWithText("GAME VOLUME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
-        Shot("$g-settings-gameplay", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("TRADE EVOS").performScrollTo() },
+        Shot("$g-settings-gameplay", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("QUALITY OF LIFE").performScrollTo() },
+        // GAMEPLAY's helpers on their own page.
+        Shot("$g-settings-qol", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         Shot("$g-settings-touch", bw, bh, bd, companion("SETTINGS")) {
             onNodeWithText("TOUCH CONTROLS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
@@ -2199,45 +2210,56 @@ fun main(args: Array<String>) {
         // GAMEPLAY: WILD ENCOUNTERS, REUSABLE TMS, AUTO-RUN, RUN INDOORS, CHEATS, then WILD ENCOUNTERS flipped OFF and
         // REUSABLE TMS in view (OFF; -Pgame=UNBOUND: ON, greyed).
         Shot("$g-settings-controls", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText("WILD ENCOUNTERS").performScrollTo()
         },
         Shot("$g-settings-reusable-tms", bw, bh, bd, companion("SETTINGS")) {
             // Scrolled to AUTO-RUN, the row under it: a greyed row (Unbound's, Radical Red's: BUILT_IN) won't scroll to itself here.
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("AUTO-RUN")).performScrollTo()
         },
         // NO HMS NEEDED under REUSABLE TMS (OFF), then flipped ON.
         Shot("$g-settings-hm-free", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("NO HMS NEEDED")).performScrollTo()
         },
         // EXP SHARE's pick-list (OFF / SPLIT / FULL EXP, the note on what each does).
         Shot("$g-settings-exp-share", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("EXP SHARE")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // LEVEL CAP turned on: the row shows the cap now (the preview's LV 14).
         Shot("$g-settings-level-cap", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL CAP")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // AUTO REFILL turned on.
         Shot("$g-settings-auto-refill", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("AUTO REFILL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // FIELD POISON turned off (LOW HP BEEP above it, still the game's).
         Shot("$g-settings-field-poison", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("FIELD POISON")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // BOSS RETRY turned on.
         Shot("$g-settings-boss-retry", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("BOSS RETRY")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // SHINY ALERT turned on: the subtitle counts the hunt (the preview's 312).
         Shot("$g-settings-shiny-alert", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ALERT")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("$g-settings-hm-free-on", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("NO HMS NEEDED")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // PLAYER LOOK under REUSABLE TMS, then its tiles (OFF = the player's own hero, then the other games' heroes).
         Shot("$g-settings-player-look", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("RUN INDOORS")).performScrollTo()
         },
         Shot("$g-settings-player-look-pick", bw, bh, bd, companion("SETTINGS")) {
@@ -2245,12 +2267,15 @@ fun main(args: Array<String>) {
         },
         // SHINY ODDS under REUSABLE TMS, then its pick-list (the debug build's, with 1 IN 4 and 1 IN 1).
         Shot("$g-settings-shiny-odds", bw, bh, bd, companion("SETTINGS")) {
-            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("CHEATS")).performScrollTo()
+            openQol()
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ODDS")).performScrollTo()
         },
         Shot("$g-settings-shiny-odds-pick", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("SHINY ODDS")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         Shot("$g-settings-wild", bw, bh, bd, companion("SETTINGS")) {
+            openQol()
             onNodeWithText("WILD ENCOUNTERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
         // DISPLAY OPTIONS: STATUS BAR, SHADERS, OVERLAY.
@@ -2747,6 +2772,14 @@ fun main(args: Array<String>) {
         Shot("library-support-phone-side", 2400, 1080, 2.625f, activity { supportLibrary() }),
         Shot("library-support-4x3", 1280, 960, 2f, activity { supportLibrary() }),
         Shot("library-support-rgds", 640, 480, 1.5f, activity { supportLibrary() }),
+        // The RG DS's 640x480 top screen (r/PokeDaisy, 2026-11-21: the rail, header and rows didn't fit): the short library.
+        Shot("library-rgds", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }),
+        Shot("library-rgds-grid", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }) {
+            onNodeWithContentDescription("Toggle view").performClick()
+        },
+        Shot("library-rgds-tools", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
+        Shot("launcher-rgds", 640, 480, 1.5f, launcher(media = false, signedIn = false)),
+        Shot("launcher-rgds-rail", 640, 480, 1.5f, launcher(media = false, signedIn = false)) { pressKey(android.view.KeyEvent.KEYCODE_DPAD_LEFT) },
         Shot("library-whats-new-phone", 1080, 2400, 2.625f, activity { whatsNewLibrary() }),
         Shot("library-whats-new-phone-side", 2400, 1080, 2.625f, activity { whatsNewLibrary() }),
         Shot("library-whats-new-4x3", 1280, 960, 2f, activity { whatsNewLibrary() }),
@@ -3215,6 +3248,7 @@ fun main(args: Array<String>) {
         Shot("settings-tab", tw, th, td, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true).putExtra(SettingsActivity.EXTRA_TOOLS_NEW, true) } }),
         // The Thor's top screen is 2.3 dense (369 dpi): the pixel font is wider in dp there, and SETTINGS once cut short.
         Shot("settings-tab-thor", 1920, 1080, 2.30625f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true) } }),
+        Shot("settings-tab-rgds", 640, 480, 1.5f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true).putExtra(SettingsActivity.EXTRA_TOOLS_NEW, true) } }),
         Shot("settings-tab-phone", 1080, 2400, 2.625f, activity { SettingsActivity().apply { intent.putExtra(SettingsActivity.EXTRA_TAB, true) } }),
         Shot("settings-volume-popup", tw, th, td, activity { SettingsActivity() }) {
             onNodeWithText("GAME VOLUME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)

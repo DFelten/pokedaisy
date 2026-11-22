@@ -63,7 +63,7 @@ val STATUS_BAR_PLACES = listOf(tk("OFF"), tk("GAME"), tk("COMPANION"))
 
 fun statusBarLabel(on: Boolean, onCompanion: Boolean) = STATUS_BAR_PLACES[if (!on) 0 else if (onCompanion) 2 else 1]
 
-internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
+internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), QOL(tk("QUALITY OF LIFE")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
 
 /** Where BACK from a page goes: SHADERS opens from DISPLAY OPTIONS, the rest from HOME. */
 internal val Page.parent: Page get() = when (this) {
@@ -162,10 +162,13 @@ fun CompanionSettingsScreen(
             } else if (!(statusBarShown && page == Page.HOME)) {
                 // A sub-page's arrow (and BACK, through it) returns to the options.
                 val titleM = rememberGbaTextMetrics()
-                OptionTitleWindow(page.title, titleM, trailing = trailing, joined = true, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
-                    if (!statusBarShown && !application) {
-                        Spacer(Modifier.width(titleM.u * 8))
-                        BatteryIndicator(titleM)
+                // In the window with no room beside it, its X at the title's end (SidePanelHost).
+                WithTopBarClose { mod ->
+                    OptionTitleWindow(page.title, titleM, mod, trailing = trailing, joined = true, onBack = if (page != Page.HOME) ({ if (page != Page.HELP || !ui.docs.back()) page = page.parent }) else null) {
+                        if (!statusBarShown && !application) {
+                            Spacer(Modifier.width(titleM.u * 8))
+                            BatteryIndicator(titleM)
+                        }
                     }
                 }
                 WindowGap(m)
@@ -202,6 +205,8 @@ fun CompanionSettingsScreen(
                             opensPage = true, labelBadge = settings.gamePickBadge) { onPlaysAs() })
                     }.orEmpty() + homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
                         { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
+                        // QUALITY OF LIFE's page where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
+                        .let { if (settings.shownRows == null) withQolPage(it) { page = Page.QOL } else it }
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> COMPANION_TABS.map { id ->
@@ -210,7 +215,12 @@ fun CompanionSettingsScreen(
                         if (id !in availableTabs) return@map SettingRow(companionTabLabel(id), tk("N/A")) {}
                         SettingRow(
                             companionTabLabel(id), if (shown) tk("SHOWN") else tk("HIDDEN"),
-                            labelBadge = when (id) { "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB); "STATES" -> settings.statesBadge; else -> null },
+                            labelBadge = when (id) {
+                                "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB)
+                                "STATES" -> settings.statesBadge
+                                "CARD" -> if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL) NewFeatures.badge(NewFeatures.CRYSTAL_CARD) else null
+                                else -> null
+                            },
                         ) {
                             val now = settings.companionTabs
                             when {
@@ -323,6 +333,9 @@ fun CompanionSettingsScreen(
                         }
                     Page.DISPLAY -> displayRows(settings, { tick++ }, { page = it }, { selector = it })
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
+                    Page.QOL -> qolRows(homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
+                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })) +
+                        SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.CHEATS -> cheatRows(settings, changed = { tick++ }, removing = removingCheats,
                         onAdd = { page = Page.CHEAT_ADD },
                         onImport = { settings.importCheats { result -> cheatNotice = cheatImportNotice(result); tick++ } },
@@ -368,7 +381,7 @@ fun CompanionSettingsScreen(
                         modifier = Modifier.fillMaxWidth().weight(1f))
                 } else if (application && page == Page.HOME) {
                     AppSettingsHome(rows, m, appSearch, { appSearch = it },
-                        Modifier.fillMaxWidth().weight(1f), scroll = homeScroll, footer = applicationFooter)
+                        Modifier.fillMaxWidth().weight(1f), scroll = homeScroll, lazy = ui.homeList, footer = applicationFooter)
                 } else if (page == Page.TOUCH && settings != null) {
                     // The preview beside / above the rows; it follows each change (tick).
                     @Suppress("UNUSED_EXPRESSION") tick
@@ -403,7 +416,7 @@ fun CompanionSettingsScreen(
                         GroupedRows(rows, m, cursor, onClick = { i -> moveCursor(i); rows[i].onClick() }, scroll = if (page == Page.HOME) homeScroll else rememberScrollState(),
                             // Cheat names are the player's own, often long: more room before ON / OFF.
                             labelWeight = when (page) { Page.TWEAKS -> 0.8f; Page.CHEATS -> 0.75f; else -> 0.58f }, reveal = reveal, onRevealed = { ui.revealRow = null },
-                            onFocused = ::moveCursor, groupTabs = page == Page.HOME) {
+                            onFocused = ::moveCursor, groupTabs = page == Page.HOME, lazy = ui.homeList.takeIf { page == Page.HOME }) {
                             // Actions, not settings: the list's last line, out of the way of the options.
                             if (page == Page.HOME && settings != null && settings.hasRunningGame) {
                                 // A summary-window line sets them apart from the last group.
@@ -516,6 +529,8 @@ class SettingsUiState(initialPage: String? = null, initialRow: String? = null) {
     // HOME starts with a group title, so its first row is index 1.
     internal var homeCursor by mutableStateOf(1)
     internal val homeScroll = androidx.compose.foundation.ScrollState(0)
+    /** HOME's list position (it's lazy), kept across sub-pages and tabs like [homeScroll]. */
+    internal val homeList = androidx.compose.foundation.lazy.LazyListState()
     /** HELP's page and place in the manual. */
     internal val docs = DocsUiState()
 }
@@ -582,6 +597,38 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
     }
 }
 
+/**
+ * GAMEPLAY's helpers (the user's call, 2026-11-22: a page of their own, not a long run of switches on HOME), in this
+ * order: their rows are built where they always were ([homeRows]) and moved here.
+ */
+private val QOL_ROWS = listOf(
+    "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
+    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+)
+
+/** A QOL row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
+private val QOL_UNUSED = mapOf(
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
+)
+
+/** QUALITY OF LIFE's rows, out of HOME's, in [QOL_ROWS]' order. */
+private fun qolRows(rows: List<SettingRow>): List<SettingRow> =
+    rows.filter { !it.header && it.label in QOL_ROWS }.sortedBy { QOL_ROWS.indexOf(it.label) }
+
+/** HOME with the QOL rows taken out and one QUALITY OF LIFE row where the first was ("3 ON"), opening their page. */
+private fun withQolPage(rows: List<SettingRow>, open: () -> Unit): List<SettingRow> {
+    val members = qolRows(rows)
+    if (members.isEmpty()) return rows
+    val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+    val opener = SettingRow(
+        tk("QUALITY OF LIFE"), tr("{0} ON", on), opensPage = true, subtitle = "Helpers that save you time",
+        labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },
+    ) { open() }
+    val at = rows.indexOfFirst { !it.header && it.label in QOL_ROWS }
+    return rows.filterIndexed { i, r -> i < at || r.header || r.label !in QOL_ROWS }
+        .let { kept -> kept.take(at) + opener + kept.drop(at) }
+}
+
 /** [rows] cut to the settings in [shown], with the titles of the groups that still have one. */
 internal fun onlyRows(rows: List<SettingRow>, shown: Set<SharedSetting>): List<SettingRow> {
     val kept = rows.filter { it.header || it.setting in shown }
@@ -637,11 +684,15 @@ private fun homeRows(
                 else select(Selector(tk("TEXT LOOK"), listOf(off) + s.textLooks, s.textLook ?: off) { s.setTextLook(it.takeIf { l -> l != off }) })
             }
         } else null,
-        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt).
+        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt; on Crystal
+        // pk_gb_follow.c with its own party icon).
         if (s.followerSupported) {
             SettingRow(
                 tk("FOLLOWER"), if (s.followerReady) onOff(s.follower) else tk("N/A"), setting = SharedSetting.FOLLOWER, enabled = s.followerReady,
-                labelBadge = s.followerBadge ?: NewFeatures.badge(NewFeatures.FOLLOWER),
+                labelBadge = s.followerBadge ?: NewFeatures.badge(
+                    if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL)
+                        NewFeatures.FOLLOWER_CRYSTAL else NewFeatures.FOLLOWER,
+                ),
                 subtitle = if (s.followerReady) null else "Needs a game with following Pokémon too",
             ) { if (s.followerReady) { s.setFollower(!s.follower); changed() } }
         } else null,

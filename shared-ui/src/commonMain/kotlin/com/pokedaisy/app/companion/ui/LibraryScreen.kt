@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.focusRequester
@@ -59,6 +61,17 @@ data class LibraryGame(
     val favorite: Boolean = false, val support: LibrarySupport = LibrarySupport.FULL,
 )
 
+/**
+ * The dual-screen launcher drives its own cursors from the keys (LibraryActivity): under it the library's cards, rail,
+ * pills and header buttons take no Compose focus, else the D-pad leaving touch mode put Compose's ring on the first one
+ * (GAMES) beside the launcher's cursor - two markers at once.
+ */
+val LocalKeyDriven = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/** Not a Compose focus stop under [LocalKeyDriven]. */
+@Composable
+fun Modifier.keyDrivenFocus(): Modifier = if (LocalKeyDriven.current) focusProperties { canFocus = false } else this
+
 object LibraryBadgeColors {
     val blocked = Color(0xFF202020)
     val blockedShadow = Color(0x99000000)
@@ -79,6 +92,7 @@ private fun LibraryCard(
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val here = remember { FocusRequester() }
     val hasFocus by interaction.collectIsFocusedAsState()
     val focused = hasFocus || cursor
     OptionListWindow(
@@ -87,7 +101,11 @@ private fun LibraryCard(
             // The list window's own corner (OptionListWindow draws its frame at a 2u radius).
             .gbaFocusRing(focused, PixelRoundedShape(m.u * 2))
             .focusProperties { upTo()?.let { up = it } }
-            .combinedClickable(interactionSource = interaction, indication = null, onLongClick = onLongClick, onClick = onClick),
+            .keyDrivenFocus()
+            // A tap leaves the D-pad's next press starting here ([FocusJump.from]).
+            .focusRequester(here)
+            .combinedClickable(interactionSource = interaction, indication = null, onLongClick = onLongClick?.let { l -> { FocusJump.from = here; l() } },
+                onClick = { FocusJump.from = here; onClick() }),
         fill = if (selected || focused) OptionColors.rowSelected else OptionColors.listFill,
     ) { content() }
 }
@@ -102,7 +120,8 @@ private fun LibraryFavoriteStar(size: Dp) {
 fun LibraryRomRow(
     game: LibraryGame, m: GbaTextMetrics, small: GbaTextMetrics,
     selected: Boolean = game.playing, cursor: Boolean = false, upTo: () -> FocusRequester? = { null },
-    showPath: Boolean = true,
+    /** The grey line under the name (a file name or path), or null for none. */
+    path: String? = game.path,
     onClick: () -> Unit, onLongClick: (() -> Unit)? = null,
     cover: @Composable (Modifier) -> Unit, menu: @Composable () -> Unit,
 ) {
@@ -111,6 +130,7 @@ fun LibraryRomRow(
     val display = game.label
     val hasSave = game.hasSave
     val favorite = game.favorite
+    val short = LocalShortScreen.current
     LibraryCard(
         // In the launcher only its cursor gets the white fill (two white rows read as two cursors).
         selected, m, Modifier.fillMaxWidth().semantics { contentDescription = display },
@@ -119,8 +139,8 @@ fun LibraryRomRow(
         onClick = onClick,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            cover(Modifier.height(56.dp))
-            Spacer(Modifier.width(m.u * 6))
+            cover(Modifier.height(if (short) 32.dp else 56.dp))
+            Spacer(Modifier.width(m.u * if (short) 4 else 6))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     GbaText(display, OptionColors.label, OptionColors.labelShadow, m, Modifier.weight(1f, fill = false))
@@ -154,9 +174,10 @@ fun LibraryRomRow(
                         OptionBadge(tk("PARTIALLY SUPPORTED"), m, fill = OptionColors.muted)
                     }
                 }
-                if (showPath) {
+                // A short screen's rows are one line: the name alone (the path is in INFO).
+                if (path != null && !short) {
                     GbaText(
-                        game.path,
+                        path,
                         OptionColors.muted, OptionColors.mutedShadow, small,
                     )
                 }
@@ -267,6 +288,13 @@ fun LibraryCover(bitmap: ImageBitmap?, category: RomCategory?, m: GbaTextMetrics
     }
 }
 
+/** The library's margin round its pills and games: half as much on a short screen ([LocalShortScreen]). */
+val libraryMargin: Dp @Composable get() = if (LocalShortScreen.current) 8.dp else 16.dp
+
+/** A grid tile's least width: smaller on a short screen, where 150 dp left one tile the width of the page (three across
+ * on the RG DS; four cut every name to its first letters). */
+val libraryTileMin: Dp @Composable get() = if (LocalShortScreen.current) 112.dp else 150.dp
+
 /** The library's existing header and GAMES / TOOLS / SETTINGS rail, with platform work supplied as content/actions. */
 @Composable
 fun LibraryFrame(
@@ -274,6 +302,8 @@ fun LibraryFrame(
     onSection: (LibrarySection) -> Unit, modifier: Modifier = Modifier,
     toolsBadge: Boolean = false, compactTitle: Boolean = false, headerGap: Dp = m.u * 8, showHeader: Boolean = true,
     header: @Composable RowScope.() -> Unit,
+    /** [header] for when it would cut the title short ([LibraryHeaderBar]'s compactActions). */
+    compactHeader: (@Composable RowScope.() -> Unit)? = null,
     overlays: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -281,12 +311,10 @@ fun LibraryFrame(
         val wide = maxWidth >= maxHeight
         AppBackdrop(logos = true)
         Row(Modifier.fillMaxSize()) {
-            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = 16.dp, onPick = onSection)
+            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 if (showHeader) {
-                    OptionTitleWindow(if (compactTitle) "" else "POKéDAISY", m,
-                        Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                        leading = { PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight)) }, actions = header)
+                    LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
                     Spacer(Modifier.height(headerGap))
                 }
                 content()
@@ -297,12 +325,89 @@ fun LibraryFrame(
     }
 }
 
+/**
+ * The library's / TOOLS' / Settings' / the tools' header: a band along the top of the screen, its full width (the user's
+ * call, 2026-11-22: docked to the edge, not a window floating in the page), the title window's colours with its frame
+ * along the bottom only. The logo (or [leading]) and [title] on the left, [actions] on the right.
+ */
+@Composable
+fun LibraryHeaderBar(
+    title: String, m: GbaTextMetrics, modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+    /** The PokeDaisy flower before the title (the library's, Settings' HOME); a sub-page has its back arrow alone. */
+    logo: Boolean = true,
+    /** Drawn before the title in the logo's place (a tool's own icon: [ToolHeader]). */
+    leading: (@Composable () -> Unit)? = null,
+    /** [actions] for when they'd cut the title short (the user's call: fewer, narrower buttons, the whole name kept). */
+    compactActions: (@Composable RowScope.() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    val u = m.u
+    val short = LocalShortScreen.current
+    val sidePad = if (short) 8.dp else 12.dp
+    val endPad = if (short) 8.dp else 16.dp
+    // Whether [title] fits beside the full [actions]: their width is taken whenever they're the ones shown, so switching
+    // to the compact ones (narrower) never flips it back.
+    var barWidth by remember { mutableIntStateOf(0) }
+    var fullActions by remember { mutableIntStateOf(0) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val font = com.pokedaisy.app.companion.ui.theme.pixelFontFamily()
+    val shownTitle = if (title.isEmpty()) "" else tr(title)
+    val titleWidth = remember(shownTitle, m, font) {
+        if (shownTitle.isEmpty()) 0 else measurer.measure(shownTitle, gbaTextStyle(font, m)).size.width + m.fontPixel.toInt()
+    }
+    val fixed = with(density) {
+        (sidePad + endPad + (if (onBack != null) m.lineHeight + u * 6 else 0.dp) + (if (logo) m.lineHeight + u * 6 else 0.dp)).roundToPx()
+    }
+    val compact = compactActions != null && barWidth > 0 && fullActions > 0 && fixed + titleWidth + fullActions > barWidth
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .onSizeChanged { barWidth = it.width }
+            .drawBehind {
+                val u = m.u.toPx()
+                drawLayeredBox(
+                    OptionColors.headerLayers.inPx(u), OptionColors.headerFill, radius = 0f,
+                    openTop = true, openLeft = true, openRight = true,
+                )
+            }
+            .padding(start = sidePad, end = endPad, top = u * (if (short) 3 else 7), bottom = u * (if (short) 3 else 7)),
+    ) {
+        if (onBack != null) {
+            CompanionBackHandler(onBack = onBack)
+            // Not a D-pad stop: B / BACK is the same thing.
+            Box(Modifier.focusProperties { canFocus = false }.soundClickable(onClick = onBack).padding(end = u * 6)) {
+                val cell = with(androidx.compose.ui.platform.LocalDensity.current) { m.fontPixel.toDp() }
+                Box(Modifier.size(m.lineHeight).semantics { contentDescription = tr("Back") }, contentAlignment = Alignment.Center) {
+                    ShadowedPixelIcon(PixelIcons.arrowBack, OptionColors.headerText, OptionColors.headerShadow, m, cell = cell)
+                }
+            }
+        }
+        if (logo) {
+            PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight))
+            Spacer(Modifier.width(u * 6))
+        }
+        leading?.let { it(); Spacer(Modifier.width(u * 6)) }
+        Box(Modifier.weight(1f)) {
+            if (title.isNotEmpty()) GbaText(shownTitle, OptionColors.headerText, OptionColors.headerShadow, m)
+        }
+        Row(Modifier.onSizeChanged { if (!compact) fullActions = it.width }, verticalAlignment = Alignment.CenterVertically) {
+            if (compact) compactActions?.invoke(this) else actions()
+        }
+    }
+}
+
 @Composable
 fun LibraryHeaderIcon(icon: ImageVector, label: String, m: GbaTextMetrics, modifier: Modifier = Modifier,
                       compact: Boolean = false, cursor: Boolean = false, onClick: () -> Unit) {
-    Spacer(Modifier.width(m.u * if (compact) 2 else 4))
-    OptionButton(null, m, onClick = onClick, modifier = modifier.gbaFocusRing(cursor, PixelRoundedShape(m.u * 3)),
-        icon = icon, contentDescription = label, sidePadding = if (compact) 4 else 8)
+    // A short screen's header is lower: narrow buttons, less room over and under their icons.
+    val short = LocalShortScreen.current
+    val narrow = compact || short
+    Spacer(Modifier.width(m.u * if (narrow) 2 else 4))
+    OptionButton(null, m, onClick = onClick, modifier = modifier.keyDrivenFocus().gbaFocusRing(cursor, PixelRoundedShape(m.u * 3)),
+        icon = icon, contentDescription = label, sidePadding = if (narrow) 4 else 8, verticalPadding = if (short) 2 else 4)
 }
 
 /** A host's available game actions, drawn by one shared menu. [opens] lets a launcher retain its cursor for a page. */
@@ -369,7 +474,7 @@ fun LibraryGameMenu(expanded: Boolean, onDismiss: () -> Unit, items: List<Librar
 
 @Composable
 fun LibraryMenuDots(m: GbaTextMetrics, onClick: () -> Unit) {
-    Box(Modifier.clip(PixelRoundedShape(m.u * 3)).clickable(onClick = onClick).padding(m.u * 3)) {
+    Box(Modifier.clip(PixelRoundedShape(m.u * 3)).keyDrivenFocus().clickable(onClick = onClick).padding(m.u * 3)) {
         Icon(Icons.Filled.MoreVert, contentDescription = tr("ROM options"), tint = OptionColors.label,
             modifier = Modifier.size(m.lineHeight))
     }
@@ -388,11 +493,12 @@ fun <T> LibraryCollection(
     modifier: Modifier = Modifier, headerUp: () -> FocusRequester? = { null },
     item: @Composable (T, () -> FocusRequester?) -> Unit,
 ) {
-    val padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
-    val gap = Arrangement.spacedBy(m.u * 4)
+    val margin = libraryMargin
+    val padding = PaddingValues(start = margin, end = margin, bottom = margin)
+    val gap = Arrangement.spacedBy(m.u * if (LocalShortScreen.current) 3 else 4)
     if (grid) {
         val state = rememberLazyGridState()
-        LazyVerticalGrid(GridCells.Adaptive(150.dp), state = state, modifier = modifier.fillMaxWidth(),
+        LazyVerticalGrid(GridCells.Adaptive(libraryTileMin), state = state, modifier = modifier.fillMaxWidth(),
             contentPadding = padding, horizontalArrangement = gap, verticalArrangement = gap) {
             gridItemsIndexed(games, key = { _, game -> key(game) }) { index, game ->
                 item(game) { headerUp()?.takeIf { state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }?.row == 0 } }
@@ -424,6 +530,24 @@ class LibraryFocus(val header: FocusRequester = FocusRequester(), val views: Foc
 }
 
 /** One library screen on every platform. Hosts supply data, supported actions, native settings and card callbacks. */
+/** The library header's buttons ([LibraryScreen]); [help] false leaves HELP out. */
+@Composable
+private fun <T> RowScope.LibraryHeaderButtons(
+    state: LibraryPresentation<T>, actions: LibraryActions, m: GbaTextMetrics, focus: LibraryFocus, compact: Boolean, help: Boolean,
+) {
+    if (state.section == LibrarySection.GAMES) {
+        LibraryHeaderIcon(LibraryIcons.Sort, tr("Sort"), m,
+            Modifier.focusRequester(focus.header), compact = compact, onClick = actions.sort)
+        DisposableEffect(focus) { focus.headerAttached = true; onDispose { focus.headerAttached = false } }
+        LibraryHeaderIcon(Icons.Filled.Search, tr("SEARCH"), m, compact = compact, onClick = actions.search)
+        LibraryHeaderIcon(if (state.grid) LibraryIcons.ViewList else LibraryIcons.GridView,
+            tr("Toggle view"), m, compact = compact, onClick = actions.toggleGrid)
+        LibraryHeaderIcon(Icons.Filled.Add, tr("Add games"), m, compact = compact, onClick = actions.add)
+        LibraryHeaderIcon(Icons.Filled.Refresh, tr("Refresh"), m, compact = compact, onClick = actions.refresh)
+    }
+    if (help) LibraryHeaderIcon(LibraryIcons.HelpOutline, tr("Help"), m, compact = compact, onClick = actions.help)
+}
+
 @Composable
 fun <T> LibraryScreen(
     state: LibraryPresentation<T>, actions: LibraryActions, m: GbaTextMetrics, small: GbaTextMetrics,
@@ -433,39 +557,33 @@ fun <T> LibraryScreen(
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxWidth < 600.dp
+        val short = LocalShortScreen.current
+        val margin = libraryMargin
         val toolsOpen = state.section == LibrarySection.TOOLS
         LibraryFrame(state.section, m, small, actions.section,
             toolsBadge = state.tools.any { it.newBadge != null } && !toolsOpen, showHeader = state.section != LibrarySection.SETTINGS,
             compactTitle = compact && !toolsOpen && state.section == LibrarySection.GAMES,
-            headerGap = m.u * if (state.hasCatalog || state.section != LibrarySection.GAMES) 8 else 4,
-            header = {
-                if (state.section == LibrarySection.GAMES) {
-                    LibraryHeaderIcon(LibraryIcons.Sort, tr("Sort"), m,
-                        Modifier.focusRequester(focus.header), compact = compact, onClick = actions.sort)
-                    DisposableEffect(focus) { focus.headerAttached = true; onDispose { focus.headerAttached = false } }
-                    LibraryHeaderIcon(Icons.Filled.Search, tr("SEARCH"), m, compact = compact, onClick = actions.search)
-                    LibraryHeaderIcon(if (state.grid) LibraryIcons.ViewList else LibraryIcons.GridView,
-                        tr("Toggle view"), m, compact = compact, onClick = actions.toggleGrid)
-                    LibraryHeaderIcon(Icons.Filled.Add, tr("Add games"), m, compact = compact, onClick = actions.add)
-                    LibraryHeaderIcon(Icons.Filled.Refresh, tr("Refresh"), m, compact = compact, onClick = actions.refresh)
-                }
-                LibraryHeaderIcon(LibraryIcons.HelpOutline, tr("Help"), m, compact = compact, onClick = actions.help)
-            }, overlays = overlays,
+            headerGap = m.u * if (short) 3 else if (state.hasCatalog || state.section != LibrarySection.GAMES) 8 else 4,
+            // The buttons; [narrow]: narrower and without HELP, where the full ones would cut POKéDAISY short (the user's
+            // call, 2026-11-22: HELP is also in Settings).
+            header = { LibraryHeaderButtons(state, actions, m, focus, compact, help = true) },
+            compactHeader = { LibraryHeaderButtons(state, actions, m, focus, compact = true, help = state.section != LibrarySection.GAMES) },
+            overlays = overlays,
         ) {
             when (state.section) {
                 LibrarySection.SETTINGS -> settings()
                 LibrarySection.TOOLS -> ToolsPage(state.tools, m, small,
-                    PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp), Modifier.weight(1f))
+                    PaddingValues(start = margin, end = margin, bottom = margin), Modifier.weight(1f))
                 LibrarySection.GAMES -> {
                     LibrarySearchStrip(state.query, m, actions.search, actions.query)
                     if (state.hasCatalog) {
                         QuickViewPills(state.views, state.view, state.counts, m, small, actions.view,
-                            contentPadding = PaddingValues(horizontal = 16.dp), focusRequester = focus.views)
+                            contentPadding = PaddingValues(horizontal = margin), focusRequester = focus.views)
                         DisposableEffect(focus) { focus.viewsAttached = true; onDispose { focus.viewsAttached = false } }
-                        Spacer(Modifier.height(m.u * 8))
+                        Spacer(Modifier.height(m.u * if (short) 3 else 8))
                     }
                     if (state.games.isEmpty()) {
-                        OptionListWindow(m, Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                        OptionListWindow(m, Modifier.fillMaxWidth().padding(horizontal = margin)) {
                             GbaText(if (state.hasCatalog) libraryEmptyViewText(state.view)
                                 else if (state.query.isNotBlank()) tr("No games match your search.") else state.emptyText,
                                 OptionColors.label, OptionColors.labelShadow, small, maxLines = Int.MAX_VALUE,
@@ -512,7 +630,7 @@ fun LibrarySearchDialog(query: String, onQuery: (String) -> Unit, m: GbaTextMetr
 fun LibrarySearchStrip(query: String, m: GbaTextMetrics, onSearch: () -> Unit, onQuery: (String) -> Unit) {
     if (query.isBlank()) return
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = m.u * 4),
+        Modifier.fillMaxWidth().padding(horizontal = libraryMargin).padding(bottom = m.u * 4),
         horizontalArrangement = Arrangement.spacedBy(m.u * 4),
     ) {
         OptionButton(tr("SEARCH") + ": " + query, m, modifier = Modifier.weight(1f, fill = false), onClick = onSearch)

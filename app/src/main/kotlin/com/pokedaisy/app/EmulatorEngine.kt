@@ -419,7 +419,8 @@ class EmulatorEngine(
      * player's first steps, then remembered per ROM), a Game Boy game's screen matched to its map (pk_wide_gb.c's
      * SCENE_FIELD, [gbSceneGame]), no battle or region map up,
      * and at EXPAND (whose scene is known every frame, [MgbaCore.pkWideScene]) no text box, map preview or battle
-     * transition either; a fade between maps changes nothing. Comes on twenty frames after the field is
+     * transition either (without EXPAND, no text box or START menu by the field read's [MgbaCore.FIELD_TEXT], where the
+     * game's field is read); a fade between maps changes nothing. Comes on twenty frames after the field is
      * back (a conversation's lines don't make the HUD blink), goes at once. Set on the emu thread.
      */
     val onField = kotlinx.coroutines.flow.MutableStateFlow(false)
@@ -511,6 +512,26 @@ class EmulatorEngine(
         override fun setRide(frames: ByteArray?, palette: ByteArray?, width: Int) = MgbaCore.pkRideSet(frames, palette, width)
         override fun showRide(on: Boolean) = MgbaCore.pkRideShow(on)
     })
+
+    /** FOLLOWER on Crystal: the lead's party icon (two 16 x 16 frames, 512 ARGB; null = none), set by the activity. */
+    @Volatile var gbFollower: IntArray? = null
+    private var gbFollowerSent: IntArray? = null
+    private var gbFollowerShown = false
+
+    /** FOLLOWER on Crystal, once a frame (emu thread): the icon to the core when it changed, and wanted or not (the core
+     * finds the field itself: it hides the follower in battles, menus and on water). */
+    private fun stepGbFollower() {
+        val icon = gbFollower
+        if (icon !== gbFollowerSent) {
+            MgbaCore.pkGbFollowSet(icon)
+            gbFollowerSent = icon
+        }
+        val show = icon != null
+        if (show != gbFollowerShown) {
+            MgbaCore.pkGbFollowShow(show)
+            gbFollowerShown = show
+        }
+    }
 
     /**
      * HIDE BATTLE MENU ([Prefs.hideBattleMenu]): what the activity wants - 0 = the game's battle menus shown, 1 = hidden
@@ -955,6 +976,8 @@ class EmulatorEngine(
         // The core starts with no follower and no tint (pk_wide_extras_reset): so do what this engine last sent.
         playback.follower?.reset()
         ride.reset()
+        gbFollowerSent = null
+        gbFollowerShown = false
         battleMenuHideSent = -1
         playback.resetTint()
         playback.flight?.reset()
@@ -1458,9 +1481,14 @@ class EmulatorEngine(
                 if (dsMenuApp.value) dsMenuApp.value = false
             }
             if (wideApplied == WideScreen.OFF || (wideCamera == null && !probeOnly)) wideScene = -1
+            // A text box or the START menu (the field read's TEXT: controls locked, a window up) isn't the field: EXPAND's
+            // scene says so by itself, and without EXPAND (ORIGINAL / STRETCH: the HUD sits on the game's own picture,
+            // over those windows - GitHub #1208) the field read does. FREE FLIGHT locks the controls too: not while flying.
+            val flying = gba && flightState != MgbaCore.FLIGHT_IDLE
+            val textUp = fieldState and MgbaCore.FIELD_TEXT != 0 && (nds || wideScene == -1) && !flying
             gameSession.observeField(
-                if (gba || nds) fieldScreen && !mapOpen && !(nds && fieldState and MgbaCore.FIELD_TEXT != 0) else wideScene == WideCamera.SCENE_FIELD,
-                wideScene, battleInput.gameState, battleInput.holdFrame)
+                if (gba || nds) fieldScreen && !mapOpen && !textUp else wideScene == WideCamera.SCENE_FIELD,
+                wideScene, battleInput.gameState, battleInput.holdFrame, flying = flying)
             if (onField.value != gameSession.onField) onField.value = gameSession.onField
         }
 
@@ -1502,6 +1530,7 @@ class EmulatorEngine(
             if (gba) ride.step(fieldScreen && !mapOpen && !FfMenuWatch.battling &&
                 battleInput.gameState == com.pokedaisy.app.companion.data.BATTLE_INPUT_NONE, playerLook.ride)
             if (gba) playback.stepFollower()
+            if (!gba && !nds) stepGbFollower()
             if (gba) coopLock?.onFrame()
             if (gba) coopPresence?.onFrame(fieldScreen && !mapOpen && !FfMenuWatch.battling &&
                 battleInput.gameState == com.pokedaisy.app.companion.data.BATTLE_INPUT_NONE)

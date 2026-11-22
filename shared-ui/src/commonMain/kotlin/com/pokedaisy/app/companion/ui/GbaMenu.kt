@@ -130,7 +130,9 @@ object OptionColors {
     // field they take the map's two middle colours), here a pixel each.
     private val G1_FRAME get() = if (activeGame == GameKind.BROWN) listOf(G1_PAPER to 1, G1_INK to 1, BROWN_CREAM to 1,
         BROWN_GREEN to 1, G1_INK to 1, G1_PAPER to 1)
-        else listOf(G1_PAPER to 2, G1_INK to 1, G1_PAPER to 1, G1_INK to 1, G1_PAPER to 1)
+        // The double line from the window's edge, like the tab chips: a paper band outside it squared its corners
+        // and set the windows in from the tab bar's ends.
+        else listOf(G1_INK to 1, G1_PAPER to 1, G1_INK to 1, G1_PAPER to 1)
     private val BROWN_CREAM = Color(0xFFF7D67B)
     private val BROWN_GREEN = Color(0xFF4AA55A)
 
@@ -158,7 +160,8 @@ object OptionColors {
                 activeGame == com.pokedaisy.app.companion.data.GameKind.UNBOUND &&
                 (inGame || com.pokedaisy.app.companion.ui.theme.UiStyles.override != null)
             if (unbound) com.pokedaisy.app.companion.ui.theme.unboundStylePalette(dark)
-            else com.pokedaisy.app.companion.ui.theme.uiStylePalette(current, dark)
+            // PokeDaisy's blues (retroStylePalette), moved to a THEME's hue.
+            else com.pokedaisy.app.companion.ui.theme.themedStylePalette(current, dark, AppColors.theme.hue)
         }
     /** A MENU STYLE joins its windows edge to edge: a title strip straight on its list, tabs on the window's side. */
     val joined get() = style != null
@@ -474,8 +477,28 @@ fun OptionListWindow(
                 horizontal = u * (frame + 2 + look.windowPadSides + margin),
                 vertical = u * (frame + 2 + margin),
             ),
-    ) { content() }
+    ) {
+        // How far the content sits in from the frame as drawn, and the fill's corner there: a [PanelHeader] reaches back
+        // over it, to the frame, and rounds with it.
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val edge = with(density) {
+            val drawn = layers.inPx(u.toPx()).sumOf { it.second.toDouble() }.toFloat()
+            WindowEdge(
+                side = u.toPx() * (frame + 2 + look.windowPadSides + margin) - drawn,
+                top = u.toPx() * (frame + 2 + margin) - drawn,
+                radius = (2 * u.toPx() - drawn).coerceAtLeast(0f),
+            )
+        }
+        androidx.compose.runtime.CompositionLocalProvider(LocalWindowInset provides edge, content = content)
+    }
 }
+
+/** An [OptionListWindow]'s inside, in px: from its content to the frame's inner edge (each side, the top), and the fill's
+ * corner radius there. */
+class WindowEdge(val side: Float, val top: Float, val radius: Float)
+
+/** The [WindowEdge] of the [OptionListWindow] around this content; null outside one. */
+val LocalWindowInset = androidx.compose.runtime.staticCompositionLocalOf<WindowEdge?> { null }
 
 /**
  * One `LABEL      VALUE` row, the value column starting ~58% across like the
@@ -517,6 +540,10 @@ fun OptionLine(
     slider: SettingSlider? = null,
     /** Every other row of a list: a menu style's band under it. */
     stripe: Boolean = false,
+    /** A pick-list's current choice: the games' ◀ cursor drawn at the row's right end (Pixel Operator has no ◀). */
+    marker: Boolean = false,
+    /** The games' ▶ cursor beside the row while it's selected, in any look (SETTINGS' lists; else a menu style's own). */
+    cursorArrow: Boolean = false,
     onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -530,9 +557,10 @@ fun OptionLine(
     val self = remember { FocusRequester() }
     if (enabled) LocalOverlayStart.current?.register(self, current = selected)
     val chevronCell = with(androidx.compose.ui.platform.LocalDensity.current) { m.fontPixel.toDp() }
-    val chevronRoom = if (chevron) chevronCell * (PixelIcons.chevronRight.maxOf { it.length } + 1) + m.u * 4 else 0.dp
+    val chevronRoom = if (chevron || marker) chevronCell * (PixelIcons.chevronRight.maxOf { it.length } + 1) + m.u * 4 else 0.dp
     val style = OptionColors.style
     val lit = selected || focused
+    val subtitleLine = if (subtitle != null) subtitleMetrics(m).lineHeight else 0.dp
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = modifier
@@ -561,11 +589,13 @@ fun OptionLine(
                 },
             )
             .then(
-                if (style?.arrow != null && lit && enabled) Modifier.drawBehind {
-                    // The games' ▶ cursor, in the row's left margin.
+                if ((style?.arrow != null || cursorArrow) && lit && enabled) Modifier.drawBehind {
+                    // The games' ▶ cursor, in the row's left margin: a style's colour, else the label's ink. Level with the
+                    // label, not the middle of a row with a description under it.
                     val px = m.u.toPx()
-                    val mid = (size.height / px / 2).toInt()
-                    for (i in 0..3) drawRect(OptionColors.tint(style.arrow), Offset((2 + i) * px, (mid - 3 + i) * px), Size(px, (7 - 2 * i) * px))
+                    val mid = ((size.height - bottomPadding.toPx() - subtitleLine.toPx()) / px / 2).toInt()
+                    val ink = style?.arrow?.let { OptionColors.tint(it) } ?: OptionColors.label
+                    for (i in 0..3) drawRect(ink, Offset((2 + i) * px, (mid - 3 + i) * px), Size(px, (7 - 2 * i) * px))
                 } else Modifier,
             )
             .then(if (enabled) Modifier.soundClickable(interactionSource = interaction, indication = null, onClick = { stack?.lastClicked = self; onClick() }) else Modifier)
@@ -624,6 +654,12 @@ fun OptionLine(
             leading()
             Spacer(Modifier.width(m.u * 6))
             text()
+        }
+        if (marker) {
+            ShadowedPixelIcon(
+                PixelIcons.cursorLeft, OptionColors.value, OptionColors.valueShadow,
+                m, cell = chevronCell, modifier = Modifier.align(Alignment.CenterEnd),
+            )
         }
         if (chevron) {
             ShadowedPixelIcon(
@@ -726,6 +762,8 @@ fun OptionButton(
     frameLayers: List<Pair<Color, Int>>? = null,
     /** The room either side of the content, in GBA pixels: less for a row of icon buttons on a narrow screen. */
     sidePadding: Int = 8,
+    /** The room over and under the content, in GBA pixels (a key's edge adds 2 under it): less in a short screen's header. */
+    verticalPadding: Int = 4,
     /** In a pop-up, the D-pad starts here rather than on its first control. */
     focusStart: Boolean = false,
     /** RAINBOW may colour it; false keeps the usual look (STATES' buttons). */
@@ -772,7 +810,7 @@ fun OptionButton(
             .focusRequester(self)
             // The button's own corner: its box below is drawn at a 3u radius.
             .gbaFocusRing(focused, PixelRoundedShape(u * 3))
-            .heightIn(min = m.rowHeight)
+            .heightIn(min = if (verticalPadding < 4) m.lineHeight else m.rowHeight)
             .drawBehind {
                 if (key != null) {
                     drawKey(key, u.toPx(), 3 * u.toPx(), face = if (focused) key.low else key.face)
@@ -798,7 +836,7 @@ fun OptionButton(
                 } else Modifier,
             )
             .padding(horizontal = u * sidePadding)
-            .padding(top = u * 4, bottom = u * (if (key != null) 6 else 4)),
+            .padding(top = u * verticalPadding, bottom = u * (verticalPadding + if (key != null) 2 else 0)),
     ) {
         if (icon != null) {
             Icon(icon, contentDescription, tint = fg, modifier = Modifier.size(m.lineHeight))
@@ -885,9 +923,15 @@ fun OptionOverlay(onDismiss: () -> Unit, modifier: Modifier = Modifier, content:
                 e.returnTo?.let { runCatching { it.requestFocus() } }
             }
         }
+        val inputModes = androidx.compose.ui.platform.LocalInputModeManager.current
         androidx.compose.runtime.LaunchedEffect(e) {
             androidx.compose.runtime.withFrameNanos { }
-            (start.preferred ?: start.first)?.let { runCatching { it.requestFocus() } }
+            (start.preferred ?: start.first)?.let { first ->
+                // Opened by a tap: a focus request in touch mode does nothing, so the next D-pad press lands here instead
+                // (the host takes [FocusJump] out of touch mode) - it used to move nothing (the library's + and SORT BY).
+                if (inputModes.inputMode == androidx.compose.ui.input.InputMode.Touch) FocusJump.target = first
+                else { FocusJump.target = null; runCatching { first.requestFocus() } }
+            }
         }
     }
     Box(
@@ -992,7 +1036,7 @@ fun <T> OptionSelector(
                         options.forEachIndexed { i, opt ->
                             val on = opt == selected
                             OptionLine(
-                                label(opt), if (on) "◀" else null, selected = on && (focusedRow < 0 || focusedRow == i), m,
+                                label(opt), null, selected = on && (focusedRow < 0 || focusedRow == i), m, marker = on,
                                 height = rowHeight, labelWeight = 0.85f, divider = true, labelBadge = badge(opt),
                                 onFocus = { focusedRow = i },
                             ) { onPick(opt) }

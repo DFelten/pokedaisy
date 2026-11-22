@@ -1,3 +1,38 @@
+diff --git a/platform/3ds/source/jitmem.c b/platform/3ds/source/jitmem.c
+index a6a0cef..823d5cd 100644
+--- a/platform/3ds/source/jitmem.c
++++ b/platform/3ds/source/jitmem.c
+@@ -88,13 +88,13 @@ static bool makeExecutable(uint8_t* code, size_t size) {
+ 	return true;
+ }
+ 
+-// The code memory: two thirds of the heap left after the game, up to 24 MiB (A32's branches reach 32);
++// The code memory: two thirds of the heap left after the game, up to 30 MiB (A32's branches reach 32);
+ // the rest is for what the recompiler keeps about each block, about 0.4 bytes for each byte of
+ // code (jitHostMemoryLow). Advance Wars' battles need about 9 MiB of code and Mario Kart's
+ // races more: when either runs out, the recompiler throws everything away and compiles it all again,
+ // a stutter each time (2026-11-09).
+ enum {
+-	HEAP_CODE_MAX = 24 << 20,
++	HEAP_CODE_MAX = 30 << 20,
+ 	HEAP_CODE_MIN = 4 << 20,
+ 	// Kept free while compiling: what the frontend and the core allocate as they go, saved states
+ 	// among it.
+@@ -309,10 +309,13 @@ void jitCounts(struct JitCounts* c) {
+ // pieces of code for the first time and dropped to 56 fps (2026-11-09).
+ enum { WARM_MAGIC = 0x31574741 };
+ 
++// Not the GPIO registers at 0xC4-0xC9: a cartridge clock writes them into the ROM as the game runs, so
++// the list saved at close never matched the game at its next start (PokeDaisy, 2026-11-21: every
++// Pokemon game with a clock).
+ static uint32_t warmRomId(void) {
+ 	uint32_t h = 2166136261u ^ (uint32_t) gba->romSize;
+ 	for (size_t i = 0; i < 4096 && i < gba->romSize; ++i) {
+-		h = (h ^ gba->rom[i]) * 16777619u;
++		h = (h ^ (i >= 0xC4 && i < 0xCA ? 0 : gba->rom[i])) * 16777619u;
+ 	}
+ 	return h;
+ }
 diff --git a/src/cart/overrides.c b/src/cart/overrides.c
 index b8b8b5a..e46d717 100644
 --- a/src/cart/overrides.c
@@ -107,6 +142,104 @@ index f78a42c..f0eb1c1 100644
 +		return false;
 +	}
  	if (start < 0 || stop < 0) {
+ 		return false;
+ 	}
+diff --git a/src/cpu/jit-internal.h b/src/cpu/jit-internal.h
+index 278a940..11f2ee9 100644
+--- a/src/cpu/jit-internal.h
++++ b/src/cpu/jit-internal.h
+@@ -19,8 +19,9 @@ enum {
+ 	// Within reach of every branch: AArch64's and A32's reach 128 and 32 MiB. The 3DS has 64 MiB
+ 	// for everything on an Old 3DS, the cartridge buffer taking 32 of it.
+ #if defined(__3DS__)
+-	// The most; the 3DS takes what the heap can spare (platform/3ds/source/jitmem.c).
+-	CODE_SIZE = 24 << 20,
++	// The most; the 3DS takes what the heap can spare (platform/3ds/source/jitmem.c). 30 MiB stays
++	// inside A32's 32 (PokeDaisy: a 32 MB hack's working set, Monomyth's ~23 MiB, didn't fit in 24).
++	CODE_SIZE = 30 << 20,
+ #else
+ 	CODE_SIZE = (UINTPTR_MAX > 0xFFFFFFFFu ? 64 : 16) << 20,
+ #endif
+diff --git a/src/cpu/jit.c b/src/cpu/jit.c
+index a502f5b..3feedcc 100644
+--- a/src/cpu/jit.c
++++ b/src/cpu/jit.c
+@@ -2431,6 +2431,17 @@ static int warmOrder(const void* a, const void* b) {
+ 	return x[1] < y[1] ? -1 : x[1] > y[1];
+ }
+ 
++// Key, waits, then the place on the list: equal blocks sorted together, the first one first.
++static int warmOrderPlace(const void* a, const void* b) {
++	int const by = warmOrder(a, b);
++	if (by) {
++		return by;
++	}
++	const uint32_t* x = a;
++	const uint32_t* y = b;
++	return x[2] < y[2] ? -1 : x[2] > y[2];
++}
++
+ size_t jitWarmTake(struct GBA* gba, uint32_t* pairs, size_t max) {
+ 	struct Jit* jit = gba->jit;
+ 	if (!jit) {
+@@ -2449,16 +2460,42 @@ size_t jitWarmTake(struct GBA* gba, uint32_t* pairs, size_t max) {
+ 			++count;
+ 		}
+ 	}
+-	// A block compiled again after a flush is on it twice.
+-	qsort(pairs, count, 2 * sizeof(*pairs), warmOrder);
++	// A block compiled again after a flush is on it twice: the first is kept, so the list stays in
++	// the order the game first ran its code and the next run compiles ahead in that order (PokeDaisy:
++	// in address order, a list longer than the code memory has room for warmed whatever came first).
++	uint32_t* order = count ? malloc(count * 3 * sizeof(*order)) : NULL;
++	if (!order) {
++		qsort(pairs, count, 2 * sizeof(*pairs), warmOrder);
++		size_t kept = 0;
++		for (size_t i = 0; i < count; ++i) {
++			if (!kept || pairs[2 * i] != pairs[2 * kept - 2] || pairs[2 * i + 1] != pairs[2 * kept - 1]) {
++				pairs[2 * kept] = pairs[2 * i];
++				pairs[2 * kept + 1] = pairs[2 * i + 1];
++				++kept;
++			}
++		}
++		return kept;
++	}
++	for (size_t i = 0; i < count; ++i) {
++		order[3 * i] = pairs[2 * i];
++		order[3 * i + 1] = pairs[2 * i + 1];
++		order[3 * i + 2] = (uint32_t) i;
++	}
++	qsort(order, count, 3 * sizeof(*order), warmOrderPlace);
+ 	size_t kept = 0;
+ 	for (size_t i = 0; i < count; ++i) {
+-		if (!kept || pairs[2 * i] != pairs[2 * kept - 2] || pairs[2 * i + 1] != pairs[2 * kept - 1]) {
++		if (i && order[3 * i] == order[3 * i - 3] && order[3 * i + 1] == order[3 * i - 2]) {
++			pairs[2 * order[3 * i + 2]] = 0; // a later copy
++		}
++	}
++	for (size_t i = 0; i < count; ++i) {
++		if (pairs[2 * i]) {
+ 			pairs[2 * kept] = pairs[2 * i];
+ 			pairs[2 * kept + 1] = pairs[2 * i + 1];
+ 			++kept;
+ 		}
+ 	}
++	free(order);
+ 	return kept;
+ }
+ 
+@@ -2483,9 +2520,10 @@ bool jitWarmStep(struct GBA* gba) {
+ 	if (!jit || !jit->warmCount || jit->flushRequested || jit->waitsChanged || gba->traceFile) {
+ 		return false;
+ 	}
+-	// Only into code memory nothing else has asked for: once it is half full the list is dropped,
+-	// rather than bring on the flush that throws everything away.
+-	if ((size_t) (jit->codeNext - jit->codeStart) > jit->codeSize / 2) {
++	// Only into code memory nothing else has asked for: once it is three quarters full the list is
++	// dropped, rather than bring on the flush that throws everything away (PokeDaisy: half left most
++	// of a big hack's list out, its battles compiled the first time each run).
++	if ((size_t) (jit->codeNext - jit->codeStart) > jit->codeSize / 4 * 3) {
+ 		jit->warmCount = 0;
  		return false;
  	}
 diff --git a/src/cpu/step.c b/src/cpu/step.c

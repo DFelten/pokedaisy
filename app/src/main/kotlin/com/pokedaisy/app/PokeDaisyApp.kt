@@ -5,6 +5,22 @@ import okio.Path.Companion.toOkioPath
 
 /** Process start: counts the app open (for CrashReports' one-time ask) and applies the crash-report choice. */
 class PokeDaisyApp : Application() {
+    /**
+     * The device's own controller has no L3 / R3 to press ([Hotkeys.noStickClicks]): the Retroid Pocket Classic by name
+     * (no sticks, but its controller driver lists the stick buttons anyway), else a gamepad that says it has neither.
+     * No gamepad (a phone) or one with them: false.
+     */
+    private fun noStickClicks(): Boolean = runCatching {
+        if (android.os.Build.MODEL.equals("Retroid Pocket Classic", ignoreCase = true)) return@runCatching true
+        val pads = android.view.InputDevice.getDeviceIds().toList().mapNotNull { id -> android.view.InputDevice.getDevice(id) }.filter { d ->
+            !d.isVirtual && (d.sources and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD &&
+                d.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0]
+        }
+        pads.isNotEmpty() && pads.none { pad: android.view.InputDevice ->
+            pad.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_THUMBL, android.view.KeyEvent.KEYCODE_BUTTON_THUMBR).all { it }
+        }
+    }.getOrDefault(false)
+
     override fun onCreate() {
         super.onCreate()
         // The data code reads the emulator through MgbaCore (companion/data/EmulatorCore.kt).
@@ -37,6 +53,8 @@ class PokeDaisyApp : Application() {
             com.pokedaisy.app.companion.ui.CompanionSkins.enabled = p.gameLook
             com.pokedaisy.app.companion.ui.CompanionSkins.onChange = { p.gameLook = it }
         }
+        // No L3 / R3 on the device's controller: QUICK MENU on Y, COMPANION on X (read before any hotkeys file is).
+        Hotkeys.noStickClicks = noStickClicks()
         val prefs = Prefs(this)
         prefs.appOpenCount = (prefs.appOpenCount + 1).coerceAtMost(1000)
         CrashReports.apply(prefs.crashReportsEnabled)

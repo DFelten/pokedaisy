@@ -124,7 +124,7 @@ fun androidx.compose.ui.Modifier.pixelClip(shape: Shape): androidx.compose.ui.Mo
 /** A pixel pill (or circle, when square) - replaces `CircleShape` / `RoundedCornerShape(50)`. */
 val PixelPillShape = PixelRoundedShape(Dp.Infinity)
 
-/** drawRoundRect, pixel-stepped. [radius] and [step] in px. */
+/** drawRoundRect, pixel-stepped. [radius] and [step] in px. Drawn as rows of rectangles ([Stairs]), not a path. */
 fun DrawScope.drawPixelRoundRect(
     color: Color,
     topLeft: Offset = Offset.Zero,
@@ -133,7 +133,26 @@ fun DrawScope.drawPixelRoundRect(
     step: Float = gbaPixelPx(),
 ) {
     if (size.width <= 0f || size.height <= 0f) return
-    drawPath(pixelRoundRectPath(size, radius, step, topLeft), color)
+    // A smooth skin's corners are arcs: a rounded rectangle, which the GPU fills by itself.
+    if (CompanionSkins.current.smooth) {
+        drawPath(pixelRoundRectPath(size, radius, step, topLeft), color)
+        return
+    }
+    drawStairs(color, Stairs(size, radius, radius, radius, radius, step), topLeft, null, 0f)
+}
+
+/** [drawPixelRoundRect] with a radius per corner (top-left, top-right, bottom-right, bottom-left): a panel's header band
+ * rounding with its window's top only. */
+fun DrawScope.drawPixelCornersRect(
+    color: Color, topLeft: Float, topRight: Float, bottomRight: Float, bottomLeft: Float,
+    at: Offset = Offset.Zero, size: Size = this.size, step: Float = gbaPixelPx(),
+) {
+    if (size.width <= 0f || size.height <= 0f) return
+    if (CompanionSkins.current.smooth) {
+        drawPath(pixelCornersPath(size, topLeft, topRight, bottomRight, bottomLeft, step, at), color)
+        return
+    }
+    drawStairs(color, Stairs(size, topLeft, topRight, bottomRight, bottomLeft, step), at, null, 0f)
 }
 
 /** A pixel-stepped rounded frame [width] px thick: the outer shape minus the inner one. */
@@ -149,11 +168,120 @@ fun DrawScope.drawPixelRoundFrame(
         drawPixelRoundRect(color, topLeft, size, radius, step)
         return
     }
-    val outer = pixelRoundRectPath(size, radius, step, topLeft)
-    val inner = pixelRoundRectPath(
-        Size(size.width - 2 * width, size.height - 2 * width),
-        (radius - width).coerceAtLeast(0f), step,
-        Offset(topLeft.x + width, topLeft.y + width),
+    val innerSize = Size(size.width - 2 * width, size.height - 2 * width)
+    val innerRadius = (radius - width).coerceAtLeast(0f)
+    if (CompanionSkins.current.smooth) {
+        val outer = pixelRoundRectPath(size, radius, step, topLeft)
+        val inner = pixelRoundRectPath(innerSize, innerRadius, step, Offset(topLeft.x + width, topLeft.y + width))
+        drawPath(Path().apply { op(outer, inner, PathOperation.Difference) }, color)
+        return
+    }
+    drawStairs(
+        color, Stairs(size, radius, radius, radius, radius, step), topLeft,
+        Stairs(innerSize, innerRadius, innerRadius, innerRadius, innerRadius, step), width,
     )
-    drawPath(Path().apply { op(outer, inner, PathOperation.Difference) }, color)
+}
+
+/**
+ * A pixel-cornered rect as the rows it's made of. A staircase corner is a path the GPU can't fill by itself: with
+ * anti-aliasing, Android's renderer paints each one into a mask on the CPU and uploads it as a texture, a window's
+ * whole size, every time its layer is drawn again. On the Retroid Pocket Classic (2026-11-22) SETTINGS spent ~9 ms
+ * of its RenderThread and ~15 ms of GPU a frame on them (77 MB of masks), so the menus stuttered at a low CPU
+ * reading. The same shape as a few rectangles, one per run of rows with the same insets, the GPU draws directly.
+ */
+private class Stairs(size: Size, topLeft: Float, topRight: Float, bottomRight: Float, bottomLeft: Float, val step: Float) {
+    val w = size.width
+    val h = size.height
+    private val limit = minOf(w, h) / 2f
+    private fun steps(radius: Float) = floor(radius.coerceAtMost(limit).coerceAtLeast(0f) / step).toInt()
+    private val tl = staircase(steps(topLeft))
+    private val tr = staircase(steps(topRight))
+    private val br = staircase(steps(bottomRight))
+    private val bl = staircase(steps(bottomLeft))
+
+    /** The left / right edge of the row through [y] (both from the shape's own top left). */
+    fun left(y: Float): Float = inset(y, tl, bl) * step
+    fun right(y: Float): Float = w - inset(y, tr, br) * step
+
+    private fun inset(y: Float, top: IntArray, bottom: IntArray): Int {
+        val fromTop = floor(y / step).toInt()
+        if (fromTop < top.size) return top[fromTop]
+        val fromBottom = floor((h - y) / step).toInt()
+        return if (fromBottom < bottom.size) bottom[fromBottom] else 0
+    }
+
+    /** Every y (from [dy]) where a row's insets can change: the edges and each corner row's. */
+    fun breaks(into: FloatList, dy: Float) {
+        into.add(dy)
+        into.add(dy + h)
+        for (j in 1..maxOf(tl.size, tr.size)) into.add(dy + j * step)
+        for (j in 1..maxOf(bl.size, br.size)) into.add(dy + h - j * step)
+    }
+}
+
+/** Row j of a corner of [n] steps (from the outer edge) is inset this many steps: a quarter circle of radius n, sampled at each row's outer edge. */
+private fun staircase(n: Int) = IntArray(n) { j -> n - floor(sqrt((n * n - (n - j) * (n - j)).toFloat())).toInt() }
+
+/** A growable float array, so a draw makes no boxed Floats. */
+private class FloatList {
+    var data = FloatArray(32)
+    var size = 0
+    fun add(v: Float) {
+        if (size == data.size) data = data.copyOf(size * 2)
+        data[size++] = v
+    }
+}
+
+/**
+ * No anti-aliasing, so rows meeting at a fraction of a pixel leave no seam. A spare one kept for reuse (bitmaps are drawn
+ * off the UI thread too: a draw takes it, or makes its own while another thread has it, and gives it back), so drawing
+ * allocates none in the usual case. Common code: no ThreadLocal.
+ */
+private val stairPaintSpare = kotlinx.atomicfu.atomic<androidx.compose.ui.graphics.Paint?>(null)
+
+/**
+ * Fills [outer] at [at], less [inner] at [at] + ([inset], [inset]) when there is one (a frame): row by row, rows with
+ * the same spans merged into one rectangle each.
+ */
+private fun DrawScope.drawStairs(color: Color, outer: Stairs, at: Offset, inner: Stairs?, inset: Float) {
+    val ys = FloatList()
+    outer.breaks(ys, 0f)
+    inner?.breaks(ys, inset)
+    ys.data.sort(0, ys.size)
+    val stairPaint = stairPaintSpare.getAndSet(null) ?: androidx.compose.ui.graphics.Paint().apply { isAntiAlias = false }
+    stairPaint.color = color
+    val canvas = drawContext.canvas
+    // The run being built: its top, and its spans (b2 < a2 when there is only one).
+    var runTop = Float.NaN
+    var runBottom = 0f
+    var a1 = 0f; var b1 = 0f; var a2 = 0f; var b2 = -1f
+    fun flush() {
+        if (runTop.isNaN()) return
+        if (b1 > a1) canvas.drawRect(at.x + a1, at.y + runTop, at.x + b1, at.y + runBottom, stairPaint)
+        if (b2 > a2) canvas.drawRect(at.x + a2, at.y + runTop, at.x + b2, at.y + runBottom, stairPaint)
+    }
+    var y0 = ys.data[0]
+    for (i in 1 until ys.size) {
+        val y1 = ys.data[i]
+        if (y1 - y0 < 0.01f) continue
+        val mid = (y0 + y1) / 2f
+        val ol = outer.left(mid)
+        val or = outer.right(mid)
+        var n1 = ol; var m1 = or; var n2 = 0f; var m2 = -1f
+        if (inner != null && mid > inset && mid < inset + inner.h) {
+            val il = inset + inner.left(mid - inset)
+            val ir = inset + inner.right(mid - inset)
+            if (ir > il) { m1 = il; n2 = ir; m2 = or }
+        }
+        if (!runTop.isNaN() && n1 == a1 && m1 == b1 && n2 == a2 && m2 == b2) {
+            runBottom = y1
+        } else {
+            flush()
+            runTop = y0; runBottom = y1
+            a1 = n1; b1 = m1; a2 = n2; b2 = m2
+        }
+        y0 = y1
+    }
+    flush()
+    stairPaintSpare.value = stairPaint
 }

@@ -108,6 +108,9 @@ object NewFeatures {
     /** The BOXES tab (companion.ui.BoxesScreen): the PC's boxes, retail FireRed first. Its rows are SETTINGS > TAB BAR's. */
     const val BOXES_TAB = "boxes_tab"
 
+    /** Crystal's TRAINER CARD (the CARD tab, Gen2TrainerCard): its row in SETTINGS > TAB BAR, while Crystal runs. */
+    const val CRYSTAL_CARD = "crystal_card"
+
     /** SETTINGS > TOUCH CONTROLS: layouts, size, opacity, extra buttons and EDIT LAYOUT (companion.ui.TouchControls). */
     const val TOUCH_CONTROLS = "touch_controls"
 
@@ -186,6 +189,8 @@ object NewFeatures {
 
     /** SETTINGS > FOLLOWER: the party's lead walks behind the player (pk_wide.c's follower). */
     const val FOLLOWER = "follower"
+    /** FOLLOWER on Crystal (pk_gb_follow.c: the lead's party icon drawn behind the player). */
+    const val FOLLOWER_CRYSTAL = "follower_crystal"
 
     /** HOTKEYS > COMPANION: opens the companion over the game on one screen (Hotkeys.Action.COMPANION). */
     const val COMPANION_HOTKEY = "companion_hotkey"
@@ -277,6 +282,8 @@ object NewFeatures {
     const val BATTLE_VIEW = "battle_view"
     /** Settings > GAME NAMES: the library by file name. */
     const val GAME_NAMES = "game_names"
+    /** Settings > GAME PATHS: the file's name under a game's, only where two names match. */
+    const val GAME_PATHS = "game_paths"
     /** Settings > SUPPORTED ONLY: the library without the games the companion can't read. */
     const val SUPPORTED_ONLY = "supported_only"
     /** SETTINGS > INSTANT TEXT: a text box's words at once (companion.data.InstantText). */
@@ -378,11 +385,11 @@ object NewFeatures {
         COMPANION_TAB, REUSABLE_TMS, SHINY_ODDS, UNLIT_SCREEN, LIGHT_COMPANION, X_COMPANION, PLAYER_LOOK, RIVAL_LOOK, TEXT_LOOK, DAY_NIGHT,
         FOLLOWER, COMPANION_HOTKEY, NUZLOCKE, GBA_BUTTONS, DS_RESOLUTION, TIPS, ROMS_FOLDERS, SAVE_BACKUPS, DISCORD, BOXES_TAB,
         GAME_VOLUME, ROM_PATCH, TRADE_EVOLUTIONS, DS_LAYOUT, DS_CPU_BOOST, LINK_PLAY, BATTLE_FOCUS, THEMES, SAVE_TRADE, SAVE_EDITOR_PLUS, RESET_CONTROLS, FOLD_LAYOUT, TABLETOP_CONTROLS, TOUCH_STYLES, TOUCH_SKINS,
-        AUDIO_EFFECTS, BATTLE_INFO, BATTLE_VIEW, GAME_NAMES, SUPPORTED_ONLY, LOOK_AROUND, INSTANT_TEXT, BATTLE_STYLE,
+        AUDIO_EFFECTS, BATTLE_INFO, BATTLE_VIEW, GAME_NAMES, GAME_PATHS, SUPPORTED_ONLY, LOOK_AROUND, INSTANT_TEXT, BATTLE_STYLE,
         QUICK_FLASH, ZOOM_SETTING, TOUCH_VIBRATION, TOUCH_MORE_BUTTONS, FREE_FLIGHT, SCENIC_FLY, FLIGHT_AREA, FLY_ON, RIDE_ON,
         DPAD_KEYS, RA_ICONS, DS_TOUCH_FILL, DS_CORE, DS_CORE_BANANADS, RA_POPUPS, HIDE_BATTLE_MENU, SPRITE_PACK, HM_FREE, POKEMON_CENTER, EXP_SHARE, LEVEL_CAP, REPEL_REFILL, SHINY_ALERT, LAST_BALL, ITEM_POPUPS, HUD_MOVE_ADVICE, BOSS_RETRY, LOW_HP_BEEP, FIELD_POISON, RUNNING_SHOES, SETTINGS_LOOK,
-        QUICK_TOUCH, APP_FONT, PIXEL_SMALL, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO,
-        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES,
+        QUICK_TOUCH, APP_FONT, PIXEL_SMALL, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
+        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL,
     )
 
     private const val DAYS = 7

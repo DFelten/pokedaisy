@@ -25,7 +25,7 @@ fun <T : Any> LinkSetupScreen(
     Box(Modifier.fillMaxSize()) {
         AppBackdrop()
         Column(Modifier.fillMaxSize().padding(16.dp)) {
-            OptionTitleWindow(tk("LINK PLAY"), m, onBack = onClose.takeUnless { starting })
+            ToolHeader(tk("LINK PLAY"), "LINK", m, onBack = onClose.takeUnless { starting })
             Spacer(Modifier.height(m.u * 4))
             OptionListWindow(m, Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 Column {

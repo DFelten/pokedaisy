@@ -825,7 +825,7 @@ class SaveEditorActivity : ComponentActivity() {
         Box(Modifier.fillMaxSize()) {
             AppBackdrop()
             Column(Modifier.fillMaxSize().padding(16.dp)) {
-                OptionTitleWindow(when { tradeOnly -> tk("TRADE SAVES"); palParkOnly -> tk("PAL PARK"); collectionOnly -> tk("COLLECTION"); transferOnly -> tk("POKé TRANSFER"); else -> tk("SAVE EDITOR") }, m, trailing = gameName, onBack = { finish() })
+                com.pokedaisy.app.companion.ui.ToolHeader(when { tradeOnly -> tk("TRADE SAVES"); palParkOnly -> tk("PAL PARK"); collectionOnly -> tk("COLLECTION"); transferOnly -> tk("POKé TRANSFER"); else -> tk("SAVE EDITOR") }, when { tradeOnly -> "TRADE"; palParkOnly -> "PALPARK"; collectionOnly -> "COLLECTION"; transferOnly -> "TRANSFER"; else -> "EDIT" }, m, trailing = gameName, onBack = { finish() })
                 Spacer(Modifier.height(m.u * 4))
                 // A pick-list over it (Picking): the title alone.
                 if (text.isNotEmpty()) OptionListWindow(m, Modifier.fillMaxWidth()) {
