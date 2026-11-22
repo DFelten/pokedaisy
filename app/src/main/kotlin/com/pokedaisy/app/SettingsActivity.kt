@@ -1,5 +1,8 @@
 package com.pokedaisy.app
 
+import com.pokedaisy.app.companion.ui.theme.LookBackground
+import com.pokedaisy.app.companion.ui.theme.LookSlot
+import com.pokedaisy.app.companion.ui.theme.MenuBarPlace
 import com.pokedaisy.app.companion.DsCore
 import com.pokedaisy.app.companion.OverlayImport
 import com.pokedaisy.app.companion.OverlayImportSession
@@ -136,7 +139,7 @@ import okio.source
  */
 class SettingsActivity : ComponentActivity() {
 
-    private enum class Screen { HOME, SPEED, DISPLAY, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, BACKUPS, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
+    private enum class Screen { HOME, SPEED, DISPLAY, MY_LOOK, THEME_EDIT, HOTKEYS, CONTROLS, SHADERS, FIELD_HUD, QUICK_MENU, TOUCH, OVERLAYS, FOLDERS, ROMS_FOLDERS, SAVES_FOLDER, SAVE_SEARCH, STATES_FOLDER, BACKUPS, COVER_ART, SCREENSCRAPER, HIDDEN, ACHIEVEMENTS, CHEATS, CHEAT_ADD, LICENSES, HELP, COOP_PAIR, COOP_JOIN, COOP_PARTNERS, COOP_RELAY }
 
     private lateinit var prefs: Prefs
     private var screen by mutableStateOf(Screen.HOME)
@@ -169,6 +172,8 @@ class SettingsActivity : ComponentActivity() {
 
     /** The pop-ups open over Settings (pick-lists, confirms): B / BACK closes the newest, the focus goes back to its row. */
     private val overlays = com.pokedaisy.app.companion.ui.OverlayStack()
+    /** The group tabs' L / R ([com.pokedaisy.app.companion.ui.GroupStep]). */
+    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** B / BACK closed a pop-up: its key up is the pop-up's too (or Android's BACK would follow and leave Settings). */
     private var backTaken = false
 
@@ -221,8 +226,6 @@ class SettingsActivity : ComponentActivity() {
     /** After focusing a tapped thing: true when something on the page took it (else HOME's first row should). */
     private fun homeHasFocusAfterTap(): Boolean = screen != Screen.HOME || homeHasFocus || window.currentFocus?.hasFocus() == true
 
-    /** L / R's way to the HOME list's group tabs. */
-    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** This screen's width / height - the top screen's, for the ASPECT preview. */
     private var screenAspect by mutableFloatStateOf(16f / 9f)
 
@@ -357,25 +360,33 @@ class SettingsActivity : ComponentActivity() {
             AppBackdrop(logos = tab)
             // The window's own shape from the first frame (rootSize starts as a guess: an upright phone showed the rail
             // for a frame before its bar).
-            val wide = maxWidth >= maxHeight
-            Row(Modifier.fillMaxSize()) {
-            if (tab && wide) LibraryLook { nm, ns ->
+            // MENU BAR: where the library has GAMES / TOOLS / SETTINGS, here too.
+            val place = com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarPlace.on(maxWidth >= maxHeight)
+            @androidx.compose.runtime.Composable
+            fun menuBar(vertical: Boolean, far: Boolean) = LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
-                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = true, nm, ns, toolsBadge = toolsNew,
-                    top = com.pokedaisy.app.companion.ui.libraryMargin, onPick = ::pickSection,
+                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = vertical, nm, ns, toolsBadge = toolsNew,
+                    top = if (vertical) com.pokedaisy.app.companion.ui.libraryMargin else 0.dp, far = far, onPick = ::pickSection,
                 )
             }
+            Row(Modifier.fillMaxSize()) {
+            if (tab && place == MenuBarPlace.LEFT) menuBar(vertical = true, far = false)
             Column(Modifier.weight(1f).fillMaxHeight()) {
             // The header along the screen's top edge and HOME's footer along its bottom, both full width (the library's
             // and TOOLS' look); the page between them keeps its margins.
-                if (tab && screen == Screen.HOME) LibraryLook { nm, _ ->
-                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
+                if (tab && screen == Screen.HOME) {
+                    LibraryLook { nm, _ ->
+                        com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
+                    }
+                    if (place == MenuBarPlace.TOP) menuBar(vertical = false, far = true)
                 } else {
                 com.pokedaisy.app.companion.ui.AppPageTitle(
                     title = when (screen) {
                         Screen.HOME -> tk("SETTINGS")
                         Screen.SPEED -> tk("SPEED OPTIONS")
                         Screen.DISPLAY -> tk("DISPLAY OPTIONS")
+                        Screen.MY_LOOK -> tk("MY LOOK")
+                        Screen.THEME_EDIT -> tk("EDIT THEME")
                         Screen.HOTKEYS -> tk("HOTKEYS")
                         Screen.CONTROLS -> tk("GAME BUTTONS")
                         Screen.SHADERS -> tk("SHADERS")
@@ -414,6 +425,8 @@ class SettingsActivity : ComponentActivity() {
                     Screen.HOME -> HomeScreen(m)
                     Screen.SPEED -> SubRowsScreen(m) { speedRows() }
                     Screen.DISPLAY -> SubRowsScreen(m) { displayRows() }
+                    Screen.MY_LOOK -> SubRowsScreen(m) { myLookRows() }
+                    Screen.THEME_EDIT -> SubRowsScreen(m) { themeEditRows() }
                     Screen.HOTKEYS -> HotkeysScreen(m, small)
                     Screen.CONTROLS -> ControlsScreen(m, small)
                     Screen.SHADERS -> ShadersScreen(m)
@@ -441,12 +454,9 @@ class SettingsActivity : ComponentActivity() {
                 }
             }
             if (screen == Screen.HOME) com.pokedaisy.app.companion.ui.AppAboutBar(BuildConfig.VERSION_NAME, m, ::openUrl)
-            if (tab && !wide) LibraryLook { nm, ns ->
-                com.pokedaisy.app.companion.ui.LibraryNav(
-                    com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = false, nm, ns, toolsBadge = toolsNew, onPick = ::pickSection,
-                )
+            if (tab && place == MenuBarPlace.BOTTOM) menuBar(vertical = false, far = false)
             }
-            }
+            if (tab && place == MenuBarPlace.RIGHT) menuBar(vertical = true, far = true)
             }
 
             selector?.slider?.let { read ->
@@ -457,9 +467,9 @@ class SettingsActivity : ComponentActivity() {
             selector?.takeIf { it.slider == null }?.let { sel ->
                 OptionSelector(
                     sel.title, sel.options, sel.current, { it }, m,
-                    onPick = { sel.onPick(it); selector = null; revision++ },
+                    onPick = { selector = null; sel.onPick(it); revision++ },
                     onDismiss = { selector = null },
-                    badge = sel.badge,
+                    badge = sel.badge, labelFont = sel.font, labelIcon = sel.icon,
                 )
             }
 
@@ -604,6 +614,26 @@ class SettingsActivity : ComponentActivity() {
                 )
             }
 
+            themeNaming?.let { id ->
+                val now = com.pokedaisy.app.companion.ui.theme.ThemeFiles.draft(id)?.name ?: ""
+                com.pokedaisy.app.companion.ui.LookNameDialog(tk("THEME NAME"), now, m, small, onDismiss = { themeNaming = null }) { name ->
+                    themeNaming = null
+                    val d = com.pokedaisy.app.companion.ui.theme.ThemeFiles.draft(id)
+                    val clean = com.pokedaisy.app.companion.ui.theme.ThemeDraft.cleanName(name)
+                    if (d != null && clean != null) runCatching { com.pokedaisy.app.companion.ui.theme.ThemeFiles.update(id, d.copy(name = clean)) }
+                    revision++
+                }
+            }
+            lookNotice?.let { (title, message) ->
+                OptionConfirm(title, message, tk("OK"), m, onConfirm = { lookNotice = null }, onDismiss = { lookNotice = null }, cancelLabel = null)
+            }
+            lookRemoving?.let { (title, label, action) ->
+                OptionConfirm(
+                    title = title, message = label, confirmLabel = tk("REMOVE"), m = m,
+                    onDismiss = { lookRemoving = null },
+                    onConfirm = { lookRemoving = null; action(); revision++ },
+                )
+            }
             removingOverlay?.let { (id, label) ->
                 OptionConfirm(
                     title = tk("REMOVE OVERLAY?"),
@@ -663,6 +693,7 @@ class SettingsActivity : ComponentActivity() {
     private fun goBack() {
         when {
             screen == Screen.CHEAT_ADD -> screen = Screen.CHEATS
+            screen == Screen.THEME_EDIT -> screen = Screen.MY_LOOK
             screen == Screen.HELP && docsUi.back() -> {}
             screen == Screen.HELP && helpOnly -> finish()
             // A save picked on the invite page: BACK to the save list (a link's page, from outside: the hub).
@@ -694,6 +725,9 @@ class SettingsActivity : ComponentActivity() {
         /** A slider setting's pop-up ([com.pokedaisy.app.companion.ui.OptionSliderPopup]) instead of a list: its value and
          *  slider, read fresh on each change. */
         val slider: (() -> Pair<String, com.pokedaisy.app.companion.ui.SettingSlider>)? = null,
+        /** An option's label in its own font (FONT TYPE), and a picture before it (THEME's colours). */
+        val font: (String) -> com.pokedaisy.app.companion.ui.theme.FontChoice? = { null },
+        val icon: (String) -> (@androidx.compose.runtime.Composable () -> Unit)? = { null },
         val onPick: (String) -> Unit,
     )
 
@@ -735,6 +769,304 @@ class SettingsActivity : ComponentActivity() {
     )
 
     /** DISPLAY OPTIONS: what's around the game (the status bar, the shaders, an overlay) and an upright phone's companion. */
+    // ---- MY LOOK ----------------------------------------------------------
+
+    /** MY LOOK's notice (title, message): what was added, or why not. */
+    private var lookNotice by mutableStateOf<Pair<String, String>?>(null)
+    /** MY LOOK's REMOVE confirm: its title, the thing's name, what removing does. */
+    private var lookRemoving by mutableStateOf<Triple<String, String, () -> Unit>?>(null)
+    /** Which picture CHOOSE A PICTURE is picking: a slot of the player's own (theme null) or of an added theme's. */
+    private var lookPictureFor: Pair<Int?, LookSlot> = null to LookSlot.APP
+    /** The theme whose font ADD A FONT is for (from the theme's page), or null. */
+    private var lookFontForTheme: Int? = null
+    /** The theme being edited (Screen.THEME_EDIT), and the one whose name is being typed. */
+    private var editingTheme by mutableStateOf<Int?>(null)
+    private var themeNaming by mutableStateOf<Int?>(null)
+    private var exportingTheme: Int? = null
+    private val pickLookPicture = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { importLookPicture(it, lookPictureFor) } }
+    private val exportLookTheme = registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(::exportTheme) }
+    private val pickLookTheme = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::importLookTheme) }
+    private val pickLookFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(::importLookFont) }
+
+    /** A picked file's name (never trusted for what it is: the bytes say that). */
+    private fun pickedName(uri: Uri): String = runCatching {
+        contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+    }.getOrNull() ?: uri.lastPathSegment?.substringAfterLast('/') ?: ""
+
+    /** Reads a picked file off the UI thread, hands it to [keep] there, and puts up [done]'s notice or why not ([failTitle]). */
+    private fun <T> importLook(read: () -> T, keep: (T) -> Unit, failTitle: String) {
+        Thread {
+            val read = runCatching(read)
+            runOnUiThread {
+                read.mapCatching(keep).onFailure { lookNotice = failTitle to lookReason(it) }
+                revision++
+            }
+        }.start()
+    }
+
+    /** CHOOSE A PICTURE: a still picture scaled to the screen's longer side (2560 px at most), or a moving GIF / WebP as it is. */
+    private fun importLookPicture(uri: Uri, target: Pair<Int?, LookSlot>) = importLook({ LookPictures.pick(this, uri) }, { p ->
+        val (theme, slot) = target
+        if (theme != null) {
+            com.pokedaisy.app.companion.ui.theme.ThemeFiles.setPicture(theme, slot, p.bytes, p.animated)
+        } else {
+            com.pokedaisy.app.companion.ui.theme.CustomLook.setPicture(slot, p.bytes, p.animated)
+            lookNotice = tk("PICTURE SET") to when (slot) {
+                LookSlot.COMPANION -> tr("It's behind the companion now.")
+                LookSlot.APP -> tr("It's behind the app's pages now.")
+                LookSlot.LEFT_BAR, LookSlot.RIGHT_BAR -> tr("It's beside the game now, when the game doesn't fill the screen.")
+            }
+        }
+    }, tk("NOT A PICTURE"))
+
+    /** EXPORT: the theme being exported as a pack (.zip) where the player saved it. */
+    private fun exportTheme(uri: Uri) {
+        val id = exportingTheme ?: return
+        importLook({
+            val files = com.pokedaisy.app.companion.ui.theme.ThemeFiles.export(id)
+            contentResolver.openOutputStream(uri)?.use { ThemePackFiles.write(files, it) } ?: throw com.pokedaisy.app.companion.ui.theme.LookImportError("That file couldn't be written")
+        }, { lookNotice = tk("THEME SAVED") to tr("Share the file with others: ADD A THEME takes it, with its font and pictures.") }, tk("NOT SAVED"))
+    }
+
+    /** ADD A THEME: a theme file (.json, docs/manual/screen.md's format) or a theme pack (.zip), worn at once. */
+    private fun importLookTheme(uri: Uri) = importLook({ ThemePackFiles.prepare(this, ThemePackFiles.read(this, uri)) }, { files ->
+        val theme = com.pokedaisy.app.companion.ui.theme.ThemeFiles.import(files)
+        com.pokedaisy.app.companion.ui.theme.pickTheme(theme)
+        lookNotice = tk("THEME ADDED") to tr("{0} is on. Pick it again any time under THEME.", theme.label)
+    }, tk("NOT A THEME"))
+
+    /** ADD A FONT: a TTF / OTF file, worn at once. */
+    private fun importLookFont(uri: Uri) = importLook({ pickedName(uri) to LookPictures.read(this, uri, com.pokedaisy.app.companion.ui.theme.LookLimits.FONT_BYTES, "font") }, { (name, bytes) ->
+        val font = com.pokedaisy.app.companion.ui.theme.CustomLook.addFont(name, bytes)
+        val theme = lookFontForTheme
+        lookFontForTheme = null
+        if (theme != null) com.pokedaisy.app.companion.ui.theme.ThemeFiles.setFont(theme, font)
+        com.pokedaisy.app.companion.ui.theme.AppFonts.wear(font)
+        lookNotice = tk("FONT ADDED") to tr("{0} is on. Pick it again any time under FONT TYPE.", font.label)
+    }, tk("NOT A FONT"))
+
+    private fun lookReason(e: Throwable): String =
+        if (e is com.pokedaisy.app.companion.ui.theme.LookImportError) tr(e.en, e.arg ?: "") else tr("That file couldn't be read.")
+
+    /** MY LOOK's rows: the player's themes (made here or added), the backgrounds, the side bars and the fonts. */
+    private fun myLookRows(): List<SettingRow> {
+        val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+        fun pickPicture(slot: LookSlot, theme: Int? = null) {
+            lookPictureFor = theme to slot
+            pickLookPicture.launch(arrayOf("image/*"))
+        }
+        fun backgroundRow(companion: Boolean): SettingRow {
+            val now = if (companion) look.companionBackground else look.appBackground
+            val slot = if (companion) LookSlot.COMPANION else LookSlot.APP
+            val label = tk(slot.label)
+            return SettingRow(
+                label, tk(now.label),
+                subtitle = if (companion) "Behind the companion's tabs, in a game too" else "Behind the library and settings",
+            ) {
+                val has = look.hasPicture(slot)
+                val options = listOfNotNull(
+                    LookBackground.DEFAULT.label,
+                    LookBackground.PICTURE.label.takeIf { has },
+                    LookBackground.SAME_AS_APP.label.takeIf { companion && look.hasPicture(LookSlot.APP) },
+                    tk("CHOOSE A PICTURE"),
+                    tk("REMOVE PICTURE").takeIf { has },
+                )
+                selector = Selector(label, options, now.label) { l ->
+                    when (l) {
+                        tk("CHOOSE A PICTURE") -> pickPicture(slot)
+                        tk("REMOVE PICTURE") -> lookRemoving = Triple(tk("REMOVE PICTURE?"), tr(label), { look.removePicture(slot) })
+                        else -> LookBackground.entries.firstOrNull { it.label == l }?.let { look.setBackground(companion, it) }
+                    }
+                    revision++
+                }
+            }
+        }
+        fun barRow(slot: LookSlot): SettingRow {
+            val has = look.hasPicture(slot)
+            val label = tk(slot.label)
+            return SettingRow(label, if (has) tk(if (look.own[slot]?.animated == true) "MOVING PICTURE" else "PICTURE") else tk("NONE")) {
+                selector = Selector(label, listOfNotNull(tk("CHOOSE A PICTURE"), tk("REMOVE PICTURE").takeIf { has }), "") { l ->
+                    when (l) {
+                        tk("CHOOSE A PICTURE") -> pickPicture(slot)
+                        tk("REMOVE PICTURE") -> lookRemoving = Triple(tk("REMOVE PICTURE?"), tr(label), { look.removePicture(slot) })
+                    }
+                    revision++
+                }
+            }
+        }
+        val worn = com.pokedaisy.app.companion.ui.theme.AppColors.chosen.id
+        return listOfNotNull(
+            groupTitle(tk("MY THEMES")),
+            SettingRow(tk("CREATE A THEME"), null, subtitle = "Starts from the colors you wear now") {
+                runCatching { com.pokedaisy.app.companion.ui.theme.ThemeFiles.create(com.pokedaisy.app.companion.ui.theme.AppColors.chosen) }
+                    .onSuccess { com.pokedaisy.app.companion.ui.theme.pickTheme(it); editingTheme = it.id; screen = Screen.THEME_EDIT }
+                    .onFailure { lookNotice = tk("NOT ADDED") to lookReason(it) }
+                revision++
+            },
+        ) + look.themes.map { t ->
+            SettingRow(
+                t.label, if (t.id == worn) tk("WORN") else null, opensPage = true,
+                labelIcon = com.pokedaisy.app.companion.ui.themeSwatch(t.label),
+                subtitle = if (com.pokedaisy.app.companion.ui.theme.ThemeFiles.hasFiles(t.id)) "With its own font or pictures" else null,
+            ) { editingTheme = t.id; screen = Screen.THEME_EDIT }
+        } + listOfNotNull(
+            SettingRow(tk("ADD A THEME"), null, subtitle = "A theme file (.zip or .json) someone shared") {
+                pickLookTheme.launch(arrayOf("application/zip", "application/json", "text/*", "application/octet-stream"))
+            },
+            groupTitle(tk("BACKGROUNDS")),
+            backgroundRow(false),
+            backgroundRow(true),
+            groupTitle(tk("SIDE BARS")),
+            sideBarsRow(),
+            barRow(LookSlot.LEFT_BAR),
+            barRow(LookSlot.RIGHT_BAR),
+            groupTitle(tk("FONTS")),
+            SettingRow(tk("ADD A FONT"), null, subtitle = "A TTF or OTF font file") { pickFontFile(null) },
+            SettingRow(tk("REMOVE A FONT"), null, subtitle = tr("{0} added", look.fonts.size)) {
+                selector = Selector(tk("REMOVE A FONT"), look.fonts.map { it.label }, "", font = { com.pokedaisy.app.companion.ui.fontOption(it) }) { l ->
+                    look.fonts.firstOrNull { it.label == l }?.let { f -> lookRemoving = Triple(tk("REMOVE FONT?"), f.label, { look.removeFont(f) }) }
+                }
+            }.takeIf { look.fonts.isNotEmpty() },
+        )
+    }
+
+    /** SIDE BARS (MY LOOK and the GAME SCREEN group): DEFAULT, BLACK or the player's pictures. */
+    private fun sideBarsRow(): SettingRow {
+        val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+        val now = look.sideBars
+        return SettingRow(
+            tk("SIDE BARS"), tk(now.label), subtitle = "Beside a game that doesn't fill the screen",
+            labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.SIDE_BARS),
+        ) {
+            selector = Selector(tk("SIDE BARS"), com.pokedaisy.app.companion.ui.theme.SideBars.entries.map { it.label }, now.label) { l ->
+                com.pokedaisy.app.companion.ui.theme.SideBars.entries.firstOrNull { it.label == l }?.let(look::changeSideBars)
+                revision++
+            }
+        }
+    }
+
+    private fun pickFontFile(theme: Int?) {
+        lookFontForTheme = theme
+        pickLookFont.launch(arrayOf("font/ttf", "font/otf", "font/sfnt", "application/x-font-ttf", "application/x-font-otf", "application/vnd.ms-opentype", "application/octet-stream"))
+    }
+
+    /**
+     * EDIT THEME: an added theme's name, its colour (HUE / SATURATION / LIGHTNESS, or a ready one), how much the windows
+     * take it, a light or dark page, its font and pictures; WEAR IT, EXPORT (a pack with everything in), DELETE. Every
+     * change is kept at once, and the theme is worn while it's edited, so the page shows it.
+     */
+    private fun themeEditRows(): List<SettingRow> {
+        val files = com.pokedaisy.app.companion.ui.theme.ThemeFiles
+        val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+        val id = editingTheme ?: return emptyList()
+        val draft = files.draft(id) ?: return listOf(SettingRow(tk("BACK"), null) { screen = Screen.MY_LOOK })
+        val spec = look.themes.firstOrNull { it.id == id } ?: return emptyList()
+        fun save(d: com.pokedaisy.app.companion.ui.theme.ThemeDraft) {
+            runCatching { files.update(id, d) }.onFailure { lookNotice = tk("NOT SAVED") to lookReason(it) }
+            revision++
+        }
+        val (h, sat, light) = com.pokedaisy.app.companion.ui.theme.hslOf(draft.color)
+        fun colorSlider(label: String, v: Int, range: IntRange, step: Int, set: (Int) -> com.pokedaisy.app.companion.ui.theme.ThemeDraft) =
+            SettingRow(tk(label), "$v", slider = com.pokedaisy.app.companion.ui.SettingSlider(v, range, step) { save(set(it)) }) {}
+        fun pictureRow(slot: LookSlot): SettingRow {
+            val pic = look.themePictures[id]?.get(slot)
+            val label = tk(slot.label)
+            return SettingRow(label, if (pic == null) tk("NONE") else tk(if (pic.animated) "MOVING PICTURE" else "PICTURE")) {
+                val options = listOfNotNull(
+                    tk("CHOOSE A PICTURE"),
+                    tk("USE MY PICTURE").takeIf { look.hasPicture(slot) },
+                    tk("REMOVE PICTURE").takeIf { pic != null },
+                )
+                selector = Selector(label, options, "") { l ->
+                    when (l) {
+                        tk("CHOOSE A PICTURE") -> { lookPictureFor = id to slot; pickLookPicture.launch(arrayOf("image/*")) }
+                        tk("USE MY PICTURE") -> runCatching { files.copyOwnPicture(id, slot) }.onFailure { lookNotice = tk("NOT A PICTURE") to lookReason(it) }
+                        tk("REMOVE PICTURE") -> files.removePicture(id, slot)
+                    }
+                    revision++
+                }
+            }
+        }
+        val font = look.fontNamed(draft.fontFile)
+        val worn = com.pokedaisy.app.companion.ui.theme.AppColors.chosen.id == id
+        val presets = THEME_PRESETS
+        return listOfNotNull(
+            SettingRow(tk("NAME"), draft.name, opensPage = true) { themeNaming = id },
+            groupTitle(tk("COLORS")),
+            SettingRow(
+                tk("COLOR"), com.pokedaisy.app.companion.ui.theme.ThemeDraft.hex(draft.color),
+                labelIcon = com.pokedaisy.app.companion.ui.themeSwatch(spec.label),
+                subtitle = "A ready color, or set it below",
+            ) {
+                selector = Selector(tk("COLOR"), presets.map { it.first }, "", icon = { name ->
+                    presets.firstOrNull { it.first == name }?.second?.let { c -> com.pokedaisy.app.companion.ui.colorSwatch(c) }
+                }) { l -> presets.firstOrNull { it.first == l }?.let { save(draft.recolored(it.second)) } }
+            },
+            colorSlider("HUE", h, 0..355, 5) { draft.recolored(com.pokedaisy.app.companion.ui.theme.hslColor(it.toFloat(), sat / 100f, light / 100f)) },
+            colorSlider("SATURATION", sat, 0..100, 5) { draft.recolored(com.pokedaisy.app.companion.ui.theme.hslColor(h.toFloat(), it / 100f, light / 100f)) },
+            colorSlider("LIGHTNESS", light, 15..85, 5) { draft.recolored(com.pokedaisy.app.companion.ui.theme.hslColor(h.toFloat(), sat / 100f, it / 100f)) },
+            colorSlider("WINDOW TINT", (draft.tint * 100).toInt(), 0..100, 10) { draft.copy(tint = it / 100f) },
+            // The windows' text: the look's own (AUTO), or a dark one of the ready ones (dark mode gets a light twin of it).
+            SettingRow(
+                tk("TEXT COLOR"), draft.textColor?.let { c -> TEXT_PRESETS.firstOrNull { it.second == c }?.first } ?: tk("AUTO"),
+                labelIcon = draft.textColor?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) },
+                subtitle = "The words in the windows", labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEME_COLORS),
+            ) {
+                val options = listOf(tk("AUTO"), tk("THEME COLOR")) + TEXT_PRESETS.map { it.first }
+                selector = Selector(tk("TEXT COLOR"), options, "", icon = { name ->
+                    TEXT_PRESETS.firstOrNull { it.first == name }?.second?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) }
+                        ?: if (name == tk("THEME COLOR")) com.pokedaisy.app.companion.ui.colorSwatch(themeTextOf(draft.color)) else null
+                }) { l ->
+                    save(when (l) {
+                        tk("AUTO") -> draft.copy(textColor = null, darkTextColor = null)
+                        tk("THEME COLOR") -> draft.copy(textColor = themeTextOf(draft.color), darkTextColor = null)
+                        else -> draft.copy(textColor = TEXT_PRESETS.first { it.first == l }.second, darkTextColor = null)
+                    })
+                }
+            },
+            // A second colour for the bands, buttons and tabs (and a glow of the backdrop); the windows keep COLOR's.
+            SettingRow(
+                tk("SECOND COLOR"), draft.secondColor?.let { c -> presets.firstOrNull { it.second == c }?.first ?: com.pokedaisy.app.companion.ui.theme.ThemeDraft.hex(c) } ?: tk("SAME AS COLOR"),
+                labelIcon = draft.secondColor?.let { com.pokedaisy.app.companion.ui.colorSwatch(it) },
+                subtitle = "The bands, buttons and tabs", labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEME_COLORS),
+            ) {
+                selector = Selector(tk("SECOND COLOR"), listOf(tk("SAME AS COLOR")) + presets.map { it.first }, "", icon = { name ->
+                    presets.firstOrNull { it.first == name }?.second?.let { c -> com.pokedaisy.app.companion.ui.colorSwatch(c) }
+                }) { l -> save(draft.copy(secondColor = presets.firstOrNull { it.first == l }?.second, glows = null)) }
+            },
+            SettingRow(tk("PAGE"), if (draft.darkPage) tk("DARK") else tk("LIGHT"), subtitle = "The backdrop behind the library and settings") {
+                save(draft.copy(darkPage = !draft.darkPage, page = null, glows = null))
+            },
+            groupTitle(tk("FONT AND PICTURES")),
+            SettingRow(tk("FONT"), font?.label ?: tk("NONE"), subtitle = "Worn with the theme") {
+                selector = Selector(tk("FONT"), listOf(tk("NONE")) + look.fonts.map { it.label } + tk("ADD A FONT"), font?.label ?: tk("NONE"),
+                    font = { com.pokedaisy.app.companion.ui.fontOption(it) }) { l ->
+                    when (l) {
+                        tk("NONE") -> files.setFont(id, null)
+                        tk("ADD A FONT") -> pickFontFile(id)
+                        else -> look.fonts.firstOrNull { it.label == l }?.let { f -> files.setFont(id, f); if (worn) com.pokedaisy.app.companion.ui.theme.AppFonts.wear(f) }
+                    }
+                    revision++
+                }
+            },
+            pictureRow(LookSlot.APP),
+            pictureRow(LookSlot.COMPANION),
+            pictureRow(LookSlot.LEFT_BAR),
+            pictureRow(LookSlot.RIGHT_BAR),
+            groupTitle(tk("THIS THEME")),
+            SettingRow(tk("WEAR IT"), null) { com.pokedaisy.app.companion.ui.theme.pickTheme(spec); revision++ }.takeIf { !worn },
+            SettingRow(tk("EXPORT"), null, subtitle = "A file to share: its font and pictures go with it") {
+                exportingTheme = id
+                exportLookTheme.launch(files.exportName(spec))
+            },
+            SettingRow(tk("DELETE THEME"), null) {
+                lookRemoving = Triple(tk("DELETE THEME?"), spec.label, { look.removeTheme(spec); screen = Screen.MY_LOOK })
+            },
+        )
+    }
+
     private fun displayRows(): List<SettingRow> {
         fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
         return listOfNotNull(
@@ -776,7 +1108,7 @@ class SettingsActivity : ComponentActivity() {
         val themes = com.pokedaisy.app.companion.ui.theme.availableThemes()
         fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
         // The same groups and order as the bottom screen's SETTINGS where they overlap; first how this list looks.
-        val rows = com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
+        val rows = com.pokedaisy.app.companion.ui.regroupSettings(com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
             groupTitle(tk("FF / SPEED")),
             SettingRow(tk("FF SPEED"), rateLabel(prefs.ffMaxSpeed)) {
                 selector = Selector(tk("FF SPEED"), rateLabels, rateLabel(prefs.ffMaxSpeed)) {
@@ -815,6 +1147,7 @@ class SettingsActivity : ComponentActivity() {
             // The game at 3:2, stretched to fill the screen, or WIDE (more of the map, BETA); picked by preview.
             SettingRow(tk("ASPECT"), aspectLabel(prefs.gameAspect),
                        badge = tk("BETA").takeIf { prefs.gameAspect == com.pokedaisy.app.companion.GameAspect.WIDE }, subtitle = "Original shape, stretched, or more of the map") { aspectPicker = true },
+            sideBarsRow(),
             // EXPAND only: whether a conversation, sign, menu or picture over the field pulls the zoom in (battles always do).
             SettingRow(tk("AUTO ZOOM IN"), onOff(prefs.expandZoomOnText)) {
                 prefs.expandZoomOnText = !prefs.expandZoomOnText
@@ -935,37 +1268,81 @@ class SettingsActivity : ComponentActivity() {
                 prefs.singleScreen = !prefs.singleScreen
                 revision++
             }.takeIf { hasSecondScreen },
+            // The whole app's look, RETRO or MODERN (its font with it), both screens at once.
+            com.pokedaisy.app.companion.ui.viewRow { revision++ },
             // Changes the colors immediately, everywhere - the companion screen too.
             SettingRow(
-                tk("THEME"), AppColors.theme.label,
+                tk("THEME"), AppColors.chosen.label,
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.THEMES),
             ) {
                 selector = Selector(
-                    tk("THEME"), themes.map { it.label }, AppColors.theme.label,
+                    tk("THEME"), themes.map { it.label }, AppColors.chosen.label,
                     badge = { l -> tk("LIMITED").takeIf { themes.firstOrNull { it.label == l }?.season != null } },
+                    icon = { com.pokedaisy.app.companion.ui.themeSwatch(it) },
                 ) { l -> themes.firstOrNull { it.label == l }?.let { com.pokedaisy.app.companion.ui.theme.pickTheme(it) } }
             },
-            // The game's own look on the companion and the HUD where it has one (CompanionSkins), or the app's classic one.
-            com.pokedaisy.app.companion.ui.gameLookRow { revision++ },
+            // The game's colours on the companion and its style on the HUD while it runs, or the theme (CompanionSkins).
+            com.pokedaisy.app.companion.ui.inGameRow { revision++ },
             // OFF / ON / AUTO (the device's), cycled on a tap so each look shows at once: both screens switch together.
             SettingRow(tk("DARK MODE"), DarkMode.setting.label) {
                 DarkMode.set(DarkMode.setting.next())
                 revision++
             },
-            // The app's text: the pixel font or a smooth one, both screens at once.
+            // The app's text: the pixel font or a smooth one (each drawn in itself), both screens at once.
             SettingRow(
-                tk("FONT"), com.pokedaisy.app.companion.ui.theme.AppFonts.current.label, subtitle = "Pixel letters or smooth ones",
+                tk("FONT TYPE"), com.pokedaisy.app.companion.ui.theme.AppFonts.currentLabel, subtitle = com.pokedaisy.app.companion.ui.fontSubtitle(),
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.PIXEL_SMALL),
             ) {
                 selector = Selector(
-                    tk("FONT"), com.pokedaisy.app.companion.ui.theme.AppFont.menu.map { it.label },
-                    com.pokedaisy.app.companion.ui.theme.AppFonts.current.label,
+                    tk("FONT TYPE"), com.pokedaisy.app.companion.ui.theme.AppFonts.menu().map { it.label },
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.currentLabel,
+                    font = { com.pokedaisy.app.companion.ui.fontOption(it) },
+                ) { l -> if (com.pokedaisy.app.companion.ui.theme.AppFonts.pick(l)) revision++ }
+            },
+            // The app's text a size down or up, both screens at once.
+            SettingRow(
+                tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFonts.sizeLabel, subtitle = "The app's text smaller or bigger",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.FONT_SIZE)
+                    ?: com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MORE_FONT_SIZES),
+            ) {
+                selector = Selector(
+                    tk("FONT SIZE"), com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.map { it.label },
+                    com.pokedaisy.app.companion.ui.theme.AppFonts.size.label,
+                    badge = { l ->
+                        com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MORE_FONT_SIZES)
+                            .takeIf { l == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM.label }
+                    },
                 ) { l ->
-                    com.pokedaisy.app.companion.ui.theme.AppFont.entries.firstOrNull { it.label == l }?.let {
-                        com.pokedaisy.app.companion.ui.theme.AppFonts.set(it)
+                    com.pokedaisy.app.companion.ui.theme.AppFontSize.entries.firstOrNull { it.label == l }?.let {
+                        com.pokedaisy.app.companion.ui.theme.AppFonts.changeSize(it)
+                        // MORE SIZES: its slider at once, the text resizing as it moves.
+                        if (it == com.pokedaisy.app.companion.ui.theme.AppFontSize.CUSTOM) selector = Selector(tk("MORE SIZES"), emptyList(), "", slider = {
+                            com.pokedaisy.app.companion.ui.fontSizeLabel() to com.pokedaisy.app.companion.ui.fontSizeSlider { revision++ }
+                        }) {}
                         revision++
                     }
                 }
+            },
+            // The player's own themes, fonts and background pictures.
+            SettingRow(
+                tk("MY LOOK"), null, subtitle = "Your own themes, fonts and backgrounds", opensPage = true,
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.MY_LOOK),
+            ) { screen = Screen.MY_LOOK },
+            // MENU BAR / MENU BAR SIZE: the library's GAMES / TOOLS / SETTINGS (here too) on any side, or icons alone.
+            com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+                SettingRow(tk("MENU BAR"), tk(look.menuBarPlace.label), subtitle = "Where GAMES, TOOLS and SETTINGS sit",
+                    labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.TAB_BAR_PLACE)) {
+                    selector = Selector(tk("MENU BAR"), MenuBarPlace.entries.map { it.label }, look.menuBarPlace.label) { l ->
+                        MenuBarPlace.entries.firstOrNull { it.label == l }?.let { look.changeMenuBar(place = it) }
+                        revision++
+                    }
+                }
+            },
+            SettingRow(tk("MENU BAR SIZE"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarCompact) tk("COMPACT") else tk("NORMAL"),
+                subtitle = "COMPACT: the icons alone",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.TAB_BAR_PLACE)) {
+                com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeMenuBar(compact = !it.menuBarCompact) }
+                revision++
             },
             // The game's frames per second and the app's CPU share, in the game's corner.
             SettingRow(tk("FPS / CPU"), onOff(prefs.showPerformance), subtitle = "Speed and CPU use in the game's corner") {
@@ -1080,7 +1457,7 @@ class SettingsActivity : ComponentActivity() {
             ) { openUrl(Discord.URL) },
             // The manual (docs/manual, served by the website), readable offline once fetched.
             SettingRow(tk("HELP"), null, opensPage = true) { screen = Screen.HELP },
-        )
+        ))
         // Search: every row whose name, value or keywords (SETTING_KEYWORDS: "rebind", "keybinds"...) match.
         // D-pad focus starts on the first setting (it used to land on the search box first), once per visit to Settings;
         // B / BACK in the search box comes back there too.
@@ -2238,3 +2615,21 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 }
+
+/** EDIT THEME > COLOR's ready colours, by name. */
+private val THEME_PRESETS = listOf(
+    "BLUE" to 0xFF3D6FE0, "SKY" to 0xFF2E9CDB, "TEAL" to 0xFF1E9E8E, "GREEN" to 0xFF3E9E48, "LIME" to 0xFF8AB82A,
+    "YELLOW" to 0xFFE0B020, "ORANGE" to 0xFFE8743C, "RED" to 0xFFD23A3A, "PINK" to 0xFFE0508C, "PURPLE" to 0xFF8A4FD0,
+    "INDIGO" to 0xFF4F4FB8, "BROWN" to 0xFF8E5E3A, "GREY" to 0xFF6E7681,
+).map { (n, c) -> tk(n) to androidx.compose.ui.graphics.Color(c) }
+
+/** EDIT THEME > TEXT COLOR's ready colours: dark enough to read on the light windows (dark mode takes a light twin). */
+private val TEXT_PRESETS = listOf(
+    "CHARCOAL" to 0xFF2E2E36, "SLATE" to 0xFF3C4A5C, "NAVY" to 0xFF1F2E5C, "FOREST" to 0xFF1F4A2E,
+    "WINE" to 0xFF5C1F2E, "PLUM" to 0xFF4A2A5C, "COCOA" to 0xFF4A3426,
+).map { (n, c) -> tk(n) to androidx.compose.ui.graphics.Color(c) }
+
+/** TEXT COLOR's THEME COLOR: the theme's colour, deep enough to read as text. */
+private fun themeTextOf(c: androidx.compose.ui.graphics.Color) = com.pokedaisy.app.companion.ui.theme.hslColor(
+    com.pokedaisy.app.companion.ui.theme.hueOf(c), 0.55f, 0.28f,
+)

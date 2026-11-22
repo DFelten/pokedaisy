@@ -105,9 +105,32 @@ class CompanionSkin(
     val darkToo: Boolean = true,
     /** The HUD in this game's look (LOOK GAME); null = GAME is GLASS for this game. */
     val hud: SkinHud? = null,
+    /** [colors]' own dark twin (VIEW MODERN), in DARK MODE in their place. */
+    val darkColors: SkinColors? = null,
+    /** Smooth corners this much rounder than the pixel ones (VIEW MODERN's cards). */
+    val radiusScale: Float = 1f,
+    /** Frames' lines this share of their GBA pixels (VIEW MODERN: hairlines, never under one screen pixel). */
+    val frameScale: Float = 1f,
+    /** A soft shadow under every window and button (VIEW MODERN): its colour at the darkest, null for none. */
+    val dropShadow: Color? = null,
 ) {
     /** [colors] as they apply now (DARK MODE, [darkToo]). */
-    val activeColors: SkinColors? get() = if (!darkToo && DarkMode.on) null else colors
+    val activeColors: SkinColors? get() = if (DarkMode.on) darkColors ?: (if (!darkToo) null else colors) else colors
+}
+
+private val themedSkins = HashMap<Triple<SkinColors, Float, Color>, SkinColors>()
+
+/** VIEW MODERN's colours in a THEME's [hue]: its blues moved to it (as its menu style's are), its values in the theme's. */
+fun SkinColors.inTheme(hue: Float, value: Color): SkinColors = themedSkins.getOrPut(Triple(this, hue, value)) {
+    val f = com.pokedaisy.app.companion.ui.theme.MODERN_FAMILY
+    fun Color.r() = with(com.pokedaisy.app.companion.ui.theme.ThemeHue) { rehue(f, hue) }
+    fun List<Pair<Color, Int>>.r() = map { (c, w) -> c.r() to w }
+    SkinColors(
+        titleLayers.r(), titleFill.r(), titleText.r(), titleShadow.r(), listLayers.r(), listFill.r(), rowSelected.r(),
+        label.r(), labelShadow.r(), value, valueShadow, tabSelectedFill.r(), tabIdleFill.r(), onBackdrop.r(), onBackdropShadow.r(),
+        muted.r(), mutedShadow.r(), divider.r(), frameDark.r(), frameLight.r(), buttonLayers?.r(), buttonFill?.r(), buttonText?.r(),
+        buttonShadow?.r(),
+    )
 }
 
 object CompanionSkins {
@@ -513,13 +536,122 @@ object CompanionSkins {
         onChange?.invoke(on)
     }
 
+    /** The running game's own skin while one is open and IN GAME is GAME COLORS ([enabled]), else [PIXEL]; [override]
+     * (previews) stands in for it. Its HUD is the HUD's GAME look in either view. */
+    val gameSkin: CompanionSkin
+        get() = override?.takeIf { it !== MODERN }
+            ?: if (override != null || !OptionColors.inGame || !enabled) PIXEL else forGame(activeGame)
+
+    /**
+     * IN GAME GAME COLORS: the app's own menus (either VIEW's) in the game's colours, this hue, in place of the THEME (the
+     * user's call: GAME looked like the old windows, and FireRed must wear its HUD's gold). Null = no such game up
+     * (PIXEL, MY THEME, the 3DS games' smooth skins, which keep their own look).
+     */
+    val gameHue: Float?
+        get() {
+            val skin = gameSkin
+            if (skin.smooth) return null
+            if (skin === PIXEL) {
+                // A game with menu colours of its own but no skin: Unbound's purple (its style palette's, in RETRO).
+                if (override == null && (!OptionColors.inGame || !enabled)) return null
+                return GAME_HUES[activeGame]
+            }
+            return hueOf(skin)
+        }
+
+    /** Games without a skin whose companion still has colours of their own (`unboundStylePalette`'s purple). */
+    private val GAME_HUES = mapOf(GameKind.UNBOUND to 266f)
+
+    /** A game's colour: its HUD's strongest one (the most chroma among the panel's rings, fill and buttons), so the
+     * companion wears what the HUD over the game shows (the user's call: FireRed is its bag's gold, not the red of its
+     * name) - FireRed / LeafGreen and Emerald gold, Ruby / Sapphire orange, HeartGold / SoulSilver green, Platinum blue,
+     * Black / White teal, Black 2 / White 2 violet. Null for a skin without a HUD look. */
+    fun hueOf(skin: CompanionSkin): Float? = skinHues.getOrPut(skin.id) {
+        val hud = skin.hud ?: return@getOrPut null
+        val colors = hud.layers.map { it.first } + hud.buttonLayers.map { it.first } + listOf(hud.fill, hud.buttonTop, hud.buttonLow)
+        colors.maxByOrNull { c ->
+            val mx = maxOf(c.red, c.green, c.blue)
+            val mn = minOf(c.red, c.green, c.blue)
+            mx - mn
+        }?.let { c -> com.pokedaisy.app.companion.ui.theme.hueOf(c) }
+    }
+    private val skinHues = HashMap<String, Float?>()
+
     /** The skin in use now: the running game's while one is open ([OptionColors.inGame], Compose state) and GAME LOOK is
      * on, else [PIXEL]. [ui-preview / Paparazzi] can set [override]. Pokemon X / Y keep theirs either way: their companion
-     * was only ever drawn in it. */
+     * was only ever drawn in it. VIEW MODERN ([com.pokedaisy.app.companion.ui.theme.AppViews]): [MODERN] everywhere, but a
+     * game's own smooth skin (the 3DS games') while it's up. */
     val current: CompanionSkin
-        get() = override ?: if (!OptionColors.inGame) PIXEL else forGame(activeGame).let {
-            if (enabled) it else PIXEL
+        get() = run {
+            // [override] (previews) goes through [gameSkin], so a preview in VIEW MODERN shows MODERN in the game's colours.
+            val game = gameSkin
+            if (!com.pokedaisy.app.companion.ui.theme.AppViews.modern) game else if (game.smooth) game else MODERN
         }
+
+    /** VIEW MODERN: after Pokemon X / Y and the games since - white cards on a soft page, hairline rims and soft shadows,
+     * large smooth corners, gradient keys, Nunito, no text shadows. Its menus' build is [UiStyle.MODERN]'s palette (keys,
+     * sections, cells); these are the windows and text. */
+    val MODERN = CompanionSkin(
+        id = "modern",
+        smooth = true,
+        shadow = SkinShadow.NONE,
+        gradientFaces = true,
+        radiusScale = 2.2f,
+        frameScale = 0.4f,
+        dropShadow = Color(0x2E1B2A55),
+        colors = SkinColors(
+            titleLayers = listOf(Color(0xFFD5DCEA) to 1),
+            titleFill = Color(0xFFFFFFFF),
+            titleText = Color(0xFF232B40),
+            titleShadow = Color.Transparent,
+            listLayers = listOf(Color(0xFFD5DCEA) to 1),
+            listFill = Color(0xFFFFFFFF),
+            rowSelected = Color(0xFFE5EDFF),
+            label = Color(0xFF232B40),
+            labelShadow = Color.Transparent,
+            value = Color(0xFF2F62D8),
+            valueShadow = Color.Transparent,
+            tabSelectedFill = Color(0xFF3D6FE0),
+            tabIdleFill = Color(0xFFFFFFFF),
+            onBackdrop = Color(0xFF232B40),
+            onBackdropShadow = Color.Transparent,
+            muted = Color(0xFF7A8399),
+            mutedShadow = Color.Transparent,
+            divider = Color(0xFFE3E8F1),
+            frameDark = Color(0xFFC6CFDF),
+            frameLight = Color(0xFFE8EDF6),
+            buttonLayers = listOf(Color(0xFFCCD5E6) to 1),
+            buttonFill = Color(0xFFFFFFFF),
+            buttonText = Color(0xFF232B40),
+            buttonShadow = Color.Transparent,
+        ),
+        darkColors = SkinColors(
+            titleLayers = listOf(Color(0xFF333D55) to 1),
+            titleFill = Color(0xFF222A3D),
+            titleText = Color(0xFFE8ECF5),
+            titleShadow = Color.Transparent,
+            listLayers = listOf(Color(0xFF333D55) to 1),
+            listFill = Color(0xFF1C2333),
+            rowSelected = Color(0xFF2B3A62),
+            label = Color(0xFFE8ECF5),
+            labelShadow = Color.Transparent,
+            value = Color(0xFF8AAEFF),
+            valueShadow = Color.Transparent,
+            tabSelectedFill = Color(0xFF4C7EEA),
+            tabIdleFill = Color(0xFF222A3D),
+            onBackdrop = Color(0xFFE8ECF5),
+            onBackdropShadow = Color.Transparent,
+            muted = Color(0xFF98A1B6),
+            mutedShadow = Color.Transparent,
+            divider = Color(0xFF2E374C),
+            frameDark = Color(0xFF3A4560),
+            frameLight = Color(0xFF2A3348),
+            buttonLayers = listOf(Color(0xFF3A4560) to 1),
+            buttonFill = Color(0xFF283147),
+            buttonText = Color(0xFFE8ECF5),
+            buttonShadow = Color.Transparent,
+        ),
+    )
 
     /** Previews: this skin whatever the game (null = the rule above). */
     @Volatile var override: CompanionSkin? = null

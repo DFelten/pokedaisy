@@ -745,12 +745,19 @@ object PixelIcons {
 /** Draws a one-color [bitmap] ('1' = filled, see [PixelIcons]) centered in this composable's bounds. */
 @Composable
 fun PixelIcon(bitmap: List<String>, color: Color, modifier: Modifier = Modifier) {
+    // VIEW MODERN: the drawing's smooth twin, where it has one.
+    if (modernView) ModernGlyph.forPixel(bitmap)?.let { ModernIcon(it, color, modifier); return }
     PixelArt(bitmap, mapOf('1' to color), modifier)
 }
 
 /** Draws [bitmap] with each character colored by [palette] (unmapped = transparent), centered. */
 @Composable
 fun PixelArt(bitmap: List<String>, palette: Map<Char, Color>, modifier: Modifier = Modifier) {
+    // VIEW MODERN: the capsule ball drawn smooth in the same colours.
+    if (modernView && bitmap === PixelIcons.pokeBall) {
+        androidx.compose.foundation.Canvas(modifier) { drawModernBall(palette['R'], palette['W'], palette['K']) }
+        return
+    }
     val cols = bitmap.maxOf { it.length }
     Canvas(modifier = modifier) {
         // Whole screen pixels per cell, so every block is the same size.
@@ -778,6 +785,11 @@ fun ShadowedPixelIcon(
     /** One cell's size: a GBA pixel, or [GbaTextMetrics.fontPixel] to match the text beside it. */
     cell: androidx.compose.ui.unit.Dp = m.u,
 ) {
+    if (modernView) ModernGlyph.forPixel(bitmap)?.let { g ->
+        val side = cell * (maxOf(bitmap.size, bitmap.maxOf { it.length }) + 1)
+        ModernIcon(g, color, modifier.size(side))
+        return
+    }
     val h = bitmap.size + 1
     val w = bitmap.maxOf { it.length } + 1
     fun on(x: Int, y: Int) = bitmap.getOrNull(y)?.getOrNull(x) == '1'
@@ -800,7 +812,7 @@ fun GoldTrophy(modifier: Modifier = Modifier) =
 
 /** [PixelIcons.coffee] in Buy Me a Coffee's yellow, beside its link. */
 @Composable
-fun CoffeeCup(modifier: Modifier = Modifier) = PixelArt(
+fun CoffeeCup(modifier: Modifier = Modifier) = if (modernView) androidx.compose.foundation.Canvas(modifier.fillMaxSize()) { drawCoffeeMark(markInk()) } else PixelArt(
     PixelIcons.coffee,
     mapOf('K' to markInk(), 'B' to Color(0xFF784020), 'C' to Color(0xFFFFDD00), 'S' to Color(0xFF909090)),
     modifier.fillMaxSize(),
@@ -811,7 +823,7 @@ private fun markInk() = if (OptionColors.dark) Color(0xFFD8DCE4) else Color(0xFF
 
 /** [PixelIcons.kofi] in Ko-fi's white and red. */
 @Composable
-fun KofiMug(modifier: Modifier = Modifier) = PixelArt(
+fun KofiMug(modifier: Modifier = Modifier) = if (modernView) androidx.compose.foundation.Canvas(modifier.fillMaxSize()) { drawKofiMark(markInk()) } else PixelArt(
     PixelIcons.kofi,
     mapOf('K' to markInk(), 'W' to Color.White, 'R' to Color(0xFFFF5E5B)),
     modifier.fillMaxSize(),
@@ -819,7 +831,9 @@ fun KofiMug(modifier: Modifier = Modifier) = PixelArt(
 
 /** [PixelIcons.patreon] in Patreon's navy and coral. */
 @Composable
-fun PatreonMark(modifier: Modifier = Modifier) = PixelArt(
+fun PatreonMark(modifier: Modifier = Modifier) = if (modernView) androidx.compose.foundation.Canvas(modifier.fillMaxSize()) {
+    drawPatreonMark(if (OptionColors.dark) Color(0xFF9FB6C8) else Color(0xFF052D49))
+} else PixelArt(
     PixelIcons.patreon,
     mapOf('K' to markInk(), 'D' to if (OptionColors.dark) Color(0xFF9FB6C8) else Color(0xFF052D49), 'P' to Color(0xFFFF424D), 'H' to Color(0xFFFFA0A4)),
     modifier.fillMaxSize(),
@@ -827,12 +841,16 @@ fun PatreonMark(modifier: Modifier = Modifier) = PixelArt(
 
 /** [PixelIcons.github] in GitHub's near-black, beside the repo link. */
 @Composable
-fun GitHubMark(modifier: Modifier = Modifier) =
+fun GitHubMark(modifier: Modifier = Modifier) = if (modernView) androidx.compose.foundation.Canvas(modifier.fillMaxSize()) {
+    drawGitHubMark(if (OptionColors.dark) Color(0xFFD8DCE4) else Color(0xFF202020))
+} else
     PixelIcon(PixelIcons.github, if (OptionColors.dark) Color(0xFFD8DCE4) else Color(0xFF202020), modifier.fillMaxSize())
 
 /** [PixelIcons.discord] in Discord's blurple, beside its row and link. */
 @Composable
-fun DiscordMark(modifier: Modifier = Modifier) =
+fun DiscordMark(modifier: Modifier = Modifier) = if (modernView) androidx.compose.foundation.Canvas(modifier.fillMaxSize()) {
+    drawDiscordMark(if (OptionColors.dark) Color(0xFF8C95FF) else Color(0xFF5865F2))
+} else
     PixelIcon(PixelIcons.discord, if (OptionColors.dark) Color(0xFF8C95FF) else Color(0xFF5865F2), modifier.fillMaxSize())
 
 /** The Poké Ball rocking like a capture shake (tip left, tip right, rest) -

@@ -154,6 +154,8 @@ fun PalParkScreen(
                     if (warn) OptionColors.valueShadow else OptionColors.onBackdropShadow, small, Modifier.weight(1f), maxLines = 2)
                 OptionButton(tk("MIGRATE"), m, onClick = { state.migrate() }, emphasis = true,
                     enabled = link == null && n == PalPark.COUNT && !saving)
+                // Names under the sprites, or the sprites alone and larger (hidden at first): one switch for every box grid.
+                if (iconsGba != null || iconsDs != null) MonNamesButton(m)
                 OptionButton(tk("UNDO ALL"), m, onClick = { state.undoAll() }, enabled = state.changed && !saving)
                 OptionButton(tk("SAVE"), m, onClick = { state.confirmSave = true }, emphasis = true, enabled = state.changed && !saving)
             }

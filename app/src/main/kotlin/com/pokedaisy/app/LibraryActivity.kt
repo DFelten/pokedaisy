@@ -358,6 +358,8 @@ class LibraryActivity : ComponentActivity() {
         expandIntro = !prefs.expandIntroSeen && prefs.gameAspect != com.pokedaisy.app.companion.GameAspect.WIDE
         // BATTLE STYLE's pick, once: to everyone (first-time setup and EXPAND's introduction go first).
         battleStyleIntro = !prefs.battleStyleAsked
+        // VIEW's pick, once: to everyone (first-time setup and any update offer go first; the other windows wait for it).
+        appViewIntro = !prefs.appViewAsked
         // WHAT'S NEW, once after an update to a version with notes. A fresh install has nothing to tell: its version
         // counts as seen, so the next update's notes are the first.
         val updated = runCatching {
@@ -545,7 +547,7 @@ class LibraryActivity : ComponentActivity() {
         val small = rememberGbaTextMetrics(textScale = 1f)
         val library = remember(revision, sort, unsupportedRoms, searchQuery) { libraryPreferences.ordered(shownRoms(), sort) { it.absolutePath } }
         // Each game's console (a hack's is its base game's), once per revision: the quick views filter on it.
-        val views = remember(revision, library) { quickViewsOf(library) }
+        val views = remember(revision, library, libraryPreferences.viewOrder) { quickViewsOf(library) }
         val view = views.open(quickView)
         val roms = views.games(view)
 
@@ -557,11 +559,12 @@ class LibraryActivity : ComponentActivity() {
         val presentation = com.pokedaisy.app.companion.ui.LibraryPresentation(roms, gridView, section,
             views.shown, view, views.counts, library.isNotEmpty(), searchQuery,
             tr("No ROMs yet. Tap + to add a ROM file (a .gba, .zip or .7z) or your ROMs folders, or drop files into {0}",
-                "Android/data/$packageName/files/roms/"), tools)
+                "Android/data/$packageName/files/roms/"), tools, this.library.layout)
         val actions = this.library.actions(add = { addMenu = true }, refresh = ::refreshLibrary)
         com.pokedaisy.app.companion.ui.LibraryScreen(presentation, actions, m, small, key = { it.absolutePath },
             modifier = Modifier.onSizeChanged { screenSize = with(density) { DpSize(it.width.toDp(), it.height.toDp()) } },
-            focus = libraryFocus, overlays = { LibraryDialogs(m, small); GameLoadingCover(m) }) { rom, up ->
+            focus = libraryFocus, overlays = { LibraryDialogs(m, small); GameLoadingCover(m) },
+            showcase = remember(m) { showcase(m) }) { rom, up ->
             if (gridView) RomTile(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, upTo = up)
             else RomRow(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, upTo = up)
         }
@@ -736,7 +739,7 @@ class LibraryActivity : ComponentActivity() {
             }
 
             // After any update offer, never over setup (this screen isn't composed then).
-            if (crashAsk && updates.release == null && !whatsNewShown && !supportShown) {
+            if (crashAsk && !appViewIntroShown && updates.release == null && !whatsNewShown && !supportShown) {
                 // Shown = asked, whatever the answer (or none, if the app goes away): only once.
                 LaunchedEffect(Unit) { prefs.crashReportsAsked = true }
                 OptionConfirm(
@@ -779,7 +782,7 @@ class LibraryActivity : ComponentActivity() {
             }
 
             // After the crash-reports question, one at a time.
-            if (expandIntro && setup == null && !crashAsk && updates.release == null && !whatsNewShown && !supportShown && !seasonalShown) {
+            if (expandIntro && !appViewIntroShown && setup == null && !crashAsk && updates.release == null && !whatsNewShown && !supportShown && !seasonalShown) {
                 com.pokedaisy.app.companion.ui.ExpandIntro(
                     m, small,
                     onTurnOn = {
@@ -788,6 +791,15 @@ class LibraryActivity : ComponentActivity() {
                         expandIntro = false
                     },
                     onNotNow = { prefs.expandIntroSeen = true; expandIntro = false },
+                )
+            }
+
+            // First of the one-time windows: which view (RETRO / MODERN).
+            if (appViewIntroShown) {
+                com.pokedaisy.app.companion.ui.AppViewIntro(
+                    m, small, com.pokedaisy.app.companion.ui.theme.AppViews.current,
+                    onPick = { com.pokedaisy.app.companion.ui.theme.AppViews.set(it); prefs.appViewAsked = true; appViewIntro = false },
+                    onKeep = { prefs.appViewAsked = true; appViewIntro = false },
                 )
             }
 
@@ -970,6 +982,63 @@ class LibraryActivity : ComponentActivity() {
         com.pokedaisy.app.companion.ui.LibraryCover(bitmap, factsFor(rom).category, m, modifier)
     }
 
+    /** The immersive views' look at a game: its card, console, cover, ScreenScraper's art where it's been fetched, PLAY and its menu. */
+    private fun showcase(m: GbaTextMetrics) = com.pokedaisy.app.companion.ui.LibraryShowcase<File>(
+        game = ::libraryGame,
+        shape = { GameTitles.platform(this, it) },
+        cover = { rom -> rememberCover(rom) },
+        backdrop = { rom -> rememberMedia(rom, GameMedia.Kind.FANART, GameMedia.Kind.SCREENSHOT) },
+        logo = { rom -> rememberMedia(rom, GameMedia.Kind.WHEEL) },
+        facts = { rom ->
+            val f = launcherFacts(rom)
+            listOfNotNull(
+                GameTitles.platform(this, rom)?.label,
+                f.lastPlayed?.let { tr("Last played {0}", it) },
+                tr("Has a save").takeIf { f.hasSave },
+            ).let { listOf(it.joinToString("  ·  ")) }
+        },
+        play = ::play,
+        menu = { rom, open, dismiss -> RomOptionsMenu(open, dismiss, rom, m, onRename = { renaming = rom }, onDelete = { deleting = rom }) },
+    )
+
+    /** A game's cover, decoded off the UI thread once per revision ([CoverThumb]'s, without its box). */
+    @Composable
+    private fun rememberCover(rom: File): androidx.compose.ui.graphics.ImageBitmap? {
+        val key = "${rom.absolutePath}#$revision"
+        val hasCover = factsFor(rom).hasCover
+        val bitmap by produceKeyedState(if (hasCover) coverBitmaps.get(key) else null, key, hasCover) {
+            if (value == null && hasCover) {
+                val file = coverFile(rom)
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching { BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap() }.getOrNull()
+                }?.also { coverBitmaps.put(key, it) }
+            }
+        }
+        return bitmap
+    }
+
+    /** The first of [kinds] ScreenScraper fetched for [rom] (GameMedia), at most 1280 px a side; null while there's none. */
+    @Composable
+    private fun rememberMedia(rom: File, vararg kinds: GameMedia.Kind): androidx.compose.ui.graphics.ImageBitmap? {
+        val root = remember { GameMedia.root(this) }
+        val file = remember(rom, revision) { kinds.firstNotNullOfOrNull { GameMedia.existing(root, rom, it) } }
+        val key = file?.let { "${it.absolutePath}#${it.lastModified()}" }
+        val bitmap by produceKeyedState(key?.let { coverBitmaps.get(it) }, key) {
+            if (value == null && file != null && key != null) {
+                value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    runCatching {
+                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                        BitmapFactory.decodeFile(file.absolutePath, bounds)
+                        var sample = 1
+                        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 1280) sample *= 2
+                        BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
+                    }.getOrNull()
+                }?.also { coverBitmaps.put(key, it) }
+            }
+        }
+        return if (file == null) null else bitmap
+    }
+
     /** The library's margin to the screen's edges (half on a short screen: [com.pokedaisy.app.companion.ui.libraryMargin]). */
     private val SCREEN_MARGIN: androidx.compose.ui.unit.Dp @Composable get() = com.pokedaisy.app.companion.ui.libraryMargin
 
@@ -1084,8 +1153,6 @@ class LibraryActivity : ComponentActivity() {
         bump()
     }
 
-    /** A card in the OPTION list-window look; the last-played ROM gets the
-     * list's white "cursor" fill. D-pad focus tints it like a focused row. */
     /** Labels (lower-cased) two or more of the library's games share, worked out once per [revision]. */
     private var sameNames = emptySet<String>()
     private var sameNamesRevision = -1
@@ -1540,7 +1607,7 @@ class LibraryActivity : ComponentActivity() {
     private val libraryDialogOpen
         get() = searching || pickingSort || addMenu || renaming != null || deleting != null || gameInfo != null || coverPickerFor != null ||
             pendingImport != null || patcher.flow.step != null || spritePack.step != null || saveImports.pending != null || saveImports.importing != null || backupPick != null || updates.release != null || crashAsk ||
-            (expandIntro && !crashAsk) || battleStyleIntroShown || ssIntroShown || whatsNewShown || supportShown || seasonalShown
+            (expandIntro && !crashAsk) || appViewIntroShown || battleStyleIntroShown || ssIntroShown || whatsNewShown || supportShown || seasonalShown
 
     /** BACK for the library's windows (OptionOverlay & co.): the newest open one closes. */
     private val libraryBack = com.pokedaisy.app.companion.ui.CompanionBack()
@@ -1646,7 +1713,7 @@ class LibraryActivity : ComponentActivity() {
             }
             return true
         }
-        // LEFT off the left edge (the header's first button, the first quick view, the grid's first column) onto the rail.
+        // LEFT off the left edge (the header's first button, the first quick view, the grid's first column, any list row) onto the rail.
         if (vertical && code == KeyEvent.KEYCODE_DPAD_LEFT && !toolsOpen && (
                 launcher.headerCursor == 0 ||
                     (launcher.viewCursor && launcher.views.indexOf(launcher.view) <= 0) ||
@@ -1853,7 +1920,7 @@ class LibraryActivity : ComponentActivity() {
     private fun LauncherList(m: GbaTextMetrics, small: GbaTextMetrics, onMain: Boolean) {
         @Suppress("UNUSED_EXPRESSION") revision
         val games = launcher.games
-        val grid = gridView
+        val grid = gridView || library.layout.immersive
         val views = launcherViews
         val context = with(androidx.compose.ui.platform.LocalDensity.current) { (m.rowHeight / 2).roundToPx() }
         fun card(rom: File) = LauncherCard(
@@ -1898,6 +1965,7 @@ class LibraryActivity : ComponentActivity() {
                     com.pokedaisy.app.companion.ui.QuickViewPills(
                         views.shown, launcher.view, views.counts, m, small,
                         onPick = { launcher.viewCursor = false; pickQuickView(it) },
+                        onReorder = { this@LibraryActivity.library.reorderViews(it) },
                         contentPadding = PaddingValues(horizontal = SCREEN_MARGIN),
                         cursor = launcher.viewCursor,
                     )
@@ -1972,10 +2040,15 @@ class LibraryActivity : ComponentActivity() {
                         state = state,
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         contentPadding = padding,
-                        verticalArrangement = Arrangement.spacedBy(m.u * if (shortScreen) 3 else 4),
+                        // RETRO: the rows one window (LibraryCard's segments); MODERN: cards apart.
+                        verticalArrangement = if (com.pokedaisy.app.companion.ui.modernView) Arrangement.spacedBy(m.u * if (shortScreen) 3 else 4) else Arrangement.Top,
                     ) {
-                        itemsIndexed(games, key = { _, rom -> rom.absolutePath }) { _, rom ->
-                            RomRow(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, launcherCard = card(rom), showPath = onMain)
+                        itemsIndexed(games, key = { _, rom -> rom.absolutePath }) { i, rom ->
+                            androidx.compose.runtime.CompositionLocalProvider(
+                                com.pokedaisy.app.companion.ui.LocalListSegment provides com.pokedaisy.app.companion.ui.ListSegment(i, i == 0, i == games.lastIndex),
+                            ) {
+                                RomRow(rom, m, small, onRename = { renaming = rom }, onDelete = { deleting = rom }, launcherCard = card(rom), showPath = onMain)
+                            }
                         }
                     }
                 }
@@ -2047,20 +2120,25 @@ class LibraryActivity : ComponentActivity() {
 
     /** The update's one-time "set up ScreenScraper?" window: wanted (set in onCreate), then shown once nothing else is up. */
     internal var ssIntro by mutableStateOf(false)
-    private val ssIntroShown get() = ssIntro && setup == null && !crashAsk && updates.release == null && !expandIntro && !battleStyleIntro && !whatsNewShown && !supportShown && !seasonalShown
+    private val ssIntroShown get() = ssIntro && !appViewIntroShown && setup == null && !crashAsk && updates.release == null && !expandIntro && !battleStyleIntro && !whatsNewShown && !supportShown && !seasonalShown
     /** WHAT'S NEW is up: after any update offer, never over setup. */
-    private val whatsNewShown get() = whatsNew != null && setup == null && updates.release == null
+    private val whatsNewShown get() = whatsNew != null && setup == null && updates.release == null && !appViewIntroShown
+
+    /** VIEW's one-time pick ([com.pokedaisy.app.companion.ui.AppViewIntro]): wanted (set in onCreate), shown first once setup and
+     * any update offer are done; every other window waits for it. */
+    internal var appViewIntro by mutableStateOf(false)
+    private val appViewIntroShown get() = appViewIntro && setup == null && updates.release == null
     /** The support window is up: after any update offer and WHAT'S NEW, never over setup. */
-    private val supportShown get() = supportAsk && setup == null && updates.release == null && !whatsNewShown
+    private val supportShown get() = supportAsk && setup == null && updates.release == null && !whatsNewShown && !appViewIntroShown
 
     /** BATTLE STYLE's one-time pick ([com.pokedaisy.app.companion.ui.BattleStyleIntro]): wanted (set in onCreate), shown once nothing else is up. */
     internal var battleStyleIntro by mutableStateOf(false)
-    private val battleStyleIntroShown get() = battleStyleIntro && setup == null && !crashAsk && updates.release == null && !expandIntro && !whatsNewShown && !supportShown && !seasonalShown
+    private val battleStyleIntroShown get() = battleStyleIntro && !appViewIntroShown && setup == null && !crashAsk && updates.release == null && !expandIntro && !whatsNewShown && !supportShown && !seasonalShown
 
     /** A limited-time theme to announce ([com.pokedaisy.app.companion.ui.theme.seasonalThemeToAnnounce]; internal for ui-preview). */
     internal var seasonalTheme by mutableStateOf<com.pokedaisy.app.companion.ui.theme.ThemeSpec?>(null)
     /** Its popup is up: after any update offer, WHAT'S NEW and the support window, never over setup or the crash question. */
-    private val seasonalShown get() = seasonalTheme != null && setup == null && updates.release == null && !whatsNewShown && !supportShown && !crashAsk
+    private val seasonalShown get() = seasonalTheme != null && !appViewIntroShown && setup == null && updates.release == null && !whatsNewShown && !supportShown && !crashAsk
 
     /** The popup's sign-in (internal for ui-preview). */
     internal val ssLogin by lazy { ScreenScraperLogin.of(prefs) }

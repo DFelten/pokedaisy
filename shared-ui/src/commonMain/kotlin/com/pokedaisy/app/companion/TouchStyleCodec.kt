@@ -33,7 +33,25 @@ object TouchStyleCodec {
             useCustom = bool("touch_use_custom", d.useCustom),
             portrait = TouchLayout.decode(text("touch_layout_portrait")),
             landscape = TouchLayout.decode(text("touch_layout_landscape")),
-        )
+        ).let { style ->
+            // The player's layouts: one a line, name, upright and sideways places apart by tabs. Before there were several,
+            // the one layout kept becomes MY LAYOUT 1.
+            val raw = text("touch_layouts")
+            val saved = raw?.lines()?.mapNotNull(::decodeCustom).orEmpty()
+            if (saved.isEmpty()) {
+                if (raw != null || style.portrait.isEmpty && style.landscape.isEmpty) style
+                else style.copy(customs = listOf(TouchCustom(customName(emptyList()), style.portrait, style.landscape)), customIndex = 0)
+            } else {
+                val i = int("touch_custom_index", 0).coerceIn(0, saved.size - 1)
+                style.copy(customs = saved, customIndex = i)
+            }
+        }
+    }
+
+    private fun decodeCustom(line: String): TouchCustom? {
+        val parts = line.split('\t')
+        if (parts.size != 3 || parts[0].isBlank()) return null
+        return TouchCustom(parts[0], TouchLayout.decode(parts[1]), TouchLayout.decode(parts[2]))
     }
 
     fun write(v: TouchControlsStyle, text: (String, String?) -> Unit, int: (String, Int) -> Unit,
@@ -57,5 +75,7 @@ object TouchStyleCodec {
         bool("touch_use_custom", v.useCustom)
         text("touch_layout_portrait", v.portrait.encode())
         text("touch_layout_landscape", v.landscape.encode())
+        text("touch_layouts", v.customs.joinToString("\n") { c -> c.name.filter { it != '\t' && it != '\n' } + "\t" + c.portrait.encode() + "\t" + c.landscape.encode() })
+        int("touch_custom_index", v.customIndex)
     }
 }

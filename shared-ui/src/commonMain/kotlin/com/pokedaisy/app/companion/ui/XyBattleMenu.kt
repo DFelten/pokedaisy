@@ -432,7 +432,7 @@ internal fun XyText(
         val max = constraints.maxWidth.toFloat() - 2 * edge
         // SETTINGS > FONT's smooth fonts here too (the HUD, the battle buttons); PIXEL keeps the game's sans-serif.
         val appFont = com.pokedaisy.app.companion.ui.theme.AppFonts.current
-        val family = remember(appFont) { if (appFont.pixel) FontFamily.SansSerif else appFont.family() }
+        val family = remember(appFont, com.pokedaisy.app.companion.ui.theme.AppFonts.custom) { if (appFont.pixel) FontFamily.SansSerif else appFont.family() }
         fun style(px: Float) = TextStyle(
             fontSize = with(density) { px.toSp() }, fontFamily = family, fontWeight = weight, letterSpacing = spacing.em,
         )

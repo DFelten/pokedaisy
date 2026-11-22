@@ -57,6 +57,18 @@ class LibraryPreferencesTest {
         assertEquals(mapOf("ok" to 2L), prefs.played)
     }
 
+    @Test fun dragOrderSurvivesAndNewViewsFindTheirPlace() {
+        val prefs = open()
+        val shown = listOf(LibraryView.ALL, LibraryView.FAVORITES, LibraryView.RECENT, LibraryView.HACKS)
+        assertEquals(shown, prefs.orderViews(shown))
+        prefs.setViewOrder(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.FAVORITES))
+        val reopened = open()
+        assertEquals(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.FAVORITES), reopened.orderViews(shown))
+        // A view that wasn't there when the order was made (a first GBA game) goes in at its own place.
+        val more = listOf(LibraryView.ALL, LibraryView.FAVORITES, LibraryView.RECENT, LibraryView.GBA, LibraryView.HACKS)
+        assertEquals(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.GBA, LibraryView.FAVORITES), reopened.orderViews(more))
+    }
+
     @Test fun failedWritesDoNotClaimToHaveSavedAChange() {
         val prefs = LibraryPreferences({ saved }, { error("storage unavailable") })
         assertTrue(runCatching { prefs.toggleFavorite("a.gba") }.isFailure)

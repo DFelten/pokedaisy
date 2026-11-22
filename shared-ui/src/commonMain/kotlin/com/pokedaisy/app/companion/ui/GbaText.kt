@@ -116,12 +116,16 @@ fun rememberGbaTextMetrics(textScale: Float = 1.25f, wholePixels: Boolean = true
     // except where a layout is sized to the line ([gameScaled] false: the tab chips, battle INFO).
     val gameScale = if (gameScaled && com.pokedaisy.app.companion.ui.theme.AppFonts.current.pixel) com.pokedaisy.app.companion.ui.theme.LocalGameTextScale.current else 1f
     val step = LocalTextStep.current
-    return remember(density, textScale, wholePixels, gameScale, step) {
+    // FONT SIZE: the text a size down or up (paddings, in GBA pixels, stay).
+    val sizeFactor = com.pokedaisy.app.companion.ui.theme.AppFonts.currentSize.factor
+    return remember(density, textScale, wholePixels, gameScale, step, sizeFactor) {
         with(density) {
             val k = (20.dp.toPx() / 16f).roundToInt().coerceAtLeast(2)
-            val scale = textScale * gameScale
+            val scale = textScale * gameScale * sizeFactor
             // ~textScale x, normally rounded to a whole number of screen pixels per font pixel.
             var perPixel = if (wholePixels) (k * scale).roundToInt().coerceAtLeast(1).toFloat() else k * scale
+            // FONT SIZE SMALL never takes text below 1x (the 1x secondary text stayed legible; it'd drop to 2 screen px).
+            if (sizeFactor < 1f && wholePixels) perPixel = maxOf(perPixel, minOf((k * textScale * gameScale).roundToInt().toFloat(), k.toFloat()))
             // A big one-screen device ([LocalTextStep]): the bigger-than-1x text a font pixel down, not below 1x's.
             if (step < 0 && scale > 1f) perPixel = maxOf(perPixel + step, k.toFloat())
             val fontPx = if (wholePixels) 16f * perPixel else (16f * perPixel).roundToInt().toFloat()
@@ -130,10 +134,13 @@ fun rememberGbaTextMetrics(textScale: Float = 1.25f, wholePixels: Boolean = true
     }
 }
 
-fun gbaTextStyle(font: FontFamily, m: GbaTextMetrics, scaleX: Float = 1f) = TextStyle(
+fun gbaTextStyle(
+    font: FontFamily, m: GbaTextMetrics, scaleX: Float = 1f,
+    appFont: com.pokedaisy.app.companion.ui.theme.FontChoice = com.pokedaisy.app.companion.ui.theme.AppFonts.current,
+) = TextStyle(
     fontFamily = font,
-    // SETTINGS > FONT's smooth fonts, else a skin's font, set to Pixel Operator's capital height; the line keeps its height.
-    fontSize = com.pokedaisy.app.companion.ui.theme.AppFonts.current.let { f -> if (!f.pixel) f.sizeScale else CompanionSkins.current.fontScale }
+    // SETTINGS > FONT TYPE's smooth fonts, else a skin's font, set to Pixel Operator's capital height; the line keeps its height.
+    fontSize = appFont.let { f -> if (!f.pixel) f.sizeScale else CompanionSkins.current.fontScale }
         .let { k -> if (k == 1f) m.fontSize else m.fontSize * k },
     textGeometricTransform = if (scaleX == 1f) null else TextGeometricTransform(scaleX = scaleX),
     lineHeight = m.fontSize,
@@ -159,12 +166,19 @@ fun GbaText(
     bold: Boolean = false,
     /** Letters this much narrower (null: the game font's own, [gameFontScaleX]). */
     scaleX: Float? = null,
+    /** This font instead of the app's (FONT TYPE's pick-list: each name in its own letters). */
+    font: com.pokedaisy.app.companion.ui.theme.FontChoice? = null,
 ) {
     val scaleX = scaleX ?: gameFontScaleX(m)
-    val style = gbaTextStyle(pixelFontFamily(), m, scaleX)
+    val appFont: com.pokedaisy.app.companion.ui.theme.FontChoice = font ?: com.pokedaisy.app.companion.ui.theme.AppFonts.current
+    val pixel = appFont.pixel
+    // Bold in a smooth font (VIEW MODERN's Nunito, SETTINGS > FONT TYPE's) is its bold weight, not a second copy.
+    val style = gbaTextStyle(if (font != null) font.family() else pixelFontFamily(), m, scaleX, appFont).let {
+        if (bold && !pixel) it.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) else it
+    }
     // The GBA's shadow is a whole font pixel; under a smooth font (SETTINGS > FONT) half of one, so it stays a shadow.
-    val k = if (com.pokedaisy.app.companion.ui.theme.AppFonts.current.pixel) m.fontPixel.roundToInt() else (m.fontPixel * 0.5f).roundToInt().coerceAtLeast(1)
-    val b = if (bold) boldOffsetPx(m.fontPixel * scaleX) else 0
+    val k = if (pixel) m.fontPixel.roundToInt() else (m.fontPixel * 0.5f).roundToInt().coerceAtLeast(1)
+    val b = if (bold && pixel) boldOffsetPx(m.fontPixel * scaleX) else 0
     // The layout the text was given, for its copies; set before each draw (layout comes first), read only there. Only the
     // current text's: a label that changed in place at the same width (a tab chip when BATTLE takes a place in the bar) isn't
     // laid out again, and its copies drew the old word under the new one (DEX over MAP).
@@ -219,7 +233,7 @@ fun GbaRichText(
     val shadow = remember(parts) { build(true) }
     val main = remember(parts) { build(false) }
     Box(modifier) {
-        for ((dx, dy) in listOf(k to 0, 0 to k, k to k)) {
+        if (CompanionSkins.current.shadow == SkinShadow.PIXEL) for ((dx, dy) in listOf(k to 0, 0 to k, k to k)) {
             Text(shadow, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis, modifier = Modifier.offset { IntOffset(dx, dy) })
         }
         Text(main, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
@@ -250,7 +264,24 @@ fun gameFontScaleX(p: Float): Float {
     return (whole * w).roundToInt().coerceAtLeast(1) / whole.toFloat()
 }
 
-fun List<Pair<Color, Int>>.inPx(px: Float) = map { (color, u) -> color to u * px }
+fun List<Pair<Color, Int>>.inPx(px: Float): List<Pair<Color, Float>> {
+    // VIEW MODERN's hairlines: a share of the GBA pixels, a whole screen pixel at least.
+    val k = CompanionSkins.current.frameScale
+    return if (k == 1f) map { (color, u) -> color to u * px } else map { (color, u) -> color to maxOf(1f, kotlin.math.round(u * px * k)) }
+}
+
+/** A soft shadow under a rounded box this size: [layers] copies, each a little wider and lower and fainter, [color]'s
+ * alpha shared out between them (no blur: cheap enough for every window and button). */
+fun DrawScope.drawSoftShadow(color: Color, radius: Float, layers: Int = 4) {
+    val step = (size.minDimension * 0.02f).coerceIn(1f, 3f)
+    for (i in layers downTo 1) {
+        val spread = i * step
+        drawPixelRoundRect(
+            color.copy(alpha = color.alpha / layers), Offset(-spread * 0.5f, spread * 0.6f),
+            Size(size.width + spread, size.height + spread * 0.6f), radius + spread,
+        )
+    }
+}
 
 /**
  * Nested pixel-cornered rects, outermost layer first, then [fill]. [openRight] runs
@@ -272,6 +303,10 @@ fun DrawScope.drawLayeredBox(
     low: Color? = null,
 ) {
     val run = radius + layers.sumOf { it.second.toDouble() }.toFloat() + 1f
+    // VIEW MODERN: a soft shadow under the box (a few widening, fading copies a little below it), on a closed box only.
+    CompanionSkins.current.dropShadow?.let { shade ->
+        if (!openRight && !openBottom && !openTop && !openLeft && size.minDimension > 0f) drawSoftShadow(shade, radius)
+    }
     val left = if (openLeft) run else 0f
     val extraW = (if (openRight) run else 0f) + left
     val top = if (openTop) run else 0f

@@ -93,8 +93,8 @@ internal fun BagPage(state: PcBoxesState, bag: TrainerBagEditor, m: GbaTextMetri
 private fun PocketList(state: PcBoxesState, pockets: List<SavePocket>, open: PocketKind, m: GbaTextMetrics, modifier: Modifier) {
     OptionListWindow(m, modifier) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
-            for (p in pockets) {
-                OptionLine(pocketLabel(p.kind), "${p.stacks.size}/${p.slots}", selected = open == p.kind, m, labelWeight = 0.68f) {
+            pockets.forEachIndexed { i, p ->
+                OptionLine(pocketLabel(p.kind), "${p.stacks.size}/${p.slots}", selected = open == p.kind, m, labelWeight = 0.68f, stripe = i % 2 == 1) {
                     state.pocket = p.kind
                 }
             }
@@ -113,12 +113,12 @@ private fun StackList(state: PcBoxesState, bag: TrainerBagEditor, p: SavePocket,
             p.stacks.forEachIndexed { i, st ->
                 OptionLine(
                     state.itemText(st.item), "×${st.quantity}", selected = false, m, labelWeight = 0.8f, divider = true,
-                    enabled = !bag.fixedStack(p.kind, st.item),
+                    enabled = !bag.fixedStack(p.kind, st.item), stripe = i % 2 == 1,
                 ) { state.editing = PcBoxesState.Editing.Stack(p.kind, i) }
             }
             val have = p.stacks.map { it.item }.toSet()
             if (p.stacks.size < p.slots && addable.any { it !in have }) {
-                OptionLine(tk("ADD ITEM"), null, selected = false, m) { state.editing = PcBoxesState.Editing.AddItem(p.kind) }
+                OptionLine(tk("ADD ITEM"), null, selected = false, m, stripe = p.stacks.size % 2 == 1) { state.editing = PcBoxesState.Editing.AddItem(p.kind) }
             }
             if (p.kind == PocketKind.KEY || p.kind == PocketKind.TMHM) {
                 GbaText(
@@ -356,13 +356,13 @@ private fun SearchOverlay(state: PcBoxesState, m: GbaTextMetrics, onDismiss: () 
                     Spacer(Modifier.height(u * 2))
                     Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                         if (query.isNotBlank() && hits.isEmpty()) GbaText(tr("No Pokémon by that name"), OptionColors.muted, OptionColors.mutedShadow, m)
-                        hits.take(60).forEach { (at, mon) ->
+                        hits.take(60).forEachIndexed { i, (at, mon) ->
                             val where = when (at) {
                                 is MonRef.Party -> tr("PARTY")
                                 is MonRef.Pc -> data.boxName(at.at.box).trim().ifEmpty { "BOX ${at.at.box + 1}" }
                             }
                             val level = if (mon.isEgg) "" else " Lv${data.mon(at)?.second ?: mon.level}"
-                            OptionLine("${monLabel(mon)}$level", where, selected = false, m, labelWeight = 0.6f, divider = true) {
+                            OptionLine("${monLabel(mon)}$level", where, selected = false, m, labelWeight = 0.6f, divider = true, stripe = i % 2 == 1) {
                                 if (at is MonRef.Pc) state.box = at.at.box
                                 state.selected = at
                                 state.page = PcBoxesState.Page.POKEMON

@@ -72,7 +72,7 @@ Play for a while and it fills in. If you'd rather always hear something, set `FF
 
 ## The game feels choppy or the device runs hot
 
-Turn on `FPS / CPU` (Settings, `SCREEN` group) to see what's going on. At normal speed it should read about 60. Tap the readout for more detail, including late frames, audio underruns, battery temperature and whether the device is throttling.
+Turn on `FPS / CPU` (Settings, `GAME SCREEN` group) to see what's going on. At normal speed it should read about 60. Tap the readout for more detail, including late frames, audio underruns, battery temperature and whether the device is throttling.
 
 If it's below 60 or stutters:
 
@@ -87,7 +87,7 @@ If it reads 60 but movement still looks uneven, look at the `SCREEN` line in the
 
 If it stays on `TIMER`, tell us your device on the [feedback page](https://pokedaisy.com/feedback/) along with what the line says.
 
-If the picture runs fine but your buttons react late, for example nothing happens for a moment after `FIGHT`, set `LIGHT COMPANION` to `ON` (Settings, `SCREEN` group, `DISPLAY OPTIONS`). See [Light companion](screen.md#light-companion-for-slow-devices).
+If the picture runs fine but your buttons react late, for example nothing happens for a moment after `FIGHT`, set `LIGHT COMPANION` to `ON` (Settings, `GAME SCREEN` group, `DISPLAY OPTIONS`). See [Light companion](screen.md#light-companion-for-slow-devices).
 
 ## Achievements won't unlock
 
@@ -112,7 +112,7 @@ You can always get the newest version by hand from the [releases page](https://g
 
 ## The companion is on the wrong screen
 
-On a device whose main display is the bottom one, the game ends up on the bottom and the companion on top. Turn on `SWAP SCREENS` (Settings, `SCREEN` group, on either screen) and they trade places. See [Devices](devices.md).
+On a device whose main display is the bottom one, the game ends up on the bottom and the companion on top. Turn on `SWAP SCREENS` (Settings, `SCREENS` group, on either screen) and they trade places. See [Devices](devices.md).
 
 If the companion has disappeared from its screen entirely, you may have tapped `CLOSE COMPANION`. Tap the game, then press BACK to bring it back.
 
@@ -123,6 +123,7 @@ PokeDaisy has no accounts of its own, no ads and no tracking. Your games and sav
 - **Update check.** It asks GitHub for the newest release when you open the library (and when you tap `VERSION`), and downloads it only if you say so.
 - **The manual.** `HELP` loads this manual from the PokeDaisy website and keeps a copy for reading offline.
 - **Cover art**, only if you add your own key under Settings > `COVER ART`: from SteamGridDB and RetroAchievements. To find a game's art, RetroAchievements is asked by the ROM's fingerprint (its MD5, or for a DS game the fingerprint RetroAchievements uses for DS carts), never the file.
+- **ScreenScraper**, only if you sign in: each game's name, size and fingerprints (CRC, MD5, SHA-1), to find its media, sent with your screenscraper.fr username and password.
 - **RetroAchievements**, only if you sign in. Opening a game's `INFO` in the library also asks RetroAchievements whether there's an achievement set for that ROM, by its fingerprint.
 - **Crash reports**, only if you turn `CRASH REPORTS` on (it's off until you do; the app asks once, after a few days). A report holds the device model, Android version and where the app crashed.
 - **Sharing a best effort match**, only if you tap `SHARE` when asked. The window lists every value sent: the ROM's SHA-1, size, game code and revision, the game it was read as and how well, and the app version. No file name, account or device details.

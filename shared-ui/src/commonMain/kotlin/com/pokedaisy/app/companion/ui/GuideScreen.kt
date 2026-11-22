@@ -235,9 +235,9 @@ fun GuideScreen(source: GuideSource, ui: GuideUiState, snapshot: SnapshotView, m
 
     val content: @Composable (Modifier) -> Unit = { mod -> GuidePageWindow(page, ui, ctx, m, small, mod) }
     if (OptionColors.joined) {
-        // A MENU STYLE: GUIDE as a strip over one window, its pages folder tabs down the window's left side.
+        // A MENU STYLE: one window, its pages folder tabs down the window's left side (no title over it: the tab bar names
+        // it, the user's call).
         Column(modifier.fillMaxSize()) {
-            OptionTitleWindow("GUIDE", m, joined = true)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                 val height = maxHeight
                 Row(Modifier.fillMaxSize()) {
@@ -253,7 +253,6 @@ fun GuideScreen(source: GuideSource, ui: GuideUiState, snapshot: SnapshotView, m
     }
     Row(modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(Modifier.fillMaxHeight().weight(0.34f), verticalArrangement = Arrangement.spacedBy(u * 4)) {
-            OptionTitleWindow("GUIDE", m)
             OptionListWindow(m, Modifier.fillMaxWidth().weight(1f)) {
                 OptionRows(
                     pages.map { p -> Triple(p.title, null, { ui.page = p.title }) },

@@ -272,6 +272,10 @@ class PokeDaisyActivity : Activity() {
     /** DS LAYOUT's pieces on the stage ([syncDsStage]): the game's backdrop under the screens, the touch screen beside
      * or inset in the game, and the floating touch window over it ([com.pokedaisy.app.companion.ui.DsTouchWindow]). */
     private lateinit var dsBackdropView: ComposeView
+    /** SIDE BARS' view, the game's picture it keeps clear of, and whether a DS game's backdrop draws them itself. */
+    private lateinit var sideBarsView: ComposeView
+    private val barsRect = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)
+    private val dsBarsOwn = androidx.compose.runtime.mutableStateOf(false)
     private lateinit var dsTouchView: FrameLayout
 
     /** Pictures of the game for behind DS LAYOUT's screens ([DsShots]). */
@@ -1467,6 +1471,7 @@ class PokeDaisyActivity : Activity() {
         override val touchSkins get() = skinStore.list()
         override fun touchPreviewShot() = newestStateShot()
         override fun editTouchLayout() = runOnUiThread { openTouchEditor() }
+        override val editHudLayout: (() -> Unit)? get() = { runOnUiThread { openHudEditor() } }
         override val touchRevision get() = touchRev.intValue
         override val touchControlsShown get() = ::touchControls.isInitialized && touchControls.visibility == View.VISIBLE
         override fun gbaControlBindings() = gameBindings.gameButtons()
@@ -1895,6 +1900,19 @@ class PokeDaisyActivity : Activity() {
             message = hud,
             onPicture = { fieldHudBounds = it })
         touchControls.inputExclusions = root::inputExclusions
+        // SIDE BARS: behind everything in the game's area, the game's surface showing through its picture.
+        sideBarsView = ComposeView(this).apply {
+            setContent {
+                val bars = com.pokedaisy.app.companion.ui.theme.CustomLook.bars
+                if (bars != null && !dsBarsOwn.value) com.pokedaisy.app.companion.ui.SideBarsFill(bars, barsRect.value)
+            }
+        }
+        root.viewport.sideBars = sideBarsView
+        root.viewport.addView(sideBarsView, 0, FrameLayout.LayoutParams(-1, -1))
+        root.viewport.onContent = { r ->
+            val v = androidx.compose.ui.geometry.Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
+            if (barsRect.value != v) barsRect.value = v
+        }
         if (debugMirror) {
             root.reserveRendererRight(dp(DEBUG_MIRROR_WIDTH_DP))
             root.addView(buildDebugCompanionMirror(), debugMirrorLayoutParams())
@@ -3349,6 +3367,7 @@ class PokeDaisyActivity : Activity() {
         dsTouchView.setBackgroundColor(if (pip) Color.WHITE else Color.TRANSPARENT)
         dsTouchView.isClickable = false
         dsBackdropView.visibility = if (on) View.VISIBLE else View.GONE
+        dsBarsOwn.value = on
         dsTouchView.visibility = if (on && layout != com.pokedaisy.app.companion.DsLayout.ONE_SCREEN) View.VISIBLE else View.GONE
         dsFloats.value = on && layout.floats
         dsPip.value = on && pip
@@ -3671,6 +3690,7 @@ class PokeDaisyActivity : Activity() {
         dsTouchView.isClickable = floating
         // A screen of the game's own: its two screens framed over the field it came from, as a DS game's menus.
         dsBackdropView.visibility = if (on && n3dsBothScreens) View.VISIBLE else View.GONE
+        dsBarsOwn.value = on && n3dsBothScreens
         // Back from the second display (SINGLE SCREEN, the display gone): the touch surface into the stage again.
         n3ds?.touchView?.let { v ->
             if (on && v.parent !== dsTouchView) {
@@ -3763,7 +3783,10 @@ class PokeDaisyActivity : Activity() {
                 val current by dsShots.latest
                 // A menu screen: the overworld it came from, its two screens framed over it like a modal. Anything else
                 // with room round the game (the title, a layout beside it): the game itself, blurred.
-                androidx.compose.foundation.layout.BoxWithConstraints(androidx.compose.ui.Modifier.fillMaxSize()) {
+                // SIDE BARS other than the app's own: black or the player's pictures, never the game blurred.
+                val bars = com.pokedaisy.app.companion.ui.theme.CustomLook.bars
+                if (bars != null) com.pokedaisy.app.companion.ui.SideBarsFill(bars, barsRect.value)
+                else androidx.compose.foundation.layout.BoxWithConstraints(androidx.compose.ui.Modifier.fillMaxSize()) {
                     val w = constraints.maxWidth
                     val h = constraints.maxHeight
                     val modal = if (menuScreen) com.pokedaisy.app.companion.DsLayouts.arrange(
@@ -4421,6 +4444,19 @@ class PokeDaisyActivity : Activity() {
     private val touchEditor = com.pokedaisy.app.companion.ui.TouchEditorState(
         read = { Prefs(this).touchControlsStyle }, write = { Prefs(this).touchControlsStyle = it },
         closed = { touchRev.intValue++; syncTouchControls() })
+
+    /** HUD > EDIT LAYOUT: the HUD's parts dragged over the game ([com.pokedaisy.app.companion.ui.HudEditor]); DONE keeps them
+     * as the player's layout in use (a new one when LAYOUT was a built-in one). */
+    private fun openHudEditor() {
+        if (com.pokedaisy.app.companion.ui.HudEditor.open) return
+        if (::sidePanel.isInitialized) sidePanel.closeWindow()
+        closeCompanionWindow()
+        val prefs = Prefs(this)
+        com.pokedaisy.app.companion.ui.HudEditor.begin(prefs.fieldHudStyle) { places ->
+            prefs.fieldHudStyle = prefs.fieldHudStyle.withPlaces(places)
+            hudStyle.value = prefs.fieldHudStyle
+        }
+    }
 
     private fun openTouchEditor() {
         if (touchEditor.isOpen) return

@@ -675,7 +675,7 @@ private fun MonPanel(
  * fits, centred: the well's room goes to the Pokémon, not to the picture's empty margin.
  */
 @Composable
-private fun TrimmedSprite(bitmap: ImageBitmap?, modifier: Modifier, paper: Color? = null) {
+internal fun TrimmedSprite(bitmap: ImageBitmap?, modifier: Modifier, paper: Color? = null) {
     val density = LocalDensity.current
     val trim = remember(bitmap) { bitmap?.let(::opaqueBounds) }
     val holes = remember(bitmap, paper != null) { if (paper != null) bitmap?.let(::enclosedClear) else null }

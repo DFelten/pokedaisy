@@ -139,12 +139,15 @@ private fun AppTile(id: String, m: GbaTextMetrics, enabled: Boolean, modifier: M
             perPixel * TabIcons.SIZE
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            TabIcons.forTab(id)?.let { icon ->
+            // MODERN: the tab's app-icon tile, as large as the pixel one would be.
+            if (modernView) ModernGlyph.forTab(id)?.let { g ->
+                ModernTile(g, Modifier.size(with(density) { iconPx.toDp() }))
+            } else TabIcons.forTab(id)?.let { icon ->
                 PixelArt(icon.bitmap, icon.palette, Modifier.size(with(density) { iconPx.toDp() }))
             }
             Spacer(Modifier.height(u * 4))
             // Narrowed letters rather than cut short: NUZLOCKE is the longest name.
-            GbaText(label, OptionColors.label, OptionColors.labelShadow, m, bold = gameBoldLabels(), maxLines = 1, modifier = Modifier.narrowToFit(m))
+            GbaText(label, OptionColors.label, OptionColors.labelShadow, m, bold = gameBoldLabels() || modernView, maxLines = 1, modifier = Modifier.narrowToFit(m))
         }
     }
 }

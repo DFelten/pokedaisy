@@ -20,6 +20,9 @@ interface FontSource {
     /** Atkinson Hyperlegible (regular, bold, italic): the manual's paragraphs. */
     fun smooth(bold: Boolean): FontFamily = reading()
 
+    /** Nunito SemiBold (normal) and ExtraBold (bold): SETTINGS > FONT's MODERN, VIEW MODERN's font. */
+    fun modern(): FontFamily = smooth(true)
+
     fun reading(): FontFamily
 
     /** A game's own font [file] (rom-art's, e.g. Yellow's) over Pixel Operator for anything it lacks; null when it can't be read. */

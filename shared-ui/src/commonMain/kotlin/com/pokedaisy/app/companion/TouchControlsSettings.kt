@@ -219,10 +219,37 @@ data class TouchControlsStyle(
     val vibrationStrength: Int = 2,
     /** LAYOUT is CUSTOM: EDIT LAYOUT's work below is used (else it's kept for later, and [preset] alone counts). */
     val useCustom: Boolean = false,
-    /** EDIT LAYOUT's work for a phone upright and held sideways (the controls not in it follow [preset]). */
+    /** EDIT LAYOUT's work for a phone upright and held sideways (the controls not in it follow [preset]): the layout in
+     * use, [customs]' [customIndex] (kept in step with it). */
     val portrait: TouchLayout = TouchLayout(),
     val landscape: TouchLayout = TouchLayout(),
+    /** Every layout the player made (the user's call, 2026-11-23: several, and none lost to a preset), by name. */
+    val customs: List<TouchCustom> = emptyList(),
+    val customIndex: Int = 0,
 ) {
+    /** The layout in use when LAYOUT is one of the player's, or null on a preset. */
+    val currentCustom: TouchCustom? get() = if (useCustom) customs.getOrNull(customIndex) else null
+
+    /** LAYOUT: the player's layout [i] in use. */
+    fun pickCustom(i: Int): TouchControlsStyle {
+        val c = customs.getOrNull(i) ?: return this
+        return copy(useCustom = true, customIndex = i, portrait = c.portrait, landscape = c.landscape)
+    }
+
+    /** A new layout of the player's ("MY LAYOUT 2"), empty (the preset's places until EDIT LAYOUT moves them), in use. */
+    fun newCustom(): TouchControlsStyle {
+        val list = customs.ifEmpty { if (portrait.isEmpty && landscape.isEmpty) emptyList() else listOf(TouchCustom(customName(emptyList()), portrait, landscape)) }
+        val added = list + TouchCustom(customName(list), TouchLayout(), TouchLayout())
+        return copy(customs = added).pickCustom(added.size - 1)
+    }
+
+    /** DELETE LAYOUT: the layout in use goes; the preset comes back. */
+    fun deleteCustom(): TouchControlsStyle {
+        if (!useCustom) return this
+        val rest = customs.filterIndexed { i, _ -> i != customIndex }
+        return copy(customs = rest, customIndex = 0, useCustom = false, portrait = TouchLayout(), landscape = TouchLayout())
+    }
+
     /** The buzz a press gets: 0 none, else [vibrationStrength] (com.pokedaisy.app.TouchHaptics). */
     val vibration: Int get() = if (vibrate) vibrationStrength.coerceIn(1, 3) else 0
 
@@ -243,11 +270,16 @@ data class TouchControlsStyle(
 
     /** The moved controls in use for this orientation: none while LAYOUT is a preset. */
     fun layoutFor(portrait: Boolean) = if (!useCustom) TouchLayout() else if (portrait) this.portrait else landscape
-    /** EDIT LAYOUT's DONE: [layout] for this orientation, and CUSTOM in use. */
-    fun withLayout(portrait: Boolean, layout: TouchLayout) =
-        (if (portrait) copy(portrait = layout) else copy(landscape = layout)).copy(useCustom = true)
-    /** Whether EDIT LAYOUT has saved anything (CUSTOM can be picked). */
-    val hasCustom get() = !portrait.isEmpty || !landscape.isEmpty
+    /** EDIT LAYOUT's DONE: [layout] for this orientation of the layout in use (a new one of the player's when LAYOUT was
+     * a preset: a preset is never written over, nor is another layout). */
+    fun withLayout(portrait: Boolean, layout: TouchLayout): TouchControlsStyle {
+        val base = if (useCustom && customs.isNotEmpty()) this else if (useCustom) copy(customs = listOf(TouchCustom(customName(emptyList()), this.portrait, landscape)), customIndex = 0) else newCustom()
+        val edited = if (portrait) base.copy(portrait = layout) else base.copy(landscape = layout)
+        val i = edited.customIndex
+        return edited.copy(useCustom = true, customs = edited.customs.mapIndexed { j, c -> if (j == i) c.copy(portrait = edited.portrait, landscape = edited.landscape) else c })
+    }
+    /** Whether EDIT LAYOUT has saved anything (a layout of the player's can be picked). */
+    val hasCustom get() = customs.isNotEmpty() || !portrait.isEmpty || !landscape.isEmpty
 
     /** What a control-by-control layout is built from: the GBA buttons and the extras switched on. */
     /** The buttons on screen for a game: [unavailable] are extras switched on that do nothing in it now (ZOOM without
@@ -292,3 +324,12 @@ data class TouchStage(
     /** A DS game: X and Y join A and B. */
     val ds: Boolean = false,
 )
+
+/** One of the player's touch layouts (TOUCH CONTROLS > LAYOUT): its name and its places upright and sideways. */
+data class TouchCustom(val name: String, val portrait: TouchLayout, val landscape: TouchLayout)
+
+/** A new layout's name: "MY LAYOUT" and the first number free among [taken]'s. */
+fun customName(taken: List<TouchCustom>): String = customLayoutName(taken.map { it.name })
+
+fun customLayoutName(taken: List<String>): String =
+    generateSequence(1) { it + 1 }.map { "MY LAYOUT $it" }.first { it !in taken }

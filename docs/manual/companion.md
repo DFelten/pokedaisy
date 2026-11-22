@@ -3,7 +3,7 @@ title: The companion at a glance
 summary: What the bottom screen shows, how the tab bar works, and what the companion's SETTINGS tab holds.
 section: companion
 order: 1
-keywords: [bottom screen, second screen, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup]
+keywords: [bottom screen, second screen, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup, tab icons, icons instead of names, icon tabs, tab bar position, tabs on top, tabs on the side, side tabs, compact tabs, smaller tabs]
 ---
 
 The companion is everything on the bottom screen while a game runs. It reads your game as you play, so your party, bag, location and battles are always up to date without opening a single menu on the top screen. Its party and bag screens are drawn in the game's own style: FireRed's party screen in FireRed, Emerald's in Emerald, and each supported hack's own look where it has one. Everything else takes its look from the Gen 3 summary pages: a teal title strip on a mint window, green section bands, keys for tabs and buttons (the open tab sits pressed in), and facts set out in ruled boxes. In Unbound the same menus wear Unbound's own purple and gold.
@@ -35,6 +35,8 @@ While the game is still on its title screen, its intro or the CONTINUE menu, `PA
 Up to five tabs fit next to the gear. To pick them, open SETTINGS and tap `TAB BAR` in the COMPANION group, or tap the `TAB BAR` button at the bottom of `MORE`. Each tab there says `SHOWN` or `HIDDEN`; tap one to flip it. The title counts how many you've placed (for example `5/5`). If the bar is full, hide one first. Tabs always sit in the same order on the bar, whichever you pick. When the game you're playing doesn't have one of your tabs (a game with no DEX, say), its place goes to one of the game's other tabs, so the bar stays full whenever the game has enough.
 
 Your choice is shared by every game. A tab the running game doesn't have shows `N/A` and keeps its setting for the games that do.
+
+At the top of that page, `POSITION` puts the bar along the `BOTTOM` (the default) or the `TOP`, or makes it a rail down the `LEFT` or `RIGHT` side, which leaves the tabs the screen's full height. `SIZE` `COMPACT` makes the tabs lower, with smaller words, for more room above them. `SHOW AS` picks how the tabs look: `NAMES` (the default) or `ICONS`, each tab its picture instead of its word: the same pictures as on `MORE` (in `VIEW` `MODERN`, its smooth ones), in the tab's colours. The gear and `MORE` are icons either way.
 
 ![The TAB BAR page in the companion's SETTINGS, listing each tab as SHOWN or HIDDEN](shots/companion-settings-tabs.png "SETTINGS > TAB BAR")
 
@@ -73,13 +75,19 @@ The gear opens the companion's SETTINGS, laid out like FireRed's OPTION screen. 
 
 The first two rows change how this list looks, on both screens: `DESCRIPTIONS` hides the grey line under each setting, and `GROUP TABS` hides the group buttons beside the list, for a wider one. Both are `SHOWN` until you hide them.
 
-The options come in groups, the ones you change while playing first:
+The options come in groups, the ones you change while playing first. With `GROUP TABS` on, some groups share a tab: `GAMEPLAY`'s covers `GAME SCREEN` too, `SCREENS`' covers `ON THE GAME` and `DS`, `COMPANION`'s covers `ACHIEVEMENTS`.
 
 - **MAKEOVER**: `PLAYER LOOK`, `RIVAL LOOK`, `TEXT LOOK`, `FOLLOWER`, `FLY ON`, `RIDE ON` and `DAY AND NIGHT`, fresh looks for your game. It sits at the top in a blue frame of its own, and only shows in a game it works in. See [MAKEOVER](#makeover) below.
 - **FF / SPEED**: `FF`, `FF SPEED`, `GAME SPEED`, `REWIND` and `SPEED OPTIONS` (a page with `SCENE SPEEDS`, `FF MODE` and `FF MUSIC`). See [Fast-forward](fast-forward.md).
+- **SOUND**: `GAME VOLUME`, `MUTE GAME` and `AUDIO EFFECTS`. See [Fast-forward](fast-forward.md#game-volume-and-mute-sound).
 - **GAMEPLAY**: `QUALITY OF LIFE`, `FLY STYLE`, `FLIGHT AREA`, `NUZLOCKE` and `CHEATS`. `QUALITY OF LIFE` opens a page of the helpers that save you time, its row saying how many you've changed from the game's own way: `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON`. See [Controls](controls.md), [Party](party.md#trade-evolutions), [Bag](bag.md), [Nuzlocke](nuzlocke.md) and [Cheats](cheats.md).
-- **SCREEN**: `ASPECT`, `HUD`, `DISPLAY OPTIONS` (a page with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION`), `THEME`, `DARK MODE`, `FONT`, `FPS / CPU` and, depending on your device, `HIDE BATTLE MENU`, `BATTLE BUTTONS`, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS` or `SINGLE SCREEN`. See [Screen and display](screen.md).
-- **COMPANION**: `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `ONE-TAP MOVES`, `LAST BALL`, `BATTLE STYLE`, `FOE IVS`, `BATTLE FOCUS`, `TAB BAR`, `CLICK SOUND`, `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS`, `PROGRESS POPUPS`, `ITEM POPUPS` and `TWEAKS`.
+- **GAME SCREEN**: `ASPECT`, `ZOOM`, `AUTO ZOOM IN`, `LOOK AROUND`, `DISPLAY OPTIONS` (a page with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION`) and `FPS / CPU`. See [Screen and display](screen.md).
+- **ON THE GAME**: `HUD` and, depending on your device, `BATTLE BUTTONS` or `HIDE BATTLE MENU`. See [HUD](hud.md) and [Battle](battle.md).
+- **SCREENS**: depending on your device, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS`, `SINGLE SCREEN`, `FOLD LAYOUT` and `TABLETOP CONTROLS`. See [Devices](devices.md).
+- **DS**: while a DS game runs, `DS LAYOUT` or `DS TOUCH SCREEN`, `DS RESOLUTION`, `DS CPU BOOST` and `DS CORE`. See [Devices](devices.md) and [Screen and display](screen.md).
+- **LOOK**: `VIEW`, `THEME`, `IN GAME`, `DARK MODE`, `FONT TYPE`, `FONT SIZE` and, once you've added a picture under the top screen's `MY LOOK`, `COMPANION BACKGROUND`. See [Screen and display](screen.md).
+- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
+- **ACHIEVEMENTS**: `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS` and `PROGRESS POPUPS`. See [Achievements](achievements.md).
 - **CONTROLS**: `GAME BUTTONS`, `HOTKEYS`, `QUICK MENU` and `TOUCH CONTROLS`. See [Controls](controls.md).
 - **APP**: `TIPS`, `LANGUAGE` and `HELP` (this manual).
 

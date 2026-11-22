@@ -15,7 +15,7 @@ It's optional: achievements only run once you sign in.
 You need a free account from [retroachievements.org](https://retroachievements.org). Then:
 
 1. In the library, open Settings (the top screen's).
-2. Under `ONLINE`, tap `RetroAchievements` (it's marked `BETA`).
+2. Under `ACHIEVEMENTS`, tap `RetroAchievements` (it's marked `BETA`).
 3. Type your username and password and tap `SIGN IN`.
 
 Once you're in, the page shows your name and your points, with `SIGN OUT` to leave. Your password is never stored: it goes to RetroAchievements once, and the app keeps only the login token the site sends back.
@@ -76,7 +76,7 @@ When the companion isn't on screen (a DS game's touch screen in its place, or th
 
 ### Turning popups off
 
-The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section, and the companion's `SETTINGS` has the same two switches in its COMPANION group, so you can change them in game:
+The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section, and the companion's `SETTINGS` has the same two switches in its ACHIEVEMENTS group, so you can change them in game:
 
 - `ACHIEVEMENT POPUPS` (`ON` by default) turns every popup off, in the game and on the companion, and mutes the unlock fanfare. Achievements still unlock and count on your account, and the CHEEVOS tab still lists them.
 - `PROGRESS POPUPS` (`ON` by default) turns off only the progress notices (`PROGRESS`), while unlocks and the rest still show. It's greyed out while `ACHIEVEMENT POPUPS` is off.
@@ -85,7 +85,7 @@ The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section
 
 Some sets have leaderboards (fastest time, highest score). When the game has any, a `LEADERBOARDS` button appears on the ACHIEVEMENTS tab. Tap a board to see the top 10 and the players around your own entry, with your row highlighted.
 
-While a leaderboard attempt is running, its current value (a timer, a count) shows in the bottom-right corner of the companion. Some achievements are challenges you have to finish without breaking a rule; while one is active, its badge sits in that corner too, so you know it's still on. With the companion off screen, they sit in the game's bottom right corner. Rather not see them? Turn off `CHALLENGE ICONS` in SETTINGS (COMPANION group).
+While a leaderboard attempt is running, its current value (a timer, a count) shows in the bottom-right corner of the companion. Some achievements are challenges you have to finish without breaking a rule; while one is active, its badge sits in that corner too, so you know it's still on. With the companion off screen, they sit in the game's bottom right corner. Rather not see them? Turn off `CHALLENGE ICONS` in SETTINGS (ACHIEVEMENTS group).
 
 ## Save states and achievement progress
 

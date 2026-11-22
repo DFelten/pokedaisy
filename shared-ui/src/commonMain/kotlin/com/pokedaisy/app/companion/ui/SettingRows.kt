@@ -2,6 +2,7 @@ package com.pokedaisy.app.companion.ui
 
 import com.pokedaisy.app.companion.SharedSetting
 
+import androidx.compose.ui.graphics.drawscope.clipPath
 import com.pokedaisy.app.companion.i18n.stripAccents
 import androidx.compose.foundation.layout.Column
 import kotlinx.coroutines.launch
@@ -36,9 +37,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.Color
+import com.pokedaisy.app.companion.ui.theme.gbaFocusRing
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import com.pokedaisy.app.companion.i18n.tr
 
 /**
@@ -102,7 +108,6 @@ fun filterRows(rows: List<SettingRow>, query: String): List<SettingRow> {
  * flag goes and document it.
  */
 val FLAGGED_SETTING_KEYWORDS: Map<String, String> = mapOf(
-    "ScreenScraper" to "scraper scraping media artwork art box art boxart covers screenshots logos wheel fanart videos synopsis",
     // CO-OP (FeatureFlags.coop): moves to SETTING_KEYWORDS, with its manual page, when the flag goes.
     "LINK" to "co-op coop connection connected status partner online",
     "PAIR" to "co-op coop multiplayer multi player two player online friend partner link invite qr code join netplay play together",
@@ -119,6 +124,13 @@ val FLAGGED_SETTING_KEYWORDS: Map<String, String> = mapOf(
  * itself is matched in the language on screen too.
  */
 val SETTING_KEYWORDS: Map<String, String> = mapOf(
+    "MENU BAR" to "games tools settings rail nav navigation bar sidebar side bar position move left right top bottom",
+    "MENU BAR SIZE" to "compact smaller icons only rail nav navigation",
+    "ScreenScraper" to "scraper scraping media artwork art box art boxart covers screenshots logos wheel fanart videos synopsis",
+    "SIDE BARS" to "black bars letterbox pillarbox blurred bars blur borders sides background beside the game",
+    "SHOW AS" to "tab icons icons instead of names tab names",
+    "NEW LAYOUT" to "several layouts multiple layouts another layout save layout custom",
+    "DELETE LAYOUT" to "remove layout forget layout reset layout custom",
     "HELP" to "manual docs documentation guide how to faq instructions",
     "DISCORD" to "discord server community chat support help contact report bug feedback ideas suggestions developers dev",
     "FF" to "fast forward turbo speed up",
@@ -148,7 +160,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "DS RESOLUTION" to "internal resolution upscale upscaling scale scaling hd high definition sharp sharper crisp 3d render renderer gpu opengl 2x 4x 6x 8x jaggies jagged blurry nintendo ds platinum heartgold soulsilver",
     "DS LAYOUT" to "screen layout screens dual screen two screens bottom screen touch screen touchscreen side by side stacked vertical hybrid picture in picture pip large small single screen one screen floating window popup nintendo ds heartgold soulsilver",
     "SHADERS" to "filter lcd crt scanlines grid gba colors color correction effects screen look smoothing xbr xbrz scalefx upscale hd edges unlit pixel transparency backlight",
-    "COMPANION LOOK" to "skin skins theme style look game heartgold soulsilver platinum black white firered leafgreen emerald ruby sapphire menus colors classic",
+    "IN GAME" to "skin skins theme style look game colors colours companion while playing heartgold soulsilver platinum black white firered leafgreen emerald ruby sapphire menus classic my theme",
     "LIGHT COMPANION" to "lag laggy slow slowdown stutter performance weak device low end battery buttons late input delay unresponsive animations smooth",
     "UNLIT SCREEN" to "pixel transparency transparent backlight backlit no backlight unlit reflective backing shadow drop shadow original gba screen white",
     "SMOOTHING" to "xbr xbrz scalefx upscale upscaler hd edges smooth anti alias filter",
@@ -165,7 +177,11 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "THEME" to "colors colours look background skin style themes cherry rainbow ocean mint lavender sunset forest lemon holiday seasonal christmas halloween easter valentine lunar new year limited",
     "FPS / CPU" to "fps frame rate framerate cpu usage performance speed overlay counter 60",
     "DARK MODE" to "dark night black theme light colors appearance auto system",
-    "FONT" to "font text letters typeface readable reading pixel smooth bold system size small legible",
+    "FONT TYPE" to "font text letters typeface readable reading pixel smooth bold system small legible modern",
+    "FONT SIZE" to "font size text size bigger smaller larger small medium large zoom readable scale letters more sizes custom percent slider tiny huge",
+    "MY LOOK" to "my look customize customise personalize custom theme themes json create theme make theme theme editor export share theme pack zip animated moving gif webp live wallpaper own font fonts ttf otf upload import background wallpaper picture photo image app background companion background",
+    "COMPANION BACKGROUND" to "companion background wallpaper picture photo image custom my picture behind tabs",
+    "VIEW" to "view look style modern retro smooth pixel design ui interface appearance new rounded",
     "RESUME GAMES" to "auto resume continue launch boot",
     "FOLDERS" to "roms folder folders multiple add link saves directory path location storage retroarch syncthing save states backup backups restore",
     "COVER ART" to "box art boxart covers steamgriddb images thumbnails api key",
@@ -198,6 +214,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "AUDIO EFFECTS" to "equalizer equaliser eq jamesdsp james dsp viper sound audio bass speaker enhancer",
     "TWEAKS" to "animations bounce blink cursor jump to battle effects motion",
     "QUALITY OF LIFE" to "qol helpers convenience time savers instant text auto run refill",
+    "BATTLE" to "battle info hints suggestions moves style focus",
     "SCENE SPEEDS" to "battle speed text speed instant text fast text menu speed overworld speed faster battles quality of life qol bike speed surf speed faster bike faster surfing",
     "AUTO-RUN" to "auto run autorun running shoes run sprint dash always run hold b",
     "RUN INDOORS" to "run inside buildings indoor running shoes houses",
@@ -235,6 +252,120 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
 )
 
 private fun fold(s: String): String = stripAccents(s.lowercase())
+
+/**
+ * SETTINGS' groups on both screens, in order, each with its rows (by English label) in the order they show (the user's
+ * call, 2026-11-19: SCREEN had the game's picture, the DS, what's over the game, the screens and the app's look in one,
+ * ONLINE only RetroAchievements, GAMEPLAY twenty rows). Both screens build their rows where they always did and
+ * [regroupSettings] places them by this, so a row lands in the same group on either. A row not listed stays in its old
+ * group's new home ([SETTINGS_GROUP_MOVES]), at that group's end. Groups not here (MAKEOVER, CO-OP) keep their place
+ * in this order's [SETTINGS_GROUP_ORDER].
+ */
+val SETTINGS_GROUPS: List<Pair<String, List<String>>> = listOf(
+    "FF / SPEED" to emptyList(),
+    "SOUND" to emptyList(),
+    "GAMEPLAY" to listOf(QOL_PAGE, "FLY STYLE", "FLIGHT AREA", "NUZLOCKE", "CHEATS"),
+    "GAME SCREEN" to listOf("ASPECT", "SIDE BARS", "ZOOM", "AUTO ZOOM IN", "LOOK AROUND", "DISPLAY OPTIONS", "FPS / CPU"),
+    "ON THE GAME" to listOf("HUD", "BATTLE BUTTONS", "HIDE BATTLE MENU"),
+    "SCREENS" to listOf("COMPANION VIEW", "COMPANION BUTTON", "SWAP SCREENS", "SINGLE SCREEN", "FOLD LAYOUT", "TABLETOP CONTROLS"),
+    "DS" to listOf("DS LAYOUT", "DS TOUCH SCREEN", "DS RESOLUTION", "DS CPU BOOST", "DS CORE"),
+    "LOOK" to listOf("VIEW", "THEME", "IN GAME", "DARK MODE", "FONT TYPE", "FONT SIZE", "MY LOOK", "MENU BAR", "MENU BAR SIZE", "COMPANION BACKGROUND"),
+    "BATTLE" to listOf(
+        "BATTLE INFO", "BATTLE HINTS", "BATTLE VIEW", "BATTLE STYLE", "ONE-TAP MOVES", "LAST BALL", "FOE IVS", "BATTLE FOCUS",
+    ),
+    "COMPANION" to listOf(BATTLE_PAGE, "TAB BAR", "CLICK SOUND", "POKéMON PICTURES", "ITEM POPUPS", "TWEAKS"),
+    "ACHIEVEMENTS" to listOf("RetroAchievements", "CHALLENGE ICONS", "ACHIEVEMENT POPUPS", "PROGRESS POPUPS"),
+    "LIBRARY" to emptyList(),
+    "CONTROLS" to emptyList(),
+    "CO-OP" to emptyList(),
+    "APP" to emptyList(),
+)
+
+/** The pages a HOME row opens instead of rows of its own (the user's call, 2026-11-19), with their rows in order. */
+const val BATTLE_PAGE = "BATTLE"
+const val QOL_PAGE = "QUALITY OF LIFE"
+val SETTINGS_PAGES: Map<String, List<String>> = mapOf(
+    BATTLE_PAGE to listOf(
+        "BATTLE INFO", "BATTLE HINTS", "BATTLE VIEW", "BATTLE STYLE", "ONE-TAP MOVES", "LAST BALL", "FOE IVS", "BATTLE FOCUS",
+    ),
+    // GAMEPLAY's helpers (the user's call, 2026-11-22: a page of their own, not a long run of switches on HOME). A new
+    // helper of that kind goes here.
+    QOL_PAGE to listOf(
+        "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
+        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+    ),
+)
+
+/**
+ * The group tabs: groups that share one (the user's call: GAMEPLAY and GAME SCREEN under GAMEPLAY), each group
+ * keeping its own title in the list. A group not here is its own tab.
+ */
+val SETTINGS_TABS: Map<String, String> = mapOf(
+    "GAME SCREEN" to "GAMEPLAY",
+    "ON THE GAME" to "SCREENS", "DS" to "SCREENS",
+    "ACHIEVEMENTS" to "COMPANION",
+)
+
+/** A QUALITY OF LIFE row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
+val QOL_UNUSED = mapOf(
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
+)
+
+/** [rows]' rows on [page] ([SETTINGS_PAGES]), in the page's order. */
+fun settingsPageRows(rows: List<SettingRow>, page: String): List<SettingRow> {
+    val labels = SETTINGS_PAGES[page].orEmpty()
+    return rows.filter { !it.header && it.label in labels }.sortedBy { labels.indexOf(it.label) }
+}
+
+/** Every group's place: [SETTINGS_GROUPS]' order, with MAKEOVER (the companion's featured group) first. */
+val SETTINGS_GROUP_ORDER: List<String> = listOf("GAME", "MAKEOVER") + SETTINGS_GROUPS.map { it.first }
+
+/** Where an old group's unlisted rows go. */
+val SETTINGS_GROUP_MOVES = mapOf("SCREEN" to "GAME SCREEN", "ONLINE" to "ACHIEVEMENTS")
+
+/**
+ * [rows] (group titles and their rows, as a screen builds them) placed in [SETTINGS_GROUPS]: the rows before the first
+ * title stay first, each group gets its listed rows in its order and then the others it took in, empty groups are left
+ * out. A group's own title row is kept where it had one (MAKEOVER's featured band).
+ */
+fun regroupSettings(rows: List<SettingRow>, openPage: ((String) -> Unit)? = null): List<SettingRow> {
+    // A page's rows leave the list for one row that opens them (with [openPage]; a screen with no pages keeps them).
+    val paged = if (openPage == null) emptyMap() else SETTINGS_PAGES.mapValues { (page, _) -> settingsPageRows(rows, page) }
+    val inPages = paged.values.flatten().toSet()
+    val openers = paged.filterValues { it.isNotEmpty() }.map { (page, members) ->
+        // A helper in use: anything but its game's-own value ([QOL_UNUSED]; OFF for the rest), N/A not counted.
+        val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+        SettingRow(
+            tk(page), if (page == QOL_PAGE) tr("{0} ON", on) else null, opensPage = true,
+            labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },
+            subtitle = if (page == QOL_PAGE) "Helpers that save you time" else "How the BATTLE tab helps you",
+        ) { openPage?.invoke(page) }
+    }
+    val lead = rows.takeWhile { !it.header }
+    val titles = HashMap<String, SettingRow>()
+    val placed = LinkedHashMap<String, MutableList<SettingRow>>()
+    val listed = HashMap<String, String>()
+    for ((group, labels) in SETTINGS_GROUPS) labels.forEach { listed[it] = group }
+    var group: String? = null
+    for (row in rows.drop(lead.size) + openers) {
+        if (row.header) { group = row.label; titles[row.label] = row; continue }
+        if (row in inPages) continue
+        val to = listed[row.label] ?: group?.let { SETTINGS_GROUP_MOVES[it] ?: it } ?: continue
+        placed.getOrPut(to) { mutableListOf() } += row
+    }
+    val order = SETTINGS_GROUP_ORDER + placed.keys.filter { it !in SETTINGS_GROUP_ORDER }
+    val labelsOf = SETTINGS_GROUPS.toMap()
+    val out = lead.toMutableList()
+    for (name in order) {
+        val members = placed[name] ?: continue
+        if (members.isEmpty()) continue
+        val wanted = labelsOf[name].orEmpty()
+        val sorted = members.sortedBy { r -> wanted.indexOf(r.label).let { if (it < 0) Int.MAX_VALUE else it } }
+        out += titles[name] ?: groupTitle(name)
+        out += sorted
+    }
+    return out
+}
 
 /** A group's title row in [GroupedRows]. */
 fun groupTitle(label: String, requiresGameSupport: Boolean = false) =
@@ -310,6 +441,9 @@ fun GroupedRows(
         }
         val focused: (Int) -> Unit = { i -> follow = i; onFocused?.invoke(i) }
         val railHeight = maxHeight
+        // A tab tapped: its group's first row takes the cursor (the D-pad's focus), and the next D-pad press stays on it
+        // rather than moving past it (the user's call: as a tab switch starts on the page's first item elsewhere).
+        val jump = remember(rows.size) { RowJump(rows.size) }
         androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
             GroupTabs(rows, groups, tops, scroll, list, follow, m, outside = railed, height = railHeight) { g ->
                 // The group's first row takes the next D-pad press (the user's call: not GAMES, or wherever it was).
@@ -394,8 +528,12 @@ private fun GroupTabs(
         }
     }
     val current = picked.takeIf { it >= 0 } ?: shown
+    // Groups that share a tab ([SETTINGS_TABS]): the tab's name, and the first of its groups in a row.
+    fun tabOf(g: Int) = rows[g].label.let { SETTINGS_TABS[it] ?: it }
+    val tabs = groups.filterIndexed { i, g -> i == 0 || tabOf(groups[i - 1]) != tabOf(g) }
+    val currentTab = tabs.lastOrNull { it <= current } ?: tabs.first()
     fun pick(i: Int) {
-        val g = groups[i]
+        val g = tabs[i]
         picked = g
         onPicked(g)
         if (lazy != null) {
@@ -405,11 +543,10 @@ private fun GroupTabs(
         val top = tops[g] ?: return
         scope.launch { scroll.animateScrollTo(top.coerceAtMost(scroll.maxValue)) }
     }
-    // L / R step through the tabs where the screen hands them over ([LocalGroupStep]: the top-screen Settings).
+    // L / R: the tab before / after the open one, as if tapped ([GroupStep]; the top-screen Settings hands them over).
     val stepNow by androidx.compose.runtime.rememberUpdatedState({ delta: Int ->
-        val now = groups.indexOf(current)
-        val i = (now + delta).coerceIn(0, groups.lastIndex)
-        if (i != now) pick(i)
+        val i = (tabs.indexOf(currentTab) + delta).coerceIn(0, tabs.lastIndex)
+        if (i != tabs.indexOf(currentTab)) pick(i)
         true
     })
     val holder = LocalGroupStep.current
@@ -418,7 +555,7 @@ private fun GroupTabs(
         holder.step = step
         onDispose { if (holder.step === step) holder.step = null }
     }
-    TabRail(groups.map { tr(rows[it].label) }, groups.indexOf(current), m, outside, height.takeIf { outside }) { pick(it) }
+    TabRail(tabs.map { tr(tabOf(it)) }, tabs.indexOf(currentTab), m, outside, height.takeIf { outside }) { pick(it) }
 }
 
 /**
@@ -440,6 +577,8 @@ private class RowJump(size: Int) { val requesters = List(size) { androidx.compos
 
 /** L / R's way to [GroupedRows]' group tabs: a screen that provides one ([LocalGroupStep]) calls [step] (-1 / +1). */
 class GroupStep { var step: ((Int) -> Boolean)? = null }
+
+/** The host's [GroupStep] (the top screen's Settings; none in the companion, whose L / R step its own tabs). */
 val LocalGroupStep = androidx.compose.runtime.staticCompositionLocalOf<GroupStep?> { null }
 
 /**
@@ -461,9 +600,10 @@ fun TabRail(
     onSelect: (Int) -> Unit,
 ) {
     val small = rememberGbaTextMetrics(textScale)
-    // A MENU STYLE: folder tabs on the window's left side, touching, the open one running into the window.
+    // A MENU STYLE: folder tabs on the window's left side, touching, the open one running into the window (MODERN: its own
+    // smooth folder tabs, square where they meet the window, a hair apart).
     val folder = outside && OptionColors.joined
-    val gap = if (folder) 0.dp else m.u * if (fill != null) 3 else 2
+    val gap = if (folder) (if (modernView) m.u * 1.5f else 0.dp) else m.u * if (fill != null) 3 else 2
     val tabMin = fill?.let { ((it - gap * (labels.size - 1)) / labels.size.coerceAtLeast(1)) } ?: 0.dp
     androidx.compose.foundation.layout.Column(
         Modifier
@@ -489,7 +629,8 @@ fun TabRail(
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(gap),
     ) {
         labels.forEachIndexed { i, label ->
-            if (folder) FolderTab(label, i == selected, small, tabMin, focusable) { onSelect(i) }
+            if (folder && modernView) ModernGroupTab(label, i == selected, small, tabMin, focusable) { onSelect(i) }
+            else if (folder) FolderTab(label, i == selected, small, tabMin, focusable) { onSelect(i) }
             else GroupTab(label, i == selected, small, tabMin) { onSelect(i) }
         }
     }
@@ -519,7 +660,8 @@ private fun FolderTab(
     val style = OptionColors.style ?: return GroupTab(label, selected, m, minHeight, onClick)
     val layers = OptionColors.listLayers
     val frame = layers.sumOf { it.second }
-    val fill = if (selected) OptionColors.listFill else OptionColors.tint(style.sectionFill)
+    // The open tab solid in the header's colour (the user's call, 2026-11-19), the others the section bands' lighter one.
+    val fill = if (selected) OptionColors.headerFill else androidx.compose.ui.graphics.lerp(OptionColors.listFill, OptionColors.tint(style.sectionFill), 0.35f)
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     LaunchedEffect(focused) { if (focused && !selected) onClick() }
@@ -549,8 +691,39 @@ private fun FolderTab(
             .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
             .padding(start = u * (frame + 4), end = u * 6, top = u * (frame + 1), bottom = u * (frame + 1)),
     ) {
-        if (selected) GbaText(label, OptionColors.value, OptionColors.valueShadow, m, bold = gameBoldLabels())
-        else GbaText(label, style.sectionText, style.sectionShadow, m, bold = gameBoldLabels())
+        if (selected) GbaText(label, OptionColors.headerText, OptionColors.headerShadow, m, bold = gameBoldLabels())
+        else GbaText(label, OptionColors.label, OptionColors.labelShadow, m, bold = gameBoldLabels())
+    }
+}
+
+/** VIEW MODERN's [TabRail] tab: a folder tab on the window's side ([drawModernFolderTab]), the open one the window's paper
+ * with blue words, the others a pale blue with the list's. */
+@Composable
+private fun ModernGroupTab(
+    label: String, selected: Boolean, m: GbaTextMetrics, minHeight: androidx.compose.ui.unit.Dp, focusable: Boolean, onClick: () -> Unit,
+) {
+    val u = m.u
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    LaunchedEffect(focused) { if (focused && !selected && focusable) onClick() }
+    val style = OptionColors.style
+    // Idle tabs a pale wash of the section colour; the open one solid in the header's (the user's call), white words.
+    val idle = androidx.compose.ui.graphics.lerp(OptionColors.listFill, style?.let { OptionColors.tint(it.sectionFill) } ?: OptionColors.tabIdleFill, 0.16f)
+    val solid = OptionColors.headerFill
+    androidx.compose.foundation.layout.Box(
+        contentAlignment = androidx.compose.ui.Alignment.CenterStart,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .gbaFocusRing(focused, androidx.compose.foundation.shape.RoundedCornerShape(topStart = u * 6, bottomStart = u * 6))
+            .drawBehind {
+                drawModernFolderTab(false, OptionColors.listFill, if (selected) solid else idle, OptionColors.listLayers.first().first, u.toPx() * 6, 3.dp.toPx())
+            }
+            .focusProperties { canFocus = focusable }
+            .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(start = u * 7, end = u * 6, top = u * 4, bottom = u * 4),
+    ) {
+        GbaText(label, if (selected) OptionColors.headerText else OptionColors.label, Color.Transparent, m, bold = true)
     }
 }
 
@@ -815,13 +988,107 @@ fun tipsRow(on: Boolean, badge: String? = null, set: (Boolean) -> Unit): Setting
     labelBadge = badge ?: com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.TIPS),
 ) { set(!on) }
 
-/** COMPANION LOOK (SCREEN, under THEME, both screens): GAME = the companion and the HUD in the running game's own look
- * where it has one ([CompanionSkins]), CLASSIC = the app's own in every game. [changed] redraws the page. */
-fun gameLookRow(changed: () -> Unit): SettingRow = SettingRow(
-    tk("COMPANION LOOK"), if (CompanionSkins.enabled) tk("GAME") else tk("CLASSIC"),
+/**
+ * SCREEN > VIEW on both screens ([com.pokedaisy.app.companion.ui.theme.AppViews]): RETRO / MODERN, flipped on a tap so the
+ * whole app changes at once (both screens: Compose state), the font with it.
+ */
+fun viewRow(changed: () -> Unit): SettingRow {
+    val views = com.pokedaisy.app.companion.ui.theme.AppViews
+    // A 3DS game keeps its own smooth look whatever the view: say so where it's up.
+    val ownLook = OptionColors.inGame && CompanionSkins.gameSkin.smooth
+    return SettingRow(
+        tk("VIEW"), views.current.label,
+        labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.APP_VIEW),
+        subtitle = if (ownLook) "This game keeps its own look (IN GAME)" else "The pixel look, or a smooth modern one",
+    ) {
+        views.set(if (views.modern) com.pokedaisy.app.companion.ui.theme.AppView.RETRO else com.pokedaisy.app.companion.ui.theme.AppView.MODERN)
+        changed()
+    }
+}
+
+/**
+ * LOOK > IN GAME on both screens ([CompanionSkins.enabled], Prefs.gameLook; the user's call, 2026-11-20: it replaced VIEW IN
+ * GAME and COMPANION LOOK): GAME COLORS = while a game runs, the companion in its colours ([CompanionSkins.gameHue]) and the
+ * HUD in its style, a 3DS game in its own look; MY THEME = the companion as the Library looks. VIEW, FONT and DARK MODE apply
+ * either way. [changed] redraws the page.
+ */
+fun inGameRow(changed: () -> Unit): SettingRow = SettingRow(
+    tk("IN GAME"), if (CompanionSkins.enabled) tk("GAME COLORS") else tk("MY THEME"),
     labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.GAME_LOOK),
-    subtitle = "The game's own style, or the app's classic one",
+    subtitle = "The game's colors while you play, or your theme",
 ) { CompanionSkins.change(!CompanionSkins.enabled); changed() }
+
+/** THEME is off while a game runs on IN GAME's GAME COLORS ([com.pokedaisy.app.companion.ui.theme.AppColors.theme]): its row
+ * greyed out there, saying why (the user's call: it changed little and confused). */
+fun themeInGameOff(): Boolean = OptionColors.inGame && CompanionSkins.enabled
+
+/** THEME's grey line: why it's greyed out in a game ([themeInGameOff]). */
+fun themeSubtitle(): String? = if (themeInGameOff()) "Off while you play: IN GAME is on GAME COLORS" else null
+
+/** FONT SIZE > MORE SIZES' value in its slider pop-up: "125%". */
+fun fontSizeLabel(): String = "${com.pokedaisy.app.companion.ui.theme.AppFonts.customPercent}%"
+
+/** FONT SIZE > MORE SIZES' slider (both screens): 50% - 200% of MEDIUM in steps of 5, the text resizing as it moves. */
+fun fontSizeSlider(changed: () -> Unit = {}) = com.pokedaisy.app.companion.ui.theme.AppFontSize.let { f ->
+    SettingSlider(com.pokedaisy.app.companion.ui.theme.AppFonts.customPercent, f.MIN_PERCENT..f.MAX_PERCENT, f.STEP_PERCENT) {
+        com.pokedaisy.app.companion.ui.theme.AppFonts.changeCustomPercent(it)
+        changed()
+    }
+}
+
+/** FONT TYPE's pick-list: an option's [com.pokedaisy.app.companion.ui.theme.AppFont] by its label, so it's drawn in itself. */
+fun fontOption(label: String): com.pokedaisy.app.companion.ui.theme.FontChoice? =
+    com.pokedaisy.app.companion.ui.theme.AppFonts.menu().firstOrNull { it.label == label }
+
+/** THEME's pick-list: a disc in three slices of the theme's colours (its windows' band, its page's glow, its values), drawn
+ * before its name; RAINBOW's in three of its colours. */
+fun themeSwatch(label: String): (@androidx.compose.runtime.Composable () -> Unit)? {
+    val spec = (com.pokedaisy.app.companion.ui.theme.APP_THEMES + com.pokedaisy.app.companion.ui.theme.SEASONAL_THEMES +
+        com.pokedaisy.app.companion.ui.theme.CustomLook.themes)
+        .firstOrNull { it.label == label } ?: return null
+    val colors = if (spec.rainbow) listOf(Color(0xFFE83838), Color(0xFF40B048), Color(0xFF3C88E0))
+    else {
+        val band = com.pokedaisy.app.companion.ui.theme.themedStylePalette(
+            com.pokedaisy.app.companion.ui.theme.UiStyle.SUMMARY_MINT, false, spec.hue, accent = spec.accentHue,
+        )?.titleFill ?: Color(0xFF3D6FE0)
+        listOf(band, spec.blobs.firstOrNull() ?: spec.page, spec.value)
+    }
+    return {
+        val modern = modernView
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val d = size.minDimension
+            val tl = androidx.compose.ui.geometry.Offset((size.width - d) / 2f, (size.height - d) / 2f)
+            val box = androidx.compose.ui.geometry.Size(d, d)
+            // A disc (pixel-stepped in RETRO: corners are pixel art there), three stripes of the colours inside it.
+            val disc = if (modern) androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(tl, box)) }
+            else pixelRoundRectPath(box, d / 2f, gbaPixelPx(), tl)
+            clipPath(disc) {
+                colors.forEachIndexed { i, c -> drawRect(c, tl + androidx.compose.ui.geometry.Offset(d * i / 3f, 0f), androidx.compose.ui.geometry.Size(d / 3f + 1f, d)) }
+            }
+            drawPath(disc, Color(0x33000000), style = androidx.compose.ui.graphics.drawscope.Stroke(maxOf(1f, d / 18f)))
+        }
+    }
+}
+
+/** A colour's disc before an option's name (EDIT THEME's ready colours), pixel-stepped in RETRO like [themeSwatch]'s. */
+fun colorSwatch(color: Color): @androidx.compose.runtime.Composable () -> Unit = {
+    val modern = modernView
+    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+        val d = size.minDimension
+        val tl = androidx.compose.ui.geometry.Offset((size.width - d) / 2f, (size.height - d) / 2f)
+        val box = androidx.compose.ui.geometry.Size(d, d)
+        val disc = if (modern) androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(tl, box)) }
+        else pixelRoundRectPath(box, d / 2f, gbaPixelPx(), tl)
+        drawPath(disc, color)
+        drawPath(disc, Color(0x33000000), style = androidx.compose.ui.graphics.drawscope.Stroke(maxOf(1f, d / 18f)))
+    }
+}
+
+/** FONT's grey line: a Game Boy game draws the pixel fonts in its own letters. */
+fun fontSubtitle(): String =
+    if (OptionColors.gen1 && com.pokedaisy.app.companion.ui.theme.AppFonts.current.pixel)
+        "This game draws the pixel fonts in its own letters"
+    else "Pixel letters or smooth ones"
 
 /**
  * DISPLAY OPTIONS > LIGHT COMPANION, on both screens ([com.pokedaisy.app.companion.LightCompanion]): AUTO / ON / OFF
