@@ -114,14 +114,43 @@ uint32_t ui_type_color(int type) {
     return type >= 0 && type < 18 ? COLORS[type] : PD_MUTED;
 }
 
-int ui_type_badge(struct pd_canvas* c, int x, int y, int type) {
+int ui_game_tag(struct pd_canvas* c, int x, int y, const char* text, uint32_t fill, uint32_t ink, int minW) {
+    char up[40];
+    int n = 0;
+    for (; text[n] && n < (int) sizeof(up) - 1; n++) up[n] = text[n] >= 'a' && text[n] <= 'z' ? (char) (text[n] - 32) : text[n];
+    up[n] = 0;
+    // "1/2x" / "1/4x": lower-case x stays (the multiplier's own).
+    for (int i = 1; i < n; i++)
+        if (up[i] == 'X' && up[i - 1] >= '0' && up[i - 1] <= '9' && (i + 1 == n || up[i + 1] == ' ')) up[i] = 'x';
+    int tw = pd_text_width(up), w = tw + 8;
+    if (w < minW) w = minW;
+    if (!c) return w;
+    // The notched rectangle: two fills, so each corner pixel stays the background's.
+    pd_fill(c, x + 1, y, w - 2, UI_TAG_H, fill);
+    pd_fill(c, x, y + 1, w, UI_TAG_H - 2, fill);
+    // The capitals (the font's rows 4-12) from the tag's second row, their shadow a row under them: one clear row above,
+    // one below, as the game's tags sit.
+    pd_text(c, x + (w - tw) / 2, y - 3, up, ink, UI_TAG_SHADOW);
+    return w;
+}
+
+int ui_matchup_tag(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type, int pct) {
+    char text[40];
+    const char* amount = pct == 0 ? "0x" : pct <= 25 ? "1/4x" : pct < 100 ? "1/2x" : pct >= 400 ? "4x" : pct >= 200 ? "2x" : "";
+    snprintf(text, sizeof(text), "%s%s%s", pd_type_name(g, type), *amount ? " " : "", amount);
+    return ui_game_tag(c, x, y, text, ui_type_color(type), 0xFFFFFF, 0);
+}
+
+int ui_type_badge(struct pd_canvas* c, int x, int y, int type) { return ui_type_badge_for(c, x, y, ui_game, type); }
+
+int ui_type_badge_for(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type) {
     char text[12];
-    const char* name = pd_type_name(ui_game, type);
+    const char* name = pd_type_name(g, type);
     int n = 0;
     for (; name[n] && n < 11; n++) text[n] = name[n] >= 'a' && name[n] <= 'z' ? (char) (name[n] - 32) : name[n];
     text[n] = 0;
     // The game's own tag where its ROM has the sheet (English FireRed / Emerald engines), else the drawn badge.
-    const uint32_t* tags = pd_type_tags(ui_game);
+    const uint32_t* tags = g ? pd_type_tags(g) : NULL;
     int tx, ty;
     if (tags && pd_type_tag_at(text, &tx, &ty)) {
         if (c)
@@ -132,11 +161,8 @@ int ui_type_badge(struct pd_canvas* c, int x, int y, int type) {
                 }
         return 32;
     }
-    int w = pd_text_width(text) + 6;
-    if (!c) return w; // measuring
-    pd_round_rect(c, x, y, w, 12, 1, ui_type_color(type));
-    pd_text(c, x + 3, y - 2, text, 0xFFFFFF, PD_NO_SHADOW);
-    return w;
+    // Else the drawn tag, at least the game tag's 32 wide (TypeBadge's minWidth).
+    return ui_game_tag(c, x, y, text, ui_type_color(type), 0xFFFFFF, 32);
 }
 
 void ui_button(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int w, int h, const char* label, int id) {
@@ -183,9 +209,7 @@ void ui_status_badge(struct pd_canvas* c, int x, int y, uint32_t status) {
     else if (!strcmp(label, "PAR")) fill = STATUS_FILL_PAR;
     else if (!strcmp(label, "BRN")) fill = STATUS_FILL_BRN;
     else if (!strcmp(label, "FRZ")) fill = STATUS_FILL_FRZ;
-    int w = pd_text_width(label) + 6;
-    pd_round_rect(c, x, y, w, 14, 2, fill);
-    pd_text(c, x + 3, y - 2, label, 0xFFFFFF, PD_NO_SHADOW);
+    ui_game_tag(c, x, y + 1, label, fill, 0xFFFFFF, 0); // StatusBadge: a GameTag in the status's colour
 }
 
 void ui_notice(struct pd_canvas* c, const char* title, const char* line1, const char* line2) {

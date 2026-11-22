@@ -258,17 +258,22 @@ other core, won't load.
 The program uses your controller's layout: the button on the right acts as the game's A and the one at the bottom
 as B, as on a Nintendo controller. On ROCKNIX the buttons follow their labels instead, so the button marked A is A,
 as long as the firmware's controller layout is Nintendo (its default). If that feels backwards on your device, set
-`A/B BUTTONS` to `SWAPPED` in the menu. If you set `A/B BUTTONS` to `SWAPPED` on ROCKNIX with an earlier version to
+`A/B BUTTONS` to `SWAPPED` in `SETTINGS`. If you set `A/B BUTTONS` to `SWAPPED` on ROCKNIX with an earlier version to
 get A on the button marked A, set it back to `NORMAL`. Controllers can be plugged in or pulled out while you play.
 
 On a keyboard: arrows move, Z is A, X is B, Enter is START, Backspace is SELECT, Q and E are L and R, Tab is X and F
 is Y. Hold Space to fast forward and R to rewind, F2 saves a state, F4 loads it, and Escape opens the menu. Every one
-of those keys can be changed in the menu's `KEYBOARD` page, or in the game list's `SETTINGS` > `KEYBOARD` before you start a game. A mouse or a touch screen reaches the companion and the HUD:
+of those keys can be changed in `SETTINGS` > `KEYBOARD`, or in the game list's `SETTINGS` > `KEYBOARD` before you start a game. A mouse or a touch screen reaches the companion and the HUD:
 clicking a tab, the gear, a row or a button presses it, as `ENTER` on it would.
 
 The companion and the quick menu work as in the cores everywhere: X opens the [companion](companion.md), L3 opens the
 quick menu over the game (PC, FLY, the keep-away spray, BIKE, WILD ENCOUNTERS, COMPANION), and both buttons can be
-changed in the companion's `SETTINGS`. In the English FireRed and Emerald the quick menu also has `TAKE OFF`, to
+changed in the companion's `SETTINGS`. On a screen tall enough (about 550 pixels or more), the companion opens as a
+window in the middle of the screen, over the game, which stays as big as it was and dimmed behind it, like the app's
+companion window on one screen. The game keeps running under it (on Linux a DS game waits). Click the dimmed game
+beside the window to close it. On a smaller screen the companion fills the screen, as before. When the quick menu has
+more actions than fit round its circle with their names, it shows their pictures alone, with the name of the one
+you're on in the middle. In the English FireRed and Emerald the quick menu also has `TAKE OFF`, to
 [fly over the map](map.md#flying-over-the-map) on your Pokémon's bird (the companion's `MAP` has a `TAKE OFF` button
 too). There `FLY` flies you over the map to the town you pick, unless `FLY STYLE` in the companion's `SETTINGS` is
 `CLASSIC`, the game's own way. `FLY ON` swaps the bird for an air balloon, a helicopter or a zeppelin. `FLIGHT AREA`
@@ -309,13 +314,21 @@ pauses while it's open.
 | --- | --- |
 | `RESUME` | Back to the game. |
 | `SAVE STATE`, `LOAD STATE` | One save state for the game. `LOAD STATE` asks first. Game Boy Advance states made before this version don't load. |
-| `HOTKEYS` | Buttons for fast-forward, rewind and states (below). |
-| `KEYBOARD` | Which key does what (below). |
-| `REWIND` | `ON` keeps the last 20 seconds or so to rewind through. |
-| `FF SPEED` | How fast fast-forward goes: `MAX`, or 2x to 8x. |
-| `LCD FILTER` | A screen texture like a handheld's. |
-| `A/B BUTTONS` | `NORMAL` or `SWAPPED`, for devices whose A and B are the other way round. |
+| `SETTINGS` | Opens the companion's `SETTINGS`, at the program's own rows (below). |
 | `QUIT` | Leave the game (`QUIT TO GAME LIST` when you picked it from the list). It asks first. |
+
+Every setting is in one place, the companion's `SETTINGS`, in the same groups and order as on Android. The program's
+own rows sit in those groups too: `FF SPEED` and `REWIND` under `FF / SPEED`, `LCD FILTER` under `SCREEN`, and
+`A/B BUTTONS`, `KEYBOARD` and `HOTKEYS` under `CONTROLS`:
+
+| Row | What it does |
+| --- | --- |
+| `A/B BUTTONS` | `NORMAL` or `SWAPPED`, for devices whose A and B are the other way round. |
+| `FF SPEED` | How fast fast-forward goes: `MAX`, or 2x to 8x. |
+| `REWIND` | `ON` keeps the last 20 seconds or so to rewind through. |
+| `LCD FILTER` | A screen texture like a handheld's. |
+| `KEYBOARD` | Which key does what (below). Opens its page over the game; B goes back to `SETTINGS`. |
+| `HOTKEYS` | Buttons for fast-forward, rewind and states (below). Opens its page the same way. |
 
 ### Hotkeys
 
@@ -341,7 +354,10 @@ PokeDaisy only when Steam passes them on.
 ### Keyboard
 
 `KEYBOARD` lists every action with the key it uses, and you can give any of them another key. Pick a row, then press
-the key you want. Escape or B cancels, and Backspace or SELECT turns that row off. A key another row had moves to the one you picked. Your
+the key you want. Escape or B cancels, and Backspace or SELECT turns that row off. A key another row had moves to the one you picked.
+A and B always keep a key, so you can't lock yourself out: they can't be turned off, and giving another row the key A
+or B uses is refused. To move one, pick the A or B row and press the new key; the row that had it gets A's or B's old
+key in return. Your
 keys are kept in `host.ini` in the data folder, so they stay as you set them.
 
 The keys it starts with are the ones above: Z for A, X for B, Enter for START, Backspace for SELECT, the arrows for

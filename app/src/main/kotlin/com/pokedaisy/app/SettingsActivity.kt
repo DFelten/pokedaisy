@@ -1,6 +1,9 @@
 package com.pokedaisy.app
 
 import com.pokedaisy.app.companion.DsCore
+import com.pokedaisy.app.companion.OverlayImport
+import com.pokedaisy.app.companion.OverlayImportSession
+import com.pokedaisy.app.companion.TouchSkinSession
 import com.pokedaisy.app.companion.ui.theme.DarkMode
 import com.pokedaisy.app.companion.i18n.L10n
 import com.pokedaisy.app.companion.i18n.tk
@@ -155,6 +158,8 @@ class SettingsActivity : ComponentActivity() {
     private val touchBack = com.pokedaisy.app.companion.ui.CompanionBack()
     /** HOME's scroll, kept while a sub-page is open so BACK returns to the same rows. */
     private val homeScroll = androidx.compose.foundation.ScrollState(0)
+    /** HOME's list position (it's lazy), kept the same way. */
+    private val homeList = androidx.compose.foundation.lazy.LazyListState()
     /** HOME has put the focus on its first setting (once: coming back from a sub-page keeps where it was). */
     private var homeFocused = false
     /** HOME's first setting, and whether anything on HOME has the focus: a D-pad press with nothing focused goes there
@@ -180,12 +185,44 @@ class SettingsActivity : ComponentActivity() {
         }
         val dpad = event.keyCode == KeyEvent.KEYCODE_DPAD_UP || event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
             event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        // L / R: the previous / next group tab (the user's call), its first row focused.
+        if ((event.keyCode == KeyEvent.KEYCODE_BUTTON_L1 || event.keyCode == KeyEvent.KEYCODE_BUTTON_R1) && !overlays.isOpen) {
+            val step = groupStep.step
+            if (step != null) {
+                if (event.action == KeyEvent.ACTION_DOWN && step(if (event.keyCode == KeyEvent.KEYCODE_BUTTON_L1) -1 else 1)) {
+                    com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row -> leaveTouchMode(this); runCatching { row.requestFocus() } }
+                }
+                return true
+            }
+        }
+        // A group tab tapped, or a pick-list opened by a tap: this press lands on the row they meant, out of touch mode
+        // (a focus asked for in touch mode doesn't take, and the press went to GAMES on the rail).
+        if (dpad && event.action == KeyEvent.ACTION_DOWN) {
+            com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row ->
+                leaveTouchMode(this)
+                if (runCatching { row.requestFocus() }.isSuccess) return true
+            }
+            // The thing last tapped: focus it, and this press moves on from there.
+            com.pokedaisy.app.companion.ui.FocusJump.takeFrom()?.let { tapped ->
+                leaveTouchMode(this)
+                if (runCatching { tapped.requestFocus() }.isSuccess && homeHasFocusAfterTap()) return super.dispatchKeyEvent(event)
+            }
+        }
         if (dpad && event.action == KeyEvent.ACTION_DOWN && screen == Screen.HOME && !homeHasFocus && !overlays.isOpen) {
             val first = homeFirstRow
-            if (first != null && runCatching { first.requestFocus() }.isSuccess) return true
+            if (first != null) {
+                leaveTouchMode(this)
+                if (runCatching { first.requestFocus() }.isSuccess) return true
+            }
         }
         return super.dispatchKeyEvent(event)
     }
+
+    /** After focusing a tapped thing: true when something on the page took it (else HOME's first row should). */
+    private fun homeHasFocusAfterTap(): Boolean = screen != Screen.HOME || homeHasFocus || window.currentFocus?.hasFocus() == true
+
+    /** L / R's way to the HOME list's group tabs. */
+    private val groupStep = com.pokedaisy.app.companion.ui.GroupStep()
     /** This screen's width / height - the top screen's, for the ASPECT preview. */
     private var screenAspect by mutableFloatStateOf(16f / 9f)
 
@@ -266,6 +303,7 @@ class SettingsActivity : ComponentActivity() {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.pokedaisy.app.companion.ui.LocalTextStep provides -1,
                     com.pokedaisy.app.companion.ui.LocalOverlayStack provides overlays,
+                    com.pokedaisy.app.companion.ui.LocalGroupStep provides groupStep,
                 ) { Root() }
             } }
         }
@@ -324,13 +362,14 @@ class SettingsActivity : ComponentActivity() {
             if (tab && wide) LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
                     com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = true, nm, ns, toolsBadge = toolsNew,
-                    top = 16.dp, onPick = ::pickSection,
+                    top = com.pokedaisy.app.companion.ui.libraryMargin, onPick = ::pickSection,
                 )
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
-            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp)) {
+            // The header along the screen's top edge and HOME's footer along its bottom, both full width (the library's
+            // and TOOLS' look); the page between them keeps its margins.
                 if (tab && screen == Screen.HOME) LibraryLook { nm, _ ->
-                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP })
+                    com.pokedaisy.app.companion.ui.AppPageTitle(tk("SETTINGS"), nm, home = true, onHelp = { screen = Screen.HELP }, docked = true)
                 } else {
                 com.pokedaisy.app.companion.ui.AppPageTitle(
                     title = when (screen) {
@@ -367,8 +406,10 @@ class SettingsActivity : ComponentActivity() {
                         capture.cancel()
                         goBack()
                     },
+                    docked = true,
                 )
                 }
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 when (screen) {
                     Screen.HOME -> HomeScreen(m)
                     Screen.SPEED -> SubRowsScreen(m) { speedRows() }
@@ -399,6 +440,7 @@ class SettingsActivity : ComponentActivity() {
                     Screen.COOP_RELAY -> coop.RelayPage(m, small)
                 }
             }
+            if (screen == Screen.HOME) com.pokedaisy.app.companion.ui.AppAboutBar(BuildConfig.VERSION_NAME, m, ::openUrl)
             if (tab && !wide) LibraryLook { nm, ns ->
                 com.pokedaisy.app.companion.ui.LibraryNav(
                     com.pokedaisy.app.companion.ui.LibrarySection.SETTINGS, vertical = false, nm, ns, toolsBadge = toolsNew, onPick = ::pickSection,
@@ -538,10 +580,10 @@ class SettingsActivity : ComponentActivity() {
             overlayNeeds?.let { need ->
                 OptionConfirm(
                     title = tk("PICK THE IMAGE"),
-                    message = tr("{0} draws {1}, which wasn't picked with it. Pick {1} next: it's usually beside the .cfg or in a folder next to it.", need.cfg, need.image),
+                    message = OverlayImport.imagePrompt(need),
                     confirmLabel = tk("PICK"),
                     m = m,
-                    onDismiss = { overlayNeeds = null; overlayPending = null },
+                    onDismiss = { overlayNeeds = null; overlayImports.cancel() },
                     onConfirm = { overlayNeeds = null; pickOverlayImage.launch(arrayOf("image/*")) },
                 )
             }
@@ -555,8 +597,7 @@ class SettingsActivity : ComponentActivity() {
                     onDismiss = { removingAllOverlays = false },
                     onConfirm = {
                         removingAllOverlays = false
-                        overlayStore.deleteAll()
-                        if (OverlayChoice.of(prefs.overlay) is OverlayChoice.Imported) prefs.overlay = OverlayChoice.None.key
+                        prefs.overlay = overlayImports.deleteAll().selectionAfter(prefs.overlay)
                         overlayRemoveMode = false
                         revision++
                     },
@@ -572,9 +613,9 @@ class SettingsActivity : ComponentActivity() {
                     onDismiss = { removingOverlay = null },
                     onConfirm = {
                         removingOverlay = null
-                        overlayStore.delete(id)
-                        if (prefs.overlay == OverlayChoice.Imported(id).key) prefs.overlay = OverlayChoice.None.key
-                        if (overlayStore.list().isEmpty()) overlayRemoveMode = false
+                        val removal = overlayImports.delete(id)
+                        prefs.overlay = removal.selectionAfter(prefs.overlay)
+                        if (removal.choices.none { it.first is OverlayChoice.Imported }) overlayRemoveMode = false
                         revision++
                     },
                 )
@@ -945,6 +986,17 @@ class SettingsActivity : ComponentActivity() {
                 prefs.libraryFileNames = !prefs.libraryFileNames
                 revision++
             },
+            // Under a game's name in the list: its file's name where two games' names match (the default), the whole path, or none.
+            SettingRow(
+                tk("GAME PATHS"), com.pokedaisy.app.companion.LibraryPathMode.of(prefs.libraryPathMode).label,
+                subtitle = "What shows under a game's name in the list",
+                labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.GAME_PATHS),
+            ) {
+                val modes = com.pokedaisy.app.companion.LibraryPathMode.entries
+                selector = Selector(tk("GAME PATHS"), modes.map { it.label }, com.pokedaisy.app.companion.LibraryPathMode.of(prefs.libraryPathMode).label) { l ->
+                    prefs.libraryPathMode = modes.first { it.label == l }.id
+                }
+            },
             // Leaves out what the companion can't read; the games stay in their folders.
             SettingRow(
                 tk("SUPPORTED ONLY"), onOff(prefs.librarySupportedOnly), subtitle = "Hide games the companion can't read",
@@ -1048,8 +1100,8 @@ class SettingsActivity : ComponentActivity() {
             if (runCatching { firstRow.requestFocus() }.isSuccess) homeFocused = true
         }
         com.pokedaisy.app.companion.ui.AppSettingsHome(rows, m, searchQuery, { searchQuery = it },
-            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll,
-            firstRowFocus = firstRow, footer = { AboutFooter(m) })
+            modifier = Modifier.onFocusChanged { homeHasFocus = it.hasFocus }, scroll = homeScroll, lazy = homeList,
+            firstRowFocus = firstRow)
     }
 
     /** SHADERS: what the game is drawn through, like the companion's page; the game picks it up on resume. */
@@ -1149,10 +1201,7 @@ class SettingsActivity : ComponentActivity() {
             expand = prefs.gameAspect == com.pokedaisy.app.companion.GameAspect.WIDE, touchShown = touchWouldShow(style),
             skins = skins, skinUi = touchSkinUi, setStyle = { prefs.touchControlsStyle = it; revision++ },
             onDeleteSkin = { skin ->
-                skinStore.delete(skin.id)
-                val st = prefs.touchControlsStyle
-                prefs.touchControlsStyle = st.copy(skinGba = st.skinGba.takeIf { it != skin.id }, skinGb = st.skinGb.takeIf { it != skin.id })
-                revision++
+                if (skinImports.delete(skin.id)) revision++
             },
         ) { mod ->
             OptionListWindow(m, mod) {
@@ -1207,12 +1256,12 @@ class SettingsActivity : ComponentActivity() {
 
     /** SCREEN > OVERLAY's imports (overlay/Overlays.kt), beside the game's other files. */
     private val overlayStore by lazy { OverlayStore(filesRoot) }
+    private val overlayImports by lazy { OverlayImportSession(overlayStore) }
     private var overlayRemoveMode by mutableStateOf(false)
     /** An import's result to show (title, message). */
     private var overlayNotice by mutableStateOf<Pair<String, String>?>(null)
-    /** A .cfg picked without its image: asks for it ([pickOverlayImage]); [overlayPending] holds what was picked. */
+    /** A .cfg picked without its image: asks for it ([pickOverlayImage]). */
     private var overlayNeeds by mutableStateOf<OverlayStore.Result.NeedsImage?>(null)
-    private var overlayPending: List<OverlayStore.Picked>? = null
     /** The imported overlay (id, label) REMOVE asks about. */
     private var removingOverlay by mutableStateOf<Pair<String, String>?>(null)
     /** REMOVE ALL's confirm is up. */
@@ -1220,6 +1269,9 @@ class SettingsActivity : ComponentActivity() {
 
     /** TOUCH CONTROLS > SKINS: the imported Delta skins, their pick-lists, IMPORT SKIN's file picker. */
     private val skinStore by lazy { com.pokedaisy.app.companion.DeltaSkinStore(filesDir.toOkioPath() / "skins") }
+    private val skinImports by lazy {
+        TouchSkinSession(skinStore, { prefs.touchControlsStyle }, { prefs.touchControlsStyle = it })
+    }
     private val touchSkinUi = com.pokedaisy.app.companion.ui.TouchSkinUi()
     private val pickSkin = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { importSkin(it) } }
 
@@ -1227,35 +1279,30 @@ class SettingsActivity : ComponentActivity() {
     private fun importSkin(uri: Uri) {
         Thread {
             // The store reads a zip from a file: the picked document is copied into the cache first.
-            val temp = java.io.File(cacheDir, "skin-import.deltaskin")
-            val result = runCatching {
-                contentResolver.openInputStream(uri)?.use { input -> temp.outputStream().use { input.copyTo(it) } }
-                    ?.let { skinStore.import(temp.toOkioPath()) }
-            }.getOrNull().also { temp.delete() }
-                ?: com.pokedaisy.app.companion.DeltaSkinStore.ImportResult(emptyList(), listOf("it couldn't be opened"))
+            val temp = runCatching { java.io.File.createTempFile("skin-import-", ".deltaskin", cacheDir) }.getOrNull()
+            val result = try {
+                val copied = runCatching {
+                    if (temp == null) null else contentResolver.openInputStream(uri)?.use { input ->
+                        temp.outputStream().use { input.copyTo(it) }
+                        temp.toOkioPath()
+                    }
+                }.getOrNull()
+                skinImports.import(copied)
+            } finally { temp?.delete() }
             runOnUiThread {
-                val added = result.added
-                if (added.size == 1) {
-                    val skin = added.first()
-                    skin.skin.system?.let { prefs.touchControlsStyle = prefs.touchControlsStyle.withSkin(it, skin.id) }
-                }
-                touchSkinUi.notice = when {
-                    added.isEmpty() -> tk("NOT A SKIN WE CAN USE") to tr("PokeDaisy reads Delta skins for GBA and Game Boy games: {0}", result.refused.joinToString("; "))
-                    added.size == 1 -> tk("SKIN ADDED") to tr("{0} is on for {1} games.", added.first().skin.name, tr(added.first().skin.system?.label ?: ""))
-                    else -> tk("SKINS ADDED") to tr("{0} skins added. Pick one under SKINS.", added.size)
-                }
+                touchSkinUi.notice = skinImports.complete(result)
                 revision++
             }
         }.start()
     }
 
     private val importOverlayFiles = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        overlayImports.cancel()
         if (uris.isNotEmpty()) importOverlays(uris, emptyList())
     }
     private val pickOverlayImage = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        val pending = overlayPending
-        overlayPending = null
-        if (uri != null && pending != null) importOverlays(listOf(uri), pending)
+        val pending = overlayImports.takePendingImage()
+        if (uri != null && pending.isNotEmpty()) importOverlays(listOf(uri), pending)
     }
 
     /**
@@ -1269,20 +1316,10 @@ class SettingsActivity : ComponentActivity() {
         val choices = overlayChoices(overlayStore)
         val current = choices.firstOrNull { it.first.key == prefs.overlay }?.first?.key ?: OverlayChoice.None.key
         val imported = choices.filter { it.first is OverlayChoice.Imported }
-        fun pick(c: OverlayChoice): () -> Unit = { prefs.overlay = c.key; revision++ }
-        val rows = buildList {
-            add(groupTitle(tk("BUILT-IN")))
-            choices.filter { it.first !is OverlayChoice.Imported }.forEach { (c, label) ->
-                add(SettingRow(label, tk("ON").takeIf { c.key == current }, onClick = pick(c)))
-            }
-            add(groupTitle(tk("IMPORTED")))
-            if (imported.isEmpty()) add(SettingRow(tk("NONE YET: IMPORT FILE BELOW"), null, enabled = false) {})
-            imported.forEach { (c, label) ->
-                val id = (c as OverlayChoice.Imported).id
-                if (overlayRemoveMode) add(SettingRow(label, tk("REMOVE")) { removingOverlay = id to label })
-                else add(SettingRow(label, tk("ON").takeIf { c.key == current }, onClick = pick(c)))
-            }
-        }
+        val rows = com.pokedaisy.app.companion.ui.overlayChoiceRows(
+            choices.map { (choice, label) -> choice.key to label }, current, overlayRemoveMode,
+            pick = { prefs.overlay = it; revision++ }, remove = { id, label -> removingOverlay = id to label },
+        )
         Column(Modifier.fillMaxSize()) {
             Hint(
                 tr(
@@ -1316,60 +1353,26 @@ class SettingsActivity : ComponentActivity() {
             var tooBig = false
             val picked = earlier + uris.mapNotNull { uri ->
                 val name = RomUris.displayName(this, uri) ?: uri.lastPathSegment?.substringAfterLast('/') ?: return@mapNotNull null
-                val bytes = runCatching { contentResolver.openInputStream(uri)?.use { readCapped(it, MAX_OVERLAY_FILE) } }.getOrNull()
-                if (bytes == null) { tooBig = true; return@mapNotNull null }
                 // A real path lets a .cfg's images be read from beside it (with All files access).
-                OverlayStore.Picked(name, bytes, RomUris.originalPath(this, uri)?.takeIf { it.startsWith("/") })
+                val path = RomUris.originalPath(this, uri)?.takeIf { it.startsWith("/") }
+                val file = runCatching {
+                    contentResolver.openInputStream(uri)?.source()?.use { OverlayStore.readPicked(name, it, path) }
+                }.getOrNull()
+                if (file == null) tooBig = true
+                file
             }
-            val result = when {
-                picked.isNotEmpty() -> overlayStore.import(picked)
-                tooBig -> OverlayStore.Result.Failed(OverlayStore.Reason.TOO_BIG)
-                else -> OverlayStore.Result.Failed(OverlayStore.Reason.NOTHING_USABLE)
+            val reason = if (tooBig) OverlayStore.Reason.TOO_BIG else OverlayStore.Reason.NOTHING_USABLE
+            val imported = overlayImports.import(picked, reason)
+            runOnUiThread {
+                val completed = overlayImports.complete(imported, prefs.overlay)
+                prefs.overlay = completed.selection
+                overlayNotice = completed.notice
+                overlayNeeds = completed.needsImage
+                revision++
             }
-            runOnUiThread { onOverlaysImported(result, picked) }
         }.start()
     }
 
-    private fun onOverlaysImported(result: OverlayStore.Result, picked: List<OverlayStore.Picked>) {
-        when (result) {
-            is OverlayStore.Result.Imported -> {
-                val skipped = if (result.skipped > 0) " " + tr("{0} couldn't be used: an image missing, or not a PNG.", result.skipped) else ""
-                overlayNotice = if (result.ids.size == 1) {
-                    // One new overlay: used at once.
-                    val c = OverlayChoice.Imported(result.ids.first())
-                    prefs.overlay = c.key
-                    tk("OVERLAY ADDED") to tr("{0} is on. Games show it from now on.", overlayLabel(overlayChoices(overlayStore), c.key)) + skipped
-                } else {
-                    tk("OVERLAYS ADDED") to tr("{0} overlays added. Tap one to use it.", result.ids.size) + skipped
-                }
-            }
-            is OverlayStore.Result.NeedsImage -> {
-                overlayPending = picked
-                overlayNeeds = result
-            }
-            is OverlayStore.Result.Failed -> overlayNotice = tk("NOT AN OVERLAY") to when (result.reason) {
-                OverlayStore.Reason.TOO_BIG -> tr("That file is too big for an overlay.")
-                OverlayStore.Reason.NOTHING_USABLE -> tr("Pick a RetroArch overlay (.cfg with its image), a .zip of them, or a PNG with a see-through screen.")
-            }
-        }
-        revision++
-    }
-
-    /** All of [input], or null once it passes [limit] bytes. */
-    private fun readCapped(input: java.io.InputStream, limit: Long): ByteArray? {
-        val out = java.io.ByteArrayOutputStream()
-        val buf = ByteArray(64 * 1024)
-        while (true) {
-            val n = input.read(buf)
-            if (n < 0) return out.toByteArray()
-            out.write(buf, 0, n)
-            if (out.size() > limit) return null
-        }
-    }
-
-    /** Version, author, Buy Me a Coffee, the Discord and the repo, under the settings list. */
-    @Composable
-    private fun AboutFooter(m: GbaTextMetrics) = com.pokedaisy.app.companion.ui.AppAboutFooter(BuildConfig.VERSION_NAME, m, ::openUrl)
 
     private fun openUrl(url: String) {
         runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
@@ -1382,102 +1385,15 @@ class SettingsActivity : ComponentActivity() {
 
     // ---- RetroAchievements --------------------------------------------------
 
-    /** Sign in / out of RetroAchievements. Only the token the server returns is
-     * kept (Prefs); the password goes straight to the login call. */
     @Composable
     private fun AchievementsScreen(m: GbaTextMetrics, small: GbaTextMetrics) {
-        @Suppress("UNUSED_EXPRESSION") revision
-        val user by RetroAchievements.user.collectAsState()
-        val signingIn by RetroAchievements.signingIn.collectAsState()
-        val state by RetroAchievements.state.collectAsState()
-        var name by remember { mutableStateOf(prefs.raUsername ?: "") }
-        var password by remember { mutableStateOf("") }
-        var error by remember { mutableStateOf<String?>(null) }
-        val savedName = prefs.raUsername.takeIf { prefs.raToken != null }
-        fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
-
-        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-            Hint(
-                tr("Earn RetroAchievements (retroachievements.org) as you play. Unlocks pop up on the second screen, and its CHEEVOS tab (under MORE there) lists the game's set. Only ROMs RetroAchievements knows by their exact hash have achievements. Softcore only for now. Your password isn't stored: the app keeps the login token RetroAchievements sends back."),
-                m, small,
-            )
-            OptionListWindow(m, Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(horizontal = m.u * 4)) {
-                    val u = user
-                    if (u != null || savedName != null) {
-                        GbaText(tr("SIGNED IN AS"), OptionColors.label, OptionColors.labelShadow, m)
-                        GbaText((u?.displayName ?: savedName!!).uppercase(), OptionColors.value, OptionColors.valueShadow, m)
-                        GbaText(
-                            when {
-                                u != null -> tr("{0} SOFTCORE POINTS · {1} HARDCORE POINTS", u.softcoreScore, u.score)
-                                state.offline -> tr("CAN'T REACH RetroAchievements RIGHT NOW · TRIED AGAIN BY ITSELF")
-                                else -> tr("CONNECTING…")
-                            },
-                            OptionColors.muted, OptionColors.mutedShadow, small, maxLines = 2,
-                        )
-                        Row(Modifier.padding(vertical = m.u * 4), horizontalArrangement = Arrangement.spacedBy(m.u * 4)) {
-                            if (u == null && state.offline) OptionButton(tk("TRY AGAIN"), m, onClick = { RetroAchievements.retry() })
-                            OptionButton(tk("SIGN OUT"), m, onClick = { RetroAchievements.logout(); password = ""; revision++ })
-                        }
-                    } else {
-                        GbaText(tr("USERNAME"), OptionColors.label, OptionColors.labelShadow, m, Modifier.padding(vertical = m.u * 2))
-                        OptionTextField(name, { name = it; error = null }, small, placeholder = tr("retroachievements.org username"))
-                        Spacer(Modifier.height(m.u * 4))
-                        GbaText(tr("PASSWORD"), OptionColors.label, OptionColors.labelShadow, m, Modifier.padding(vertical = m.u * 2))
-                        OptionTextField(password, { password = it; error = null }, small, placeholder = tr("password"), password = true)
-                        error?.let {
-                            GbaText(it.uppercase(), OptionColors.value, OptionColors.valueShadow, small, Modifier.padding(top = m.u * 4), maxLines = 3)
-                        }
-                        Row(Modifier.padding(vertical = m.u * 4), horizontalArrangement = Arrangement.spacedBy(m.u * 4)) {
-                            OptionButton(
-                                if (signingIn) tk("SIGNING IN…") else tk("SIGN IN"), m, emphasis = true,
-                                enabled = !signingIn && name.isNotBlank() && password.isNotEmpty(),
-                                onClick = {
-                                    error = null
-                                    RetroAchievements.login(name, password) { ok, message ->
-                                        runOnUiThread {
-                                            if (ok) { password = ""; revision++ }
-                                            else error = message ?: tr("Couldn't sign in")
-                                        }
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-            // What shows over the game / companion; tracking and submissions carry on either way.
-            Spacer(Modifier.height(m.u * 4))
-            OptionListWindow(m, Modifier.fillMaxWidth()) {
-                Column {
-                    com.pokedaisy.app.companion.ui.GroupTitleLine(tk("NOTIFICATIONS"), m, first = true)
-                    OptionLine(
-                        tk("ACHIEVEMENT POPUPS"), onOff(prefs.raPopups), selected = false, m,
-                        height = m.rowHeight * 1.2f + m.lineHeight, divider = true,
-                        subtitle = "Unlocks, game complete, leaderboards and connection notices",
-                        labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.RA_POPUPS),
-                    ) {
-                        prefs.raPopups = !prefs.raPopups
-                        revision++
-                    }
-                    OptionLine(
-                        tk("PROGRESS POPUPS"), onOff(prefs.raProgressPopups), selected = false, m,
-                        height = m.rowHeight * 1.2f + m.lineHeight, enabled = prefs.raPopups,
-                        subtitle = "A notice when a counting achievement gets closer",
-                        labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.RA_POPUPS),
-                    ) {
-                        prefs.raProgressPopups = !prefs.raProgressPopups
-                        revision++
-                    }
-                }
-            }
-        }
+        com.pokedaisy.app.companion.ui.RaAccountScreen(RetroAchievements.account, prefs, m, small)
     }
 
     // ---- co-op --------------------------------------------------------------
 
     /** CO-OP's pages and their state (PAIR, PARTNERS, RELAY); internal for ui-preview's stand-in ([CoopSettingsPages.preview]). */
-    internal val coop by lazy { CoopSettingsPages(this, { prefs }) { revision++ } }
+    internal val coop by lazy { androidCoopSettings(this, { prefs }) { revision++ } }
 
     /** The CO-OP group, only while the co-op flag is on; the companion's SETTINGS has the same rows in the same place. */
     private fun coopRows(): List<SettingRow> {
@@ -1496,9 +1412,7 @@ class SettingsActivity : ComponentActivity() {
             ) { prefs.coopNearbyRange = it },
             SettingRow(tk("RELAY"), CoopRelay.rowValue(prefs.coopRelayUrl, BuildConfig.COOP_RELAY_URL), opensPage = true) { screen = Screen.COOP_RELAY },
             SettingRow(tk("RELAY ONLY"), onOff(prefs.coopRelayOnly), subtitle = "Hide your IP address from your partner") {
-                prefs.coopRelayOnly = !prefs.coopRelayOnly
-                CoopSession.restart(this, prefs)
-                revision++
+                if (CoopSession.bind(this, prefs).changeRelay { prefs.coopRelayOnly = !prefs.coopRelayOnly }) revision++
             },
             // PLAY TOGETHER ONLY: no game runs behind this screen, so it only says it needs one (the row is the game's SETTINGS').
             *listOfNotNull(
@@ -2300,9 +2214,6 @@ class SettingsActivity : ComponentActivity() {
         const val MAX_CHEAT_FILE = com.pokedaisy.app.companion.GameCheats.MAX_FILE_BYTES
         /** Retail Emerald is 16 MB: the only size worth hashing for co-op. */
         const val EMERALD_ROM_BYTES = 16L * 1024 * 1024
-        /** One picked overlay file at most (read into memory; a pack of a few 4K borders is ~20 MB). */
-        const val MAX_OVERLAY_FILE = 64L * 1024 * 1024
-
         private val cheatCrcs = java.util.concurrent.ConcurrentHashMap<String, String>()
 
         /** [rom]'s CRC32 ([SaveStates.crc32], the key of its cheats like its states), remembered

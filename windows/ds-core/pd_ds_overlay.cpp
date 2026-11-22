@@ -18,6 +18,7 @@
 #include "map_view.h"
 #include "party_view.h"
 #include "pd_canvas.h"
+#include "pd_style.h"
 #include "pd_game.h"
 #include "pd_ui.h"
 #include "pk_nds_call.h"
@@ -53,6 +54,12 @@ const PkNdsFieldGame* fieldGame = nullptr; // where this game keeps its field, f
 bool supported = false;                    // the exact ROM the DS companion's layout was checked on
 bool soulSilver = false;
 bool companionShown = false;               // the companion has the picture
+// The companion as a window over the game (overlay_companion_window): its picture's size (0: it fills the frame) and the
+// host's last answer, the mouse over it.
+int compW = 0, compH = 0;
+std::vector<uint32_t> compPixels, compInner;
+pd_companion compReply {};
+bool compTouchWas = false, compDimHeld = false;
 bool quickShown = false;                   // the quick menu has it
 int quickSelected = 0, quickW = 0, quickH = 0;
 int holdFrames = 0;
@@ -791,9 +798,46 @@ void overlay_load(const char* romPath, const char* saveDir)
     refresh();
 }
 
+void overlay_companion_window(bool host, int panelW, int panelH)
+{
+    compW = compH = 0;
+    int w = 0, h = 0;
+    if (host && pd_companion_size(panelW, panelH, 640, 480, &w, &h)) {
+        compW = w;
+        compH = h;
+    }
+}
+
+void overlay_companion_native(pd_companion* msg)
+{
+    *msg = pd_companion {};
+    if (!companionShown || compW <= 0 || compPixels.size() != (size_t) compW * compH) return;
+    msg->pixels = compPixels.data();
+    msg->src_w = compW;
+    msg->src_h = compH;
+    msg->active = 1;
+}
+
+void overlay_companion_reply(const pd_companion& reply) { compReply = reply; }
+
+int overlay_front_press() { return shell.take_front_press(); }
+
+void overlay_front_rows(const pd_front_rows& rows)
+{
+    shell.set_front_rows(rows.count, rows.label, rows.value, rows.group);
+    if (rows.open_settings) {
+        companionShown = true;
+        quickShown = flyPicker = repelPicker = false;
+        hudFocus = -1;
+        shell.open_front_rows();
+        refresh();
+    }
+}
+
 void overlay_reset()
 {
     companionShown = quickShown = false;
+    compTouchWas = compDimHeld = false;
     holdFrames = 0;
     quickSelected = 0;
     quickW = quickH = 0;
@@ -849,6 +893,28 @@ bool overlay_pointer(int x, int y, bool down)
     bool consumed = false;
     // The companion has the picture and the pointer: every press is its own (a tab, a row, a button, the gear), and the
     // game's touch screen never sees one.
+    if (companionShown && compW > 0) {
+        // A window: the host's mouse over it, in the window's own pixels; a press on the dimmed game beside it closes it.
+        const bool on = compReply.ptr_valid && compReply.ptr_down;
+        if (on && !compTouchWas && !compDimHeld && !compReply.ptr_inside) {
+            compDimHeld = true;
+            companionShown = false;
+        } else if (on && (compReply.ptr_inside || compTouchWas) && !compDimHeld) {
+            shell.touch(compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, true);
+            compTouchWas = true;
+        } else if (!on && compTouchWas) {
+            shell.touch(compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, false);
+            compTouchWas = false;
+        }
+        if (!on) compDimHeld = false;
+        pointerDown = down;
+        return true;
+    }
+    if (compDimHeld) { // the press that closed the window stays out of the game until it's let go
+        if (!down) compDimHeld = false;
+        pointerDown = down;
+        return true;
+    }
     if (companionShown) {
         shell.touch(x, y, down);
         pointerDown = down;
@@ -978,6 +1044,26 @@ bool overlay_compose(std::vector<uint32_t>& frame, int& w, int& h)
     // in. The frontend scales either up to the window. The wide picture is the window's shape at every ZOOM step (the
     // canvas grows, its aspect stays), so the overlay takes its width from it then; the stacked 256x384 screens aren't
     // the window's shape and keep the layout's own width.
+    if (companionShown && compW > 0) {
+        // A window over the game: the frame stays the game's, dimmed (the app's window dims it the same), and the companion
+        // is drawn into a picture of its own for the host to put in the middle of the window.
+        for (uint32_t& p : frame)
+            p = 0xFF000000u | (((p >> 16 & 0xFF) * 115 / 255) << 16) | (((p >> 8 & 0xFF) * 115 / 255) << 8) | ((p & 0xFF) * 115 / 255);
+        // The companion PD_COMPANION_PAD inside the window's picture, its backdrop running on under the padding.
+        const int pad = PD_COMPANION_PAD, iw = compW - 2 * pad, ih = compH - 2 * pad;
+        compPixels.assign((size_t) compW * compH, 0xFF000000u);
+        compInner.assign((size_t) iw * ih, 0xFF000000u);
+        pd_canvas cc, inner;
+        pd_canvas_init(&cc, compW, compH, compPixels.data());
+        pd_canvas_init(&inner, iw, ih, compInner.data());
+        shell.backdropFrame = &cc;
+        shell.backdropX = shell.backdropY = pad;
+        shell.draw(&inner, snapshot, companionGame != DsGame::Unsupported, map, icons);
+        shell.backdropFrame = nullptr;
+        pd_canvas_copy(&cc, pad, pad, &inner, 0, 0, iw, ih);
+        pd_window_edge(&cc, pd_cur->title, pd_cur->titleCount, 4); // the app's WindowFrame
+        return true;
+    }
     const bool windowShaped = (long long) gameW * 10 >= (long long) gameH * 15;
     const int baseH = companionShown ? 256 : 384;
     const int baseW = windowShaped ? std::max(companionShown ? 341 : 512, (int) llround((double) baseH * gameW / gameH))

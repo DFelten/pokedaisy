@@ -44,6 +44,7 @@ extern "C" {
 #include "pd_ui.h"
 #include "../hud.h"
 #include "../quick_menu.h"
+#include "../pd_env.h"
 #include "pd_tables.h"
 #include "pd_icon.h"
 }
@@ -109,6 +110,7 @@ hud_hits hudLayerHits{};
 bool hudLayerValid=false;
 void clear_hud_focus(){hudHits.n=0;hudCursor=-1;hudConsumed=0;hudLayerValid=false;}
 bool supported=false, companion=false, quickOpen=false, swallowMenuInput=false;
+bool compDimHeld=false; // the press on the dimmed game that closed the companion window: kept from the game until let go
 int quickSelected=0,companionHold=0;
 struct FlyDestination { int x,y; const char* name; int header=0; };
 enum class FlyStage { Idle, Menu, Party, Member, Move, Town, Release };
@@ -166,12 +168,17 @@ bool rgb565=false;
 // 854x480 screen and drawn 1:1 on a 640x480 one.
 constexpr int uiMaxW=640,uiMaxH=480;
 int uiW=341,uiH=256;
+// The companion as a window over the game, for a frontend that shows one (PD_ENV_SET_COMPANION: the SDL host): the
+// frontend's screen (pokedaisy_panel), and whether it does.
+int panelW=0,panelH=0;
+bool companionHost=false;
 void choose_companion_canvas(){
   uiW=341;uiH=256;
   retro_variable v{"pokedaisy_panel",nullptr};
   int w=0,h=0;
   if(!environment || !environment(RETRO_ENVIRONMENT_GET_VARIABLE,&v) || !v.value || std::sscanf(v.value,"%dx%d",&w,&h)!=2 || w<=0 || h<=0)
     return;
+  panelW=w;panelH=h;
   const int s=std::max(1,std::min(w/320,h/240));
   uiW=std::clamp(w/s,320,uiMaxW);uiH=std::clamp(h/s,240,uiMaxH);
 }
@@ -414,6 +421,41 @@ void draw_companion() {
   // The host sends the panel again when its window changes size (a desktop window, gamescope): looked at twice a second.
   static unsigned panelCheck=0;
   if(panelCheck++%30==0)choose_companion_canvas();
+  // As a window (a screen that holds the companion at 2x or more): the game's last picture stays, dimmed, at its own size,
+  // and the companion goes to the host in a picture of its own, in the middle of the window (the app's COMPANION VIEW).
+  int cw=0,ch=0;
+  if(companionHost && pd_companion_size(panelW,panelH,uiMaxW,uiMaxH,&cw,&ch)){
+    static uint32_t dimmed[512*384];
+    for(int i=0;i<512*384;++i){
+      const uint32_t p=stage[i];
+      dimmed[i]=0xFF000000u|(((p>>16&255)*115/255)<<16)|(((p>>8&255)*115/255)<<8)|((p&255)*115/255);
+    }
+    // The companion PD_COMPANION_PAD inside the window's picture, its backdrop running on under the padding.
+    static uint32_t inner_pixels[uiMaxW*uiMaxH];
+    const int pad=PD_COMPANION_PAD,iw=cw-2*pad,ih=ch-2*pad;
+    pd_canvas c;pd_canvas_init(&c,cw,ch,ui_pixels);
+    pd_fill(&c,0,0,cw,ch,0);
+    pd_canvas inner;pd_canvas_init(&inner,iw,ih,inner_pixels);
+    shell.backdropFrame=&c;shell.backdropX=shell.backdropY=pad;
+    shell.draw(&inner,snapshot,companionGame!=DsGame::Unsupported,map,icons);
+    shell.backdropFrame=nullptr;
+    pd_canvas_copy(&c,pad,pad,&inner,0,0,iw,ih);
+    pd_window_edge(&c,pd_cur->title,pd_cur->titleCount,4); // the app's WindowFrame
+    pd_companion msg{};msg.pixels=ui_pixels;msg.src_w=cw;msg.src_h=ch;msg.active=1;
+    environment(PD_ENV_SET_COMPANION,&msg);
+    // The host's mouse over the window (its answer, in the picture's pixels): a press in it is the companion's, as a tap
+    // (the Windows core's); a press on the dimmed game beside it closes it, and stays out of the game until let go.
+    static bool touchWas=false;
+    const bool on=msg.ptr_valid&&msg.ptr_down;
+    if(on&&!touchWas&&!compDimHeld&&!msg.ptr_inside){compDimHeld=true;companion=false;}
+    else if(on&&(msg.ptr_inside||touchWas)&&!compDimHeld){shell.touch(msg.ptr_x-pad,msg.ptr_y-pad,true);touchWas=true;}
+    else if(!on&&touchWas){shell.touch(msg.ptr_x-pad,msg.ptr_y-pad,false);touchWas=false;}
+    if(!on)compDimHeld=false;
+    geometry(512,384);
+    submit(dimmed,512,384);
+    return;
+  }
+  if(companionHost){pd_companion none{};environment(PD_ENV_SET_COMPANION,&none);}
   pd_canvas c;pd_canvas_init(&c,uiW,uiH,ui_pixels);
   shell.draw(&c,snapshot,companionGame!=DsGame::Unsupported,map,icons);
   geometry(uiW,uiH);
@@ -802,6 +844,7 @@ void present(const void* data,unsigned,unsigned,size_t) {
 }
 void present_frame(const void* data) {
   if(companion){hudHits.n=0;draw_companion();return;}
+  if(companionHost){pd_companion none{};environment(PD_ENV_SET_COMPANION,&none);} // the window goes with the companion
   // Refresh composition even when DSperate skipped rasterization: switching
   // screens must still display the latest retained framebuffer.
   (void)data;
@@ -992,6 +1035,10 @@ int16_t filtered_input(unsigned p,unsigned d,unsigned i,unsigned id) {
   // DSperate expects a pointer over stacked screens. Reproject the current
   // layout into that convention before its input::apply receives it.
   if(d==RETRO_DEVICE_POINTER) {
+    if(compDimHeld){
+      if(!input(p,d,i,RETRO_DEVICE_ID_POINTER_PRESSED))compDimHeld=false;
+      return 0;
+    }
     bool stylus=buttons&(1u<<RETRO_DEVICE_ID_JOYPAD_SELECT);
     if(stylus) {
       if(id==RETRO_DEVICE_ID_POINTER_PRESSED)return !!(buttons&(1u<<RETRO_DEVICE_ID_JOYPAD_A));
@@ -1255,6 +1302,7 @@ RETRO_API bool retro_load_game(const retro_game_info* info){
       ds_battle_set_base_pp(ds_move_base_pp(rom,pd_ds::companionGame));
     }
   }
+  {pd_companion none{};pd_ds::companionHost=pd_ds::environment && pd_ds::environment(PD_ENV_SET_COMPANION,&none);}
   pd_ds::choose_companion_canvas();
   const auto old_layout=opt("pokedaisy_ds_layout");
   pd_ds::shell.init(dir(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY),
@@ -1292,6 +1340,23 @@ RETRO_API void retro_unload_game(){ds_unload_game();pd_ds::clear();}
 RETRO_API void retro_run(){
   if(!nds)return;
   input_poll_cb();
+  // The frontend's settings in the companion's SETTINGS (PD_ENV_FRONT_ROWS), the row pressed last frame handed to it; its
+  // menu's SETTINGS opens the companion there.
+  if(pd_ds::environment){
+    pd_front_rows front{};
+    front.press=pd_ds::shell.take_front_press();
+    if(pd_ds::environment(PD_ENV_FRONT_ROWS,&front)){
+      pd_ds::shell.set_front_rows(front.count,front.label,front.value,front.group);
+      if(front.open_settings){
+        pd_ds::refresh();
+        pd_ds::companion=true;pd_ds::quickOpen=false;pd_ds::clear_hud_focus();
+        pd_ds::shell.open_front_rows();
+        // The A that picked the host menu's SETTINGS is still down: not a press on the row the companion opens at.
+        pd_ds::old_buttons=0;
+        for(unsigned id=0;id<16;++id)if(pd_ds::input(0,RETRO_DEVICE_JOYPAD,0,id))pd_ds::old_buttons|=1u<<id;
+      }
+    }
+  }
   const unsigned previous=pd_ds::old_buttons;
   const bool menuWasOpen=pd_ds::companion || pd_ds::quickOpen || pd_ds::hudCursor>=0;
   pd_ds::controls();

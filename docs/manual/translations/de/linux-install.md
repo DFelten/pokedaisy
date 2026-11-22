@@ -4,7 +4,7 @@ summary: Wähle den richtigen Download, installiere PokeDaisy auf einem Steam De
 section: start
 ---
 
-PokeDaisy läuft auch unter Linux: auf einem Steam Deck, einem Linux-PC und Linux-Handhelds wie denen von TrimUI, entweder als eigenes Programm oder als libretro-Cores, die du in RetroArch oder im Frontend deines Handhelds lädst. So oder so bekommst du denselben Begleiter, dasselbe HUD, dasselbe Schnellmenü und `EXPAND`. Diese Seite bringt dich vom Download bis zu deinem ersten Spiel; [Linux, Steam Deck und Handhelds](linux.md) erklärt die Steuerung, das Menü und alles andere, sobald du spielst.
+PokeDaisy läuft auch unter Linux: auf einem Steam Deck, einem Linux-PC und Linux-Handhelds wie denen von TrimUI, entweder als eigenes Programm oder als libretro-Cores, die du in RetroArch oder im Frontend deines Handhelds lädst. So oder so bekommst du denselben Assistenten, dasselbe HUD, dasselbe Schnellmenü und `EXPAND`. Diese Seite bringt dich vom Download bis zu deinem ersten Spiel; [Linux, Steam Deck und Handhelds](linux.md) erklärt die Steuerung, das Menü und alles andere, sobald du spielst.
 
 > [!WARNING]
 > Die Linux-Version ist eine Beta. Ihre Menüs sind vorerst auf Englisch, und einige Geräte auf dieser Seite wurden noch nicht ausprobiert. Wenn etwas schiefgeht, [sag uns](https://pokedaisy.com/de/feedback/#bug), welche Datei und welches Gerät du benutzt hast.
@@ -86,7 +86,7 @@ NXRedux kümmert sich über sein eigenes Menü um deine Speicherdateien, Spielst
 2. Kopiere die Cores in den Cores-Ordner deines Frontends. RetroArch zeigt, wo er ist, unter **Settings** > **Directory** > **Cores**.
 3. Lade dein Spiel mit dem PokeDaisy-Core (der DS-Core heißt dort PokeDaisy DS).
 
-Dein Frontend kümmert sich um die Speicherdatei, die Spielstände und das Vorspulen wie bei jedem Core. Die Einstellungen des Begleiters landen im Speicherordner des Frontends: `pokedaisy/settings.ini` für die Game-Boy- und Game-Boy-Advance-Cores, `pokedaisy-ds/settings.ini` für den DS-Core. Behalte die Lizenzen bei den Cores, wenn du sie weitergibst.
+Dein Frontend kümmert sich um die Speicherdatei, die Spielstände und das Vorspulen wie bei jedem Core. Die Einstellungen des Assistenten landen im Speicherordner des Frontends: `pokedaisy/settings.ini` für die Game-Boy- und Game-Boy-Advance-Cores, `pokedaisy-ds/settings.ini` für den DS-Core. Behalte die Lizenzen bei den Cores, wenn du sie weitergibst.
 
 ### Schon installiert: plorpOS und spruceOS
 
@@ -109,7 +109,7 @@ Lade die neuere Zip-Datei herunter und entpacke sie über den alten Ordner (bei 
 - **Permission denied beim Starten:** Das Entpackprogramm hat dem Programm die Ausführungsrechte genommen. Führe im Ordner `chmod +x pokedaisy-linux` aus.
 - **Ein Fehler, der `GLIBC_2.35` oder `libSDL2` nennt:** Dein Linux ist älter, als PokeDaisy braucht, oder SDL2 ist nicht installiert. Installiere SDL2 aus deiner Distribution (unter Ubuntu `sudo apt install libsdl2-2.0-0`) oder probiere ein neueres System.
 - **Ein Spiel fehlt in der Liste:** Es muss direkt in `roms` liegen (nicht in einem Ordner darin), entpackt sein und auf `.gba`, `.gb`, `.gbc` oder `.nds` enden.
-- **A und B sind vertauscht:** Öffne das Menü (START und SELECT zusammen, oder die Guide- oder Menu-Taste) und stelle `A/B BUTTONS` auf `SWAPPED`.
+- **A und B sind vertauscht:** Öffne das Menü (START und SELECT zusammen, oder die Guide- oder Menu-Taste), wähle `SETTINGS` und stelle `A/B BUTTONS` auf `SWAPPED`.
 - **Meine Speicherdatei wurde nicht geladen:** Sie braucht den ganzen Dateinamen der ROM mit `.sav` dahinter, in `saves`. Sieh in `saves/pokedaisy-backups` nach einer älteren Kopie.
 - **Der Controller tut nichts:** SDL kennt ihn noch nicht. Lege eine `gamecontrollerdb.txt` mit seiner Belegung in den Datenordner (neben `roms`).
 

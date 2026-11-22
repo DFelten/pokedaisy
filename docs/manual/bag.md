@@ -69,7 +69,7 @@ Like the other items, it only works while you're walking around, with no menu, c
 
 ## Reusable TMs
 
-Normally a TM is gone once it teaches a move, so you think twice before using a rare one. Turn on `REUSABLE TMS` in the companion's `SETTINGS`, `GAMEPLAY` group, and a TM stays in your bag after it teaches a move, just like an HM. It's `OFF` until you turn it on.
+Normally a TM is gone once it teaches a move, so you think twice before using a rare one. Turn on `REUSABLE TMS` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE`, and a TM stays in your bag after it teaches a move, just like an HM. It's `OFF` until you turn it on.
 
 Everything else about TMs works as the game has it: which Pokémon can learn one, forgetting a move to make room, selling one at a shop. The change applies at once, no restart needed, and turning it off makes TMs single use again.
 
@@ -78,7 +78,7 @@ Everything else about TMs works as the game has it: which Pokémon can learn one
 
 ## AUTO REFILL
 
-Turn on `AUTO REFILL` in the companion's `SETTINGS`, `GAMEPLAY` group, and the item that keeps wild Pokémon away never runs out on you mid-cave. When the one working is down to its last few steps, another of the same kind goes on from your bag, its steps added to the ones left, so the game never stops to say it wore off. A short note on the game screen says so. If you're out of that kind, the smallest kind you still have goes on. When you have none left, it wears off as usual. It's `OFF` until you turn it on.
+Turn on `AUTO REFILL` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE`, and the item that keeps wild Pokémon away never runs out on you mid-cave. When the one working is down to its last few steps, another of the same kind goes on from your bag, its steps added to the ones left, so the game never stops to say it wore off. A short note on the game screen says so. If you're out of that kind, the smallest kind you still have goes on. When you have none left, it wears off as usual. It's `OFF` until you turn it on.
 
 It happens while you're walking around: not in a battle, a menu or a conversation. One that's still working when you turn it on is topped up the same way once it gets low.
 

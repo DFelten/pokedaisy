@@ -48,6 +48,13 @@ Target the **New 3DS / New 3DS XL / New 2DS XL** first; the original 3DS / 3DS X
   cartridge it knows by checksum is 16 MB; bit by bit it cost ~1.4 s), Fast Flash Saves one pass with a word compare and a
   way to be told the places. Unbound on a New 3DS, tap to running: about 12 s before, 6 s the first time now, 3.5 s after,
   3 s of it reading the 32 MB file. The dev build logs each step (`load (ms)` and `start (ms)` in `log.txt`).
+- **armGBA's warm list** (`armgba/<CRC32>.warm`): the code a game ran compiled, kept at close and compiled ahead the next
+  time in what each frame leaves before 60% of a refresh (`pd_armgba_warm_one`, main.c), in the order the game first ran
+  it, until the code memory is 3/4 full. Without it a battle's code was compiled the moment the battle started (Monomyth
+  on a New 3DS: 5 s at ~35 FPS each battle). Until 2026-11-21 it never loaded (its check read the cartridge clock's
+  bytes, which the game changes) and nothing compiled from it. The code memory is up to 30 MiB (A32's branches reach 32):
+  Monomyth's ~20,000 blocks didn't fit in 24 and were all thrown away and compiled again every minute or so.
+  `armGBA perf` in `log.txt` counts blocks compiled, how many came from the list, and the flushes.
 - **Fast-forward**: the ▶▶ chip on the companion toggles it, ZR (New 3DS) holds
   it; 2x / 3x / 4x in SETTINGS. The game is muted meanwhile.
 - **Save state**: one slot per game (`sdmc:/pokedaisy/states/`). Loading one keeps the save memory as it is, so it
@@ -448,7 +455,7 @@ make tables        # regenerate core/*_gen.c and ctr/icon.png from the app
 ```
 
 - **`make preview`** is this port's ui-preview: `desktop/pd_preview.c` reads a
-  fixture's `ewram.bin` / `iwram.bin` (`app/src/test/resources/fixtures/`) and
+  fixture's `ewram.bin` / `iwram.bin` (`test-fixtures/resources/fixtures/`) and
   drives the companion with taps found by hit id - a pressed slot, a summary,
   BATTLE, BAG (an item, a drag, the next pocket), SETTINGS, a pick-list, a
   confirm, MAP (a tapped tile, the blink, PLACES), POKéDEX (scrolled, an

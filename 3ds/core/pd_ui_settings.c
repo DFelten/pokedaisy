@@ -78,38 +78,52 @@ int ui_settings_follow(int scroll, int y, int height) {
     return y <= 0 ? 0 : ui_scroll_to(scroll, y, ROW_H, height);
 }
 
-static void settings_outline(struct pd_canvas* c, int x, int y, int w, int h) {
-    pd_fill(c, x, y, w, 2, PD_VALUE);
-    pd_fill(c, x, y+h-2, w, 2, PD_VALUE);
-    pd_fill(c, x, y, 2, h, PD_VALUE);
-    pd_fill(c, x+w-2, y, 2, h, PD_VALUE);
+
+// The app's lists (SUMMARY MINT's banded rows, OptionLine's cursor): every other row a shade darker, counted from each
+// group's heading; the cursor's row white with a drawn arrow in the room left of the labels (the font has no arrow).
+#define ROW_ARROW 8   // the labels' indent: the cursor's arrow sits in it
+static int rowParity;
+static const char* pendingGroup; // a group whose heading waits for its first row (an empty group draws none)
+static void group(struct pd_canvas* c, int x, int* y, const char* title);
+static void flush_group(struct pd_canvas* c, int x, int* y) {
+    if (!pendingGroup) return;
+    const char* title = pendingGroup;
+    pendingGroup = NULL;
+    group(c, x, y, title);
+}
+void ui_list_row_back(struct pd_canvas* c, int x, int y, int w, int index, bool cursor) {
+    if (cursor) pd_fill(c, x - 4, y, w + 8, ROW_H, PD_ROW_SELECTED);
+    else if (index & 1) pd_fill(c, x - 4, y, w + 8, ROW_H, pd_mix(PD_LIST_FILL, PD_LABEL, 20));
+    if (cursor) pd_triangle(c, x - 1, y + ROW_H / 2 - 4, 4, PD_RIGHT, PD_VALUE);
 }
 
 static void setting(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, enum setting_row row,
                     const char* label, const char* value) {
+    flush_group(c, x, y);
     if (ui->shoulderTabs) {
         int top = *y + ui->settingsScroll - listTop;
         settings_nav_row(ui, HIT_SETTING + row, ui->settingsNavCount == 0 ? 0 : top);
     }
-    ui_row_split(c, x, *y, w, label, value, ui->pressedId == HIT_SETTING + (int) row, valuePct);
+    const bool cursor = ui->shoulderTabs && ui->overlay == PD_OVERLAY_NONE && ui->settingsNavId == HIT_SETTING + (int) row;
+    ui_list_row_back(c, x, *y, w, rowParity++, cursor);
+    ui_row_split(c, x + ROW_ARROW, *y, w - ROW_ARROW, label, value, ui->pressedId == HIT_SETTING + (int) row, valuePct);
     // A scroll hit: a tap is the row, a drag on it still scrolls the list.
-    if (*y >= listTop && *y + ROW_H <= listBottom) {
+    if (*y >= listTop && *y + ROW_H <= listBottom)
         ui_add_scroll_hit(ui, x - 4, *y, w + 8, ROW_H, HIT_SETTING + (int) row);
-        if (ui->shoulderTabs && ui->overlay == PD_OVERLAY_NONE && ui->settingsNavId == HIT_SETTING + (int) row)
-            settings_outline(c, x - 4, *y, w + 8, ROW_H);
-    }
-    ui_row_divider(c, x - 2, *y + ROW_H - 1, w + 4);
     *y += ROW_H;
 }
 
 // A row shown, not tappable (LOAD STATE with none yet, ASPECT N/A).
 static void muted_row(struct pd_canvas* c, int x, int* y, int w, const char* label, const char* value) {
+    flush_group(c, x, y);
+    ui_list_row_back(c, x, *y, w, rowParity++, false);
+    x += ROW_ARROW;
+    w -= ROW_ARROW;
     label = pd_tr(label);
     value = pd_tr(value);
     pd_text(c, x, pd_text_y(*y, ROW_H), label, PD_MUTED, PD_MUTED_SHADOW);
     int vx = x + w * valuePct / 100, past = x + pd_text_width(label) + 8;
     pd_text(c, vx < past ? past : vx, pd_text_y(*y, ROW_H), value, PD_MUTED, PD_MUTED_SHADOW);
-    ui_row_divider(c, x - 2, *y + ROW_H - 1, w + 4);
     *y += ROW_H;
 }
 
@@ -140,6 +154,7 @@ static void group(struct pd_canvas* c, int x, int* y, const char* title) {
         groupTop[groupCount] = *y - listTop + 0; // the list's scroll is added back below
         groupName[groupCount++] = title;
     }
+    rowParity = 0;
     *y += 3;
     // Gen 1's value colour is the rows' black: its titles are a black band (groupTitleFill).
     if (pd_cur->groupTitleFill != PD_NO_SHADOW) pd_fill(c, x - 4, *y + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
@@ -173,6 +188,115 @@ static void group_rail(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int 
     }
 }
 
+/* The frontend's own rows (pd_host_info.front*) that belong in [grp] (the host names it: "FF / SPEED", "SCREEN",
+ * "CONTROLS"), where Android has them. Brought here from the host's menu (settingsToFront), the list scrolls to the
+ * host's first row, its group's heading above it, the cursor on it. */
+static bool frontScrolled;
+static void front_rows(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, const struct pd_host_info* host,
+                       const char* grp) {
+    for (int i = 0; host && i < host->frontCount && i < 8; i++) {
+        if (!host->frontGroups[i] || strcmp(host->frontGroups[i], grp)) continue;
+        if (ui->settingsToFront && !frontScrolled && i == 0) { // the host's first row (A/B BUTTONS, in CONTROLS)
+            // A few draws running (opening the tab can reset the scroll after the first); the list's end can stop it short.
+            frontScrolled = true;
+            flush_group(c, x, y);
+            ui->settingsNavId = HIT_SETTING + SETTING_FRONT + i;
+            ui->settingsToFront--;
+            ui->settingsScroll += *y - ROW_H - 3 - listTop; // its group's heading with it
+            if (ui->settingsScroll < 0) ui->settingsScroll = 0;
+        }
+        setting(ui, c, x, y, w, (enum setting_row) (SETTING_FRONT + i), host->frontLabels[i],
+                host->frontValues[i] && *host->frontValues[i] ? host->frontValues[i] : ">");
+    }
+}
+
+/* The short list (the libretro cores' companion, and the desktop host's rows with it) in the app's groups and order:
+ * MAKEOVER, FF / SPEED, GAMEPLAY, SCREEN, COMPANION, CONTROLS, APP; a group with nothing to show draws no heading.
+ * SAVE / LOAD / LEAVE under a line at the end, as the app's CLOSE GAME / RESTART GAME. */
+static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp, int iw, const struct pd_host_info* host,
+                         const struct pd_game* g) {
+    (void) g;
+    struct pd_settings* st = ui->settings;
+    char buf[40];
+    frontScrolled = false;
+    if (host && host->flightSupported) {
+        pendingGroup = "MAKEOVER";
+        setting(ui, c, ix, yp, iw, SETTING_FLY_ON, "FLY ON", flight_vehicle_label(st->flightVehicle));
+    }
+    pendingGroup = "FF / SPEED";
+    if (st->ffSpeed) snprintf(buf, sizeof(buf), "%dx", st->ffSpeed);
+    else snprintf(buf, sizeof(buf), "MAX");
+    if (!host || !host->frontendOwnsPlayback) setting(ui, c, ix, yp, iw, SETTING_FF, "FAST-FORWARD", buf);
+    front_rows(ui, c, ix, yp, iw, host, "FF / SPEED");
+    pendingGroup = "GAMEPLAY";
+    if (host && host->hasFlightArea) {
+        if (host->flightSupported)
+            setting(ui, c, ix, yp, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
+        flight_area_row(ui, c, ix, yp, iw, st);
+    }
+    if (host && host->hasCoreRows && host->fieldSupported)
+        setting(ui, c, ix, yp, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
+    front_rows(ui, c, ix, yp, iw, host, "GAMEPLAY");
+    pendingGroup = "SCREEN";
+    if (!host || !host->hideScreenMode)
+        setting(ui, c, ix, yp, iw, SETTING_SCREEN, "SCREEN",
+                pd_screen_mode_name(ui->pixelOff && st->screenMode == PD_SCREEN_PIXEL ? PD_SCREEN_SHARP_125 : st->screenMode));
+    if (host && host->hasExpand) {
+        if (host->expandGame) {
+            // ASPECT is the app's EXPAND on / off (two values, so it flips in place); ZOOM steps the view out
+            // (the app's SETTINGS > SCREEN > ZOOM), and only then is there anything for AUTO ZOOM IN to do.
+            const bool zoomRow = host->zoomCount > 1 && host->zoomLabels;
+            const bool expanded = st->aspect != PD_ASPECT_ORIGINAL;
+            setting(ui, c, ix, yp, iw, SETTING_ASPECT, "ASPECT",
+                    zoomRow ? (expanded ? "EXPAND" : "ORIGINAL") : pd_aspect_name(st->aspect));
+            if (zoomRow && expanded) {
+                int z = st->zoom < 0 ? 0 : st->zoom >= host->zoomCount ? host->zoomCount - 1 : st->zoom;
+                setting(ui, c, ix, yp, iw, SETTING_ZOOM, "ZOOM", host->zoomLabels[z]);
+            }
+            if (expanded && (st->aspect == PD_ASPECT_ZOOM_OUT || zoomRow))
+                setting(ui, c, ix, yp, iw, SETTING_AUTO_ZOOM, "AUTO ZOOM IN", st->autoZoom ? "ON" : "OFF");
+        } else {
+            muted_row(c, ix, yp, iw, "ASPECT", "N/A"); // this game's overworld can't be rebuilt: shown, not tappable
+        }
+    }
+    if (host && host->hasHud) setting(ui, c, ix, yp, iw, SETTING_HUD, "HUD", st->hud ? "ON" : "OFF");
+    if (host && host->hasDisplayFilter)
+        setting(ui, c, ix, yp, iw, SETTING_FILTER, "FILTER", st->lcdFilter ? "LCD" : "OFF");
+    front_rows(ui, c, ix, yp, iw, host, "SCREEN");
+    static const char* const NAMES[PD_BUTTONS] = {"X", "Y", "L2", "R2", "NONE", "L3"};
+    if (host && host->hasButtonRows)
+        setting(ui, c, ix, yp, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
+    if (host && host->hasCoreRows) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+    if (host && host->hasPerf) setting(ui, c, ix, yp, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
+    pendingGroup = "COMPANION";
+    snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
+    setting(ui, c, ix, yp, iw, SETTING_TAB_BAR, "TAB BAR", buf);
+    front_rows(ui, c, ix, yp, iw, host, "COMPANION");
+    pendingGroup = "CONTROLS";
+    front_rows(ui, c, ix, yp, iw, host, "CONTROLS");
+    if (host && host->hasQuickMenu)
+        setting(ui, c, ix, yp, iw, SETTING_QUICK_MENU, "QUICK MENU", st->quickGrid ? "GRID" : "RING");
+    if (host && host->hasButtonRows) {
+        setting(ui, c, ix, yp, iw, SETTING_QUICK_BTN, "QUICK MENU BUTTON", NAMES[st->quickBtn]);
+        if (host->hasHud) setting(ui, c, ix, yp, iw, SETTING_HUD_BTN, "HUD CURSOR BUTTON", NAMES[st->hudBtn]);
+    }
+    pendingGroup = "APP";
+    front_rows(ui, c, ix, yp, iw, host, "APP");
+    if (host && host->hasCoreRows) setting(ui, c, ix, yp, iw, SETTING_RESET, "RESET SETTINGS", "...");
+    setting(ui, c, ix, yp, iw, SETTING_LANGUAGE, "LANGUAGE", pd_lang_label(st->language, buf, sizeof buf));
+    pendingGroup = NULL;
+    if (!host || !host->frontendOwnsPlayback) {
+        *yp += 3;
+        pd_fill(c, ix, *yp, iw, 1, PD_DIVIDER);
+        *yp += 4;
+        rowParity = 0;
+        setting(ui, c, ix, yp, iw, SETTING_SAVE_STATE, "SAVE STATE", NULL);
+        if (host && host->hasState) setting(ui, c, ix, yp, iw, SETTING_LOAD_STATE, "LOAD STATE", host->stateWhen);
+        else muted_row(c, ix, yp, iw, "LOAD STATE", "none yet"); // nothing to load: shown, not tappable
+        setting(ui, c, ix, yp, iw, SETTING_LEAVE, "LEAVE GAME", NULL);
+    }
+}
+
 void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g, const struct pd_snapshot* s,
                      const struct pd_host_info* host) {
     ui->settingsNavCount = 0;
@@ -191,23 +315,12 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     int ty = pd_text_y(CONTENT_Y, TITLE_H);
     pd_text(c, x + f + 6, ty, ui->optionSource ? ui->optionSource->title : pd_tr("SETTINGS"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
     int right = x + w - f - 6;
-    // The TRAINER CARD opens from here (the list below is full): a grey chip at
-    // the title window's right, white while pressed, like the tab bar's.
+    // The 3DS's battery at the title window's right.
     if (host && host->batteryPct >= 0 && host->fullSettings) {
         pd_battery_draw(c, right, ty, host->batteryPct, host->charging);
         right -= pd_battery_width(host->batteryPct, host->charging) + 4;
-    } else if (g->cfg && g->cfg->cardStyle && g->rom) {
-        const char* label = "TRAINER CARD";
-        int bw = pd_text_width(label) + 12, bh = TITLE_H - 6;
-        int bx = x + w - f - 2 - bw, by = CONTENT_Y + 3;
-        pd_title_box(c, bx, by, bw, bh, ui->pressedId == HIT_OPEN_CARD ? PD_TITLE_FILL : PD_LIST_FILL);
-        pd_text(c, bx + 6, pd_text_y(by, bh), label, PD_TITLE_TEXT, PD_TITLE_SHADOW);
-        ui_add_hit(ui, bx, by, bw, bh, HIT_OPEN_CARD);
-        settings_nav_row(ui, HIT_OPEN_CARD, 0);
-        if (ui->shoulderTabs && ui->overlay == PD_OVERLAY_NONE && ui->settingsNavId == HIT_OPEN_CARD)
-            settings_outline(c, bx, by, bw, bh);
-        right = bx - 8;
     }
+    // The TRAINER CARD is the CARD tab (on the bar, or a tile under MORE), as in the app: no button here.
     if (g->title) {
         int tx = x + f + 6 + pd_text_width(pd_tr("SETTINGS")) + 12;
         int tw = pd_text_width(g->title);
@@ -241,12 +354,24 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         ui->settingsScroll = ui_clamp_scroll(ui->settingsScroll, totalOptions, view);
         pd_clip(c, x + lf, listTop, w - 2 * lf, view);
         if (separator) pd_fill(c, ix, listTop + infoCount * ROW_H - ui->settingsScroll + 1, iw, 1, PD_DIVIDER);
+        int parity = 0;
         for (int i = 0; i < n; i++) {
             const int ry = listTop + i * ROW_H + (i >= infoCount ? separator : 0) - ui->settingsScroll;
-            if (ry + ROW_H <= listTop || ry >= listBottom) continue;
             const struct pd_option_row* row = &ui->optionSource->rows[i];
-            ui_row(c, ix, ry, iw, row->label, row->value, false);
-            if (i == selected) settings_outline(c, ix - 4, ry, iw + 8, ROW_H);
+            if (row->heading) parity = 0;
+            if (ry + ROW_H <= listTop || ry >= listBottom) {
+                if (!row->heading) parity++;
+                continue;
+            }
+            if (row->heading) { // a group's title, as group() draws it
+                const char* title = pd_tr(row->label);
+                if (pd_cur->groupTitleFill != PD_NO_SHADOW)
+                    pd_fill(c, ix - 4, ry + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
+                pd_text(c, ix, pd_text_y(ry, ROW_H), title, pd_cur->groupTitleText, pd_cur->groupTitleShadow);
+                continue;
+            }
+            ui_list_row_back(c, ix, ry, iw, parity++, i == selected);
+            ui_row(c, ix + ROW_ARROW, ry, iw - ROW_ARROW, row->label, row->value, false);
             // A host-owned list's rows: a tap is the row (its info rows take none).
             if (i >= infoCount) ui_add_hit(ui, ix - 4, ry, iw + 8, ROW_H, HIT_OPTION + (i - infoCount));
         }
@@ -281,176 +406,182 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         pd_fill(c, ix, y + 1, iw, 1, PD_DIVIDER);
         y += 4;
     }
-    if (full) {
-        group(c, ix, &y, "FF / SPEED");
-        setting(ui, c, ix, &y, iw, SETTING_FF_TOGGLE, "FF", host->ffOn ? "ON" : "OFF");
-    }
-    if (st->ffSpeed) snprintf(buf, sizeof(buf), "%dx", st->ffSpeed);
-    else snprintf(buf, sizeof(buf), "MAX");
-    if (full || !host || !host->frontendOwnsPlayback) setting(ui, c, ix, &y, iw, SETTING_FF, full ? "FF SPEED" : "FAST-FORWARD", buf);
-    if (full) {
-        setting(ui, c, ix, &y, iw, SETTING_FF_MODE, "FF MODE", st->ffNormal ? "NORMAL" : "SMART");
-        setting(ui, c, ix, &y, iw, SETTING_GAME_SPEED, "GAME SPEED", PD_GAME_SPEEDS[st->gameSpeed]);
-        // SCENE SPEEDS (the app's SPEED OPTIONS page): what each kind of scene runs at while FF is off. TEXT, BIKE and SURF
-        // need the field read (the game's own player state).
-        for (int i = 0; i < PD_SCENES; i++) {
-            if (host->fieldSupported || i == PD_SCENE_BATTLE || i == PD_SCENE_MENU)
-                setting(ui, c, ix, &y, iw, (enum setting_row) (SETTING_SCENE + i), SCENE_NAMES[i], PD_SCENE_SPEEDS[st->sceneSpeed[i]]);
-            else muted_row(c, ix, &y, iw, SCENE_NAMES[i], "N/A");
-        }
-        group(c, ix, &y, "SOUND");
-        snprintf(buf, sizeof(buf), "%d%%", st->gameVolume);
-        setting(ui, c, ix, &y, iw, SETTING_VOLUME, "GAME VOLUME", buf);
-        setting(ui, c, ix, &y, iw, SETTING_MUTE, "MUTE GAME", st->gameMuted ? "ON" : "OFF");
-        group(c, ix, &y, "GAMEPLAY");
-        if (host->wildSupported) setting(ui, c, ix, &y, iw, SETTING_WILD, "WILD ENCOUNTERS", st->wildOff ? "OFF" : "ON");
-        else muted_row(c, ix, &y, iw, "WILD ENCOUNTERS", "N/A");
-        // FREE FLIGHT's (the app's FLY STYLE / FLIGHT AREA, and MAKEOVER's FLY ON): two values flip in place.
-        if (host->flightSupported) {
-            setting(ui, c, ix, &y, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
-            setting(ui, c, ix, &y, iw, SETTING_FLIGHT_AREA, "FLIGHT AREA", st->flightAnywhere ? "ANYWHERE" : "VISITED");
-            setting(ui, c, ix, &y, iw, SETTING_FLY_ON, "FLY ON", flight_vehicle_label(st->flightVehicle));
-        } else {
-            muted_row(c, ix, &y, iw, "FLY STYLE", "N/A");
-            muted_row(c, ix, &y, iw, "FLIGHT AREA", "N/A");
-        }
-        if (host->fieldSupported) {
-            setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
-            setting(ui, c, ix, &y, iw, SETTING_RUN_INDOORS, "RUN INDOORS", st->runIndoors ? "ON" : "OFF");
-        } else {
-            muted_row(c, ix, &y, iw, "AUTO-RUN", "N/A");
-            muted_row(c, ix, &y, iw, "RUN INDOORS", "N/A");
-        }
-        // The game patches (REUSABLE TMS, INSTANT TEXT): found in the game's code, else N/A; a game whose TMs never run out
-        // says ON, greyed.
-        if (host->tmsSupported == 1) setting(ui, c, ix, &y, iw, SETTING_REUSABLE_TMS, "REUSABLE TMS", st->reusableTms ? "ON" : "OFF");
-        else muted_row(c, ix, &y, iw, "REUSABLE TMS", host->tmsSupported == 2 ? "ON" : "N/A");
-        if (host->textSupported) setting(ui, c, ix, &y, iw, SETTING_INSTANT_TEXT, "INSTANT TEXT", st->instantText ? "ON" : "OFF");
-        else muted_row(c, ix, &y, iw, "INSTANT TEXT", "N/A");
-        if (host->tradeEvoSupported) setting(ui, c, ix, &y, iw, SETTING_TRADE_EVOS, "TRADE EVOS", st->tradeEvos ? "ON" : "OFF");
-        else muted_row(c, ix, &y, iw, "TRADE EVOS", "N/A");
-        if (host->nuzlockeSupported) setting(ui, c, ix, &y, iw, SETTING_NUZLOCKE, "NUZLOCKE", host->nuzlockeOn ? "ON" : "OFF");
-        else muted_row(c, ix, &y, iw, "NUZLOCKE", "N/A");
-        if (host->hasCheats) setting(ui, c, ix, &y, iw, SETTING_CHEATS, "CHEATS", st->cheats ? "ON" : "OFF");
-        else muted_row(c, ix, &y, iw, "CHEATS", "N/A");
-        // A host with FREE FLIGHT of its own has FLIGHT AREA above with FLY STYLE; one with TAKE OFF alone, here.
-        if (host->hasFlightArea && !host->flightSupported) flight_area_row(ui, c, ix, &y, iw, st);
-        group(c, ix, &y, "SCREEN");
-    }
     // PIXEL 1x is ORIGINAL's: EXPAND that wide can't keep up, so there it reads as the next size (pd_session_screen).
     ui->pixelOff = host && host->expandGame && st->aspect != PD_ASPECT_ORIGINAL;
-    if (full && host && !host->hideScreenMode) {
-        // One VIEW row for SCREEN and ASPECT (the user's call): how big the picture is and whether EXPAND fills past it.
-        const bool expand = host->hasExpand && host->expandGame;
-        setting(ui, c, ix, &y, iw, SETTING_VIEW, "VIEW", pd_view_name(pd_view_of(st, expand)));
-        if (expand && st->aspect == PD_ASPECT_ZOOM_OUT)
-            setting(ui, c, ix, &y, iw, SETTING_AUTO_ZOOM, "AUTO ZOOM IN", st->autoZoom ? "ON" : "OFF");
+    if (!full) {
+        compact_rows(ui, c, ix, &y, iw, host, g);
     } else {
-    if (!host || !host->hideScreenMode)
-        setting(ui, c, ix, &y, iw, SETTING_SCREEN, "SCREEN",
-                pd_screen_mode_name(ui->pixelOff && st->screenMode == PD_SCREEN_PIXEL ? PD_SCREEN_SHARP_125 : st->screenMode));
-    if (host && host->hasExpand) {
-        if (host->expandGame) {
-            // ASPECT is the app's EXPAND on / off (two values, so it flips in place); ZOOM steps the view out
-            // (the app's SETTINGS > SCREEN > ZOOM), and only then is there anything for AUTO ZOOM IN to do.
-            const bool zoomRow = host->zoomCount > 1 && host->zoomLabels;
-            const bool expanded = st->aspect != PD_ASPECT_ORIGINAL;
-            setting(ui, c, ix, &y, iw, SETTING_ASPECT, "ASPECT",
-                    zoomRow ? (expanded ? "EXPAND" : "ORIGINAL") : pd_aspect_name(st->aspect));
-            if (zoomRow && expanded) {
-                int z = st->zoom < 0 ? 0 : st->zoom >= host->zoomCount ? host->zoomCount - 1 : st->zoom;
-                setting(ui, c, ix, &y, iw, SETTING_ZOOM, "ZOOM", host->zoomLabels[z]);
+        if (full) {
+            group(c, ix, &y, "FF / SPEED");
+            setting(ui, c, ix, &y, iw, SETTING_FF_TOGGLE, "FF", host->ffOn ? "ON" : "OFF");
+        }
+        if (st->ffSpeed) snprintf(buf, sizeof(buf), "%dx", st->ffSpeed);
+        else snprintf(buf, sizeof(buf), "MAX");
+        if (full || !host || !host->frontendOwnsPlayback) setting(ui, c, ix, &y, iw, SETTING_FF, full ? "FF SPEED" : "FAST-FORWARD", buf);
+        if (full) {
+            setting(ui, c, ix, &y, iw, SETTING_FF_MODE, "FF MODE", st->ffNormal ? "NORMAL" : "SMART");
+            setting(ui, c, ix, &y, iw, SETTING_GAME_SPEED, "GAME SPEED", PD_GAME_SPEEDS[st->gameSpeed]);
+            // SCENE SPEEDS (the app's SPEED OPTIONS page): what each kind of scene runs at while FF is off. TEXT, BIKE and SURF
+            // need the field read (the game's own player state).
+            for (int i = 0; i < PD_SCENES; i++) {
+                if (host->fieldSupported || i == PD_SCENE_BATTLE || i == PD_SCENE_MENU)
+                    setting(ui, c, ix, &y, iw, (enum setting_row) (SETTING_SCENE + i), SCENE_NAMES[i], PD_SCENE_SPEEDS[st->sceneSpeed[i]]);
+                else muted_row(c, ix, &y, iw, SCENE_NAMES[i], "N/A");
             }
-            // AUTO ZOOM IN sits right under ZOOM whenever EXPAND is on (the app's SCREEN group): at 1x it has no step to
-            // take yet, and at the first one it is already there.
-            if (expanded && (st->aspect == PD_ASPECT_ZOOM_OUT || zoomRow))
+            group(c, ix, &y, "SOUND");
+            snprintf(buf, sizeof(buf), "%d%%", st->gameVolume);
+            setting(ui, c, ix, &y, iw, SETTING_VOLUME, "GAME VOLUME", buf);
+            setting(ui, c, ix, &y, iw, SETTING_MUTE, "MUTE GAME", st->gameMuted ? "ON" : "OFF");
+            group(c, ix, &y, "GAMEPLAY");
+            if (host->wildSupported) setting(ui, c, ix, &y, iw, SETTING_WILD, "WILD ENCOUNTERS", st->wildOff ? "OFF" : "ON");
+            else muted_row(c, ix, &y, iw, "WILD ENCOUNTERS", "N/A");
+            // FREE FLIGHT's (the app's FLY STYLE / FLIGHT AREA, and MAKEOVER's FLY ON): two values flip in place.
+            if (host->flightSupported) {
+                setting(ui, c, ix, &y, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
+                setting(ui, c, ix, &y, iw, SETTING_FLIGHT_AREA, "FLIGHT AREA", st->flightAnywhere ? "ANYWHERE" : "VISITED");
+                setting(ui, c, ix, &y, iw, SETTING_FLY_ON, "FLY ON", flight_vehicle_label(st->flightVehicle));
+            } else {
+                muted_row(c, ix, &y, iw, "FLY STYLE", "N/A");
+                muted_row(c, ix, &y, iw, "FLIGHT AREA", "N/A");
+            }
+            if (host->fieldSupported) {
+                setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
+                setting(ui, c, ix, &y, iw, SETTING_RUN_INDOORS, "RUN INDOORS", st->runIndoors ? "ON" : "OFF");
+            } else {
+                muted_row(c, ix, &y, iw, "AUTO-RUN", "N/A");
+                muted_row(c, ix, &y, iw, "RUN INDOORS", "N/A");
+            }
+            // The game patches (REUSABLE TMS, INSTANT TEXT): found in the game's code, else N/A; a game whose TMs never run out
+            // says ON, greyed.
+            if (host->tmsSupported == 1) setting(ui, c, ix, &y, iw, SETTING_REUSABLE_TMS, "REUSABLE TMS", st->reusableTms ? "ON" : "OFF");
+            else muted_row(c, ix, &y, iw, "REUSABLE TMS", host->tmsSupported == 2 ? "ON" : "N/A");
+            if (host->textSupported) setting(ui, c, ix, &y, iw, SETTING_INSTANT_TEXT, "INSTANT TEXT", st->instantText ? "ON" : "OFF");
+            else muted_row(c, ix, &y, iw, "INSTANT TEXT", "N/A");
+            if (host->tradeEvoSupported) setting(ui, c, ix, &y, iw, SETTING_TRADE_EVOS, "TRADE EVOS", st->tradeEvos ? "ON" : "OFF");
+            else muted_row(c, ix, &y, iw, "TRADE EVOS", "N/A");
+            if (host->nuzlockeSupported) setting(ui, c, ix, &y, iw, SETTING_NUZLOCKE, "NUZLOCKE", host->nuzlockeOn ? "ON" : "OFF");
+            else muted_row(c, ix, &y, iw, "NUZLOCKE", "N/A");
+            if (host->hasCheats) setting(ui, c, ix, &y, iw, SETTING_CHEATS, "CHEATS", st->cheats ? "ON" : "OFF");
+            else muted_row(c, ix, &y, iw, "CHEATS", "N/A");
+            // A host with FREE FLIGHT of its own has FLIGHT AREA above with FLY STYLE; one with TAKE OFF alone, here.
+            if (host->hasFlightArea && !host->flightSupported) flight_area_row(ui, c, ix, &y, iw, st);
+            group(c, ix, &y, "SCREEN");
+        }
+        // PIXEL 1x is ORIGINAL's: EXPAND that wide can't keep up, so there it reads as the next size (pd_session_screen).
+        ui->pixelOff = host && host->expandGame && st->aspect != PD_ASPECT_ORIGINAL;
+        if (full && host && !host->hideScreenMode) {
+            // One VIEW row for SCREEN and ASPECT (the user's call): how big the picture is and whether EXPAND fills past it.
+            const bool expand = host->hasExpand && host->expandGame;
+            setting(ui, c, ix, &y, iw, SETTING_VIEW, "VIEW", pd_view_name(pd_view_of(st, expand)));
+            if (expand && st->aspect == PD_ASPECT_ZOOM_OUT)
                 setting(ui, c, ix, &y, iw, SETTING_AUTO_ZOOM, "AUTO ZOOM IN", st->autoZoom ? "ON" : "OFF");
         } else {
-            // This game's overworld can't be rebuilt: shown, not tappable.
-            muted_row(c, ix, &y, iw, "ASPECT", "N/A");
-        }
-    }
-    }
-    if (host && host->hasHud) setting(ui, c, ix, &y, iw, SETTING_HUD, "HUD", st->hud ? "ON" : "OFF");
-    if (host && host->hasPerf) setting(ui, c, ix, &y, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
-    if (host && host->hasDisplayFilter)
-        setting(ui, c, ix, &y, iw, SETTING_FILTER, "FILTER", st->lcdFilter ? "LCD" : "OFF");
-    if (host && host->hasQuickMenu)
-        setting(ui, c, ix, &y, iw, SETTING_QUICK_MENU, "QUICK MENU", st->quickGrid ? "GRID" : "RING");
-    // The app keeps them in GAMEPLAY; a host without the groups has them by the QUICK MENU, where TAKE OFF is: FLIGHT
-    // AREA alone, or with FLY STYLE and FLY ON where the host flies FREE FLIGHT's scenic FLY and vehicles too.
-    if (host && host->hasFlightArea && !full) {
-        if (host->flightSupported)
-            setting(ui, c, ix, &y, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
-        flight_area_row(ui, c, ix, &y, iw, st);
-        if (host->flightSupported)
-            setting(ui, c, ix, &y, iw, SETTING_FLY_ON, "FLY ON", flight_vehicle_label(st->flightVehicle));
-    }
-    if (host && host->hasButtonRows) {
-        static const char* const NAMES[PD_BUTTONS] = {"X", "Y", "L2", "R2", "NONE", "L3"};
-        setting(ui, c, ix, &y, iw, SETTING_QUICK_BTN, "QUICK MENU BUTTON", NAMES[st->quickBtn]);
-        setting(ui, c, ix, &y, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
-        if (host->hasHud) setting(ui, c, ix, &y, iw, SETTING_HUD_BTN, "HUD CURSOR BUTTON", NAMES[st->hudBtn]);
-    }
-    if (full) {
-        setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
-        const char* themeName = pd_themes[0].label;
-        for (int i = 0; i < pd_theme_count; i++)
-            if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
-        setting(ui, c, ix, &y, iw, SETTING_THEME, "THEME", themeName);
-        group(c, ix, &y, "COMPANION");
-        setting(ui, c, ix, &y, iw, SETTING_BATTLE_INFO, "BATTLE INFO", st->noBattleInfo ? "OFF" : "ON");
-        if (!st->noBattleInfo) {
-            setting(ui, c, ix, &y, iw, SETTING_HINTS, "BATTLE HINTS", st->hideHints ? "OFF" : "ON");
-            setting(ui, c, ix, &y, iw, SETTING_BATTLE_VIEW, "BATTLE VIEW", st->battleInfoFirst ? "INFO" : "BUTTONS");
-        }
-        setting(ui, c, ix, &y, iw, SETTING_ONE_TAP, "ONE-TAP MOVES", st->oneTapMoves ? "ON" : "OFF");
-        setting(ui, c, ix, &y, iw, SETTING_BATTLE_STYLE, "BATTLE STYLE", st->battleGen5 ? "GEN 5" : "GEN 4");
-    }
-    // A host without the groups (the libretro cores): AUTO-RUN and DARK MODE here, the full list has them in GAMEPLAY
-    // and by THEME.
-    if (!full && host && host->hasCoreRows) {
-        if (host->fieldSupported) setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
-        setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
-    }
-    snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
-    setting(ui, c, ix, &y, iw, SETTING_TAB_BAR, "TAB BAR", buf);
-    // The app's APP group: LANGUAGE last (above HELP there). The short list keeps it under the game's own rows.
-    if (full) {
-        group(c, ix, &y, "APP");
-        setting(ui, c, ix, &y, iw, SETTING_LANGUAGE, "LANGUAGE", pd_lang_label(st->language, buf, sizeof buf));
-    }
-    if (!full && host && host->hasCoreRows) setting(ui, c, ix, &y, iw, SETTING_RESET, "RESET SETTINGS", "...");
-    if (full) {
-        y += 3;
-        pd_fill(c, ix, y, iw, 1, PD_DIVIDER);
-        y += 5;
-        // CLOSE GAME / RESTART GAME, under a line.
-        int bw = (iw - 6) / 2;
-        if (y + 22 > listTop && y < listBottom) {
-            // Drawn whenever any of them shows (the list's clip cuts them), tappable on the part that shows.
-            int first = ui->hitCount;
-            ui_button(ui, c, ix, y, bw, 22, "CLOSE GAME", HIT_SETTING + SETTING_LEAVE);
-            ui_button(ui, c, ix + bw + 6, y, bw, 22, "RESTART GAME", HIT_SETTING + SETTING_RESTART);
-            for (int i = first; i < ui->hitCount; i++) {
-                struct pd_hit* h = &ui->hits[i];
-                int top = h->y < listTop ? listTop : h->y, bottom = h->y + h->h > listBottom ? listBottom : h->y + h->h;
-                h->y = top;
-                h->h = bottom - top;
+        if (!host || !host->hideScreenMode)
+            setting(ui, c, ix, &y, iw, SETTING_SCREEN, "SCREEN",
+                    pd_screen_mode_name(ui->pixelOff && st->screenMode == PD_SCREEN_PIXEL ? PD_SCREEN_SHARP_125 : st->screenMode));
+        if (host && host->hasExpand) {
+            if (host->expandGame) {
+                // ASPECT is the app's EXPAND on / off (two values, so it flips in place); ZOOM steps the view out
+                // (the app's SETTINGS > SCREEN > ZOOM), and only then is there anything for AUTO ZOOM IN to do.
+                const bool zoomRow = host->zoomCount > 1 && host->zoomLabels;
+                const bool expanded = st->aspect != PD_ASPECT_ORIGINAL;
+                setting(ui, c, ix, &y, iw, SETTING_ASPECT, "ASPECT",
+                        zoomRow ? (expanded ? "EXPAND" : "ORIGINAL") : pd_aspect_name(st->aspect));
+                if (zoomRow && expanded) {
+                    int z = st->zoom < 0 ? 0 : st->zoom >= host->zoomCount ? host->zoomCount - 1 : st->zoom;
+                    setting(ui, c, ix, &y, iw, SETTING_ZOOM, "ZOOM", host->zoomLabels[z]);
+                }
+                // AUTO ZOOM IN sits right under ZOOM whenever EXPAND is on (the app's SCREEN group): at 1x it has no step to
+                // take yet, and at the first one it is already there.
+                if (expanded && (st->aspect == PD_ASPECT_ZOOM_OUT || zoomRow))
+                    setting(ui, c, ix, &y, iw, SETTING_AUTO_ZOOM, "AUTO ZOOM IN", st->autoZoom ? "ON" : "OFF");
+            } else {
+                // This game's overworld can't be rebuilt: shown, not tappable.
+                muted_row(c, ix, &y, iw, "ASPECT", "N/A");
             }
         }
-        y += 26;
-    } else if (!host || !host->frontendOwnsPlayback) {
-        setting(ui, c, ix, &y, iw, SETTING_SAVE_STATE, "SAVE STATE", NULL);
-        if (host && host->hasState) {
-            setting(ui, c, ix, &y, iw, SETTING_LOAD_STATE, "LOAD STATE", host->stateWhen);
-        } else {
-            // Nothing to load: shown, not tappable.
-            muted_row(c, ix, &y, iw, "LOAD STATE", "none yet");
         }
-        setting(ui, c, ix, &y, iw, SETTING_LEAVE, "LEAVE GAME", NULL);
+        if (host && host->hasHud) setting(ui, c, ix, &y, iw, SETTING_HUD, "HUD", st->hud ? "ON" : "OFF");
+        if (host && host->hasPerf) setting(ui, c, ix, &y, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
+        if (host && host->hasDisplayFilter)
+            setting(ui, c, ix, &y, iw, SETTING_FILTER, "FILTER", st->lcdFilter ? "LCD" : "OFF");
+        if (host && host->hasQuickMenu)
+            setting(ui, c, ix, &y, iw, SETTING_QUICK_MENU, "QUICK MENU", st->quickGrid ? "GRID" : "RING");
+        // The app keeps them in GAMEPLAY; a host without the groups has them by the QUICK MENU, where TAKE OFF is: FLIGHT
+        // AREA alone, or with FLY STYLE and FLY ON where the host flies FREE FLIGHT's scenic FLY and vehicles too.
+        if (host && host->hasFlightArea && !full) {
+            if (host->flightSupported)
+                setting(ui, c, ix, &y, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
+            flight_area_row(ui, c, ix, &y, iw, st);
+            if (host->flightSupported)
+                setting(ui, c, ix, &y, iw, SETTING_FLY_ON, "FLY ON", flight_vehicle_label(st->flightVehicle));
+        }
+        if (host && host->hasButtonRows) {
+            static const char* const NAMES[PD_BUTTONS] = {"X", "Y", "L2", "R2", "NONE", "L3"};
+            setting(ui, c, ix, &y, iw, SETTING_QUICK_BTN, "QUICK MENU BUTTON", NAMES[st->quickBtn]);
+            setting(ui, c, ix, &y, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
+            if (host->hasHud) setting(ui, c, ix, &y, iw, SETTING_HUD_BTN, "HUD CURSOR BUTTON", NAMES[st->hudBtn]);
+        }
+        if (full) {
+            setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+            const char* themeName = pd_themes[0].label;
+            for (int i = 0; i < pd_theme_count; i++)
+                if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
+            setting(ui, c, ix, &y, iw, SETTING_THEME, "THEME", themeName);
+            group(c, ix, &y, "COMPANION");
+            setting(ui, c, ix, &y, iw, SETTING_BATTLE_INFO, "BATTLE INFO", st->noBattleInfo ? "OFF" : "ON");
+            if (!st->noBattleInfo) {
+                setting(ui, c, ix, &y, iw, SETTING_HINTS, "BATTLE HINTS", st->hideHints ? "OFF" : "ON");
+                setting(ui, c, ix, &y, iw, SETTING_BATTLE_VIEW, "BATTLE VIEW", st->battleInfoFirst ? "INFO" : "BUTTONS");
+            }
+            setting(ui, c, ix, &y, iw, SETTING_ONE_TAP, "ONE-TAP MOVES", st->oneTapMoves ? "ON" : "OFF");
+            setting(ui, c, ix, &y, iw, SETTING_BATTLE_STYLE, "BATTLE STYLE", st->battleGen5 ? "GEN 5" : "GEN 4");
+        }
+        // A host without the groups (the libretro cores): AUTO-RUN and DARK MODE here, the full list has them in GAMEPLAY
+        // and by THEME.
+        if (!full && host && host->hasCoreRows) {
+            if (host->fieldSupported) setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
+            setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+        }
+        snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
+        setting(ui, c, ix, &y, iw, SETTING_TAB_BAR, "TAB BAR", buf);
+        // The app's APP group: LANGUAGE last (above HELP there). The short list keeps it under the game's own rows.
+        if (full) {
+            group(c, ix, &y, "APP");
+            setting(ui, c, ix, &y, iw, SETTING_LANGUAGE, "LANGUAGE", pd_lang_label(st->language, buf, sizeof buf));
+        }
+        if (!full && host && host->hasCoreRows) setting(ui, c, ix, &y, iw, SETTING_RESET, "RESET SETTINGS", "...");
+        if (full) {
+            y += 3;
+            pd_fill(c, ix, y, iw, 1, PD_DIVIDER);
+            y += 5;
+            // CLOSE GAME / RESTART GAME, under a line.
+            int bw = (iw - 6) / 2;
+            if (y + 22 > listTop && y < listBottom) {
+                // Drawn whenever any of them shows (the list's clip cuts them), tappable on the part that shows.
+                int first = ui->hitCount;
+                ui_button(ui, c, ix, y, bw, 22, "CLOSE GAME", HIT_SETTING + SETTING_LEAVE);
+                ui_button(ui, c, ix + bw + 6, y, bw, 22, "RESTART GAME", HIT_SETTING + SETTING_RESTART);
+                for (int i = first; i < ui->hitCount; i++) {
+                    struct pd_hit* h = &ui->hits[i];
+                    int top = h->y < listTop ? listTop : h->y, bottom = h->y + h->h > listBottom ? listBottom : h->y + h->h;
+                    h->y = top;
+                    h->h = bottom - top;
+                }
+            }
+            y += 26;
+        } else if (!host || !host->frontendOwnsPlayback) {
+            setting(ui, c, ix, &y, iw, SETTING_SAVE_STATE, "SAVE STATE", NULL);
+            if (host && host->hasState) {
+                setting(ui, c, ix, &y, iw, SETTING_LOAD_STATE, "LOAD STATE", host->stateWhen);
+            } else {
+                // Nothing to load: shown, not tappable.
+                muted_row(c, ix, &y, iw, "LOAD STATE", "none yet");
+            }
+            setting(ui, c, ix, &y, iw, SETTING_LEAVE, "LEAVE GAME", NULL);
+        }
+        if (!full) setting(ui, c, ix, &y, iw, SETTING_LANGUAGE, "LANGUAGE", pd_lang_label(st->language, buf, sizeof buf));
     }
-    if (!full) setting(ui, c, ix, &y, iw, SETTING_LANGUAGE, "LANGUAGE", pd_lang_label(st->language, buf, sizeof buf));
     pd_unclip(c);
     int total = y + ui->settingsScroll - listTop, view = listBottom - listTop;
     lastTotal = total;
@@ -570,8 +701,8 @@ void ui_more_page(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
     enum pd_tab more[UI_BAR_CHOICES];
     int n = ui_more_tabs(ui, g, more);
     int x = MARGIN, w = c->w - 2 * MARGIN;
-    title_window(c, CONTENT_Y, "MORE");
-    int y = CONTENT_Y + TITLE_H + 3, h = c->h - y - 2;
+    // No MORE title over it: the MORE chip is lit on the bar.
+    int y = CONTENT_Y, h = c->h - y - 2;
     const bool smallText = pd_font_text_small();
     // The band under the rule: the note's two lines or TAB BAR's button, a gap above and below (40 tall at NORMAL).
     const int gap = 6, bottomH = 2 + 2 * gap + (smallText ? 28 : 40);

@@ -349,6 +349,10 @@ static void grid_place(int n, int i, int w, int h, int *x, int *y) {
 
 // The ring's tiles, all one size (UniformTiles): the widest label line's, set by quick_draw.
 static int ringW = TILE_W, ringH = TILE_H, ringLines = 1;
+// Too many tiles for a labelled ring on this canvas (they overlapped, the oval pressed flat): icon-only tiles, the
+// highlighted one's name in the middle (QuickMenu.kt's LABELS OFF).
+static bool ringIconsOnly;
+#define ICON_TILE 34 // an icon-only ring tile: room for a 32 px party icon (FLY's), a 16 px drawn icon 9 each side
 
 // QuickMenu.kt's ringPlaces: the tiles round a circle, the first at the top, clockwise, each the same gap from the last
 // (rectangles at equal angles meet corner to corner closer than side to side); too tall for the canvas, an oval.
@@ -472,8 +476,24 @@ static int label_lines(const char *label, char a[32], char b[32]) {
   return 2;
 }
 
-// The ring's tile size for these items: the widest label line with 5 px each side, at least 38 (QuickTile's).
-static void measure(const struct quick_item *items, int n) {
+// Whether the ring's tiles at the size just measured sit inside the canvas without overlapping.
+static bool ring_fits(int n, int cw, int ch) {
+  ring_places(n, ringW, ringH, cw * 96 / 100, ch * 96 / 100);
+  for (int i = 0; i < n; i++) {
+    double x = cw / 2.0 + ring.px[i] - ringW / 2.0, y = ch / 2.0 + ring.py[i] - ringH / 2.0;
+    if (x < 0 || y < 0 || x + ringW > cw || y + ringH > ch)
+      return false;
+    for (int j = 0; j < i; j++)
+      if (fabs(ring.px[i] - ring.px[j]) < ringW + 2 && fabs(ring.py[i] - ring.py[j]) < ringH + 2)
+        return false;
+  }
+  return true;
+}
+
+// The ring's tile size for these items: the widest label line with 5 px each side, at least 38 (QuickTile's); icons
+// alone when that ring doesn't fit the canvas.
+static void measure(const struct quick_item *items, int n, int cw, int ch) {
+  ringIconsOnly = false;
   int w = square() ? 30 : 38, lines = 1;
   for (int i = 0; i < n; i++) {
     const char *label = items[i].label ? items[i].label : quick_label(items[i].action);
@@ -492,6 +512,11 @@ static void measure(const struct quick_item *items, int n) {
     // The icon (16, 3 above), a pixel, the label's lines, 3 under them - as wide as tall, or as the widest line needs.
     int side = 3 + 16 + 1 + lines * MINI_LINE + 3;
     ringW = ringH = side > w ? side : w;
+  }
+  if (!gridMode && n > 1 && !ring_fits(n, cw, ch)) {
+    ringIconsOnly = true;
+    ringW = ringH = ICON_TILE;
+    ringLines = 0;
   }
 }
 
@@ -520,7 +545,7 @@ int quick_step(int n, int sel, int dx, int dy, int w, int h) {
 bool quick_draw(struct pd_canvas *c, const struct pd_game *g, const struct quick_item *items, int n, int sel, int look) {
   if (c->w < 3 * TILE_W || c->h < 3 * TILE_H)
     return false;
-  measure(items, n);
+  measure(items, n, c->w, c->h);
   for (int i = 0; i < c->w * c->h; i++)
     c->px[i] = QUICK_CLEAR;
   lastHits = 0;
@@ -538,7 +563,7 @@ bool quick_draw(struct pd_canvas *c, const struct pd_game *g, const struct quick
     // as QuickIcon draws them.
     bool art = false;
     // The icon's middle: GRID's tiles as before; a ring tile's 8 px down from its top edge's padding.
-    int iconY = gridMode ? y + 16 : square() ? y + 11 : y + 14;
+    int iconY = gridMode ? y + 16 : ringIconsOnly ? y + TH / 2 : square() ? y + 11 : y + 14;
     if (items[i].action == QUICK_FLY)
       art = pd_draw_mon_icon(c, g, items[i].species, x + (TW - PD_ICON) / 2, iconY - 17, dim);
     else if (items[i].item)
@@ -549,6 +574,11 @@ bool quick_draw(struct pd_canvas *c, const struct pd_game *g, const struct quick
     char la[32], lb[32];
     int lines = label_lines(label, la, lb);
     uint32_t col = dim ? ink->muted : items[i].lit ? ink->accent : text;
+    if (ringIconsOnly) { // the name is the middle's
+      if (items[i].off || items[i].lit) // OFF / ON at a glance: a dot of the accent in the corner
+        pd_fill(c, x + TW - 6, y + 3, 3, 3, ink->accent);
+      continue;
+    }
     // The label's lines at the tile's bottom (a one-line label on a two-line ring sits on the lower line's place).
     if (square()) {
       // The last line's capitals (rows MINI_TOP to MINI_TOP + 5 under its y) end 3 above the tile's bottom.

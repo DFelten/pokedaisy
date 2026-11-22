@@ -5,7 +5,7 @@ JNI, no adb, no physical device or emulator. Loads a ROM (+ optional save),
 runs a scripted boot sequence, and dumps EWRAM+IWRAM to the same
 `ewram.bin`/`iwram.bin` format `PokeDaisyActivity`'s on-device capture
 (`scripts/capture_fixture.sh`) produces — so it's a drop-in alternative data
-source for the JVM decode-logic tests under `app/src/test/`.
+source for the JVM decode-logic tests.
 
 Runs identically on a Mac (via Docker Desktop) or a Linux CI runner (e.g.
 GitHub Actions) — it's just a Docker container + `libmgba-dev`, nothing
@@ -20,7 +20,7 @@ Normally you don't invoke this directly — use
 copying the ROM/save (never touches your real save file — always works on a
 disposable copy, since the emulator can write to it), running the boot
 sequence, and writing the result into
-`app/src/test/resources/fixtures/<key>/`.
+`test-fixtures/resources/fixtures/<key>/`.
 
 To run it by hand (e.g. to iterate on a new boot sequence):
 
@@ -45,7 +45,7 @@ One command per line:
 | `keys KEYS` | Hold KEYS from now on, through every `wait`; `keys NONE` lets go. For frame-by-frame captures - `hold KEYS (`pk_coop_battle_starting`): `starting 0|1` runs two frames, since it lets go for one |
 | `press KEYS` | Hold KEYS for one frame, release | `KEYS` is comma-separated: `A,B,SELECT,START,UP,DOWN,LEFT,RIGHT,L,R` |
 | `hold KEYS N` | Hold KEYS for N frames, release |
-| `dump DIR` | Write `DIR/ewram.bin` + `DIR/iwram.bin` (DIR must already exist); a Game Boy cart writes `wram.bin` (C000-DFFF as the bus has it) + `hram.bin`, and a Color cart also `wramx.bin`, all 8 WRAM banks |
+| `dump DIR` | Write `DIR/ewram.bin` + `DIR/iwram.bin` (DIR must already exist); a Game Boy cart writes `wram.bin` (C000-DFFF as the bus has it) + `hram.bin`, and a Color cart also `wramx.bin`, all 8 WRAM banks; a cart with battery RAM also writes `sram.bin` |
 | `shot FILE` | Write the current frame to `FILE` as a binary PPM (convert with PIL) — for checking what the game actually shows (e.g. party-menu icons) |
 | `layers MASK` | Draw only these video layers from the next frame on (bit 0-3 = BG0-BG3, bit 4 = OBJ; `0x1F` = all) - e.g. `0x0E` for the overworld's map layers alone, no sprites or text |
 | `vdump DIR` | Write `DIR/{vram,pal,oam,io}.bin` — VRAM, palette RAM, OAM and I/O registers, i.e. what the PPU draws from (how the CFRU party-slot graphics were traced back to the ROM) — plus `iolatch.bin`, the registers as last written: write-only ones (the BG scroll offsets) read back as open bus in `io.bin` |
@@ -66,15 +66,16 @@ One command per line:
 | `gbpoke BANK ADDR BYTE..` | Game Boy (all hex): write bytes at ADDR in WRAM bank BANK (D000-DFFF; C000-CFFF ignores the bank) |
 | `gbpeek BANK ADDR N` | Game Boy (all hex): print N bytes at ADDR, from WRAM bank BANK for D000-DFFF (bank 0 = over the bus) |
 | `gbwram` | Game Boy: C000-DFFF then FF80-FFFE (bus reads) as one hex line after `gbwram `, stdout flushed - for a harness that reads the running game every frame through a pipe (`BrownLiveControlsTest`: the app's battle controller steering the real game) |
-| `gbcallat AT FN A B HL` | Game Boy (all hex): the app's `pk_gb_call_at` (`pk_gb_field.c`): run on until the CPU reaches AT, then call FN with A / B / HL and AT as its return address, so the game runs the call in the following `wait`s - Yellow's PC anywhere is `gbcallat 0248 3e84 0 18 66f4` (Bankswitch into the Pokémon Center PC tile's routine from the overworld loop) |
+| `gbcallat AT FN A B HL` | Game Boy (all hex): the app's `pk_gb_call_at` (`pk_gb_field.c`): run on until the CPU reaches AT (`BBAAAA` = AT in ROM bank BB, at most 4 frames: Crystal's PC moves are `gbcallat 256773 0008 03 0 5b3f`, a far call from HandleMap; `gbcallat 256773 0015 0 0 0` far-calls a `ret`, which waits for the call before it to return), then call FN with A / B / HL and AT as its return address, so the game runs the call in the following `wait`s - Yellow's PC anywhere is `gbcallat 0248 3e84 0 18 66f4` (Bankswitch into the Pokémon Center PC tile's routine from the overworld loop) |
+| `gbsram BANK ADDR N` | Game Boy (all hex): N bytes of the cart's battery RAM, bank BANK at ADDR (A000-BFFF), whether the game has it open or not (Crystal's current box: `gbsram 1 ad10 b`) |
 | `gbvdump DIR` | Game Boy: `DIR/gbvram.bin` (both Color banks), `gboam.bin` and `gbpal.bin` (the 32 BG then 32 OBJ Color palette entries) - `vdump` is the GBA's - how Prism's party icon colours were traced |
 | `bgm` | Print the m4a BGM player: address, status, song header (what `FfMusicKey` reads) |
 | `wav FILE N` | Run N frames and write what the APU played to `FILE` as a 16-bit stereo WAV — e.g. `call <m4aSongNumStart> 0`, `wait 20`, `call <m4aSongNumStart> 5`, `wav click.wav 45` renders SE_SELECT alone, the app's click sound. It also prints each frame whose audio is over 10% off one frame's worth (a Game Boy game turning its screen off or on restarts mGBA's frame) |
 | `volume V` | mGBA's master volume from now on (0x100 = full; the app runs Game Boy games at 0x80, `PK_GB_VOLUME`): two `wav`s of the same frames at two volumes show where the mixer clips - half the volume should be half every sample |
 | `gbaudio 0\|1` | A Game Boy game's `wav`: 1 (the default, built from the repo root) = resampled as the app does (`pk_gb_audio.c`), 0 = through mGBA 0.10.5's own blip_buf, whose pops were the Game Boy "crackle" (GitHub #269 / #327) |
-| `cheat TYPE CODE` | Add a cheat (TYPE `auto` / `cb` / `gs` / `ar`, CODE's lines joined by `+`) and load every cheat added so far into the core the way the app does - it compiles in the app's own `app/src/main/cpp/pk_cheats.c`, so only when built with the repo mounted (see below). Prints the directive mGBA settled on and which lines it read |
+| `cheat TYPE CODE` | Add a cheat (TYPE `auto` / `cb` / `gs` / `ar`, CODE's lines joined by `+`) and load every cheat added so far into the core the way the app does - it compiles in the app's own `shared/src/commonMain/cpp/pk_cheats.c`, so only when built with the repo mounted (see below). Prints the directive mGBA settled on and which lines it read |
 | `cheatclear` | Take every cheat out again (the ROM goes back to the file's bytes) |
-| `wideon MARGIN [CRC]` | Run the app's WIDE (`app/src/main/cpp/pk_wide.c`) after every frame from now on, MARGIN GBA px per side, for the game the ROM header names (retail FireRed rev 1 / Emerald). Repo builds only, like `cheat`. A Game Boy game it knows (English Yellow, Crystal: `pk_wide_gb.c`) works the same way in its 160x144 pixels: `widecheck`, `wideview`, `wideshot`, `widerec`, `wideinfo` (which also prints LCDC, the scroll and the window there) CRC (hex): look the game up by this CRC32 instead of the file's - retail's, for a randomized retail cart (`WideScreen.tablesCrc`) |
+| `wideon MARGIN [CRC]` | Run the app's WIDE (`shared/src/commonMain/cpp/pk_wide.c`) after every frame from now on, MARGIN GBA px per side, for the game the ROM header names (retail FireRed rev 1 / Emerald). Repo builds only, like `cheat`. A Game Boy game it knows (English Yellow, Crystal: `pk_wide_gb.c`) works the same way in its 160x144 pixels: `widecheck`, `wideview`, `wideshot`, `widerec`, `wideinfo` (which also prints LCDC, the scroll and the window there) CRC (hex): look the game up by this CRC32 instead of the file's - retail's, for a randomized retail cart (`WideScreen.tablesCrc`) |
 | `widecheck [all]` | Also rebuild the middle 240x160 every frame and compare it with the real frame pixel for pixel - how WIDE's rebuild was checked: it must match wherever it says the field checks out. Map frames only; `all` checks battle frames too, for a capture with `layers 0x18` (a battle's rebuild is BG3 + sprites). Not counted (and printed as such): a frame VRAM was written in while it was drawn, and one whose differences all lie in the partly shown edge tile column / row the field is scrolled by (the game's own stale ring) |
 | `wideskip N` | From now on WIDE runs like fast-forward: only every Nth frame drawn, the others just noted (`pk_wide_skip`); 0 or 1 draws them all |
 | `widestats` | Print WIDE's tally: frames, unverified ones (margins faded), torn sprite lists, centre checks exact / worst, and its time per frame (frames over 2 ms are also printed as they happen) |
@@ -88,7 +89,7 @@ One command per line:
 | `fieldinfo [run]` | Print the app's field read of this frame (`pk_field_state`, behind SCENE SPEEDS' TEXT, AUTO-RUN and RUN INDOORS; `wideon` picks the game): known, locked (a script holds the field), battle, text (a text box up while locked), bike, surf, avatar (bike / surf from the game's own player state). With `run`, RUN INDOORS sets the map's allowRunning first |
 | `wideghosts` | List the far-off objects (unspawned templates) the last snapshot holds: box in VMap pixels, palette tag, priority; `NO PALETTE` if neither a loaded slot nor the ROM's table has its colours |
 | `wideshot FILE` | Write the last wide frame (`240 + 2 * MARGIN` x 160) as a PPM |
-| `flighton W...` | FREE FLIGHT (`app/src/main/cpp/pk_flight.c`): configure it with the game's words in pk_flight.h's order (`FlightFns.words()`; retail FireRed rev 1's are `FLIGHT_FIRERED_REV1` in `gamedata/gen3/records/firered.toml`), ticked after every frame from then on. Repo builds only |
+| `flighton W...` | FREE FLIGHT (`shared/src/commonMain/cpp/pk_flight.c`): configure it with the game's words in pk_flight.h's order (`FlightFns.words()`; retail FireRed rev 1's are `FLIGHT_FIRERED_REV1` in `gamedata/gen3/records/firered.toml`), ticked after every frame from then on. Repo builds only |
 | `flight takeoff\|land` | Take off (waits up to 60 frames for a pk_call-safe one: `flight: takeoff R`, 0 = up, -3 not now, -4 not on foot) / ask to land (the nearest tile a player can stand on). While up, `keys` steer: the D-pad flies, `A` held faster, `B` lands |
 | `flightroute DUL R...` | The scenic FLY's route as letters (D down, U up, L left, R right; `ScenicFlyTest` prints them as `ROUTE <mapsec> ...`), flown at the faster speed once up, then a landing |
 | `flightarea G.N ...` | FLIGHT AREA: the maps (decimal group.num) the flight may cross into; with none, anywhere again |
@@ -212,7 +213,7 @@ code (autodetected as `GSAv1`) all fired; `cheatclear` put the ROM back byte for
 
 `mgba_link.c` runs two to four GBA games in one process joined by mGBA's own lockstep link
 (`gba/sio/lockstep.c`, the multiplayer cable), on the app's own LINK PLAY code: it compiles
-`app/src/main/cpp/pk_link.c` (and `pk_savevf.c`), so build it from the repo root. mGBA only defines the
+`shared/src/commonMain/cpp/pk_link.c` (and `pk_savevf.c`), so build it from the repo root. mGBA only defines the
 link's hooks; its Qt frontend fills them with a thread per game that sleeps and wakes
 (`MultiplayerController.cpp`). `pk_link.c` runs them all on one thread and "asleep" means "not run": the
 first game is the link's parent, the others run only on the cycles it hands them, so none drifts more than

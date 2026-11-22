@@ -162,6 +162,8 @@ enum setting_row {
     SETTING_LANGUAGE,   // LANGUAGE: a pick-list, AUTO first
     // ZOOM must stay out of SETTING_SCENE's block: its rows are SETTING_SCENE + i, so a setting sat inside it read
     // as a scene row (ZOOM's tap opened a scene's pick-list instead and the step never changed).
+    SETTING_FRONT,      // + i: the frontend's own rows (pd_host_info.front*), 8 of them at most
+    SETTING_FRONT_END = SETTING_FRONT + 8,
     SETTING_ZOOM,       // hosts with zoomCount > 1: EXPAND's steps out (the app's SETTINGS > SCREEN > ZOOM)
     SETTING_SCENE,      // + enum pd_scene: SCENE SPEEDS' rows, each a pick-list; the last, so nothing follows its ids
 };
@@ -185,6 +187,9 @@ void ui_mono(struct pd_canvas* c, const struct pd_mono* icon, int x, int y, int 
 void ui_art(struct pd_canvas* c, const struct pd_art* art, int x, int y, int scale);
 // TEXT SIZE SMALL's line between a list's rows (the bag's divider, on the grey lists): a pixel at [y], [w] wide. Nothing at NORMAL.
 void ui_row_divider(struct pd_canvas* c, int x, int y, int w);
+// A list row's background (the app's banded rows): every other one ([index] odd) a shade darker; the cursor's row white
+// with a drawn arrow at x - 1 (labels go ROW_ARROW = 8 in from x to leave it room).
+void ui_list_row_back(struct pd_canvas* c, int x, int y, int w, int index, bool cursor);
 // An icon drawn [size] pixels square, smoothed: Scale2x (its edges kept), then averaged down to [size] and blended in.
 // One of [art] (its colours) or [mono] (in [color]); 32 x 32 at most.
 void ui_icon_smooth(struct pd_canvas* c, const struct pd_art* art, const struct pd_mono* mono, uint32_t color, int x, int y, int size);
@@ -289,6 +294,15 @@ void ui_fade_rect(struct pd_canvas* c, const uint32_t* before, int x, int y, int
 // A type's colour (AppColors.typeColors), and its badge: returns the width.
 uint32_t ui_type_color(int type);
 int ui_type_badge(struct pd_canvas* c, int x, int y, int type);
+// ui_type_badge for a page drawing another game than ui_game (the DS views' summary): its names and its ROM's tags.
+int ui_type_badge_for(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type);
+// The app's GameTag (Components.kt): one flat colour, a pixel notched from each corner, the text in capitals with the
+// games' #424242 shadow, 12 tall, 4 either side, at least [minW] wide. c NULL = measure. Returns the width.
+#define UI_TAG_H 12
+#define UI_TAG_SHADOW 0x424242u
+int ui_game_tag(struct pd_canvas* c, int x, int y, const char* text, uint32_t fill, uint32_t ink, int minW);
+// A type tag with its multiplier inside ("GROUND 2x"), TypeBadgeWithLabel's: always drawn (the ROM's tag has no room).
+int ui_matchup_tag(struct pd_canvas* c, int x, int y, const struct pd_game* g, int type, int pct);
 
 // The lists' caught / seen mark: a Poké Ball, or a grey one.
 void ui_ball(struct pd_canvas* c, int x, int y, bool caught);

@@ -77,7 +77,7 @@ The options come in groups, the ones you change while playing first:
 
 - **MAKEOVER**: `PLAYER LOOK`, `RIVAL LOOK`, `TEXT LOOK`, `FOLLOWER`, `FLY ON`, `RIDE ON` and `DAY AND NIGHT`, fresh looks for your game. It sits at the top in a blue frame of its own, and only shows in a game it works in. See [MAKEOVER](#makeover) below.
 - **FF / SPEED**: `FF`, `FF SPEED`, `GAME SPEED`, `REWIND` and `SPEED OPTIONS` (a page with `SCENE SPEEDS`, `FF MODE` and `FF MUSIC`). See [Fast-forward](fast-forward.md).
-- **GAMEPLAY**: `WILD ENCOUNTERS`, `INSTANT TEXT`, `FLY STYLE`, `FLIGHT AREA`, `REUSABLE TMS`, `AUTO REFILL`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP`, `FIELD POISON`, `NUZLOCKE`, `AUTO-RUN`, `RUN INDOORS` and `CHEATS`. See [Controls](controls.md), [Party](party.md#trade-evolutions), [Bag](bag.md), [Nuzlocke](nuzlocke.md) and [Cheats](cheats.md).
+- **GAMEPLAY**: `QUALITY OF LIFE`, `FLY STYLE`, `FLIGHT AREA`, `NUZLOCKE` and `CHEATS`. `QUALITY OF LIFE` opens a page of the helpers that save you time, its row saying how many you've changed from the game's own way: `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON`. See [Controls](controls.md), [Party](party.md#trade-evolutions), [Bag](bag.md), [Nuzlocke](nuzlocke.md) and [Cheats](cheats.md).
 - **SCREEN**: `ASPECT`, `HUD`, `DISPLAY OPTIONS` (a page with `STATUS BAR`, `SHADERS`, `OVERLAY` and `LIGHT COMPANION`), `THEME`, `DARK MODE`, `FONT`, `FPS / CPU` and, depending on your device, `HIDE BATTLE MENU`, `BATTLE BUTTONS`, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS` or `SINGLE SCREEN`. See [Screen and display](screen.md).
 - **COMPANION**: `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `ONE-TAP MOVES`, `LAST BALL`, `BATTLE STYLE`, `FOE IVS`, `BATTLE FOCUS`, `TAB BAR`, `CLICK SOUND`, `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS`, `PROGRESS POPUPS`, `ITEM POPUPS` and `TWEAKS`.
 - **CONTROLS**: `GAME BUTTONS`, `HOTKEYS`, `QUICK MENU` and `TOUCH CONTROLS`. See [Controls](controls.md).
@@ -123,7 +123,7 @@ Your save stays exactly as it was. The change only lives in the game's memory wh
 > [!NOTE]
 > `PLAYER LOOK` works on the original FireRed, LeafGreen, Ruby, Sapphire and Emerald carts, in every language, and on Emerald Kaizo, Emerald Legacy, Emerald Imperium and Ultra Violet. Poses only one game has, like Emerald's wheelies and diving, use the nearest pose the other hero has.
 
-You can also walk around as one of your own Pokémon. With a game whose Pokémon follow you (Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass) played here or in your library, the tiles also show the Pokémon in your party, walking as they follow you in that game. With more than one of those games, each Pokémon comes from one of them only, and its tile says which. Pick one and it takes your place on the map (walking, running, on a bike and surfing), on the trainer card and with its back to you in battle. Only the first 386 can be picked, and a few of the very biggest aren't among them.
+You can also walk around as one of your own Pokémon. With a game whose Pokémon follow you (Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass) played here or in your library, the tiles also show the Pokémon in your party, walking as they follow you in that game. With more than one of those games, each Pokémon comes from one of them only, and its tile says which. Pick one and it takes your place on the map (walking, running, on a bike and surfing), on the trainer card and with its back to you in battle. Only the first 386 can be picked, and a few of the very biggest aren't among them. You keep your current look while the costume is getting ready. If it can't be put on or the Pokémon leaves your party, your own hero returns.
 
 ### RIVAL LOOK
 
@@ -143,6 +143,8 @@ Like the heroes, the box and the letters come from your own copy of the other ga
 With `FOLLOWER` on, the first Pokémon in your party walks a step behind you on the map, turning corners with you, keeping up when you run or ride your bike, and waiting while you surf. It's drawn by PokeDaisy over the game, so your game and your save don't change. It doesn't block anyone and you can't talk to it, and after you go through a door it shows up again with your first step.
 
 Its sprite comes from a game whose Pokémon follow you (Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass), like the Pokémon you can wear with `PLAYER LOOK`, so the row shows `N/A` until one of those has been played here or is in your library, or a [sprite pack](#sprite-packs) brought its Pokémon. It's off to start with, and games whose Pokémon already follow you don't have it.
+
+In Crystal it needs nothing else: your first Pokémon follows you as its little party picture, taken from your own cartridge. It hides its feet in tall grass, steps behind other people when they stand in front of it, and goes away during battles and while you surf.
 
 
 ### RIDE ON

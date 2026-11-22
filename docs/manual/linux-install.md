@@ -111,7 +111,7 @@ Download the newer zip and extract it over the old folder (on NXRedux, at the to
 - **Permission denied when you start it:** the extractor lost the program's run permission. In the folder, run `chmod +x pokedaisy-linux`.
 - **An error naming `GLIBC_2.35` or `libSDL2`:** your Linux is older than PokeDaisy needs, or SDL2 isn't installed. Install SDL2 from your distribution (on Ubuntu, `sudo apt install libsdl2-2.0-0`), or try a newer system.
 - **A game isn't listed:** it has to be right in `roms` (not in a folder inside it), unzipped, and end in `.gba`, `.gb`, `.gbc` or `.nds`.
-- **A and B are the wrong way round:** open the menu (START and SELECT together, or the Guide or Menu button) and set `A/B BUTTONS` to `SWAPPED`.
+- **A and B are the wrong way round:** open the menu (START and SELECT together, or the Guide or Menu button), pick `SETTINGS` and set `A/B BUTTONS` to `SWAPPED`.
 - **My save didn't load:** the save needs the ROM's whole file name with `.sav` added, or the ROM's name without its extension (the way other emulators name them), in `saves`. Check `saves/pokedaisy-backups` for an older copy.
 - **The controller does nothing:** SDL doesn't know it yet. Put a `gamecontrollerdb.txt` with its mapping in the data folder (next to `roms`).
 

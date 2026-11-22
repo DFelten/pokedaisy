@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """WIDE (pk_wide.c) for every retail release the user owns, and the ROM hacks in HACKS: maps the English references' addresses
-into each ROM and writes app/src/main/cpp/pk_wide_games.h, a table keyed by the ROM's CRC32.
+into each ROM and writes shared/src/commonMain/cpp/pk_wide_games.h, a table keyed by the ROM's CRC32.
 
     scripts/gen_wide_tables.py <roms dir> [<more roms dirs>...]
 
-Every retail .gba under the dirs (by SHA-1: the app's GameTitles / RetailPortsGen list - hacks share the
+Every retail .gba under the dirs (by SHA-1: the app's GameTitleCatalog / RetailPortsGen list - hacks share the
 codes but aren't taken) whose game code is FireRed / LeafGreen (BPR / BPG), Emerald (BPE) or Ruby / Sapphire (AXV / AXP) gets
 the English reference's addresses (FireRed rev 1, Emerald, Ruby rev 1: checked frame by frame headless) mapped
 through the literal pools of the code that loads them (port_retail.py's map_literal: the word at the
@@ -25,7 +25,7 @@ ROOT = os.path.join(HERE, "..")
 sys.path.insert(0, HERE)
 from port_retail import Rom, map_literal, map_code  # noqa: E402
 
-OUT_H = os.path.join(ROOT, "app", "src", "main", "cpp", "pk_wide_games.h")
+OUT_H = os.path.join(ROOT, "shared", "src", "commonMain", "cpp", "pk_wide_games.h")
 OUT_JSON = os.path.join(ROOT, "build", "wide", "wide.json")
 
 # pk_wide.h's PK_WIDE_* address slots, in order.
@@ -405,18 +405,20 @@ HACKS = [
 FAMILY = {"BPR": "FR", "BPG": "FR", "BPE": "EM", "AXV": "RS", "AXP": "RS"}
 # Hacks under a game code of their own (only taken by SHA-1, as every hack).
 HACK_CODES = {"PUV", "MON"}
-KOTLIN = os.path.join(ROOT, "app", "src", "main", "kotlin", "com", "pokedaisy", "app")
+SHARED_KOTLIN = os.path.join(ROOT, "shared/src/commonMain/kotlin/com/pokedaisy/app")
+SHARED_DATA = os.path.join(SHARED_KOTLIN, "companion/data")
 
 
 def retail_sha1s():
-    """The retail releases the app knows by SHA-1: GameTitles' RETAIL map (its HACKS come after it) and
+    """The retail releases the app knows by SHA-1: GameTitleCatalog's RETAIL map (its HACKS come after it) and
     the generated other-language ports (RETAIL_PORT_TITLES). Hacks share the game codes, but WIDE is
     checked on retail only."""
-    hand = open(os.path.join(KOTLIN, "GameTitles.kt")).read()
+    hand = open(os.path.join(SHARED_KOTLIN, "GameTitleCatalog.kt")).read()
     hand = hand[hand.index("private val RETAIL"):hand.index("private val HACKS")]
-    ports = open(os.path.join(KOTLIN, "companion", "data", "RetailPortsGen.kt")).read()
+    ports = open(os.path.join(SHARED_DATA, "RetailPortsGen.kt")).read()
     ports = ports[ports.index("RETAIL_PORT_TITLES"):]
-    return set(re.findall(r'"([0-9a-f]{40})" to', hand + ports))
+    look = open(os.path.join(SHARED_DATA, "RetailLookTitles.kt")).read()
+    return set(re.findall(r'"([0-9a-f]{40})" to', hand + ports + look))
 
 
 def roms(dirs):
