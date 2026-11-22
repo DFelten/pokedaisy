@@ -238,8 +238,14 @@ static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp,
             setting(ui, c, ix, yp, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
         flight_area_row(ui, c, ix, yp, iw, st);
     }
+    // The app's GAMEPLAY rows the desktop cores have (the quick menu's WILD, the field read's RUN INDOORS), where the
+    // host has FONT TYPE (the desktop cores: a handheld's short list keeps its rows as before).
+    if (host && host->hasFontType && host->wildSupported)
+        setting(ui, c, ix, yp, iw, SETTING_WILD, "WILD ENCOUNTERS", st->wildOff ? "OFF" : "ON");
     if (host && host->hasCoreRows && host->fieldSupported)
         setting(ui, c, ix, yp, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
+    if (host && host->hasFontType && host->fieldSupported)
+        setting(ui, c, ix, yp, iw, SETTING_RUN_INDOORS, "RUN INDOORS", st->runIndoors ? "ON" : "OFF");
     front_rows(ui, c, ix, yp, iw, host, "GAMEPLAY");
     pendingGroup = "SCREEN";
     if (!host || !host->hideScreenMode)

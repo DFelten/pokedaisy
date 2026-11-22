@@ -743,6 +743,9 @@ static void act(struct pd_ui* ui, int id) {
 }
 
 bool pd_ui_settings_control(struct pd_ui* ui, int dy, bool accept) {
+    // Nothing pressed: the list stays where the pointer left it (a host calls this every frame; following the cursor
+    // then pulled the list back from the rail's tap, the wheel and a drag on the desktop).
+    if (!dy && !accept) return ui->settingsNavCount > 0;
     int count = ui->settingsNavCount, index = 0;
     while (index < count && ui->settingsNav[index].id != ui->settingsNavId) ++index;
     if (index == count) return false;

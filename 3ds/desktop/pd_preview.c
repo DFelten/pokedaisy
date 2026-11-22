@@ -382,6 +382,12 @@ int main(int argc, char** argv) {
         draw(&p);
         shot(out, name, "settings-end", px);
         ui.settingsScroll = 0;
+        if (has_hit(&p, HIT_SETTINGS_GROUP + 2)) { // the rail's third group, tapped: the list goes to it
+            tap(&p, HIT_SETTINGS_GROUP + 2, 0);
+            shot(out, name, "settings-rail", px);
+            ui.settingsScroll = 0;
+            draw(&p);
+        }
         if (has_hit(&p, HIT_MORE)) { // MORE's grid of the tabs off the bar
             tap(&p, HIT_MORE, 0);
             shot(out, name, "more", px);

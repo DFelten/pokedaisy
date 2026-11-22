@@ -1569,7 +1569,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
   // The Game Boy games get the HUD where the field scene is known (English Yellow, Crystal: pk_wide_gb), as in the app.
   host.hasHud = PD_BE_IS_GBA() || wideSupported;
   host.hasExpand = true;
-  host.fieldSupported = fieldKnown; // AUTO-RUN (the field read tells walking from scripts, battles and bikes)
+  host.fieldSupported = fieldKnown; // AUTO-RUN and RUN INDOORS (the field read tells walking from scripts, battles and bikes)
+  host.wildSupported = wildSwitch || gbf || polishedActions; // WILD ENCOUNTERS, as the quick menu's WILD
   host.hasCoreRows = true; // AUTO-RUN, DARK MODE, RESET SETTINGS
   host.hasFontType = true; // FONT TYPE, by DARK MODE
   host.hasFlightArea = freeFlight;
