@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[778] = {
+const struct pd_tr_entry pd_tr_table[781] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -130,6 +130,7 @@ const struct pd_tr_entry pd_tr_table[778] = {
     { "COINS", { "COINS", "JETONS", "MÜNZEN", "GETTONI", "FICHAS", "FICHAS", "FICHAS" } },
     { "COMPANION", { "COMPANION", "COMPAGNON", "ASSISTENT", "COMPAGNO", "COMPAÑERO", "COMPANHEIRO", "COMPANHEIRO" } },
     { "COMPANION BUTTON", { "COMPANION BUTTON", "BOUTON COMPAGNON", "ASSISTENTEN-TASTE", "PULSANTE COMPAGNO", "BOTÓN COMPAÑERO", "BOTÃO DO COMPANHEIRO", "BOTÃO COMPANHEIRO" } },
+    { "CONSOLE", { "CONSOLE", NULL, "KONSOLE", NULL, "CONSOLA", NULL, "CONSOLA" } },
     { "CONTROLS", { "CONTROLS", "COMMANDES", "STEUERUNG", "COMANDI", "CONTROLES", "CONTROLES", "CONTROLOS" } },
     { "CORE", { "CORE", "CŒUR", "KERN", NULL, "NÚCLEO", "NÚCLEO", "NÚCLEO" } },
     { "CORNERS", { "CORNERS", "COINS", "ECKEN", "ANGOLI", "ESQUINAS", "CANTOS", "CANTOS" } },
@@ -206,6 +207,7 @@ const struct pd_tr_entry pd_tr_table[778] = {
     { "FLY STYLE", { "FLY STYLE", "STYLE DE VOL", "FLUGSTIL", "STILE VOLO", "ESTILO DE VUELO", "ESTILO DE VOO", "ESTILO DE VOO" } },
     { "FLY needs a new BADGE first.", { "FLY needs a new BADGE first.", "VOL demande d'abord un nouveau BADGE.", "FLIEGEN braucht erst einen neuen ORDEN.", "VOLO richiede prima una nuova MEDAGLIA.", "VUELO necesita antes una nueva MEDALLA.", "VOAR precisa antes de uma nova INSÍGNIA.", "VOAR precisa antes de uma nova INSÍGNIA." } },
     { "FOE", { "FOE", "ENNEMI", "GEGNER", "NEMICO", "ENEMIGO", "OPONENTE", "OPONENTE" } },
+    { "FOLDER", { "FOLDER", "DOSSIER", "ORDNER", "CARTELLA", "CARPETA", "PASTA", "PASTA" } },
     { "FONT TYPE", { "FONT TYPE", "TYPE DE POLICE", "SCHRIFTART", "TIPO DI CARATTERE", "TIPO DE LETRA", "TIPO DE FONTE", "TIPO DE LETRA" } },
     { "FORGET IT", { "FORGET IT", "L'OUBLIER", "VERGESSEN", "DIMENTICALA", "OLVIDARLO", "ESQUECER", "ESQUECER" } },
     { "FPS / CPU", { "FPS / CPU", NULL, NULL, NULL, NULL, NULL, NULL } },
@@ -774,6 +776,7 @@ const struct pd_tr_entry pd_tr_table[778] = {
     { "in this ROM.", { "in this ROM.", "est introuvable dans cette ROM.", "in diesem ROM.", "non è in questa ROM.", "en esta ROM.", "não foi achada nesta ROM.", "não foi encontrada nesta ROM." } },
     { "it (the Name Rater's rule).", { "it (the Name Rater's rule).", "le renommer (la règle du Notateur).", "darf es umbenennen (die Regel des Namen-Bewerters).", "può rinominarlo (la regola del Giudice nomi).", "puede renombrarlo (la regla del Juez de nombres).", "pode renomeá-lo (a regra do avaliador).", "pode mudar o nome (a regra do avaliador)." } },
     { "nearby", { "nearby", "tout près", "in der Nähe", "qui vicino", "cerca", "por perto", "por perto" } },
+    { "none yet", { "none yet", "aucun pour l'instant", "noch keiner", "ancora nessuno", "ninguno aún", "nenhum ainda", "ainda nenhum" } },
     { "not yet", { "not yet", "pas encore", "noch nicht", "non ancora", "aún no", "ainda não", "ainda não" } },
     { "save shows here.", { "save shows here.", "sauvegarde s'affiche ici.", "steht sein Spielstand hier.", "salvataggio appare qui.", "partida aparecerá aquí.", "aparece aqui.", "guardado aparece aqui." } },
     { "seen", { "seen", "vu", "gesehen", "visto", "visto", "visto", "visto" } },
@@ -782,4 +785,4 @@ const struct pd_tr_entry pd_tr_table[778] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 778;
+const int pd_tr_table_count = 781;

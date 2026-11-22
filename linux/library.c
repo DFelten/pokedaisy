@@ -81,6 +81,7 @@ static const struct lib_host *host;
 static struct pd_settings settings;
 static int page = P_GAMES, focus = F_GAMES, view = V_ALL, sortBy = S_NAME, railCursor, headerCursor;
 static bool grid = true, quit, menuOpen, closeAsk;
+static bool infoOpen;   // a game's INFO window (its menu's INFO)
 static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
 static bool addedStore; // the state file has dates already: a game seen now for the first time is new
 static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
@@ -1261,6 +1262,8 @@ static void menu_choose(void) {
   struct game *g = &games[shown[selected]];
   if (menuCursor == 0)
     play();
+  else if (menuCursor == 2)
+    infoOpen = true;
   else if (menuCursor == 1) {
     g->fav = !g->fav;
     g->favSet = true;
@@ -1318,6 +1321,11 @@ void library_keys(unsigned down) {
       closeAsk = false;
     return;
   }
+  if (infoOpen) {
+    if (down & (LIB_A | LIB_B | LIB_START | LIB_MENU))
+      infoOpen = false;
+    return;
+  }
   if (sortOpen) {
     if (down & LIB_UP)
       menuCursor = (menuCursor + S_COUNT - 1) % S_COUNT;
@@ -1331,9 +1339,9 @@ void library_keys(unsigned down) {
   }
   if (menuOpen) {
     if (down & LIB_UP)
-      menuCursor = (menuCursor + 2) % 3;
+      menuCursor = (menuCursor + 3) % 4;
     if (down & LIB_DOWN)
-      menuCursor = (menuCursor + 1) % 3;
+      menuCursor = (menuCursor + 1) % 4;
     if (down & LIB_A)
       menu_choose();
     if (down & (LIB_B | LIB_START))
@@ -1985,12 +1993,46 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
   return f;
 }
 
-bool library_dimmed(void) { return menuOpen || closeAsk || sortOpen; }
+/* A game's INFO (the app's GameInfo, the parts the desktop knows): its file, folder, size, console, SHA-1 and save. */
+static void draw_info(struct pd_canvas *c, const struct game *g) {
+  char size[32], folder[PATH_MAX], sav[PATH_MAX * 2];
+  if (g->size >= 1024 * 1024)
+    snprintf(size, sizeof size, "%.1f MB", g->size / (1024.0 * 1024.0));
+  else
+    snprintf(size, sizeof size, "%ld KB", (g->size + 1023) / 1024);
+  snprintf(folder, sizeof folder, "%s", g->path);
+  char *slash = strrchr(folder, '/');
+  if (slash)
+    *slash = 0;
+  pd_save_path(savesDir, g->path, sav, sizeof sav);
+  static const char *const CONSOLES[] = {"GB", "GBC", "GBA", "DS"};
+  const char *labels[6] = {"FILE", "FOLDER", "SIZE", "CONSOLE", "SHA-1", "SAVE"};
+  const char *values[6] = {g->file, folder, size, CONSOLES[g->console], g->sha1Known ? g->sha1 : "...",
+                           g->hasSave ? sav : pd_tr("none yet")};
+  int w = c->w - 80 > 520 ? 520 : c->w - 80, rowH = 22, h = 27 + 8 + 6 * rowH + 8;
+  int x = (c->w - w) / 2, y = (c->h - h) / 2;
+  int hf = pd_header_box(c, x, y, w, 26);
+  pd_text_fit(c, x + hf + 6, pd_text_y(y, 26), w - 2 * hf - 12, g->title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
+  int lf = pd_list_box(c, x, y + 27, w, h - 27);
+  int lw = 0;
+  for (int i = 0; i < 6; i++)
+    if (pd_text_width(pd_tr(labels[i])) > lw)
+      lw = pd_text_width(pd_tr(labels[i]));
+  for (int i = 0; i < 6; i++) {
+    int ry = y + 27 + lf + 4 + i * rowH, vx = x + lf + 10 + lw + 12;
+    if (i & 1)
+      pd_fill(c, x + lf, ry, w - 2 * lf, rowH, pd_style ? pd_style->stripe : pd_mix(PD_LIST_FILL, PD_LABEL, 20));
+    pd_text(c, x + lf + 10, pd_text_y(ry, rowH), pd_tr(labels[i]), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, vx, pd_text_y(ry, rowH), x + w - lf - 10 - vx, values[i], PD_VALUE, PD_VALUE_SHADOW);
+  }
+}
+
+bool library_dimmed(void) { return menuOpen || closeAsk || sortOpen || infoOpen; }
 
 void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   pd_fill(c, 0, 0, c->w, c->h, clear);
   // The button legend, floating bottom right (the launcher's ButtonLegend).
-  if (!menuOpen && !closeAsk && !sortOpen) {
+  if (!menuOpen && !closeAsk && !sortOpen && !infoOpen) {
     static const char *const GAMES_LEGEND[][2] = {{"A", "OPEN"}, {"B", "OPTIONS"}, {"Y", "SETTINGS"}};
     static const char *const PAGE_LEGEND[][2] = {{"A", "CHOOSE"}, {"B", "BACK"}};
     bool gamesPage = page == P_GAMES;
@@ -2009,13 +2051,15 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   }
   if (menuOpen && selected < shownCount) {
     const struct game *g = &games[shown[selected]];
-    const char *rows[3] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "CANCEL"};
-    int w = 240, h = 2 * 6 + 24 + 3 * 24 + 4;
+    const char *rows[4] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "INFO", "CANCEL"};
+    int w = 240, h = 2 * 6 + 24 + 4 * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, g->title, rows, 3, menuCursor);
-    for (int i = 0; i < 3; i++)
+    int f = window(c, x, y, w, h, g->title, rows, 4, menuCursor);
+    for (int i = 0; i < 4; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_MENU, i);
   }
+  if (infoOpen && selected < shownCount)
+    draw_info(c, &games[shown[selected]]);
   if (sortOpen) {
     int w = 240, h = 2 * 6 + 24 + S_COUNT * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
@@ -2070,7 +2114,7 @@ static void wheel_games(int dir) {
 }
 
 void library_menu_at(int x, int y) {
-  if (menuOpen || closeAsk || sortOpen || page != P_GAMES)
+  if (menuOpen || closeAsk || sortOpen || infoOpen || page != P_GAMES)
     return;
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
@@ -2086,6 +2130,11 @@ void library_pointer(int x, int y, bool click, int wheel) {
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
 
+  if (infoOpen) {
+    if (click)
+      infoOpen = false;
+    return;
+  }
   if (sortOpen) {
     if (click)
       sort_choose(h && h->action == LIB_HIT_SORT_PICK ? h->arg : -1); // beside it: closed, as B
@@ -2111,7 +2160,7 @@ void library_pointer(int x, int y, bool click, int wheel) {
       return;
     }
     if (wheel) {
-      int n = menuOpen ? 3 : 2, dir = wheel > 0 ? -1 : 1;
+      int n = menuOpen ? 4 : 2, dir = wheel > 0 ? -1 : 1;
       for (int i = wheel > 0 ? wheel : -wheel; i > 0; i--)
         menuCursor = (menuCursor + dir + n) % n;
     }

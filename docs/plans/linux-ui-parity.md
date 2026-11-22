@@ -42,7 +42,8 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
         DARK MODE; `settings.ini` `fontpixel=`), the companion only (the HUD and quick menu keep Pixel Operator)
   - [ ] FONT TYPE in the DS core (`linux/libretro-ds/companion_ui.cpp` keeps its own settings)
   - [ ] UI SIZE for big monitors (Android's FONT SIZE): the companion's rows per screen height
-  - [ ] Portrait windows: a canvas past 480 rows
+  - [ ] Portrait windows: a canvas past 480 rows only stretches the layouts (tried 400x640, 2026-11-23: the moves turn
+        into tall empty cells); they want the app's upright layout (the game on top, the companion docked under it)
 - [ ] **1. Look** (SUMMARY MINT under `retroStylePalette`'s blues, as Android since 2026-11-22)
   - [x] The palette in C (`pd_style.c`'s `RETRO`, light and dark), moved to a THEME's hue (`rehue` = NightColors.kt's
         `rehued`), turned on by the desktop cores (`pd_style_enable`; the 3DS keeps the OPTION look, pixel for pixel)
