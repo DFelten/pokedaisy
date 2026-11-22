@@ -2935,6 +2935,9 @@ int main(int argc, char **argv) {
                             fullscreen ? (windowedHost ? fullFlag | SDL_WINDOW_RESIZABLE : fullFlag) : SDL_WINDOW_RESIZABLE);
   if (window && windowedHost && !fullscreen && !size && hostSet.maximized)
     SDL_MaximizeWindow(window);
+  // The companion and the game list lay out from 320x240 up: a window dragged smaller stops there.
+  if (window && windowedHost)
+    SDL_SetWindowMinimumSize(window, 320, 240);
 #ifdef _WIN32
   set_window_icon(window);
 #endif
