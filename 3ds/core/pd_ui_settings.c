@@ -307,7 +307,8 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     ui->settingsNavCount = 0;
     int x = MARGIN, w = c->w - 2 * MARGIN;
     // The full companion's long list gets its group tabs down the left, on the backdrop beside the list's window.
-    railed = host && host->fullSettings && !ui->optionSource;
+    // The desktop cores' grouped list (hasCoreRows) gets them too in the app's RETRO look, as the app's SETTINGS has.
+    railed = host && (host->fullSettings || (host->hasCoreRows && pd_style)) && !ui->optionSource;
     valuePct = railed ? 58 : 42;
     groupCount = 0;
     int railX = x, railW = 0;
