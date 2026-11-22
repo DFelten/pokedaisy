@@ -57,6 +57,7 @@ struct game {
   char path[PATH_MAX], file[256], title[96], coverPath[PATH_MAX];
   enum console console;
   bool hack, fav, favSet, hasSave;
+  bool hidden; // HIDE (a game's menu): out of every view until SETTINGS > HIDDEN GAMES shows it again
   unsigned long long played; // YYYYMMDDhhmmss, 0 = never
   long long added;           // when the list first had it (seconds since 1970), 0 = not yet dated
   bool addedInitial;         // dated with the whole list the first time (or a new folder's first scan): never NEW
@@ -215,6 +216,8 @@ static void state_save(void) {
       fprintf(f, "played\t%llu\t%s\n", games[i].played, games[i].file);
     if (games[i].added)
       fprintf(f, "added\t%lld\t%d\t%s\n", games[i].added, games[i].addedInitial, games[i].file);
+    if (games[i].hidden)
+      fprintf(f, "hidden\t%s\n", games[i].file);
   }
   fclose(f);
 }
@@ -240,6 +243,8 @@ static void state_load(void) {
       by_file(file)->favSet = true;
     } else if (sscanf(line, "played\t%llu\t%255[^\n]", &t, file) == 2 && by_file(file))
       by_file(file)->played = t;
+    else if (sscanf(line, "hidden\t%255[^\n]", file) == 1 && by_file(file))
+      by_file(file)->hidden = true;
     else {
       long long when;
       if (sscanf(line, "added\t%lld\t%d\t%255[^\n]", &when, &v, file) == 3) {
@@ -945,6 +950,8 @@ static int work(void *unused) {
 /* ---- the views and the order ---- */
 
 static bool in_view(const struct game *g, int v) {
+  if (g->hidden)
+    return false;
   switch (v) {
   case V_ALL: return true;
   case V_FAV: return g->fav;
@@ -1191,13 +1198,19 @@ static void step_view(int dir) {
 /* SETTINGS' rows: the library's three, then the host's, BUTTON COLORS (after the host's A/B BUTTONS), then VERSION. */
 enum { SET_DARK, SET_THEME, SET_ASPECT, SET_OWN };
 static int host_rows(void) { return host ? host->settings : 0; }
-static int settings_rows(void) { return SET_OWN + host_rows() + 2; }
+static int settings_rows(void) { return SET_OWN + host_rows() + 3; } // + BUTTON COLORS, HIDDEN GAMES, VERSION
+static int hidden_count(void) {
+  int n = 0;
+  for (int i = 0; i < gameCount; i++)
+    n += games[i].hidden;
+  return n;
+}
 static const char *setting_group(int row) {
   if (row < SET_OWN)
     return "SCREEN";
   if (row - SET_OWN < host_rows())
     return host->group(row - SET_OWN);
-  return row == SET_OWN + host_rows() ? "CONTROLS" : "APP";
+  return row == SET_OWN + host_rows() ? "CONTROLS" : row == SET_OWN + host_rows() + 1 ? "LIBRARY" : "APP";
 }
 static void setting_label(int row, char *label, int llen, char *value, int vlen) {
   value[0] = 0;
@@ -1218,6 +1231,13 @@ static void setting_label(int row, char *label, int llen, char *value, int vlen)
   } else if (row == SET_OWN + host_rows()) {
     snprintf(label, (size_t)llen, "BUTTON COLORS");
     snprintf(value, (size_t)vlen, "%s", faceColors ? "GREEN A" : "RED A");
+  } else if (row == SET_OWN + host_rows() + 1) {
+    // HIDDEN GAMES: how many; A shows them all again.
+    snprintf(label, (size_t)llen, "HIDDEN GAMES");
+    if (hidden_count())
+      snprintf(value, (size_t)vlen, "%d", hidden_count());
+    else
+      snprintf(value, (size_t)vlen, "NONE");
   } else {
     snprintf(label, (size_t)llen, "VERSION");
     snprintf(value, (size_t)vlen, "%s", host && host->version ? host->version : "");
@@ -1248,6 +1268,12 @@ static void setting_step(int row, int dir) {
   else if (row == SET_OWN + host_rows()) {
     faceColors = !faceColors;
     state_save();
+  } else if (row == SET_OWN + host_rows() + 1 && hidden_count()) {
+    for (int i = 0; i < gameCount; i++)
+      games[i].hidden = false;
+    state_save();
+    relist();
+    say("Hidden games are back in the list");
   }
 }
 
@@ -1278,6 +1304,12 @@ static void menu_choose(void) {
     play();
   else if (menuCursor == 2)
     infoOpen = true;
+  else if (menuCursor == 3) {
+    g->hidden = true; // the app's HIDE: SETTINGS > HIDDEN GAMES brings it back
+    state_save();
+    relist();
+    say("Hidden: SETTINGS > HIDDEN GAMES shows it again");
+  }
   else if (menuCursor == 1) {
     g->fav = !g->fav;
     g->favSet = true;
@@ -1360,9 +1392,9 @@ void library_keys(unsigned down) {
   }
   if (menuOpen) {
     if (down & LIB_UP)
-      menuCursor = (menuCursor + 3) % 4;
+      menuCursor = (menuCursor + 4) % 5;
     if (down & LIB_DOWN)
-      menuCursor = (menuCursor + 1) % 4;
+      menuCursor = (menuCursor + 1) % 5;
     if (down & LIB_A)
       menu_choose();
     if (down & (LIB_B | LIB_START))
@@ -1981,7 +2013,9 @@ void library_draw(struct pd_canvas *c) {
   } else {
     draw_header(c, x, w, page == P_TOOLS ? "TOOLS" : "SETTINGS", false);
     contentY = M + HEADER_H + GAP;
-    contentH = c->h - contentY - M;
+    // The list ends above the floating button legend (28 tall, M from the bottom): its rows' values sit at the right
+    // edge, where the legend covered the last ones.
+    contentH = c->h - contentY - M - 28 - GAP;
     if (page == P_TOOLS)
       draw_tools(c);
     else
@@ -2093,11 +2127,11 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   }
   if (menuOpen && selected < shownCount) {
     const struct game *g = &games[shown[selected]];
-    const char *rows[4] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "INFO", "CANCEL"};
-    int w = 240, h = 2 * 6 + 24 + 4 * 24 + 4;
+    const char *rows[5] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "INFO", "HIDE", "CANCEL"};
+    int w = 240, h = 2 * 6 + 24 + 5 * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, g->title, rows, 4, menuCursor);
-    for (int i = 0; i < 4; i++)
+    int f = window(c, x, y, w, h, g->title, rows, 5, menuCursor);
+    for (int i = 0; i < 5; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_MENU, i);
   }
   if (infoOpen && selected < shownCount)
@@ -2235,7 +2269,7 @@ void library_pointer(int x, int y, bool click, int wheel) {
       return;
     }
     if (wheel) {
-      int n = menuOpen ? 4 : 2, dir = wheel > 0 ? -1 : 1;
+      int n = menuOpen ? 5 : 2, dir = wheel > 0 ? -1 : 1;
       for (int i = wheel > 0 ? wheel : -wheel; i > 0; i--)
         menuCursor = (menuCursor + dir + n) % n;
     }

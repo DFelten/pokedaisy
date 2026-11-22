@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[782] = {
+const struct pd_tr_entry pd_tr_table[786] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -257,10 +257,12 @@ const struct pd_tr_entry pd_tr_table[782] = {
     { "HELICOPTER", { "HELICOPTER", "HÉLICOPTÈRE", "HUBSCHRAUBER", "ELICOTTERO", "HELICÓPTERO", "HELICÓPTERO", "HELICÓPTERO" } },
     { "HERE", { "HERE", "ICI", "HIER", "QUI", "AQUÍ", "AQUI", "AQUI" } },
     { "HERE and BOSS come straight from the game's own data.", { "HERE and BOSS come straight from the game's own data.", "ICI et BOSS viennent des données du jeu.", "HIER und BOSS kommen direkt aus den Daten des Spiels.", "QUI e BOSS vengono dai dati del gioco.", "AQUÍ y JEFE salen de los datos del juego.", "AQUI e CHEFE vêm dos dados do jogo.", "AQUI e CHEFE vêm dos dados do jogo." } },
+    { "HIDDEN GAMES", { "HIDDEN GAMES", "JEUX MASQUÉS", "AUSGEBLENDETE SPIELE", "GIOCHI NASCOSTI", "JUEGOS OCULTOS", "JOGOS OCULTOS", "JOGOS OCULTOS" } },
     { "HIDDEN ITEM", { "HIDDEN ITEM", "OBJET CACHÉ", "VERSTECKTES ITEM", "STRUMENTO NASCOSTO", "OBJETO OCULTO", "ITEM ESCONDIDO", "ITEM ESCONDIDO" } },
     { "HIDDEN POWER", { "HIDDEN POWER", "PUIS. CACHÉE", "KRAFTRESERVE", "INTROFORZA", "POD. OCULTO", "PODER OCULTO", "PODER OCULTO" } },
     { "HIDDEN POWER  %s", { "HIDDEN POWER  %s", "PUISSANCE CACHÉE  %s", "KRAFTRESERVE  %s", "INTROFORZA  %s", "POD. OCULTO  %s", "PODER OCULTO  %s", "PODER OCULTO  %s" } },
     { "HIDDEN POWER  %s %d", { "HIDDEN POWER  %s %d", "PUISSANCE CACHÉE  %s %d", "KRAFTRESERVE  %s %d", "INTROFORZA  %s %d", "POD. OCULTO  %s %d", "PODER OCULTO  %s %d", "PODER OCULTO  %s %d" } },
+    { "HIDE", { "HIDE", "MASQUER", "AUSBLENDEN", "NASCONDI", "OCULTAR", "OCULTAR", "OCULTAR" } },
     { "HINT", { "HINT", "INDICE", "TIPP", "INDIZIO", "PISTA", "DICA", "DICA" } },
     { "HINT: %s", { "HINT: %s", "INDICE : %s", "TIPP: %s", "INDIZIO: %s", "PISTA: %s", "DICA: %s", "DICA: %s" } },
     { "HMs", { "HMs", "CS", "VMs", "MN", "MO", "MOs", "MOs" } },
@@ -273,6 +275,8 @@ const struct pd_tr_entry pd_tr_table[782] = {
     { "HP", { "HP", "PV", "KP", "PS", "PS", "PS", "PS" } },
     { "HUD", { "HUD", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "HUD CURSOR BUTTON", { "HUD CURSOR BUTTON", "BOUTON CURSEUR HUD", "HUD-CURSOR-TASTE", "TASTO CURSORE HUD", "BOTÓN CURSOR HUD", "BOTÃO CURSOR HUD", "BOTÃO CURSOR HUD" } },
+    { "Hidden games are back in the list", { "Hidden games are back in the list", "Les jeux masqués sont de retour dans la liste", "Die ausgeblendeten Spiele sind wieder in der Liste", "I giochi nascosti sono di nuovo nella lista", "Los juegos ocultos vuelven a estar en la lista", "Os jogos ocultos voltaram para a lista", "Os jogos ocultos voltaram à lista" } },
+    { "Hidden: SETTINGS > HIDDEN GAMES shows it again", { "Hidden: SETTINGS > HIDDEN GAMES shows it again", "Masqué : OPTIONS > JEUX MASQUÉS le réaffiche", "Ausgeblendet: EINSTELLUNGEN > AUSGEBLENDETE SPIELE zeigt es wieder", "Nascosto: OPZIONI > GIOCHI NASCOSTI lo mostra di nuovo", "Oculto: AJUSTES > JUEGOS OCULTOS lo vuelve a mostrar", "Oculto: CONFIGURAÇÕES > JOGOS OCULTOS mostra de novo", "Oculto: DEFINIÇÕES > JOGOS OCULTOS mostra-o de novo" } },
     { "How loud the game plays.", { "How loud the game plays.", "Le volume du jeu.", "Wie laut das Spiel ist.", "Il volume del gioco.", "El volumen del juego.", "O volume do jogo.", "O volume do jogo." } },
     { "How the game is drawn on the top screen: its own picture at a size, or EXPAND's map past its edges.", { "How the game is drawn on the top screen: its own picture at a size, or EXPAND's map past its edges.", "Comment le jeu s'affiche en haut : son image à une taille, ou la carte d'EXPAND au delà des bords.", "Wie das Spiel oben gezeigt wird: sein Bild in einer Größe oder die Karte von EXPAND über die Ränder hinaus.", "Come appare il gioco in alto: la sua immagine a una misura, o la mappa di EXPAND oltre i bordi.", "Cómo se ve el juego arriba: su imagen a un tamaño, o el mapa de EXPAND más allá de los bordes.", "Como o jogo aparece em cima: a imagem num tamanho, ou o mapa do EXPAND além das bordas.", "Como o jogo aparece em cima: a imagem num tamanho, ou o mapa do EXPAND além das margens." } },
     { "I UNDERSTAND", { "I UNDERSTAND", "COMPRIS", "VERSTANDEN", "HO CAPITO", "ENTENDIDO", "ENTENDI", "ENTENDI" } },
@@ -786,4 +790,4 @@ const struct pd_tr_entry pd_tr_table[782] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 782;
+const int pd_tr_table_count = 786;

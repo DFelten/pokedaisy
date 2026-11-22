@@ -228,7 +228,7 @@ and `HACKS`.
 | --- | --- |
 | D-pad | Moves through the games. Up from the top row reaches the views and the header's buttons, left reaches the rail. |
 | A | Plays the game. |
-| B | The game's menu: `PLAY`, `FAVORITE` or `UNFAVORITE`, and `INFO` (the file, its folder and size, the console, its SHA-1 and where its save is). |
+| B | The game's menu: `PLAY`, `FAVORITE` or `UNFAVORITE`, `INFO` (the file, its folder and size, the console, its SHA-1 and where its save is) and `HIDE`, which takes it off the list until `SETTINGS` > `HIDDEN GAMES` puts every hidden game back. |
 | Y | `SETTINGS`. |
 | X | Switches between covers and a list. |
 | L, R | The previous or next view. |
