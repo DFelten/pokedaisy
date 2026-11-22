@@ -989,13 +989,19 @@ private fun partyPictureScale(g: SlotGeometry): Int {
 }
 
 /**
- * Games that offer POKéMON PICTURES: Crystal, Gold and Silver (English and German, which run as those kinds). Their pictures
- * come from the same Gen 2 decoder the DEX uses (`Gen2Dex.frontPixels`: Gold / Silver through FixPicBank), shiny colours too.
+ * Games that offer POKéMON PICTURES: Crystal, Gold and Silver (English and German, which run as those kinds), from the same
+ * Gen 2 decoder the DEX uses (`Gen2Dex.frontPixels`: Gold / Silver through FixPicBank), shiny colours too; Yellow (every
+ * language) and Red / Blue (English and German; the Gen II Graphics builds run as RED / YELLOW too, with their own pictures):
+ * `Gen1Dex.frontPixels`, each species in its own palette (Yellow's Color ones, Red / Blue's Super Game Boy ones); Gen 1 has no
+ * shiny ones.
  */
 fun pokemonPicturesOffered(game: com.pokedaisy.app.companion.data.GameKind?): Boolean = when (game) {
     com.pokedaisy.app.companion.data.GameKind.CRYSTAL,
     com.pokedaisy.app.companion.data.GameKind.GOLD,
-    com.pokedaisy.app.companion.data.GameKind.SILVER -> true
+    com.pokedaisy.app.companion.data.GameKind.SILVER,
+    com.pokedaisy.app.companion.data.GameKind.YELLOW,
+    com.pokedaisy.app.companion.data.GameKind.RED,
+    com.pokedaisy.app.companion.data.GameKind.BLUE -> true
     else -> false
 }
 
