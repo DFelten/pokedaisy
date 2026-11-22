@@ -22,6 +22,7 @@ Script lines:
 | `cheat RUBY` | `retro_cheat_set`: the core runs the line as Ruby in the game (`$Trainer.party << Pokemon.new(:PIKACHU, 12)`); lines up to 8 KB |
 | `ram FILE` | `RETRO_MEMORY_SYSTEM_RAM` (the WASM heap Ruby lives in) |
 | `time` | frames run since the last `time`, ms per frame |
+| `mem` | resident memory now and its peak (`/proc/self/status`) |
 
 Preload scripts go in `<system dir>/mkxp-z/Scripts/Preload/` (copy `linux/pc_games/*.rb` there) and are switched on
 with `opt mkxp-z_preload-<file name in hex> enabled`; `pokedaisy_companion.rb` is
@@ -70,3 +71,33 @@ CMAKE_SYSTEM_PROCESSOR = 'aarch64'
 -Demscripten_threaded=false -Dbuildtype=release -Db_lto=false -Dstatic_libstdcpp=true && ninja -C build-a64`. The
 probe: `aarch64-linux-gnu-gcc ... -ldl -lEGL -lGL` against the arm64 Mesa packages (`dpkg --add-architecture arm64`,
 ports.ubuntu.com), run with `qemu-aarch64`. The glibc the core needs is the cross compiler's (2.38 on Ubuntu 24.04).
+
+### Android arm64, built on a Mac (2026-11-17)
+
+The Thor run (`docs/specs/pc-fan-games.md`'s "Android" section). Tools from Homebrew: `meson ninja binaryen
+universal-ctags make autoconf automake libtool gnu-sed grep gnu-tar coreutils findutils ruby`, and WASI SDK 30's
+`arm64-macos` tarball. Four things the Mac needs that Linux doesn't:
+
+- **GNU tools first on PATH** (`gnu-sed`, `grep`, `coreutils`, `findutils`, `libtool`, `make`'s `libexec/gnubin`): the
+  Makefile's `sed` uses `\w`, which BSD sed doesn't know (wabt's `config.h` came out as `#define  0HAVE_ALLOCA_H`).
+- **Homebrew's Ruby** (`/opt/homebrew/opt/ruby/bin` first): `sandbox-bindgen.rb` uses `ret[...-n]`, a syntax error in
+  macOS's Ruby 2.6.
+- **Ruby's own build serially**: `gmake -j1 ... $PWD/build/lib/Dist/bin/ruby` first, then `gmake -j12 ...` for the rest.
+  Its extensions raced under `-j12` here (`No rule to make target 'static'`, a missing `conftest.o`).
+- **Rewrite `mkxp-sandbox-ruby-func-types.h` after stage 1**: macOS's `/bin/sh` `echo` turns the rule's `\xNN` into raw
+  bytes, so the header holds binary and stage 2 fails with "source file is not valid UTF-8". Write each `#define` again
+  with 32 random bytes as literal `\xNN` escapes (names from the `FUNC_TYPE_DECL_EXTERN_T(...)` uses in
+  `mkxp-sandbox-ruby-impl.h`).
+
+Stage 2 is the core's own target: `gmake -f Makefile.libretro platform=android-arm64 ANDROID_NDK_CLANG=$NDK_LLVM
+ANDROID_NDK_LLVM=$NDK_LLVM NUMPROC=12`, where `NDK_LLVM` is `$NDK/toolchains/llvm/prebuilt/darwin-x86_64`
+(~1.5 min) -> `mkxp-z_libretro_android.so`. The probe:
+
+```
+$NDK_LLVM/bin/aarch64-linux-android29-clang -O2 -I../../third_party/mgba/src/platform/libretro \
+  -o pc_probe pc_probe.c -ldl -lEGL -lGLESv3
+```
+
+On the device everything goes in `/data/local/tmp/pc` (`adb shell` may run code there): the core, the probe, the game
+(streamed: `curl -sL <repo tarball> | adb shell 'cd game && tar xzf -'`), `system/mkxp-z/Scripts/Preload/` with
+`linux/pc_games/*.rb`, and a script. Shots come back as PPM (`sips -s format png` on the Mac).

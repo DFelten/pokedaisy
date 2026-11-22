@@ -253,10 +253,36 @@ A new game played headless from the title to Pallet Town with a starter, then sh
 - The probe walked the town with BFS over `Game_Player#passable?` handed to `force_move_route` (a `cheat` line): the
   player's own movement, no warps. Warping into Pallet Town before the intro had set the player up crashed its events.
 
+## Android: Infinite Fusion on the Thor (2026-11-17)
+
+The core built for `android-arm64` with the NDK (28.2, on a Mac: `native-capture/pc_probe/README.md`), 55 MB, and
+`pc_probe` built for Android (GLES 3.2 on a 1x1 pbuffer, run from `adb shell` in `/data/local/tmp`), on the AYN Thor
+(Snapdragon 8 Gen 2, Adreno 740, Android 13). Infinite Fusion 6.4.5 from its repo (2.0 GB unpacked), our two preloads on:
+
+- **It runs.** The core takes GLES 3.2 (it asks for desktop GL first, then `RETRO_HW_CONTEXT_OPENGLES_VERSION` 3.2) and
+  draws at 512x384. The title, the new-game intro and its first text boxes all drew right.
+- **Boot**: the first 120 frames take 24.2 s (the game compiling its scripts; 15 s on the x86 spike machine). Loading the
+  core and the game before that, 1.7 s.
+- **Frame times** (averages over a stretch, every third frame a dupe since the game runs at 40 of the core's 60): the
+  title loop 1.3-5.5 ms, the intro with its text box 10.6 ms, after a state load 3.6-3.8 ms. Well inside a 60 Hz frame
+  on average; worst frames not measured yet.
+- **Memory**: 480-680 MB resident while playing, peaks of 0.95-1.2 GB around a state save / load (the 512 MB buffer). Fine
+  on the Thor's 12 GB, still the risk on 2-4 GB devices.
+- **States**: `retro_serialize` 222 ms (512 MB raw), `retro_unserialize` 139 ms in the same process. Into a **fresh**
+  process: one frame (1.7 s, the core setting up) then `retro_unserialize` 1.03 s, and the game plays on from where it
+  was: about 2.8 s to resume against a 24 s cold boot. No zstd yet on Android (Linux's `pc_state.c` would add ~0.5 s).
+- **The mailbox works on Android too**: found by its magic in 223 ms over the heap, 2.6 KB of JSON (the type table, the
+  trainer, the scene), read in place.
+- Offline the title's two fusions are "?" placeholders (`HTTPLite` is a stub), as on Linux. The game's own message box
+  ("New default controls for controllers were copied") shows once on a fresh system folder.
+
+What it means: a phone-class chip runs it comfortably; what's left for the app is the host side (a GL context on the emu
+thread, input, audio, a game folder in the library) and a memory budget for weaker devices.
+
 ## Next steps
 
-1. Time Infinite Fusion on real hardware: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built against
-   an older glibc), and the core built with the NDK for the RP6: boot, ms a frame, heap, state save / load.
+1. Time Infinite Fusion on the other handhelds: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built
+   against an older glibc), and the Android core on the RP6 and a 4 GB device; worst frame times, not just averages.
 2. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
    with the patch.
 3. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.

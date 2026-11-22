@@ -2,17 +2,25 @@
  * EGL surfaceless (Mesa llvmpipe) GL context + an FBO for the core's hw render.
  * Build: cc -O2 -I../../third_party/mgba/src/platform/libretro -o pc_probe pc_probe.c -ldl -lEGL -lGL
  * Usage: pc_probe CORE.so GAME_PATH SYSDIR SAVEDIR SCRIPT
+ * Android (the Thor over adb): $NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android29-clang -O2
+ *   -I../../third_party/mgba/src/platform/libretro -o pc_probe pc_probe.c -ldl -lEGL -lGLESv3
  * SCRIPT lines: "run N" | "press BTN N" (hold a RetroPad button N frames) | "key KEY N" (a keyboard key: RETURN, ESCAPE,
  * BACKSPACE or one character) | "shot FILE.ppm"
- *               | "save FILE" | "load FILE" | "ram FILE" | "mbx FILE" | "cheat RUBY" | "time" | "opt KEY VALUE"
+ *               | "save FILE" | "load FILE" | "ram FILE" | "mbx FILE" | "cheat RUBY" | "time" | "mem" | "opt KEY VALUE"
  */
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <dlfcn.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#ifdef __ANDROID__
+/* Android (the Thor, adb shell): GLES 3.2 on the device's own driver, a 1x1 pbuffer as the surface. */
+#include <GLES3/gl32.h>
+#define GL_RGBA8_OR_ES GL_RGBA8
+#else
 #include <GL/gl.h>
 #include <GL/glext.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +51,12 @@ static retro_keyboard_event_t keyboard_cb;
 static struct { char k[96], v[96]; } opts[32]; static int nopts;
 static struct { char k[128], v[64]; } defs[512]; static int ndefs;
 
+#ifdef __ANDROID__
+typedef void (*PFNGLGENFRAMEBUFFERSPROC)(GLsizei, GLuint *); typedef void (*PFNGLBINDFRAMEBUFFERPROC)(GLenum, GLuint);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum, GLenum, GLenum, GLuint, GLint); typedef void (*PFNGLGENRENDERBUFFERSPROC)(GLsizei, GLuint *);
+typedef void (*PFNGLBINDRENDERBUFFERPROC)(GLenum, GLuint); typedef void (*PFNGLRENDERBUFFERSTORAGEPROC)(GLenum, GLenum, GLsizei, GLsizei);
+typedef void (*PFNGLFRAMEBUFFERRENDERBUFFERPROC)(GLenum, GLenum, GLenum, GLuint); typedef GLenum (*PFNGLCHECKFRAMEBUFFERSTATUSPROC)(GLenum);
+#endif
 static PFNGLGENFRAMEBUFFERSPROC glGenFramebuffers_; static PFNGLBINDFRAMEBUFFERPROC glBindFramebuffer_;
 static PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D_; static PFNGLGENRENDERBUFFERSPROC glGenRenderbuffers_;
 static PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer_; static PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage_;
@@ -52,7 +66,27 @@ static void logcb(enum retro_log_level l, const char *fmt, ...) {
   va_list ap; va_start(ap, fmt); fprintf(stderr, "[core %d] ", l); vfprintf(stderr, fmt, ap); va_end(ap);
 }
 static uintptr_t get_fb(void) { return fbo; }
+#ifdef __ANDROID__
+static void *gles_lib;
+static retro_proc_address_t get_proc(const char *s) {
+  /* core GLES functions from the library itself; extensions through EGL */
+  void *f = gles_lib ? dlsym(gles_lib, s) : NULL;
+  return (retro_proc_address_t)(f ? f : (void *)eglGetProcAddress(s));
+}
+#else
 static retro_proc_address_t get_proc(const char *s) { return (retro_proc_address_t)eglGetProcAddress(s); }
+#endif
+static void mem_line(const char *tag) {
+  /* resident memory now and at its peak (Linux / Android) */
+  FILE *f = fopen("/proc/self/status", "r"); char l[256], rss[64] = "?", hwm[64] = "?";
+  if (!f) return;
+  while (fgets(l, sizeof l, f)) {
+    if (!strncmp(l, "VmRSS:", 6)) sscanf(l + 6, " %63[^\n]", rss);
+    if (!strncmp(l, "VmHWM:", 6)) sscanf(l + 6, " %63[^\n]", hwm);
+  }
+  fclose(f);
+  fprintf(stderr, "probe: mem %s: rss %s, peak %s\n", tag, rss, hwm);
+}
 
 static bool env(unsigned cmd, void *data) {
   switch (cmd & 0xFFFF) {
@@ -62,9 +96,15 @@ static bool env(unsigned cmd, void *data) {
   case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: return *(enum retro_pixel_format *)data == RETRO_PIXEL_FORMAT_XRGB8888;
   case RETRO_ENVIRONMENT_SET_HW_RENDER: {
     struct retro_hw_render_callback *h = data;
+#ifdef __ANDROID__
+    bool es = h->context_type == RETRO_HW_CONTEXT_OPENGLES3 ||
+              (h->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION && h->version_major == 3 && h->version_minor <= 2);
+    if (!es) return false;
+#else
     if (h->context_type != RETRO_HW_CONTEXT_OPENGL_CORE || h->version_major > 3 || (h->version_major == 3 && h->version_minor > 3)) return false;
+#endif
     hw = *h; h->get_current_framebuffer = get_fb; h->get_proc_address = get_proc; hw = *h;
-    fprintf(stderr, "probe: hw render GL core %u.%u\n", h->version_major, h->version_minor);
+    fprintf(stderr, "probe: hw render type %d %u.%u\n", h->context_type, h->version_major, h->version_minor);
     return true;
   }
   case RETRO_ENVIRONMENT_GET_CAN_DUPE: *(bool *)data = true; return true;
@@ -165,6 +205,20 @@ int main(int argc, char **argv) {
   S(p_load, "retro_load_game") S(p_av, "retro_get_system_av_info") S(p_ser_size, "retro_serialize_size")
   S(p_ser, "retro_serialize") S(p_unser, "retro_unserialize") S(p_mem, "retro_get_memory_data") S(p_cheat, "retro_cheat_set") S(p_mem_size, "retro_get_memory_size")
 
+#ifdef __ANDROID__
+  gles_lib = dlopen("libGLESv3.so", RTLD_NOW | RTLD_LOCAL);
+  EGLDisplay dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  if (!eglInitialize(dpy, NULL, NULL)) { fprintf(stderr, "egl init failed\n"); return 1; }
+  eglBindAPI(EGL_OPENGL_ES_API);
+  EGLint cfgattr[] = {EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
+                      EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8, EGL_NONE};
+  EGLConfig cfg; EGLint n; eglChooseConfig(dpy, cfgattr, &cfg, 1, &n);
+  EGLint ctxattr[] = {EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 2, EGL_NONE};
+  EGLContext ctx = eglCreateContext(dpy, cfg, EGL_NO_CONTEXT, ctxattr);
+  EGLint pbattr[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
+  EGLSurface pb = n ? eglCreatePbufferSurface(dpy, cfg, pbattr) : EGL_NO_SURFACE;
+  if (!ctx || !eglMakeCurrent(dpy, pb, pb, ctx)) { fprintf(stderr, "egl ctx failed 0x%x\n", eglGetError()); return 1; }
+#else
   EGLDisplay dpy = eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA, EGL_DEFAULT_DISPLAY, NULL);
   if (!eglInitialize(dpy, NULL, NULL)) { fprintf(stderr, "egl init failed\n"); return 1; }
   eglBindAPI(EGL_OPENGL_API);
@@ -174,13 +228,14 @@ int main(int argc, char **argv) {
                       EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT, EGL_NONE};
   EGLContext ctx = eglCreateContext(dpy, n ? cfg : NULL, EGL_NO_CONTEXT, ctxattr);
   if (!ctx || !eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, ctx)) { fprintf(stderr, "egl ctx failed\n"); return 1; }
+#endif
   fprintf(stderr, "probe: GL %s / %s\n", glGetString(GL_VERSION), glGetString(GL_RENDERER));
-#define G(v, n) *(void **)&v = (void *)eglGetProcAddress(n);
+#define G(v, n) *(void **)&v = (void *)get_proc(n);
   G(glGenFramebuffers_, "glGenFramebuffers") G(glBindFramebuffer_, "glBindFramebuffer") G(glFramebufferTexture2D_, "glFramebufferTexture2D")
   G(glGenRenderbuffers_, "glGenRenderbuffers") G(glBindRenderbuffer_, "glBindRenderbuffer") G(glRenderbufferStorage_, "glRenderbufferStorage")
   G(glFramebufferRenderbuffer_, "glFramebufferRenderbuffer") G(glCheckFramebufferStatus_, "glCheckFramebufferStatus")
-  GLuint vao; void (*genva)(GLsizei, GLuint *) = (void *)eglGetProcAddress("glGenVertexArrays");
-  void (*bindva)(GLuint) = (void *)eglGetProcAddress("glBindVertexArray"); genva(1, &vao); bindva(vao);
+  GLuint vao; void (*genva)(GLsizei, GLuint *) = (void *)get_proc("glGenVertexArrays");
+  void (*bindva)(GLuint) = (void *)get_proc("glBindVertexArray"); genva(1, &vao); bindva(vao);
 
   FILE *sf = fopen(argv[5], "r"); char line[8192];
   /* options first: lines "opt K V" before anything else */
@@ -257,6 +312,8 @@ int main(int argc, char **argv) {
         FILE *f = fopen(a, "wb"); fwrite(m + at + 24, 1, len, f); fclose(f);
         fprintf(stderr, "probe: mailbox seq %u (%s), %u bytes -> %s\n", seq, seq & 1 ? "mid-write" : "whole", len, a);
       } else fprintf(stderr, "probe: no mailbox\n");
+    } else if (!strncmp(line, "mem", 3)) {
+      mem_line("now");
     } else if (!strncmp(line, "time", 4)) {
       fprintf(stderr, "probe: %ld frames in %.2fs = %.2f ms/frame (%.1f fps possible), video %ld (dupes %ld), audio frames %ld\n",
               run_frames, run_time, run_frames ? run_time * 1e3 / run_frames : 0, run_time > 0 ? run_frames / run_time : 0,
