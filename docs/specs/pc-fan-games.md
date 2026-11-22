@@ -348,6 +348,13 @@ the caught count); `GuideEntry.iconAsset` carries the game's icon. No AI notice 
 stand-ins (`find_valid_encounter_type_for_time`'s day / night pick, Land1 apart from Land) and by `PcGuideTest` / `PcCompanionTest` /
 `PcCompanionScreenshotTest`; not yet in a game. NEXT BOSS, WHERE IS and EVOLUTIONS would need each game's own data.
 
+One screen (2026-11-23): the companion is the GBA games' window over the running game (`PcCompanionWindow` over
+`SidePanelHost`, a third ComposeView in `PcGameActivity`): BACK or the right edge's tab opens it, BACK goes back in it then closes it,
+BACK held 600 ms closes the game, and a CLOSE GAME button sits on the dim (a gesture BACK can't be held; a PC game has no SETTINGS).
+While it's up the game's buttons are the window's (`CompanionKeys`, D-pad / A through Compose's focus, L / R step the tabs, START
+closes it, a stick push is one step) and none reaches the game. Its BATTLE tab is INFO / SUGGESTIONS only, as in every game's
+window. Two screens keep BACK twice. `PcWindowScreenshotTest` (RP6 size); not yet on a device.
+
 Not yet: picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
 for players to get the core.
 

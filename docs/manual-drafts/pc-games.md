@@ -38,8 +38,13 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 - The buttons and the stick work as in the game itself: A to pick, B to go back.
 - On a screen with no controller, the on-screen controls show, the same ones (and the same `TOUCH CONTROLS` settings)
   as in your other games, with X and Y too.
-- Press BACK twice to close the game.
-- With a second screen, the companion is there: your team (tap one for its summary, its moves and its stats), your
+- With two screens, the companion is on the other one. Press BACK twice to close the game.
+- With one screen, press BACK (or tap the small tab on the screen's right edge) to open the companion over the game,
+  which keeps running. Your buttons move around the companion while it's open, `L` and `R` switch its tabs, and BACK
+  closes it again. To close the game, hold BACK, or tap `CLOSE GAME` while the companion is open. The battle buttons
+  are only on a second screen; with one, the companion's BATTLE tab tells you about the battle and the game's own menu
+  picks.
+- The companion has your team (tap one for its summary, its moves and its stats), your
   bag and the MAP, every name and type as the game has them. The MAP is the game's own Town Map with where you are on it:
   tap a spot to see what it's called, or pick a place from `PLACES`. The GUIDE's HERE lists the wild Pokémon where you
   are right now: how to meet them, their levels and how often they show up. One you haven't seen yet stays hidden until

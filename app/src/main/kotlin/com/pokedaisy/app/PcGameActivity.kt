@@ -34,6 +34,8 @@ import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.activeGame
 import com.pokedaisy.app.companion.i18n.tr
 import com.pokedaisy.app.companion.ui.CompanionBack
+import com.pokedaisy.app.companion.ui.CompanionKeys
+import com.pokedaisy.app.companion.ui.MenuKey
 import com.pokedaisy.app.companion.ui.CompanionScreen
 import com.pokedaisy.app.companion.ui.OwnItemNames
 import com.pokedaisy.app.companion.ui.TouchControls
@@ -52,8 +54,10 @@ import kotlin.concurrent.thread
 /**
  * PC fan games (FeatureFlags.pcGames, a prototype; docs/specs/pc-fan-games.md): one Pokemon Essentials game on the
  * mkxp-z core ([PcCore]), drawn on this activity's GL thread. The game alone on the main screen; with a second screen
- * the companion there ([CompanionScreen]: PARTY with its summaries, and the bag), built from the game's own data through
- * our preload's mailbox ([PcCompanion]). BACK goes back in the companion first, then twice closes the game;
+ * the companion there ([CompanionScreen]: PARTY, BAG, MAP, GUIDE, BATTLE), built from the game's own data through our
+ * preload's mailbox ([PcCompanion]), BACK going back in it first, then twice closing the game. With one screen the
+ * companion is a window over the running game ([PcCompanionWindow]): BACK or the edge tab opens it, the game's buttons
+ * steer it while it's up, BACK held (or its CLOSE GAME) closes the game;
  * the games save in their own menus (their save folder is backed up before each start, [PcGames.backupSaves]).
  *
  * Resume: each pause and close writes a resume state ([PcGames.resumeState], the Ruby heap, ~100 MB gzipped) with the
@@ -67,6 +71,8 @@ class PcGameActivity : ComponentActivity() {
         /** The game's Game.ini. */
         const val EXTRA_GAME = "game"
         private const val TAG = "pokedaisy/pc"
+        /** BACK held this long closes the game (one screen). */
+        private const val BACK_HOLD_MS = 600L
     }
 
     private var gl: GLSurfaceView? = null
@@ -81,7 +87,19 @@ class PcGameActivity : ComponentActivity() {
     /** A real button played the game: AUTO's on-screen controls step aside, as PokeDaisyActivity's do. */
     private var physicalPadUsed by mutableStateOf(false)
     private var lastBack = 0L
+    /** When BACK went down (one screen: held, it closes the game), and whether that hold already did. */
+    private var backDownAt = 0L
+    private var backHeld = false
     private var presentation: DualScreenPresentation? = null
+    /** The companion is on a second screen; else it's [windowOpen] over the game. */
+    private var secondScreen by mutableStateOf(false)
+    /** One screen: the companion's window over the game, which keeps running under it. */
+    private var windowOpen by mutableStateOf(false)
+    /** The game's buttons for the window while it's open ([PcCompanionWindow]). */
+    private val companionKeys = CompanionKeys()
+    private var windowView: ComposeView? = null
+    /** The stick's directions the window last had, so a push is one step. */
+    private var stickKeys = 0
     private var ini: File? = null
     /** The state to load after the first frame (GL thread), or null. */
     @Volatile private var pendingResume: File? = null
@@ -104,6 +122,8 @@ class PcGameActivity : ComponentActivity() {
         val root = FrameLayout(this)
         // The app's own touch controls over the game (TOUCH CONTROLS' style and layout), then the notice over both.
         root.addView(ComposeView(this).apply { setContent { AppTheme { Touch() } } })
+        // One screen: the companion's window over the game, and the tab that opens it.
+        root.addView(CompanionColors.track(ComposeView(this)).also { windowView = it }.apply { setContent { AppTheme { Window() } } })
         root.addView(ComposeView(this).apply { setContent { AppTheme { Notice() } } })
         setContentView(root)
         if (ini == null || !ini.isFile) {
@@ -277,6 +297,7 @@ class PcGameActivity : ComponentActivity() {
         gl?.onPause()
         presentation?.dismiss()
         presentation = null
+        secondScreen = false
     }
 
     override fun onDestroy() {
@@ -304,6 +325,26 @@ class PcGameActivity : ComponentActivity() {
         presentation = DualScreenPresentation(this, display) { ctx: Context ->
             ComposeView(ctx).apply { setContent { AppTheme { CompanionScreen(snapshot = snapshot, back = companionBack, battleInput = battleInput) } } }
         }.also { runCatching { it.show() } }
+        secondScreen = true
+        closeWindow()
+    }
+
+    /** One screen: the companion over the game. The game's buttons are the window's while it's up, so none is left
+     * held in the game. */
+    private fun openWindow() {
+        if (secondScreen || notice != null || windowOpen) return
+        windowOpen = true
+        keyMask = 0
+        stickMask = 0
+        touchMask = 0
+        stickKeys = 0
+        sendInput()
+    }
+
+    private fun closeWindow() {
+        if (!windowOpen) return
+        windowOpen = false
+        windowView?.findFocus()?.clearFocus()
     }
 
     // ---- input -------------------------------------------------------------------------------------------------
@@ -330,14 +371,37 @@ class PcGameActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-            if (event.action == KeyEvent.ACTION_UP && !companionBack.back()) {
-                val now = SystemClock.uptimeMillis()
-                if (now - lastBack < 2000 || !started) closeGame() else {
-                    lastBack = now
-                    android.widget.Toast.makeText(this, tr("Press BACK again to close the game"), android.widget.Toast.LENGTH_SHORT).show()
+            if (secondScreen || !started) {
+                // The companion on the other screen: BACK is its back, and twice closes the game.
+                if (event.action == KeyEvent.ACTION_UP && !companionBack.back()) {
+                    val now = SystemClock.uptimeMillis()
+                    if (now - lastBack < 2000 || !started) closeGame() else {
+                        lastBack = now
+                        android.widget.Toast.makeText(this, tr("Press BACK again to close the game"), android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                return true
+            }
+            // One screen, as a GBA game's: a tap is the companion's (open it, then its back, then close it); held, it
+            // closes the game.
+            val now = SystemClock.uptimeMillis()
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
+                    backDownAt = now
+                    backHeld = false
+                } else if (!backHeld && now - backDownAt >= BACK_HOLD_MS) {
+                    backHeld = true
+                    closeGame()
+                }
+                KeyEvent.ACTION_UP -> if (!backHeld) {
+                    if (!windowOpen) openWindow() else if (!companionBack.back()) closeWindow()
                 }
             }
             return true
+        }
+        if (windowOpen) {
+            if (event.action == KeyEvent.ACTION_DOWN) menuKeyFor(event.keyCode)?.let { menuKey(it, event.repeatCount > 0) }
+            return bitFor(event.keyCode) >= 0 || super.dispatchKeyEvent(event)
         }
         val bit = bitFor(event.keyCode)
         if (bit < 0) return super.dispatchKeyEvent(event)
@@ -361,9 +425,44 @@ class PcGameActivity : ComponentActivity() {
         if (x > 0.5f) m = m or (1 shl PcCore.RIGHT)
         if (y < -0.5f) m = m or (1 shl PcCore.UP)
         if (y > 0.5f) m = m or (1 shl PcCore.DOWN)
+        if (windowOpen) {
+            // A push is one step of the window's cursor.
+            val pushed = m and stickKeys.inv()
+            stickKeys = m
+            for ((b, k) in listOf(PcCore.UP to MenuKey.UP, PcCore.DOWN to MenuKey.DOWN, PcCore.LEFT to MenuKey.LEFT, PcCore.RIGHT to MenuKey.RIGHT)) {
+                if (pushed and (1 shl b) != 0) menuKey(k, false)
+            }
+            return true
+        }
         stickMask = m
         sendInput()
         return true
+    }
+
+    /** A game button as the window reads it. */
+    private fun menuKeyFor(code: Int): MenuKey? = when (bitFor(code)) {
+        PcCore.UP -> MenuKey.UP
+        PcCore.DOWN -> MenuKey.DOWN
+        PcCore.LEFT -> MenuKey.LEFT
+        PcCore.RIGHT -> MenuKey.RIGHT
+        PcCore.A -> MenuKey.A
+        PcCore.B -> MenuKey.B
+        PcCore.L -> MenuKey.L
+        PcCore.R -> MenuKey.R
+        PcCore.START -> MenuKey.START
+        PcCore.SELECT -> MenuKey.SELECT
+        PcCore.X -> MenuKey.X
+        PcCore.Y -> MenuKey.Y
+        else -> null
+    }
+
+    /** The window's keys, as SidePanel's: B is the companion's back (then closes it), START closes it. */
+    private fun menuKey(key: MenuKey, repeat: Boolean) {
+        when (key) {
+            MenuKey.B -> if (!repeat && !companionBack.back()) closeWindow()
+            MenuKey.START -> if (!repeat) closeWindow()
+            else -> companionKeys.key(key, repeat)
+        }
     }
 
     private fun sendInput() = PcCore.pcInput(keyMask or stickMask or touchMask)
@@ -414,6 +513,21 @@ class PcGameActivity : ComponentActivity() {
     }
 
     private val PC_UNAVAILABLE = com.pokedaisy.app.companion.TouchButton.entries.filter { it.extra }.toSet()
+
+    /** One screen: [PcCompanionWindow] once the game shows (nothing on a second-screen device: the companion is there). */
+    @Composable
+    private fun Window() {
+        if (secondScreen || notice != null) return
+        val view = windowView ?: return
+        val dm = resources.displayMetrics
+        PcCompanionWindow(
+            open = windowOpen, snapshot = snapshot, back = companionBack, keys = companionKeys, battleInput = battleInput,
+            onOpen = ::openWindow, onClose = ::closeWindow, onCloseGame = { closeGame() },
+            focusKeys = { key, repeat, start -> sendFocusKey(view, key, repeat, start) },
+            // A big screen gets the companion's text a step smaller, as a GBA game's window does.
+            compactText = minOf(view.width / dm.xdpi, view.height / dm.ydpi) >= com.pokedaisy.app.companion.ui.COMPACT_TEXT_INCHES,
+        )
+    }
 
     @Composable
     private fun Notice() {
