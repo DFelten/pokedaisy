@@ -49,7 +49,7 @@ enum console { C_GB, C_GBC, C_GBA, C_DS };
 enum view { V_ALL, V_FAV, V_RECENT, V_GB, V_GBC, V_GBA, V_DS, V_HACKS, V_COUNT };
 enum page { P_GAMES, P_TOOLS, P_SETTINGS, P_COUNT };
 enum focus { F_RAIL, F_HEADER, F_PILLS, F_GAMES };
-enum sort { S_NAME, S_RECENT, S_COUNT };
+enum sort { S_NAME, S_RECENT, S_ADDED, S_COUNT }; // the app's NAME / LAST PLAYED / DATE ADDED
 enum { CS_NONE, CS_PATH, CS_READY, CS_FAILED };
 
 struct game {
@@ -57,6 +57,8 @@ struct game {
   enum console console;
   bool hack, fav, favSet, hasSave;
   unsigned long long played; // YYYYMMDDhhmmss, 0 = never
+  long long added;           // when the list first had it (seconds since 1970), 0 = not yet dated
+  bool addedInitial;         // dated with the whole list the first time (or a new folder's first scan): never NEW
   long size, mtime;
   char sha1[41];
   bool sha1Known, named;
@@ -78,6 +80,8 @@ static const struct lib_host *host;
 static struct pd_settings settings;
 static int page = P_GAMES, focus = F_GAMES, view = V_ALL, sortBy = S_NAME, railCursor, headerCursor;
 static bool grid = true, quit, menuOpen, closeAsk;
+static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
+static bool addedStore; // the state file has dates already: a game seen now for the first time is new
 static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
 static int selected, scroll, columns = 4, menuCursor, settingsCursor, settingsScroll, toolCursor;
 static const char *picked;
@@ -90,7 +94,7 @@ static int contentY, contentH, contentX, contentW;
 
 /* What the last draw laid out under the pointer: the same rectangles it drew, so clicks need no second copy of the layout. */
 enum {
-  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE,
+  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE, LIB_HIT_SORT_PICK,
 };
 struct lib_hit {
   int x, y, w, h, action, arg;
@@ -205,6 +209,8 @@ static void state_save(void) {
       fprintf(f, "fav\t%d\t%s\n", games[i].fav, games[i].file);
     if (games[i].played)
       fprintf(f, "played\t%llu\t%s\n", games[i].played, games[i].file);
+    if (games[i].added)
+      fprintf(f, "added\t%lld\t%d\t%s\n", games[i].added, games[i].addedInitial, games[i].file);
   }
   fclose(f);
 }
@@ -230,6 +236,16 @@ static void state_load(void) {
       by_file(file)->favSet = true;
     } else if (sscanf(line, "played\t%llu\t%255[^\n]", &t, file) == 2 && by_file(file))
       by_file(file)->played = t;
+    else {
+      long long when;
+      if (sscanf(line, "added\t%lld\t%d\t%255[^\n]", &when, &v, file) == 3) {
+        addedStore = true;
+        if (by_file(file)) {
+          by_file(file)->added = when;
+          by_file(file)->addedInitial = v != 0;
+        }
+      }
+    }
   }
   if (f)
     fclose(f);
@@ -944,6 +960,8 @@ static int compare(const void *a, const void *b) {
     return x->fav ? -1 : 1;
   if (sortBy == S_RECENT && x->played != y->played)
     return x->played > y->played ? -1 : 1;
+  if (sortBy == S_ADDED && x->added != y->added)
+    return x->added > y->added ? -1 : 1;
   int byTitle = strcasecmp(x->title, y->title);
   return byTitle ? byTitle : strcasecmp(x->file, y->file);
 }
@@ -1030,6 +1048,17 @@ void library_open(char *const *paths, int count, const char *data, const char *s
     check_saves(g);
   }
   state_load();
+  // DATE ADDED (the app's RomAdded): a game the list hasn't dated gets today; the whole list the first time the dates
+  // are kept is dated as it was (never NEW: an update mustn't tag every game NEW), later ones are new.
+  bool dated = false;
+  for (int i = 0; i < gameCount; i++)
+    if (!games[i].added) {
+      games[i].added = (long long)time(NULL);
+      games[i].addedInitial = !addedStore;
+      dated = true;
+    }
+  if (dated)
+    state_save();
   titles_load();
   // Each folder's gamelist.xml once.
   for (int i = 0; i < gameCount; i++) {
@@ -1212,6 +1241,17 @@ static void play(void) {
 }
 
 /* The game's B menu (PLAY / FAVORITE / CANCEL): A, or a click on its row. */
+static const char *const SORT_NAMES[S_COUNT] = {"NAME", "LAST PLAYED", "DATE ADDED"};
+static void sort_choose(int v) {
+  sortOpen = false;
+  if (v < 0 || v >= S_COUNT)
+    return;
+  sortBy = v;
+  say(v == S_NAME ? "Sorted by name" : v == S_RECENT ? "Sorted by last played" : "Sorted by date added");
+  relist();
+  state_save();
+}
+
 static void menu_choose(void) {
   if (selected < 0 || selected >= shownCount) {
     menuOpen = false;
@@ -1275,6 +1315,17 @@ void library_keys(unsigned down) {
     }
     if (down & (LIB_B | LIB_START | LIB_MENU))
       closeAsk = false;
+    return;
+  }
+  if (sortOpen) {
+    if (down & LIB_UP)
+      menuCursor = (menuCursor + S_COUNT - 1) % S_COUNT;
+    if (down & LIB_DOWN)
+      menuCursor = (menuCursor + 1) % S_COUNT;
+    if (down & LIB_A)
+      sort_choose(menuCursor);
+    if (down & (LIB_B | LIB_START))
+      sortOpen = false;
     return;
   }
   if (menuOpen) {
@@ -1360,8 +1411,8 @@ void library_keys(unsigned down) {
       focus = F_PILLS;
     if (down & LIB_A) {
       if (headerCursor == 0) {
-        sortBy = (sortBy + 1) % S_COUNT;
-        say(sortBy == S_NAME ? "Sorted by name" : "Sorted by last played");
+        sortOpen = true; // three orders: a pick-list (the app's), never a cycle
+        menuCursor = sortBy;
         relist();
       } else
         grid = !grid;
@@ -1697,10 +1748,22 @@ static void cover_well(struct pd_canvas *c, const struct game *g, int x, int y, 
   }
 }
 
+int ui_game_tag(struct pd_canvas *c, int x, int y, const char *text, uint32_t fill, uint32_t ink, int minW); // pd_ui_widgets.c
+
+// NEW (the app's green tag): a game the list first had in the last 24 hours, not dated with the whole list.
+static bool is_new(const struct game *g) {
+  return g->added && !g->addedInitial && (long long)time(NULL) - g->added < 24 * 60 * 60;
+}
+
 static void title_line(struct pd_canvas *c, const struct game *g, int x, int y, int w) {
-  int icons = (g->fav ? 13 : 0) + (g->hasSave ? 13 : 0);
+  int newW = is_new(g) ? ui_game_tag(NULL, 0, 0, "NEW", 0, 0, 0) + 3 : 0;
+  int icons = (g->fav ? 13 : 0) + (g->hasSave ? 13 : 0) + newW;
   pd_text_fit(c, x, y, w - icons, g->title, PD_LABEL, PD_LABEL_SHADOW);
   int ix = x + w - icons;
+  if (newW) {
+    ui_game_tag(c, ix + 2, y + 2, "NEW", 0x38A048, 0xFFFFFF, 0);
+    ix += newW;
+  }
   if (g->fav) {
     mono(c, &PD_ICON_STAR, ix + 2, y + 4, 1, pd_cur->favorite);
     ix += 13;
@@ -1920,12 +1983,12 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
   return f;
 }
 
-bool library_dimmed(void) { return menuOpen || closeAsk; }
+bool library_dimmed(void) { return menuOpen || closeAsk || sortOpen; }
 
 void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   pd_fill(c, 0, 0, c->w, c->h, clear);
   // The button legend, floating bottom right (the launcher's ButtonLegend).
-  if (!menuOpen && !closeAsk) {
+  if (!menuOpen && !closeAsk && !sortOpen) {
     static const char *const GAMES_LEGEND[][2] = {{"A", "OPEN"}, {"B", "OPTIONS"}, {"Y", "SETTINGS"}};
     static const char *const PAGE_LEGEND[][2] = {{"A", "CHOOSE"}, {"B", "BACK"}};
     bool gamesPage = page == P_GAMES;
@@ -1950,6 +2013,13 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
     int f = window(c, x, y, w, h, g->title, rows, 3, menuCursor);
     for (int i = 0; i < 3; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_MENU, i);
+  }
+  if (sortOpen) {
+    int w = 240, h = 2 * 6 + 24 + S_COUNT * 24 + 4;
+    int x = (c->w - w) / 2, y = (c->h - h) / 2;
+    int f = window(c, x, y, w, h, "SORT BY", SORT_NAMES, S_COUNT, menuCursor);
+    for (int i = 0; i < S_COUNT; i++)
+      hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_SORT_PICK, i);
   }
   if (closeAsk) {
     const char *rows[2] = {"YES", "NO"};
@@ -1998,7 +2068,7 @@ static void wheel_games(int dir) {
 }
 
 void library_menu_at(int x, int y) {
-  if (menuOpen || closeAsk || page != P_GAMES)
+  if (menuOpen || closeAsk || sortOpen || page != P_GAMES)
     return;
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
@@ -2014,6 +2084,13 @@ void library_pointer(int x, int y, bool click, int wheel) {
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
 
+  if (sortOpen) {
+    if (click)
+      sort_choose(h && h->action == LIB_HIT_SORT_PICK ? h->arg : -1); // beside it: closed, as B
+    else if (wheel)
+      menuCursor = (menuCursor + (wheel > 0 ? S_COUNT - 1 : 1)) % S_COUNT;
+    return;
+  }
   if (menuOpen || closeAsk) {
     if (click) {
       if (h && ((menuOpen && h->action == LIB_HIT_MENU) || (closeAsk && h->action == LIB_HIT_CLOSE))) {
@@ -2045,8 +2122,8 @@ void library_pointer(int x, int y, bool click, int wheel) {
       page = railCursor = h->arg;
       focus = F_GAMES;
     } else if (h->action == LIB_HIT_SORT) {
-      sortBy = (sortBy + 1) % S_COUNT;
-      say(sortBy == S_NAME ? "Sorted by name" : "Sorted by last played");
+      sortOpen = true;
+      menuCursor = sortBy;
       relist();
       state_save();
       focus = F_HEADER;

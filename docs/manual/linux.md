@@ -236,7 +236,8 @@ and `HACKS`.
 
 With a mouse, a click plays a game, a right click opens its menu, and the wheel scrolls the list.
 
-The header's first button sorts the games by name or by when you last played them; favorites always come first.
+The header's first button opens `SORT BY`: `NAME`, `LAST PLAYED` or `DATE ADDED`; favorites always come first. A game
+that turned up in the last day carries a green `NEW` tag (the games already there the first time aren't tagged).
 `SETTINGS` holds `DARK MODE`, `THEME` and `ASPECT` (shared with the companion in your games) and the program's own
 `LCD FILTER`, `FF SPEED`, `REWIND` and `A/B BUTTONS`. `BUTTON COLORS` paints the button legend like your device's
 buttons: `RED A` (the app's colours) or `GREEN A` (green A, red B, blue X, yellow Y). `TOOLS` lists the save tools that
