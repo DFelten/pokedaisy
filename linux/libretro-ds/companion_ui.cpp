@@ -25,11 +25,6 @@ extern "C" {
 namespace {
 constexpr int dsTabs=(1<<PD_TAB_PARTY)|(1<<PD_TAB_BAG)|(1<<PD_TAB_MAP)|(1<<PD_TAB_GUIDE)|(1<<PD_TAB_DEX);
 using Companion=DsCompanionUi;
-constexpr Companion::Row defaultOrder[]={
-  Companion::Layout,Companion::Hud,Companion::QuickStyle,Companion::CompanionButton,Companion::HudButton,Companion::TabBar,Companion::MoreTabs,
-  Companion::HudMinimal,Companion::Battles,Companion::BattleStrip,Companion::AutoRun,Companion::ScreenButton,Companion::PenSpeed,
-  Companion::DarkMode,Companion::Reset
-};
 // HUD opens the shared HUD page (pd_ui_settings.c's hud_page: on/off, LOOK, SIZE and each part), as on the GB/GBA cores;
 // HudSize, HudBalls, HudRepel and HudMap stay rows of the enum for settings files and apply(), not of the list.
 const char* const layoutNames[]={"ONE SCREEN","TOP","BOTTOM","SIDE BY SIDE","STACKED","LARGE + SMALL","PICTURE IN PICTURE"};
@@ -205,15 +200,45 @@ void DsCompanionUi::apply(int row,int v){
 
 /* The settings list: DS LAYOUT, then the app's SCREEN rows on a host with EXPAND (ASPECT always, ZOOM and AUTO ZOOM IN
  * while it's on), then the companion's own. Rebuilt when ASPECT changes and on load. */
+/* The list in the app's groups and order (FF / SPEED, GAMEPLAY, SCREEN, COMPANION, CONTROLS, APP), each under its heading
+ * (an entry -1 - group: a title, never the cursor's), a group with no rows left out; the frontend's own rows (Rows + i) in
+ * the group the frontend names. Rebuilt when ASPECT changes, on load and when the frontend's rows change. */
+namespace { const char* const groupNames[]={"FF / SPEED","GAMEPLAY","SCREEN","COMPANION","CONTROLS","APP"}; }
 void DsCompanionUi::build_order(){
   order.clear();
-  order.push_back(Layout);
+  size_t head=0;
+  auto begin=[&](int g){head=order.size();order.push_back(Row(-1-g));};
+  auto end=[&]{if(order.size()==head+1)order.pop_back();};
+  auto fronts=[&](const char* g){for(int i=0;i<frontCount;++i)if(frontGroup[i]==g)order.push_back(Row(Rows+i));};
+  begin(0);fronts("FF / SPEED");end();
+  begin(1);order.push_back(AutoRun);fronts("GAMEPLAY");end();
+  begin(2);
   if(hasExpand){
     order.push_back(Aspect);
     if(settings.aspect != PD_ASPECT_ORIGINAL){order.push_back(Zoom);order.push_back(AutoZoom);}
   }
-  for(const Row row:defaultOrder)if(row!=Layout)order.push_back(row);
-  if(std::find(order.begin(),order.end(),setting)==order.end())setting=hasExpand?Aspect:Layout;
+  order.push_back(Layout);order.push_back(Hud);order.push_back(HudMinimal);fronts("SCREEN");
+  order.push_back(CompanionButton);order.push_back(DarkMode);end();
+  begin(3);order.push_back(Battles);order.push_back(BattleStrip);order.push_back(TabBar);order.push_back(MoreTabs);
+  fronts("COMPANION");end();
+  begin(4);fronts("CONTROLS");order.push_back(QuickStyle);order.push_back(HudButton);order.push_back(ScreenButton);
+  order.push_back(PenSpeed);end();
+  begin(5);fronts("APP");order.push_back(Reset);end();
+  if(setting<0 || std::find(order.begin(),order.end(),setting)==order.end())setting=hasExpand?Aspect:Layout;
+}
+void DsCompanionUi::set_front_rows(int count,const char (*labels)[24],const char (*values)[24],const char (*groups)[16]){
+  count=std::clamp(count,0,FrontMax);
+  bool changed=count!=frontCount;
+  frontCount=count;
+  for(int i=0;i<count;++i){
+    if(frontLabel[i]!=labels[i] || frontGroup[i]!=groups[i])changed=true;
+    frontLabel[i]=labels[i];frontValue[i]=values[i];frontGroup[i]=groups[i];
+  }
+  if(changed)build_order();
+}
+void DsCompanionUi::open_front_rows(){
+  frame.tab=PD_TAB_SETTINGS;frame.overlay=PD_OVERLAY_NONE;picker=-1;
+  if(frontCount>0)setting=Rows;
 }
 void DsCompanionUi::draw_settings(pd_canvas* c){
   const auto& s=*snapshot;
@@ -224,11 +249,17 @@ void DsCompanionUi::draw_settings(pd_canvas* c){
     (settings.tabBar & dsTabs)==dsTabs?"NONE HIDDEN":"OPEN",hudButtonNames[settings.hudBtn],hudSizeNames[value(HudSize)],
     settings.aspect==PD_ASPECT_ORIGINAL?"ORIGINAL":"EXPAND",zoomNames[std::clamp(settings.zoom,0,3)],settings.autoZoom?"ON":"OFF"};
   constexpr int infoCount=3;
-  pd_option_row rows[Rows+infoCount]={{"PLACE",s.valid?ds_place(s.map,s.game):"-"},
+  pd_option_row rows[Rows+FrontMax+8+infoCount]={{"PLACE",s.valid?ds_place(s.map,s.game):"-"},
     {"MONEY",money},{"HOST","PokeDaisy core"}};
   int n=infoCount;
   for(const int row:order){
     if(row==setting)options.optionSelected=n;
+    if(row<0){rows[n++]={groupNames[-1-row],nullptr,true};continue;} // a group's heading
+    if(row>=Rows){ // the frontend's own: a page of its own where it has no value
+      const int f=row-Rows;
+      rows[n++]={frontLabel[f].c_str(),frontValue[f].empty()?">":frontValue[f].c_str()};
+      continue;
+    }
     rows[n++]={labels[row],values[row]};
   }
   pd_option_source source{"SETTINGS",rows,n,infoCount};
@@ -336,7 +367,12 @@ void DsCompanionUi::draw(pd_canvas* c,const DsCompanion& s,bool match,const DsMa
   frame.keyFocus=frame.tab==PD_TAB_BATTLE;
   pd_host_info host{};host.frontendOwnsPlayback=true;
   frame.keepBackdrop=true;
-  ds_companion_backdrop(c,this->game,frame.tab,pocket);
+  if(backdropFrame){
+    ds_companion_backdrop(backdropFrame,this->game,frame.tab,pocket);
+    pd_canvas_copy(c,0,0,backdropFrame,backdropX,backdropY,c->w,c->h);
+    // The bag's pocket colours put a header band in line with its rows: drawn on the canvas itself too.
+    if(frame.tab==PD_TAB_BAG)ds_companion_backdrop(c,this->game,frame.tab,pocket);
+  }else ds_companion_backdrop(c,this->game,frame.tab,pocket);
   // The D-pad cursor's row (its pressedId) must not overwrite the pointer's while a press is held: a tap's row is acted
   // on when the pointer comes up, a frame after it went down.
   if(!frame.touching)pd_ui_tab_menu_focus(&frame,choice);
@@ -416,7 +452,11 @@ bool DsCompanionUi::control(unsigned pressed){
   if(frame.tab==PD_TAB_SETTINGS){
     const int index=int(std::find(order.begin(),order.end(),setting)-order.begin());
     const int n=int(order.size());
-    setting=order[pd_ui_list_step(index<0||index>=n?0:index,n,dy)];
+    // Past the groups' headings: the cursor is only ever on a row (at the top, back to the first row).
+    int next=pd_ui_list_step(index<0||index>=n?0:index,n,dy);
+    while(next>0 && next<n-1 && order[next]<0)next+=dy<0?-1:1;
+    if(order[next]<0)next=next+1<n?next+1:index;
+    setting=order[next];
     if(hit(RETRO_DEVICE_ID_JOYPAD_B))return true;
     if(hit(RETRO_DEVICE_ID_JOYPAD_A))activate_setting();
     return false;
@@ -578,6 +618,8 @@ bool DsCompanionUi::control(unsigned pressed){
 // window. A tap on the row does the same.
 void DsCompanionUi::activate_setting(){
   error.clear();
+  if(setting<0)return; // a heading
+  if(setting>=Rows){frontPressed=setting-Rows;return;} // the frontend acts on it (PD_ENV_FRONT_ROWS)
   if(setting==Hud){
     frame.overlay=PD_OVERLAY_HUD;
     choice=0;
@@ -629,7 +671,7 @@ void DsCompanionUi::tap_act(int id){
     }
   }else if(id>=DS_HIT_DEX_SECTION && id<DS_HIT_DEX_SECTION+4){
     dexSection=static_cast<DsDexSection>(id-DS_HIT_DEX_SECTION);dexDetailRow=0;
-  }else if(id>=HIT_OPTION && id<HIT_OPTION+32){ // room for SETTINGS' longest list (18 rows with EXPAND)
+  }else if(id>=HIT_OPTION && id<HIT_OPTION+64){ // room for SETTINGS' longest list (its rows, headings and the host's)
     const int row=id-HIT_OPTION;
     if(picker>=0){
       const int which=picker;picker=-1;choice=std::clamp(row,0,count(which)-1);apply(which,choice);
@@ -637,7 +679,7 @@ void DsCompanionUi::tap_act(int id){
       // A tap on a PLACES row goes there at once, as A does.
       const int pick=std::clamp(placeFirst+row,0,std::max(0,int(mapPlaces.size())-1));
       if(pick< int(mapPlaces.size())){const auto pos=mapPlaces[pick].position;mapX=pos.x;mapY=pos.y;placeRow=mapAction=-1;}
-    }else if(frame.tab==PD_TAB_SETTINGS && row<int(order.size())){
+    }else if(frame.tab==PD_TAB_SETTINGS && row<int(order.size()) && order[row]>=0){
       setting=order[row];activate_setting();
     }
   }else if(id==DS_HIT_MAP){

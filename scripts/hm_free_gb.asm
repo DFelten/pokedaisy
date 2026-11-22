@@ -1,4 +1,4 @@
-; NO HMS NEEDED on the Game Boy (app/src/main/kotlin/com/pokedaisy/app/companion/data/HmFreeGb.kt): code of our own put
+; NO HMS NEEDED on the Game Boy (shared/src/commonMain/kotlin/com/pokedaisy/app/companion/data/HmFreeGb.kt): code of our own put
 ; in a bank's unused end, assembled per cart by scripts/gen_hm_free_gb.py with rgbasm (the addresses below come in as
 ; -D defines from pret's .sym for that cart). Each section is written over zero bytes the game never reads.
 ;

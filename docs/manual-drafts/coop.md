@@ -79,11 +79,12 @@ same Wi-Fi list stays empty, for example on a network that blocks discovery.
 
 `PARTNERS` lists every pairing, one row each, with the save it belongs to. A save has one partner. To pair it
 with someone else, tap the row and choose `UNPAIR` first. The same list is in the companion's SETTINGS.
+Finish a joined battle before unpairing your current partner. You can still remove a pairing for another save.
 
 ## Relay and relay only
 
 Players connect directly when they can. When they can't, a relay server passes the traffic along. A build
-comes with a relay of its own, or you type one. With no relay at all, only `SAME WI-FI` and `BY IP` work.
+comes with a relay of its own, or you type one. Finish a joined battle before changing the relay settings. With no relay at all, only `SAME WI-FI` and `BY IP` work.
 
 | Setting | What it does |
 | --- | --- |
@@ -244,3 +245,9 @@ answer, the row says it is waiting. It only turns on when both of you agree.
 ### Turning it off
 
 Tap the row and confirm. It can't be turned on again for those two games, so only turn it off when you mean it.
+
+## On iPhone and iPad (from link-play.md)
+
+On iPhone and iPad, open the library's `SETTINGS`, then `CO-OP` and `PAIR`. Pick a retail English Emerald save and send your friend the invite link or room code. On the same Wi-Fi, select them under `NEARBY` or enter their address under `BY IP`. You can use `RELAY ONLY` when playing over the internet with a configured relay.
+
+Open your paired saves to see each other in the game. When a nearby partner starts a supported battle, accept the prompt to join. In the companion's `CO-OP` settings, `PLAY TOGETHER ONLY` lets you agree to wait for each other before certain story events. Save in the game before leaving. Save-state loading and rewind are blocked while this mode is on, and cheats cannot be enabled while co-op is active.

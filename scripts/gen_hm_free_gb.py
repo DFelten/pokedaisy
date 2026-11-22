@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""NO HMS NEEDED's Game Boy patches (app/src/main/kotlin/com/pokedaisy/app/companion/data/HmFreeGbGen.kt).
+"""NO HMS NEEDED's Game Boy patches (shared/src/commonMain/kotlin/com/pokedaisy/app/companion/data/HmFreeGbGen.kt).
 
     DECOMPS=<dir> python3 scripts/gen_hm_free_gb.py      # needs rgbasm / rgblink (RGBDS) on PATH or in $RGBDS
 
@@ -17,7 +17,7 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASM = os.path.join(ROOT, "scripts", "hm_free_gb.asm")
-OUT = os.path.join(ROOT, "app/src/main/kotlin/com/pokedaisy/app/companion/data/HmFreeGbGen.kt")
+OUT = os.path.join(ROOT, "shared/src/commonMain/kotlin/com/pokedaisy/app/companion/data/HmFreeGbGen.kt")
 DECOMPS = os.environ.get("DECOMPS") or os.path.expanduser("~/Projects/tests/my-rom-hacks/build")
 RGBDS = os.environ.get("RGBDS", "")
 HERE = 0x7F00   # where our code goes in its bank: every cart's bank is zeros from well before it

@@ -937,14 +937,13 @@ static int chips_of(struct pd_canvas* c, const char* heading, int t1, int t2, in
         char label[12];
         snprintf(label, sizeof(label), "%.3s", pd_type_name(ui_game, t));
         for (char* q = label; *q; q++) if (*q >= 'a' && *q <= 'z') *q = (char) (*q - 32);
-        int cw = pd_text_width(label) + 6;
+        int cw = ui_game_tag(NULL, 0, 0, label, 0, 0, 0);
         if (cx + cw > x + w) {
             cx = x;
             y += 14;
             if (y + 13 > bottom) return y;
         }
-        pd_round_rect(c, cx, y + 1, cw, 12, 1, ui_type_color(t));
-        pd_text(c, cx + 3, y - 1, label, 0xFFFFFF, PD_NO_SHADOW);
+        ui_game_tag(c, cx, y + 1, label, ui_type_color(t), 0xFFFFFF, 0);
         cx += cw + 2;
     }
     return y + 14;
@@ -1086,50 +1085,40 @@ static void summary_info(struct pd_canvas* c, const struct pd_game* g, const str
     }
 }
 
-static void summary_chip(struct pd_canvas* c, int x, int y, int width, int type, const char* label) {
-    static const uint32_t colors[] = {0xa8a878,0xc03028,0xa890f0,0xa040a0,0xe0c068,0xb8a038,
-        0xa8b820,0x705898,0xb8b8d0,0x68a090,0xf08030,0x6890f0,0x78c850,0xf8d030,0xf85888,0x98d8d8,0x7038f8,0x705848};
-    if (width < 15) return;
-    uint32_t color = type >= 0 && type < (int)(sizeof colors / sizeof *colors) ? colors[type] : 0x8a8a8a;
-    const unsigned light = 3 * (color >> 16) + 6 * ((color >> 8) & 255) + (color & 255);
-    pd_round_rect(c, x, y, width, 13, 2, color);
-    pd_text_fit(c, x + 3, y - 1, width - 6, label, light >= 1220 ? 0x141820 : 0xffffff, PD_NO_SHADOW);
-}
-
-static void summary_stats_left(struct pd_canvas* c, const struct pd_summary_view* v, int w, int y, int bottom) {
+static void summary_stats_left(struct pd_canvas* c, const struct pd_summary_view* v, int x, int w, int y, int bottom) {
     const struct pd_mon_stats* st = v->stats;
     if (v->speciesName && strcmp(v->speciesName, v->name) && y + 15 <= bottom) {
-        pd_text_fit(c, 13, y, w, v->speciesName, PD_LABEL, PD_LABEL_SHADOW);
+        pd_text_fit(c, x, y, w, v->speciesName, PD_LABEL, PD_LABEL_SHADOW);
         y += 15;
     }
     if (st && st->hasNature && st->nature >= 0 && st->nature < pd_nature_names_count && y + 15 <= bottom) {
-        pd_text_fit(c, 13, y, w, pd_nature_names[st->nature], PD_LABEL, PD_LABEL_SHADOW);
+        pd_text_fit(c, x, y, w, pd_nature_names[st->nature], PD_LABEL, PD_LABEL_SHADOW);
         y += 15;
     }
     if (v->friendship >= 0 && y + 15 <= bottom) {
         char line[24];
         snprintf(line, sizeof line, pd_tr("FRIENDSHIP %d"), v->friendship);
-        pd_text_fit(c, 13, y, w, line, PD_LABEL, PD_LABEL_SHADOW);
+        pd_text_fit(c, x, y, w, line, PD_LABEL, PD_LABEL_SHADOW);
         y += 15;
     }
     if (v->heldItem && y + 30 <= bottom) {
-        pd_text(c, 13, y, pd_tr("HELD ITEM"), PD_MUTED, PD_MUTED_SHADOW);
-        pd_text_fit(c, 13, y + 15, w, v->heldItem, PD_LABEL, PD_LABEL_SHADOW);
+        pd_text(c, x, y, pd_tr("HELD ITEM"), PD_MUTED, PD_MUTED_SHADOW);
+        pd_text_fit(c, x, y + 15, w, v->heldItem, PD_LABEL, PD_LABEL_SHADOW);
     }
 }
 
-static void summary_stats_right(struct pd_canvas* c, const struct pd_summary_view* v, int x, int w, int bottom) {
+// STATS in the right block, from [top]: a row per stat (the nature's in red / blue), its IV and EV.
+static void summary_stats_right(struct pd_canvas* c, const struct pd_summary_view* v, int x, int w, int top, int bottom) {
     const struct pd_mon_stats* s = v->stats;
-    pd_text(c, x, 12, pd_tr("STATS"), PD_MUTED, PD_MUTED_SHADOW);
     if (!s || !s->valid) {
-        pd_text_wrap(c, x, 37, w, pd_lh(15), 3, pd_tr("Stats unavailable for this cartridge."), PD_LABEL, PD_LABEL_SHADOW);
+        pd_text_wrap(c, x, top + 2, w, pd_lh(15), 3, pd_tr("Stats unavailable for this cartridge."), PD_LABEL, PD_LABEL_SHADOW);
         return;
     }
     static const int order[] = {0,1,2,4,5,3}, gen1Order[] = {0,1,2,4,3};
     static const char* const labels[] = {"HP","ATK","DEF","SP. ATK","SP. DEF","SPEED"};
     static const char* const gen1Labels[] = {"HP","ATK","DEF","SPECIAL","SPEED"};
-    const int ev = x + w - 3, iv = ev - (s->hasEvs ? 30 : 0), stat = iv - (s->hasIvs ? 29 : 0);
-    const int top = 33, row = 16;
+    const int ev = x + w, iv = ev - (s->hasEvs ? 30 : 0), stat = iv - (s->hasIvs ? 29 : 0);
+    const int row = 16;
     pd_text_right(c, stat, top, pd_tr("STAT"), PD_MUTED, PD_MUTED_SHADOW);
     if (s->hasIvs) pd_text_right(c, iv, top, v->dvs ? pd_tr("DV") : pd_tr("IV"), PD_MUTED, PD_MUTED_SHADOW);
     if (s->hasEvs) pd_text_right(c, ev, top, pd_tr("EV"), PD_MUTED, PD_MUTED_SHADOW);
@@ -1139,6 +1128,7 @@ static void summary_stats_right(struct pd_canvas* c, const struct pd_summary_vie
     int total = 0;
     for (int j = 0; j < n; j++) {
         const int i = v->gen1 ? gen1Order[j] : order[j], y = top + (j + 1) * row;
+        if (j & 1) pd_fill(c, x - 4, y - 1, w + 8, row, pd_mix(PD_TITLE_FILL, PD_LABEL, 20)); // banded rows (the app's cells)
         char text[36];
         snprintf(text, sizeof text, "%s%s", pd_tr(v->gen1 ? gen1Labels[j] : labels[j]),
                  i == raised ? " +" : i == lowered ? " -" : "");
@@ -1155,9 +1145,9 @@ static void summary_stats_right(struct pd_canvas* c, const struct pd_summary_vie
             total += s->evs[i];
         }
     }
-    int y = top + (n + 1) * row;
+    int y = top + (n + 1) * row + 2;
     char text[52];
-    if (s->hasEvs) {
+    if (s->hasEvs && y + 15 <= bottom) {
         snprintf(text, sizeof text, pd_tr("EV TOTAL  %d"), total);
         pd_text_right(c, ev, y, text, PD_MUTED, PD_MUTED_SHADOW);
         y += row;
@@ -1170,8 +1160,23 @@ static void summary_stats_right(struct pd_canvas* c, const struct pd_summary_vie
     }
 }
 
+// The summary's blocks (MonDetailScreen's cells): its window, a header band with the block's name in white, the body under
+// it. Where the page's blocks start and how tall their header is.
+#define SUMMARY_TOP 4
+#define SUMMARY_HEAD 15
+#define LEARN_ROW 17
+static int summary_block(struct pd_canvas* c, int x, int y, int w, int h, const char* title) {
+    const int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+    const uint32_t head = pd_cur->title[0].color;
+    pd_fill(c, x + f, y + f, w - 2 * f, SUMMARY_HEAD, head);
+    pd_text_fit(c, x + f + 4, pd_text_y(y + f, SUMMARY_HEAD), w - 2 * f - 8, pd_tr(title), 0xFFFFFF, pd_mix(head, 0, 45));
+    return f;
+}
+
+// Where the learn list's rows start, and how many fit: the right block's body on a canvas [height] tall (above the tab bar).
+static int learn_top(void) { return SUMMARY_TOP + 3 + SUMMARY_HEAD + 4; }
 static int learn_rows(int height) {
-    const int rows = (height - 32 - 32) / 17;
+    const int rows = (height - 28 - 4 - learn_top()) / LEARN_ROW;
     return rows > 0 ? rows : 1;
 }
 
@@ -1182,15 +1187,16 @@ int pd_ui_summary_learn_last(int height, int count) {
 
 static void summary_learn(struct pd_canvas* c, const struct pd_summary_view* v, int x, int w, int bottom) {
     const struct pd_summary_learn* list = v->learn;
-    pd_text_fit(c, x, 12, w, pd_tr("LEVEL-UP MOVES"), PD_MUTED, PD_MUTED_SHADOW);
+    const int top = learn_top();
     if (!list || list->count <= 0) {
-        pd_text_fit(c, x, 37, w, list && list->count == 0 ? pd_tr("No level-up moves.") : pd_tr("No learnset data."), PD_LABEL, PD_LABEL_SHADOW);
+        pd_text_fit(c, x, top, w, list && list->count == 0 ? pd_tr("No level-up moves.") : pd_tr("No learnset data."), PD_LABEL, PD_LABEL_SHADOW);
         return;
     }
     const int visible = learn_rows(c->h), last = pd_ui_summary_learn_last(c->h, list->count);
     const int first = list->first < 0 ? 0 : list->first > last ? last : list->first;
     for (int i = first; i < list->count && i < first + visible; i++) {
-        const int y = 32 + (i - first) * 17;
+        const int y = top + (i - first) * LEARN_ROW;
+        if ((i - first) & 1) pd_fill(c, x - 4, y - 1, w + 8, LEARN_ROW, pd_mix(PD_TITLE_FILL, PD_LABEL, 20));
         char scratch[48], level[12];
         const struct pd_summary_learn_row move = list->row(list->ctx, i, scratch, sizeof scratch);
         if (move.level) snprintf(level, sizeof level, "Lv%d", move.level);
@@ -1198,102 +1204,127 @@ static void summary_learn(struct pd_canvas* c, const struct pd_summary_view* v, 
         pd_text(c, x, y, level, move.level > v->level ? PD_VALUE : PD_MUTED, PD_MUTED_SHADOW);
         pd_text_fit(c, x + 42, y, w - 47, move.name, PD_LABEL, PD_LABEL_SHADOW);
     }
-    ui_scroll_bar(c, x + w - 2, 32, bottom - 32, first * 17, list->count * 17, PD_MUTED);
+    ui_scroll_bar(c, x + w - 2, top, bottom - top, first * LEARN_ROW, list->count * LEARN_ROW, PD_MUTED);
 }
 
+// The summary (MonDetailScreen): two blocks side by side, INFO (the Pokémon: its picture, level, types, HP and EXP bars,
+// what it's weak to / resists) and MOVES (a cell per move: its type tag and name, PWR and PP) - or STATS / LEVEL-UP MOVES.
 void pd_ui_summary_page(struct pd_canvas* c, const struct pd_summary_view* v, enum pd_summary_page page) {
-    const int w = c->w - 8, h = c->h - 32, side = w * 46 / 100, rx = side + 16, rw = c->w - rx - 12;
-    pd_title_box(c, 4, 4, w, h, PD_TITLE_FILL);
-    pd_list_box(c, 11, 13, 34, 34);
-    v->icon(v->ctx, c, v->selected, 12, 14, false);
-    pd_text_fit(c, 49, 12, side - 40, v->name, PD_LABEL, PD_LABEL_SHADOW);
+    const int W = c->w - 8, H = c->h - 32, lw = W * 48 / 100, gap = 3;
+    const int f = summary_block(c, 4, SUMMARY_TOP, lw, H, "INFO");
+    const int bx = 4 + f + 4, bw = lw - 2 * f - 8, bottom = SUMMARY_TOP + H - f - 2;
+    int y = SUMMARY_TOP + f + SUMMARY_HEAD + 3;
+    const int rx0 = 4 + lw + gap, rw0 = W - lw - gap;
+    summary_block(c, rx0, SUMMARY_TOP, rw0, H, page == PD_SUMMARY_STATS ? "STATS" : page == PD_SUMMARY_LEARN ? "LEVEL-UP MOVES" : "MOVES");
+    const int rx = rx0 + f + 4, rw = rw0 - 2 * f - 8, rtop = SUMMARY_TOP + f + SUMMARY_HEAD;
+    // The name, then the picture in its well with the level and types beside it.
+    pd_text_fit(c, bx, y, bw, v->name, PD_LABEL, PD_LABEL_SHADOW);
+    y += 15;
+    pd_list_box(c, bx, y, 34, 34);
+    v->icon(v->ctx, c, v->selected, bx + 1, y + 1, false);
     if (v->egg) {
-        pd_text(c, 14, 58, pd_tr("It will hatch in time."), PD_MUTED, PD_MUTED_SHADOW);
+        pd_text_wrap(c, bx, y + 40, bw, pd_lh(15), 3, pd_tr("It will hatch in time."), PD_MUTED, PD_MUTED_SHADOW);
         return;
     }
     char line[48];
-    snprintf(line, sizeof line, "Lv%d", v->level);
-    pd_text(c, 49, 28, line, PD_VALUE, PD_VALUE_SHADOW);
-    pd_text_right(c, side + 7, 28, v->hp ? pd_status_label(v->status) : pd_tr("FNT"), PD_VALUE, PD_VALUE_SHADOW);
-    const int types[] = {v->type1, v->type2};
-    int x = 49;
-    for (int i = 0; i < 2; i++) {
-        if (types[i] < 0 || (i && types[i] == types[0])) continue;
-        const char* label = pd_type_name(v->game, types[i]);
-        if (!*label) continue;
-        int width = pd_text_width(label) + 6;
-        if (width > side + 8 - x) width = side + 8 - x;
-        summary_chip(c, x, 45, width, types[i], label);
-        x += width + 3;
+    const int tx = bx + 38;
+    const int lvW = pd_text(c, tx, y + 1, "Lv", PD_LABEL, PD_LABEL_SHADOW);
+    snprintf(line, sizeof line, "%d", v->level);
+    pd_text(c, tx + lvW, y + 1, line, PD_VALUE, PD_VALUE_SHADOW);
+    const char* status = v->hp ? pd_status_label(v->status) : pd_tr("FNT");
+    if (*status) pd_text_right(c, bx + bw, y + 1, status, PD_VALUE, PD_VALUE_SHADOW);
+    // The types under the level, the game's own tags where its ROM has them; two that don't fit there side by side (the DS
+    // games' long names) put the first one beside the level instead.
+    int shown[2], n = 0;
+    if (v->type1 >= 0 && *pd_type_name(v->game, v->type1)) shown[n++] = v->type1;
+    if (v->type2 >= 0 && v->type2 != v->type1 && *pd_type_name(v->game, v->type2)) shown[n++] = v->type2;
+    int need = 0;
+    for (int i = 0; i < n; i++) need += ui_type_badge_for(NULL, 0, 0, v->game, shown[i]) + 3;
+    int x = tx;
+    const bool split = n == 2 && tx + need - 3 > bx + bw && !*status;
+    for (int i = 0; i < n; i++) {
+        if (split && i == 0) {
+            ui_type_badge_for(c, tx + lvW + pd_text_width(line) + 5, y + 2, v->game, shown[i]);
+            continue;
+        }
+        x += ui_type_badge_for(c, x, y + 19, v->game, shown[i]) + 3;
     }
-    pd_fill(c, side + 11, 12, 1, h - 16, PD_DIVIDER);
-    const int bar = side - 4;
-    pd_text(c, 13, 60, pd_tr("HP"), PD_MUTED, PD_MUTED_SHADOW);
+    y += 38;
+    // HP and EXP: the label in red, the bar, the numbers at the end (the app's summary).
     snprintf(line, sizeof line, "%d/%d", v->hp, v->maxHp);
-    pd_text_right(c, side + 8, 60, line, PD_LABEL, PD_LABEL_SHADOW);
-    const uint32_t color = v->hp * 5 <= v->maxHp ? 0xDA4A48 : v->hp * 2 <= v->maxHp ? 0xD8A52E : 0x4D9A58;
-    pd_fill(c, 13, 75, bar, 5, PD_DIVIDER);
-    if (v->maxHp > 0) pd_fill(c, 13, 75, bar * (v->hp < v->maxHp ? v->hp : v->maxHp) / v->maxHp, 5, color);
-    int y = 85;
+    summary_bar(c, bx, y, bw, pd_tr("HP"), line, v->hp, v->maxHp,
+                v->hp * 5 <= v->maxHp ? 0xF04838 : v->hp * 2 <= v->maxHp ? 0xF8C838 : 0x60D048);
+    y += 15;
     if (v->hasExperience) {
-        pd_text(c, 13, 82, pd_tr("EXP"), PD_MUTED, PD_MUTED_SHADOW);
         if (v->expPercent >= 0) {
             if (v->level >= 100) snprintf(line, sizeof line, "%s", pd_tr("MAX"));
             else snprintf(line, sizeof line, pd_tr("NEXT %lu"), (unsigned long)v->toNext);
-            pd_fill(c, 13, 97, bar, 5, PD_DIVIDER);
-            pd_fill(c, 13, 97, v->expPercent * bar / 100, 5, 0x5883BF);
-        } else snprintf(line, sizeof line, "%lu", (unsigned long)v->experience);
-        pd_text_right(c, side + 8, 82, line, PD_VALUE, PD_VALUE_SHADOW);
-        y = 107;
+            summary_bar(c, bx, y, bw, pd_tr("EXP"), line, v->expPercent, 100, EXP_BLUE);
+        } else {
+            pd_text(c, bx, y, pd_tr("EXP"), PD_VALUE, PD_VALUE_SHADOW);
+            snprintf(line, sizeof line, "%lu", (unsigned long)v->experience);
+            pd_text_right(c, bx + bw, y, line, PD_LABEL, PD_LABEL_SHADOW);
+        }
+        y += 15;
     }
+    pd_fill(c, bx, y + 1, bw, 1, PD_DIVIDER);
+    y += 4;
     if (page == PD_SUMMARY_STATS) {
-        summary_stats_left(c, v, bar, y, h);
-        summary_stats_right(c, v, rx, rw, h);
+        summary_stats_left(c, v, bx, bw, y, bottom);
+        summary_stats_right(c, v, rx, rw, rtop + 3, bottom);
         return;
     }
+    // Each heading with its tags on the same line, wrapping under it (the header band leaves no room for a line of its own).
     static const char* const headings[] = {"WEAK TO","RESISTS","IMMUNE TO"};
     for (int group = 0; group < 3; group++) {
-        x = 13;
+        bool started = false;
         for (int type = 0; type < 32; type++) {
             const char* label = pd_type_name(v->game, type);
             if (!*label || v->type1 < 0) continue;
             const int pct = pd_type_multiplier_pct(v->game, type, v->type1, v->type2);
             if (!(group == 0 ? pct > 100 : group == 1 ? pct > 0 && pct < 100 : pct == 0)) continue;
-            if (x == 13) {
-                if (y + 27 > h) break;
-                pd_text(c, x, y, pd_tr(headings[group]), PD_MUTED, PD_MUTED_SHADOW);
-                y += 14;
+            const int chip = ui_matchup_tag(NULL, 0, 0, v->game, type, pct); // "GROUND 2x", as the app's summary
+            if (!started) {
+                // The heading only with room for its first tag too (beside it, else on the line under it).
+                const int headW = pd_text_width(pd_tr(headings[group])) + 5;
+                if (y + (bx + headW + chip > bx + bw ? 14 : 0) + UI_TAG_H > bottom) break;
+                x = bx + pd_text(c, bx, y, pd_tr(headings[group]), PD_LABEL, PD_LABEL_SHADOW) + 5;
+                started = true;
             }
-            const char* amount = pct == 400 ? " 4x" : pct == 200 ? " 2x" : pct == 50 ? " .5x" : pct == 25 ? " .25x" : "";
-            snprintf(line, sizeof line, "%s%s", label, amount);
-            const int chip = pd_text_width(line) + 6;
-            if (x + chip > side + 9) { x = 14; y += 14; }
-            if (y + 13 > h) break;
-            summary_chip(c, x, y, chip, type, line);
+            if (x + chip > bx + bw) { x = bx + 1; y += 14; }
+            if (y + UI_TAG_H > bottom) break;
+            ui_matchup_tag(c, x, y + 1, v->game, type, pct);
             x += chip + 3;
         }
-        if (x != 13) y += 14;
+        if (started) y += 15;
     }
     if (page == PD_SUMMARY_LEARN) {
-        summary_learn(c, v, rx, rw, h);
+        summary_learn(c, v, rx, rw, bottom);
         return;
     }
-    pd_text(c, rx, 12, pd_tr("CURRENT MOVES"), PD_MUTED, PD_MUTED_SHADOW);
-    const int step = (h - 32) / PD_NUM_MOVES;
+    // A cell per move, banded: its type tag and name, then PWR and PP at the right, the numbers in red.
+    const int cellX = rx0 + f, cellW = rw0 - 2 * f, cellsH = SUMMARY_TOP + H - f - rtop, cell = cellsH / PD_NUM_MOVES;
     for (int i = 0; i < PD_NUM_MOVES; i++) {
+        const int top = rtop + i * cell, h = i == PD_NUM_MOVES - 1 ? cellsH - i * cell : cell;
+        if (i & 1) pd_fill(c, cellX, top, cellW, h, pd_mix(PD_TITLE_FILL, PD_LABEL, 20));
+        if (i) pd_fill(c, cellX, top, cellW, 1, PD_DIVIDER);
         const struct pd_summary_move* move = &v->moves[i];
         if (!move->name) continue;
-        const int top = 30 + i * step;
-        pd_text_fit(c, rx, top, rw - 3, move->name, PD_LABEL, PD_LABEL_SHADOW);
-        char power[12] = "-";
+        const int ty = top + (h - 31) / 2;
+        int nx = rx;
+        if (*pd_type_name(v->game, move->type)) nx += ui_type_badge_for(c, rx, ty + 1, v->game, move->type) + 4;
+        pd_text_fit(c, nx, ty, rx + rw - nx, move->name, PD_LABEL, PD_LABEL_SHADOW);
+        char power[12] = "-", pp[12];
         if (move->power == 1) snprintf(power, sizeof power, "VAR");
         else if (move->power > 1) snprintf(power, sizeof power, "%d", move->power);
-        snprintf(line, sizeof line, pd_tr("PWR %s PP %d"), power, move->pp);
-        pd_text_right(c, rx + rw - 3, top + 15, line, PD_VALUE, PD_VALUE_SHADOW);
-        const char* label = pd_type_name(v->game, move->type);
-        int chip = rw - pd_text_width(line) - 8, need = pd_text_width(label) + 6;
-        if (*label) summary_chip(c, rx, top + 15, chip < need ? chip : need, move->type, label);
-        if (i != PD_NUM_MOVES - 1) pd_fill(c, rx, top + step - 4, rw, 1, PD_DIVIDER);
+        snprintf(pp, sizeof pp, "%d", move->pp);
+        int px = rx + rw - pd_text_width(pp);
+        pd_text(c, px, ty + 16, pp, PD_VALUE, PD_VALUE_SHADOW);
+        px -= pd_text_width(pd_tr("PP")) + 3;
+        pd_text(c, px, ty + 16, pd_tr("PP"), PD_LABEL, PD_LABEL_SHADOW);
+        px -= pd_text_width(power) + 8;
+        pd_text(c, px, ty + 16, power, PD_VALUE, PD_VALUE_SHADOW);
+        pd_text_right(c, px - 3, ty + 16, pd_tr("PWR"), PD_LABEL, PD_LABEL_SHADOW);
     }
 }
 
@@ -1634,9 +1665,8 @@ void ui_mon_summary(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
 // A BEST / OUT tag at the slot's top right (VerdictPill).
 static void slot_tag(struct pd_canvas* c, int x, int y, int w, const char* text, uint32_t fill) {
     text = pd_tr(text);
-    int tw = pd_text_width(text) + 6;
-    pd_round_rect(c, x + w - tw - 4, y + 7, tw, 13, 2, fill);
-    pd_text(c, x + w - tw - 1, y + 5, text, 0xFFFFFF, PD_NO_SHADOW);
+    int tw = ui_game_tag(NULL, 0, 0, text, 0, 0, 0);
+    ui_game_tag(c, x + w - tw - 4, y + 7, text, fill, 0xFFFFFF, 0);
 }
 
 void ui_party_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g, const struct pd_snapshot* s,

@@ -78,7 +78,7 @@
 //                        Image.open("x.ppm").save("x.png")'` converts it
 //   cheat TYPE CODE    - add a cheat (TYPE auto/cb/gs/ar, CODE's lines joined by
 //                        '+') and load the list into the core the way the app
-//                        does (app/src/main/cpp/pk_cheats.c, compiled in below)
+//                        does (shared/src/commonMain/cpp/pk_cheats.c, compiled in below)
 //   cheatclear         - take every cheat out again
 //   gbpark SPIN        - GB: park the main loop on SPIN (a `jr @`) once interrupts are on
 //                        (the app's pkRenderGbPark); a SPIN in WRAM gets the `jr @` written first
@@ -90,7 +90,8 @@
 //   gbpoke BANK ADDR BYTE.. - GB (hex): write WRAM bank BANK's bytes at ADDR
 //   gbpeek BANK ADDR N - GB (hex): print N bytes of WRAM bank BANK at ADDR (C000-CFFF ignores the bank)
 //   gbwram - GB: C000-DFFF and FF80-FFFE as one hex line, stdout flushed (a harness reading the game every frame)
-//   gbcallat AT FN A B HL - GB (hex): the game calls FN (A, B, HL) from its loop at AT, back there after (pk_gb_call_at)
+//   gbsram BANK ADDR N - the cart RAM bank BANK at ADDR (A000-BFFF), N bytes
+//   gbcallat AT FN A B HL - GB (hex): the game calls FN (A, B, HL) from its loop at AT (BBAAAA: AAAA in bank BB), back there after (pk_gb_call_at)
 //   gbvdump DIR        - GB: VRAM (both banks), OAM and the Color palettes into DIR
 //   rompatch AT EXPECT ADDR VALUE - a game option's ROM patch the way the app makes it
 //                        (pk_cheats_patch; hex, EXPECT / VALUE as byte strings):
@@ -192,44 +193,48 @@
 // repo is there to compile it from (the capture scripts mount native-capture/
 // alone; mount the repo root and build from native-capture/ to get it).
 #if defined(__has_include)
-#if __has_include("../app/src/main/cpp/pk_cheats.c")
-#include "../app/src/main/cpp/pk_cheats.c"
+#if __has_include("../shared/src/commonMain/cpp/pk_cheats.c")
+#include "../shared/src/commonMain/cpp/pk_cheats.c"
 #define HAVE_PK_CHEATS 1
-#if __has_include("../app/src/main/cpp/pk_coop.c")
-#include "../app/src/main/cpp/pk_coop.c"
-#include "../app/src/main/cpp/pk_coop_field.c"
-#include "../app/src/main/cpp/pk_coop_after.c"
+#if __has_include("../shared/src/commonMain/cpp/pk_coop.c")
+#include "../shared/src/commonMain/cpp/pk_coop.c"
+#include "../shared/src/commonMain/cpp/pk_coop_field.c"
+#include "../shared/src/commonMain/cpp/pk_coop_after.c"
 // coop-field (plan 4 Task 7)
 // coop-after (plan 4 Task 8)
 // romcheck's last counts (and the mark romchecksame compares to)
 static int lastRomDiffs[3], markRomDiffs[3];
-#include "../app/src/main/cpp/pk_coop_lock.c"   // coop-lock (plan 5 Task 5)
-#include "../app/src/main/cpp/pk_coop_link.c"   // the link bridge (plan 6 Task 1)
-#include "../app/src/main/cpp/pk_coop_link_start.c"   // task 2: a joined trainer battle starts as a link battle
-#include "../app/src/main/cpp/pk_coop_link_wild.c"   // task 3: wild as a link battle
-#include "../app/src/main/cpp/pk_coop_link_story.c"   // task 6: story battles
-#include "../app/src/main/cpp/pk_coop_link_drop.c"   // a dropped link (plan 6 Task 7)
-#include "../app/src/main/cpp/pk_coop_link_rewards.c"   // task 4: EXP, the BAG and catching in a link battle
-#include "../app/src/main/cpp/pk_coop_link_end.c"   // task 5: the end of a joined link battle
+#include "../shared/src/commonMain/cpp/pk_coop_lock.c"   // coop-lock (plan 5 Task 5)
+#include "../shared/src/commonMain/cpp/pk_coop_link.c"   // the link bridge (plan 6 Task 1)
+#include "../shared/src/commonMain/cpp/pk_coop_link_start.c"   // task 2: a joined trainer battle starts as a link battle
+#include "../shared/src/commonMain/cpp/pk_coop_link_wild.c"   // task 3: wild as a link battle
+#include "../shared/src/commonMain/cpp/pk_coop_link_story.c"   // task 6: story battles
+#include "../shared/src/commonMain/cpp/pk_coop_link_drop.c"   // a dropped link (plan 6 Task 7)
+#include "../shared/src/commonMain/cpp/pk_coop_link_rewards.c"   // task 4: EXP, the BAG and catching in a link battle
+#include "../shared/src/commonMain/cpp/pk_coop_link_end.c"   // task 5: the end of a joined link battle
 #define HAVE_PK_COOP 1
 #endif
 #endif
-#if __has_include("../app/src/main/cpp/pk_wide.c")
-#include "../app/src/main/cpp/pk_wide.c"
-#include "../app/src/main/cpp/pk_wide_gb.c"
-#include "../app/src/main/cpp/pk_gb_field.c"
+#if __has_include("../shared/src/commonMain/cpp/pk_wide.c")
+#include "../shared/src/commonMain/cpp/pk_wide.c"
+#include "../shared/src/commonMain/cpp/pk_wide_gb.c"
+#include "../shared/src/commonMain/cpp/pk_gb_field.c"
 #define HAVE_PK_WIDE 1
 #endif
-#if __has_include("../app/src/main/cpp/pk_flight.c")
-#include "../app/src/main/cpp/pk_flight.c"
+#if __has_include("../shared/src/commonMain/cpp/pk_flight.c")
+#include "../shared/src/commonMain/cpp/pk_flight.c"
 #define HAVE_PK_FLIGHT 1
 #endif
-#if __has_include("../app/src/main/cpp/pk_perf.h")
-#include "../app/src/main/cpp/pk_perf.h"
+#if __has_include("../shared/src/commonMain/cpp/pk_gb_follow.c")
+#include "../shared/src/commonMain/cpp/pk_gb_follow.c"
+#define HAVE_PK_GB_FOLLOW 1
+#endif
+#if __has_include("../shared/src/commonMain/cpp/pk_perf.h")
+#include "../shared/src/commonMain/cpp/pk_perf.h"
 #define HAVE_PK_PERF 1
 #endif
-#if __has_include("../app/src/main/cpp/pk_gb_audio.c")
-#include "../app/src/main/cpp/pk_gb_audio.c"
+#if __has_include("../shared/src/commonMain/cpp/pk_gb_audio.c")
+#include "../shared/src/commonMain/cpp/pk_gb_audio.c"
 #define HAVE_PK_GB_AUDIO 1
 #endif
 #endif
@@ -455,6 +460,9 @@ static void frameOne(void) {
     pk_flight_tick(core);   // FREE FLIGHT (`flighton`): its step after every frame, like the app's pkRunFrame
     if (sizeof(color_t) == 4 && core->platform(core) == mPLATFORM_GBA) pk_flight_draw((uint32_t*) video, 240, 160, (int) videoW, !wideOn);
 #endif
+#ifdef HAVE_PK_GB_FOLLOW
+    if (sizeof(color_t) == 4 && core->platform(core) == mPLATFORM_GB) pk_gb_follow_frame(core, (uint32_t*) video, 160, 144, (int) videoW);
+#endif
 #ifdef HAVE_PK_WIDE
     if (partnerTrack) {
         partnerOk = pk_partner_self(core, partnerSelf);
@@ -633,6 +641,13 @@ static void cmdDump(const char* outDir) {
             snprintf(path, sizeof(path), "%s/wramx.bin", outDir);
             FILE* f = fopen(path, "wb");
             if (f) { fwrite(gb->memory.wram, 1, GB_SIZE_WORKING_RAM, f); fclose(f); }
+        }
+        // The cart's battery RAM as the game has it now (every bank, 0x2000 each): Gen 2 keeps its PC boxes there
+        // (FixtureMemoryReader maps bank B's A000-BFFF at Gen2Reader's cartRam(B, addr)).
+        if (gb->memory.sram && gb->sramSize) {
+            snprintf(path, sizeof(path), "%s/sram.bin", outDir);
+            FILE* f = fopen(path, "wb");
+            if (f) { fwrite(gb->memory.sram, 1, gb->sramSize, f); fclose(f); }
         }
         fprintf(stderr, "mgba_dump: dumped wram+hram to %s (frame %u)\n", outDir, core->frameCounter(core));
         return;
@@ -1660,6 +1675,16 @@ int main(int argc, char** argv) {
             printf("gbpeek %x:%04x:", bank, addr);
             for (unsigned k = 0; k < cnt; k++) printf(" %02x", buf[k]);
             printf("\n");
+        } else if (!strcmp(cmd, "gbsram")) {
+            // gbsram BANK ADDR N: the cart's battery RAM, bank BANK's A000-BFFF, whatever the game has open (the app's
+            // cartRam reads): the boxes after a call that closed SRAM again.
+            unsigned bank = 0, addr = 0, cnt = 1;
+            sscanf(line, "%*s %x %x %x", &bank, &addr, &cnt);
+            struct GB* gb = core->platform(core) == mPLATFORM_GB ? core->board : NULL;   // NULL: not a Game Boy game
+            size_t at = (size_t) bank * 0x2000 + (addr - 0xA000);
+            printf("gbsram %x:%04x:", bank, addr);
+            for (unsigned k = 0; gb && k < cnt && gb->memory.sram && addr >= 0xA000 && at + k < gb->sramSize; k++) printf(" %02x", gb->memory.sram[at + k]);
+            printf("\n");
         } else if (!strcmp(cmd, "gbwram")) {
             // gbwram: C000-DFFF then FF80-FFFE over the bus, one hex line, flushed - for a harness that reads the game
             // every frame through a pipe (the battle controls run against the running game: BrownLiveControlsTest).
@@ -1673,7 +1698,7 @@ int main(int argc, char** argv) {
             // from the overworld loop).
             unsigned at = 0, fn = 0, a = 0, b = 0, hl = 0;
             sscanf(line, "%*s %x %x %x %x %x", &at, &fn, &a, &b, &hl);
-            bool ok = pk_gb_call_at(core, (uint16_t) at, (uint16_t) fn, (uint8_t) a, (uint8_t) b, (uint16_t) hl, 2);
+            bool ok = pk_gb_call_at(core, (uint32_t) at, (uint16_t) fn, (uint8_t) a, (uint8_t) b, (uint16_t) hl, at > 0xFFFF ? 4 : 2);
             printf("gbcallat %04x -> %04x(a=%02x): %s\n", at, fn, a, ok ? "called" : "THE LOOP DIDN'T COME BY");
         } else if (!strcmp(cmd, "gbinject")) {
             // gbinject TRAMP BANK ADDR [AT]: make the game itself call BANK:ADDR from where it waits for the next frame,
@@ -3118,6 +3143,29 @@ int main(int argc, char** argv) {
             char info[300];
             pk_flight_info(core, info, sizeof(info));
             printf("%s\n", info);
+#endif
+#ifdef HAVE_PK_GB_FOLLOW
+        } else if (!strcmp(cmd, "gbfollow")) {
+            // gbfollow CRC FILE: Crystal's FOLLOWER with the cart's CRC32 (hex) and its two 16 x 16 frames, 512 ARGB
+            // ints little-endian (FILE "-" = none); shown from then on, as the app does with FOLLOWER on
+            unsigned crc = 0;
+            sscanf(line, "%*s %x %255s", &crc, arg1);
+            pk_gb_follow_configure(crc);
+            static uint32_t px[512];
+            FILE* f = strcmp(arg1, "-") ? fopen(arg1, "rb") : NULL;
+            bool ok = f && fread(px, 4, 512, f) == 512;
+            if (f) fclose(f);
+            pk_gb_follow_set(ok ? px : NULL);
+            pk_gb_follow_show(1);
+            printf("gbfollow: crc %08x known %d icon %d\n", crc, pk_gb_follow_knows(crc), ok);
+        } else if (!strcmp(cmd, "gbfollowshow")) {
+            int on = 1;
+            sscanf(line, "%*s %d", &on);
+            pk_gb_follow_show(on);
+        } else if (!strcmp(cmd, "gbfollowinfo")) {
+            char info[200];
+            pk_gb_follow_info(info, sizeof(info));
+            printf("gbfollowinfo: %s\n", info);
 #endif
         } else if (!strcmp(cmd, "followinfo")) {
             char info[200];

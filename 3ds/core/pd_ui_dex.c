@@ -163,7 +163,11 @@ int pd_ui_dex_filters(struct pd_ui* ui, struct pd_canvas* c, const int counts[4]
         ui_add_hit(ui, innerX, line, innerW, rowH, id);
         if (!i) ui_row_divider(c, innerX + 2, line + rowH - 1, innerW - 4);
     }
-    if (tall) pd_text_fit(c, innerX + 3, c->h - 47, innerW - 6, pd_tr("SELECT  FILTER"), PD_MUTED, PD_MUTED_SHADOW);
+    // SELECT's hint over the region's button, never under it (a taller list window put the button over the words).
+    if (tall) {
+        const int hintY = region && !extra ? c->h - MARGIN - f - 25 - 18 : c->h - 47;
+        pd_text_fit(c, innerX + 3, hintY, innerW - 6, pd_tr("SELECT  FILTER"), PD_MUTED, PD_MUTED_SHADOW);
+    }
     if (region && extra) {
         ui_button(ui, c, x, filterY + filterH + gap, w, buttonH, region, HIT_DEX_TOGGLE);
     } else if (region) {
