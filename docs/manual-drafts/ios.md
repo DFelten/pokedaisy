@@ -33,7 +33,37 @@ before anything is added. A code you add starts on, but the master switch still 
 on; `REMOVE` changes the list into codes you can remove after confirmation. Codes and their on/off choices are
 kept for this ROM when you reopen the game. Game Boy cheats are not supported by the current engine.
 
+## From companion.md
+
+In a supported GBA game on iPhone or iPad, choose a hero under `SETTINGS` > `MAKEOVER` > `PLAYER LOOK`. Import a compatible GBA game to supply its hero's graphics. Your choice is saved for the current game, and `OFF` restores its original look.
+
+`PLAYER LOOK` can also show Pokémon from your current party when their costume graphics are available. Add a compatible game with follower sprites to your library. The picker uses the same sprite cache as `FOLLOWER`.
+
+In Ruby, Sapphire and Emerald, `RIVAL LOOK` starts on. Pick a `PLAYER LOOK` to dress your rival as the other hero of that game when their graphics are available. Turn it off to keep your rival's original look.
+
+`TEXT LOOK` changes the dialogue boxes and compatible fonts in supported GBA games when you have a compatible game's style in your library. The choice is saved for the current game and can be used together with `PLAYER LOOK`. Choose `OFF` to return to the game's own text.
+
+On supported GBA carts, `RIDE ON` replaces the bike's look with a `MOTORCYCLE` or `SCOOTER`. Get on your bike as usual. Choose `BIKE` to restore the original look.
+
+In supported GBA games, `SETTINGS` > `GAMEPLAY` > `AUTO REFILL` uses another Repel from your bag before the current one runs out. It adds the new Repel's steps to the steps you had left.
+
+On iPhone and iPad, open `SETTINGS` > `MAKEOVER` > `FOLLOWER` while playing a supported GBA game. The first Pokémon in your party that isn't an Egg follows you on foot and waits while you surf. To supply its sprite, import a compatible game with its own followers, such as Emerald Seaglass, into your library. The row can show `N/A` while PokeDaisy scans your games.
+
+## From nuzlocke.md
+
+On iPhone and iPad, enable `NUZLOCKE` in the companion's `SETTINGS` > `GAMEPLAY` in a supported GBA game. The `NUZLOCKE` tab shows your run's encounters, rules, and fainted Pokémon. The run stays with the ROM when you close it or turn off tracking, and the same warning setting controls the optional notices over the game.
+
+## From battle.md
+
+On iPhone and iPad, `LAST BALL` is available in supported FireRed, LeafGreen and Emerald games and compatible GBA hacks. In the `GEN 4` battle style, the shared ball button throws the last ball you used, or the first ball in your bag if that kind is gone. It appears in eligible wild battles. Turn it off under `SETTINGS` > `COMPANION` > `LAST BALL`.
+
 ## From controls.md
+
+On iPhone and iPad, `SETTINGS` > `GAMEPLAY` includes `LOW HP BEEP` and `FIELD POISON` where the GBA game's code supports them. Turn off `LOW HP BEEP` to silence the warning during battle. Turn off `FIELD POISON` to prevent damage from poison while walking. Poison still works in battle.
+
+On iPhone and iPad, `SETTINGS` > `GAMEPLAY` > `BOSS RETRY` is available in supported GBA games. After losing a trainer battle, choose `RETRY` to return to the stored start of that battle. `UNDO LOAD` returns you to the moment before you retried.
+
+In a supported GBA game on iPhone or iPad, turn on `SETTINGS` > `GAMEPLAY` > `SHINY ALERT` to start a hunt. The row counts wild battles for the current game. A shiny foe stops fast-forward and held turbo, shows its name and the count over the game, then resets the count. The alert uses your touch vibration setting for haptic feedback.
 
 #### iPhone and iPad bindings
 
@@ -196,3 +226,125 @@ features the app could not verify. The iOS library does not offer the `INFO` mat
 
 This works the same on Android and iPad. A failed refresh keeps your last readable copy. Pictures you have opened
 stay available offline until a newer manual replaces them.
+
+## Moved with the shared runtime (#1264 - #1279)
+
+The iPhone and iPad text the shared-runtime stack wrote into the live manual, by page.
+
+### From achievements.md
+
+In the library, open `SETTINGS` and tap `RetroAchievements`.
+
+### From bag.md
+
+This works on Android, iPhone and iPad through the same verified game screens.
+
+### From battle.md
+
+On iPhone and iPad the battle buttons sit just inside the right edge and can overlap the picture when space is tight.
+
+### From boxes.md
+
+On iPhone and iPad, SWAP, DEPOSIT and WITHDRAW use the same verified GBA PC operations as Android. The supported games and checks for a changed Pokémon, Mail, full boxes or party, and your last battler remain the same.
+
+### From companion.md
+
+On iPhone and iPad, `DAY AND NIGHT` is also in the shared `SETTINGS` under `MAKEOVER`, with the same clock and game support as Android.
+
+On iPhone and iPad, tips appear over the game in supported GBA games. The app waits for a clear field before showing one.
+
+On iPhone and iPad, `FLY STYLE`, `FLIGHT AREA` and `FLY ON` use the same supported GBA games and flight behavior as Android. Choose `TAKE OFF` on the map or quick menu to fly yourself, then `LAND` or `B` to land. With `SCENIC`, a destination connected by a route you may cross is flown over the map; other destinations use `CLASSIC` where the game supports it. `EXPAND` zooms out during the scenic journey. Your seen-map limit stays on unless you choose `ANYWHERE`.
+
+### From controls.md
+
+`IMPORT SKIN` is in `TOUCH CONTROLS` on iPhone and iPad.
+
+iPhone and iPad use the same skins, settings and touch areas as Android. Import a skin from Files; cancelling leaves your choices in place.
+
+This setting is also available on iPhone and iPad, using the same supported games and wild-foe checks as Android.
+
+`SHINY ODDS`, `SHINY ALERT`, `EXP SHARE`, `LEVEL CAP` and `NO HMS NEEDED` are also available on iPhone and iPad, with the same supported games.
+
+### From fast-forward.md
+
+On iPhone and iPad, `SPED-UP` is the default. Choose `STEADY` to keep supported Game Boy, Game Boy Color and GBA songs at their original tempo. Once the recording is ready it keeps playing through `SMART` menus. `OFF` restores game sound whenever `SMART` returns to normal speed.
+
+`CLICK SOUND` plays a short menu sound when a companion button is pressed on Android, iPhone or iPad. It uses a recording made from a supported GBA cartridge on your device and follows the game volume and mute settings.
+
+### From hud.md
+
+The same field HUD appears in supported GBA games when you hold the device sideways. It waits for the field
+to settle, then hides during battles and game menus. In portrait, the companion below the game shows this information.
+Open `SETTINGS` > `HUD` to change its layout, look, size and visible parts. Your choices are kept for the next game.
+The HUD makes room for your touch controls. Its party, map, bag and wild windows use the same screens and supported
+field actions as the companion. Opening `QUICK MENU` closes any open HUD window.
+
+`BATTLE BUTTONS` also work in supported single battles when you hold the device sideways. On iPhone and iPad,
+they can sit over the game when there is too little room beside it. `FIGHT`, the party list and `RUN` use the same battle controls as the companion. They stay hidden until
+the game can read battle commands, and during double battles. Opening the companion window or `QUICK MENU` hides them.
+The action buttons stay near the right edge when the space next to them is clear. They move left if a touch
+control overlaps that space. On a short landscape screen the battle buttons can line up in a row when they fit
+between the touch controls. If no space is clear, use the regular game controls. You can turn battle buttons off independently of the field HUD.
+
+HUD windows and battle move/party lists take your controller and bound keyboard buttons while they are open.
+Opening one finishes text entry in the companion and dismisses its keyboard. Text fields inside the new window
+still work normally.
+`B` or `START` backs out of the current overlay. Held gameplay buttons must be released before they can play again.
+WILD's `KEEP OPEN` keeps gameplay available. The Quick Menu shortcut still works from a modal overlay;
+editing controls or capturing a binding keeps priority over it.
+
+### From library.md
+
+On iPhone and iPad, use `+ → PATCH A ROM` or `TOOLS → PATCH A ROM` and choose the patch in Files. First add the clean GBA, Game Boy or Game Boy Color base ROM to your library. The patched copy is saved to `PokeDaisy/roms` in Files and is ready to play from the library.
+
+To rename a game on iPhone and iPad, touch and hold it, or tap the menu button in list view.
+
+On iPhone and iPad, touch and hold a game and choose `INFO` to see its ROM header and fingerprints, battery save and backups, and occupied save-state slots. For a cartridge PokeDaisy recognizes by its fingerprint, the game details can show its catalog name. In list view you can also open `INFO` from the game’s menu button.
+
+### From link-play.md
+
+In Link Play, the touch controls play the highlighted game.
+
+### From party.md
+
+The same trade-evolution setting and native game scene work on Android, iPhone and iPad. Target previews keep held items in place; the game consumes an evolution item only when the confirmed evolution needs it.
+
+On iPhone and iPad, `HEAL THE PARTY` and the Quick Menu's `HEAL` use the same verified GBA healing script as
+Android. The game restores HP, PP and status and plays its own jingle. `NICKNAME` and `FORGET A MOVE` also use the
+same verified game services on both platforms. Naming opens the game's own screen; forgetting keeps the game's
+checks for your current party and moves. `RELEARN A MOVE` also opens the game's own Move Tutor screen on both
+platforms, where its code and move lists are recognized. Games only offer services whose code PokeDaisy recognizes.
+
+### From save-trade.md
+
+On iPhone and iPad, `SAVE EDITOR` works with supported GBA saves from FireRed, LeafGreen, Emerald, Ruby and Sapphire. Open it from `TOOLS` or the game's menu. Saving keeps a copy of the previous battery save under `PokeDaisy/saves/pokedaisy-backups` and makes the game start from the edited save on its next launch.
+
+On iPhone and iPad, `MISSING` scans your supported GBA saves and opens a trade with the Pokémon selected.
+
+On iPhone and iPad, use `TRADE SAVES` for the supported GBA games. Each game needs a readable battery save.
+
+On iPhone and iPad, `COLLECTION` lists Pokémon from your supported GBA saves. Tap a Pokémon to open its save in the editor or pick it for a trade.
+
+### From saves.md
+
+On iPhone and iPad, `RESTORE BACKUP` lists the copies made before playing as well as the dated copies kept by `LOAD SAVE`. They are kept under `PokeDaisy/saves` in Files. Restoring keeps the current save and starts the game from the selected save on the next launch.
+
+### From screen.md
+
+On iPhone and iPad, use `SETTINGS` > `ASPECT` to pick `ORIGINAL`, `STRETCH` or `EXPAND`. Supported GB, GBC and GBA games use the same expanded picture and camera as Android. Pick `ZOOM` in Settings or tap its touch button to see more of the map. A controller’s right stick looks around when `LOOK AROUND` is on. Your zoom choice is kept for each game.
+
+On iPhone and iPad, go to `SCREEN` > `DISPLAY OPTIONS` to choose where the strip appears.
+
+On iPhone and iPad, `DISPLAY OPTIONS` > `SHADERS` offers `FILTER`, `GRID`, `GBA COLORS` and `UNLIT SCREEN` for the game picture. Choices are remembered and combine with `ORIGINAL`, `STRETCH`, `EXPAND` and game borders. `ON COMPANION` also applies your filter and GBA colors to the companion, HUD and panel controls. Touch controls and touch-skin artwork keep their own look. `SMOOTHING` offers `OFF`, `xBRZ`, `xBR` and `SCALEFX`, using the same presets as Android.
+
+On iPhone and iPad, tap to switch between `OFF`, `xBRZ`, `xBR` and `SCALEFX`. Smoothing combines with your filter, GBA colors and unlit screen setting.
+
+On iPhone and iPad, `ON COMPANION` also styles the HUD and panel controls.
+
+On iPhone and iPad, pick `NONE`, `DAISY` or `BEZEL` from the shared `DISPLAY OPTIONS` > `OVERLAY` page. The choice is remembered. A selected touch skin supplies its own frame instead; `EXPAND` uses the expanded picture without a border. You can also import your own borders there, including from the library settings.
+
+On iPhone and iPad, `IMPORT FILE` is under Settings > `DISPLAY OPTIONS` > `OVERLAY`.
+
+For a RetroArch overlay, pick the `.cfg` first and its image when asked.
+
+On iPhone and iPad, the panel shows measured game and display rates, CPU use, frame times and thermal state. A dash marks an unavailable reading. Scroll the panel to see more rows on a short screen.

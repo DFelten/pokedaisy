@@ -109,7 +109,7 @@ RetroArch, NXRedux, 다른 프론트엔드에서는 세이브 데이터가 프�
 - **실행할 때 Permission denied가 나와요:** 압축을 풀면서 프로그램의 실행 권한이 사라졌어요. 그 폴더에서 `chmod +x pokedaisy-linux`를 실행하세요.
 - **`GLIBC_2.35`나 `libSDL2`가 들어간 오류가 나와요:** PokeDaisy에 필요한 것보다 Linux가 오래됐거나 SDL2가 설치되지 않았어요. 배포판에서 SDL2를 설치하거나(Ubuntu라면 `sudo apt install libsdl2-2.0-0`), 더 새로운 시스템에서 해 보세요.
 - **게임이 목록에 없어요:** `roms` 안에 바로 있어야 하고(그 안의 폴더에 넣으면 안 돼요), 압축을 푼 상태로, 이름이 `.gba`, `.gb`, `.gbc`, `.nds`로 끝나야 해요.
-- **A와 B가 반대예요:** 메뉴를 열고(START와 SELECT를 함께, 또는 Guide나 Menu 버튼) `A/B BUTTONS`를 `SWAPPED`로 바꾸세요.
+- **A와 B가 반대예요:** 메뉴를 열고(START와 SELECT를 함께, 또는 Guide나 Menu 버튼) `SETTINGS`에서 `A/B BUTTONS`를 `SWAPPED`로 바꾸세요.
 - **세이브 데이터를 안 읽어요:** 세이브 데이터는 `saves` 안에, ROM 파일 이름 전체에 `.sav`를 붙인 이름이어야 해요. 예전 사본은 `saves/pokedaisy-backups`에서 찾아보세요.
 - **컨트롤러가 반응하지 않아요:** SDL이 아직 그 컨트롤러를 몰라요. 그 매핑이 들어 있는 `gamecontrollerdb.txt`를 데이터 폴더(`roms` 옆)에 넣어 주세요.
 

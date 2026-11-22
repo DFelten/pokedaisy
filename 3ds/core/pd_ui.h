@@ -173,6 +173,7 @@ enum pd_action {
     PD_ACTION_TRADE_EVOLVE, // the summary's EVOLVE (TRADE EVOS): party slot ui.summarySlot evolves as a trade would
     PD_ACTION_NUZLOCKE_TOGGLE, // SETTINGS' NUZLOCKE / the tab's TURN ON: this game's tracking on or off
     PD_ACTION_NUZLOCKE_EDIT,   // the NUZLOCKE tab changed the run: ui.nuzEdit / nuzEditArg
+    PD_ACTION_FRONT_ROW,       // one of the frontend's own rows (pd_host_info.front*) was pressed: ui.frontRow
 };
 
 // A party slot in USE / GIVE's pick: dimmed, or which of its moves it would help.
@@ -217,6 +218,12 @@ struct pd_host_info {
     char stateWhen[24]; // when it was made, shown beside LOAD STATE
     bool fullSettings;  // Optional: SETTINGS' groups and the rows the 3DS has
     bool wildSupported, fieldSupported; // WILD ENCOUNTERS / the field read works on this game
+    // Optional: the frontend's own settings (the Linux / Windows host's A/B BUTTONS, FF SPEED, KEYBOARD ...: PD_ENV_FRONT_ROWS),
+    // drawn in SETTINGS under a line of their own so every setting is in one place. A value "" = a row that opens a page.
+    int frontCount;
+    const char* frontLabels[8];
+    const char* frontValues[8];
+    const char* frontGroups[8]; // the app's group each goes in ("FF / SPEED", "SCREEN", "CONTROLS" ...)
     bool hasCoreRows;    // the compact list adds AUTO-RUN (with fieldSupported), DARK MODE and RESET SETTINGS (the libretro cores)
     int batteryPct;     // -1 = unknown
     bool charging;      // the battery is charging (a bolt by it)
@@ -363,7 +370,9 @@ struct pd_map_source {
     int cursorX, cursorY, cursorW, cursorH;
 };
 // Host-owned option rows use the established Settings frame and row widgets.
-struct pd_option_row { const char* label; const char* value; };
+// heading: a group's title over the rows after it (the app's groupTitle), not a row: no value, no hit, but it keeps its
+// place in the list (a tap's HIT_OPTION + i counts it).
+struct pd_option_row { const char* label; const char* value; bool heading; };
 struct pd_option_source { const char* title; const struct pd_option_row* rows; int count, infoCount; };
 struct pd_guide_row {
     const char *title, *detail, *hint, *answer;
@@ -446,6 +455,11 @@ struct pd_ui {
     const struct pd_bag_source* bagSource;
     const struct pd_bag_palette* bagPalette;
     bool keepBackdrop;
+    // A companion window's picture around the canvas (the desktop's padding): the backdrop is drawn across it and its part
+    // at (backdropX, backdropY) taken under the companion, so the padding the host shows round it carries on the same
+    // picture. NULL: the backdrop fills the canvas alone.
+    struct pd_canvas* backdropFrame;
+    int backdropX, backdropY;
     bool bagDetails;
     bool handheldDex, handheldParty;
     bool shoulderTabs; // handheld tab cycle includes More, without D-pad tab focus
@@ -552,6 +566,8 @@ struct pd_ui {
     struct pd_settings* settings;
     enum pd_action action;
     int actionSlot;
+    int frontRow;           // PD_ACTION_FRONT_ROW's row
+    int settingsToFront;    // SETTINGS draws left that scroll to the frontend's rows (the host menu's SETTINGS opened it)
 
     bool touching, dragging, touchScroll;
     int touchX0, touchY0, touchLastY;

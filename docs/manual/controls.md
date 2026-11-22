@@ -100,6 +100,8 @@ When SELECT or START is part of a chord, the game gets it when you let go rather
 
 `RESTART GAME`, `CLOSE APP`, `COMPANION`, `FREE FLIGHT` and `MUTE` have no buttons until you give them some. `TOUCH SCREEN` and `DS LAYOUT` share L2 and R2 with `SPEED CYCLE` and `FF HOLD`: in a DS game on one screen the triggers are theirs, and everywhere else they're speed's, so changing one never asks you to move the other.
 
+On a handheld whose sticks can't be pushed in, or that has no sticks at all (like the Retroid Pocket Classic), L3 is a button you can't press, so `QUICK MENU` starts on Y and `COMPANION` on X instead, and `START 2` and `SELECT 2` start with no button. In a DS game, X and Y stay the game's own.
+
 The speed hotkeys are explained in [Fast-forward and game speed](fast-forward.md), states and rewind in [Saves](saves.md), and zoom in [Screen](screen.md).
 
 ![The top screen's HOTKEYS page: the HOTKEYS switch, then each hotkey with its buttons](shots/settings-hotkeys.png "HOTKEYS on the top screen")
@@ -158,7 +160,7 @@ An action you can't use right now is greyed out and says why, like a battle goin
 
 Pick which actions show, and turn the rest off, in `QUICK MENU` (in the `CONTROLS` group of Settings on either screen): each action's row carries the icon of its tile. While a game is open, the companion's page lists only the actions that game has, so one your game can't do (`HEAL` in some ROM hacks, say) isn't there to turn on. Its `STYLE` picks how they're laid out (tap it to switch):
 
-- `RING` (to start with): the actions round a circle, like the weapon wheel in a modern game, each the same distance from the next. Point the left stick at one, and its name shows in the middle, with a light tick of vibration each time you move onto another one. The D-pad steps round it too.
+- `RING` (to start with): the actions round a circle, like the weapon wheel in a modern game, each the same distance from the next. Point the left stick at one, and its name shows in the middle, with a light tick of vibration each time you move onto another one. The D-pad steps round it too. On a screen too small for the circle (a small window, a split screen), the menu shows the grid instead.
 - `GRID`: rows of tiles, all the same size. The D-pad steps through them.
 
 `LABELS` (on to start with) puts each action's name under its icon. Turn it off for icons alone, smaller and closer together: the highlighted one is then named under the row, or in the middle of the ring.
@@ -244,13 +246,13 @@ A phone held upright and held sideways each get their own layout: you edit the o
 
 Both show `N/A` on a game PokeDaisy can't read the field of yet.
 
-`RUNNING SHOES` is for the Game Boy games, which have no running of their own: hold B while you walk on the field and you move as fast as on the bike. Let go and you walk again. It only speeds up walking: surfing stays at its own pace, and the bike and the ice work as they always do. It works in Red, Blue, Yellow, Gold, Silver and Crystal (the English releases) and the hacks that kept their code; elsewhere it shows `N/A`. The game's own files never change: PokeDaisy changes the game only while it runs.
+`RUNNING SHOES` is for the Game Boy games, which have no running of their own: hold B while you walk on the field and you move as fast as on the bike. Let go and you walk again. It only speeds up walking: surfing stays at its own pace, and the bike and the ice work as they always do. It works in Red, Blue, Gold, Silver and Crystal (the English and German releases), Yellow (the English and Italian releases) and the hacks that kept their code; elsewhere it shows `N/A`. The game's own files never change: PokeDaisy changes the game only while it runs.
 
 If you turn indoor running off while inside a building, leave and re-enter to restore that map's normal rule.
 
 ## WILD ENCOUNTERS
 
-`WILD ENCOUNTERS` turns wild Pokémon jumping out at you in grass, caves and water on or off. It's in the companion's `GAMEPLAY` group:
+`WILD ENCOUNTERS` turns wild Pokémon jumping out at you in grass, caves and water on or off. It's in the companion's `GAMEPLAY` > `QUALITY OF LIFE`:
 
 - **`ON`** (the default) leaves the game's own rate.
 - **`OFF`** turns them off completely.
@@ -261,7 +263,7 @@ It works on the Game Boy Advance originals in every language and on almost every
 
 ## SHINY ODDS
 
-`SHINY ODDS` sets how often a wild Pokémon is shiny. It's in the companion's `GAMEPLAY` group and opens a list:
+`SHINY ODDS` sets how often a wild Pokémon is shiny. It's in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and opens a list:
 
 - **`NORMAL`** (the default) leaves the game's own odds, 1 in 8192 in the original games.
 - **`1 IN 4096`**, **`1 IN 1024`**, **`1 IN 512`** and **`1 IN 128`** make shinies more and more common.
@@ -276,11 +278,11 @@ It works in the original FireRed, LeafGreen, Ruby, Sapphire and Emerald, in ever
 
 On the DS it works in Platinum (the US release), HeartGold and SoulSilver (the US and European releases), and Black, White, Black 2 and White 2 (the US and European release). There it counts for wild Pokémon in grass, caves, water and from a rod, the Safari Zone, the Bug-Catching Contest and the special ones the story puts in your path. In Platinum, HeartGold and SoulSilver the roaming ones stay as they are: the game makes one again each time you meet it, so a shiny one that ran away would come back plain. Other languages of the DS games and the DS hacks show `N/A` for now.
 
-On the Game Boy it works in Gold, Silver and Crystal (the English releases). There a Pokémon's shininess comes from its hidden strength values, so a shiny made this way gets new ones: its stats come out a little different, as any shiny's would, and it keeps its gender. It counts for wild Pokémon in grass, caves, water, from a rod or a shaken tree, in the Bug-Catching Contest and the special ones the story puts in your path. The roaming ones and the letter-shaped Pokémon of the ruins stay as they are, and so does a female of a kind that's nearly always male, since the game can't make one of those shiny. Red, Blue and Yellow have no shinies, so they show `N/A`.
+On the Game Boy it works in Gold, Silver and Crystal (the English and German releases). There a Pokémon's shininess comes from its hidden strength values, so a shiny made this way gets new ones: its stats come out a little different, as any shiny's would, and it keeps its gender. It counts for wild Pokémon in grass, caves, water, from a rod or a shaken tree, in the Bug-Catching Contest and the special ones the story puts in your path. The roaming ones and the letter-shaped Pokémon of the ruins stay as they are, and so does a female of a kind that's nearly always male, since the game can't make one of those shiny. Red, Blue and Yellow have no shinies, so they show `N/A`.
 
 ## LOW HP BEEP and FIELD POISON
 
-Two of the games' old habits, each a switch in the companion's `GAMEPLAY` group. Both are `ON` (the game's own way) until you turn them off.
+Two of the games' old habits, each a switch in the companion's `GAMEPLAY` > `QUALITY OF LIFE`. Both are `ON` (the game's own way) until you turn them off.
 
 - **`LOW HP BEEP`** `OFF`: no more beeping in battle while your Pokémon's health bar is in the red. Every other sound stays.
 - **`FIELD POISON`** `OFF`: a poisoned Pokémon no longer loses health while you walk around, and never faints from it on the way. In battle poison works as ever, and it stays poisoned until you heal it.
@@ -289,13 +291,13 @@ They work in FireRed, LeafGreen, Emerald, Ruby and Sapphire (every language and 
 
 ## BOSS RETRY
 
-`BOSS RETRY` lets you take another go at a trainer battle you lost, without walking back from the Pokémon Center. Turn it on in the companion's `GAMEPLAY` group, and each time a trainer battle starts PokeDaisy keeps a save state of that moment, apart from your `STATES` slots. If you lose, a card asks whether to try that battle again: `RETRY` puts you back at its start, as if it never happened (your money and your Pokémon as they were then). `NO THANKS`, or letting the card's bar run out, leaves the game as it is.
+`BOSS RETRY` lets you take another go at a trainer battle you lost, without walking back from the Pokémon Center. Turn it on in the companion's `GAMEPLAY` > `QUALITY OF LIFE`, and each time a trainer battle starts PokeDaisy keeps a save state of that moment, apart from your `STATES` slots. If you lose, a card asks whether to try that battle again: `RETRY` puts you back at its start, as if it never happened (your money and your Pokémon as they were then). `NO THANKS`, or letting the card's bar run out, leaves the game as it is.
 
 The battle starts over the same way, so try something different. Going back is a state load like any other: [`UNDO LOAD`](controls.md#hotkeys) takes you back to after the loss. It works in the GBA games and in Black, White, Black 2 and White 2, wherever the companion can tell a trainer's battle from a wild one.
 
 ## SHINY ALERT
 
-`SHINY ALERT` is for shiny hunting. Turn it on in the companion's `GAMEPLAY` group and it counts your wild battles in this game, and the moment a shiny one shows up it says so: fast-forward and turbo stop, the game's level-up tune plays and a line on the game screen names the Pokémon and how many battles it took. The battle waits at its menu, so you can't miss your chance to catch it.
+`SHINY ALERT` is for shiny hunting. Turn it on in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and it counts your wild battles in this game, and the moment a shiny one shows up it says so: fast-forward and turbo stop, the game's level-up tune plays and a line on the game screen names the Pokémon and how many battles it took. The battle waits at its menu, so you can't miss your chance to catch it.
 
 While it's on, the row shows the count so far. It starts from 0 when you turn it on and again after each shiny, and each game keeps its own. Trainers' battles don't count. It works in the Game Boy Advance games the companion knows the shiny rule of, and in Gold, Silver, Crystal and the DS games too.
 
@@ -303,7 +305,7 @@ It goes well with `SHINY ODDS`. Elsewhere it shows `N/A`.
 
 ## EXP SHARE
 
-Normally only the Pokémon that fought gain EXP when you win, so the rest of your team falls behind unless you swap them in. `EXP SHARE`, in the companion's `GAMEPLAY` group, opens a list:
+Normally only the Pokémon that fought gain EXP when you win, so the rest of your team falls behind unless you swap them in. `EXP SHARE`, in the companion's `GAMEPLAY` > `QUALITY OF LIFE`, opens a list:
 
 - **`OFF`** (the default) leaves the game's own rules.
 - **`SPLIT`** counts every Pokémon in your party as having fought: a win's EXP is shared out across the whole team, as the first games' version of this did. Each gets a smaller share, but nobody gets nothing.
@@ -317,7 +319,7 @@ It works in FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language an
 
 ## LEVEL CAP
 
-A level cap keeps your team from outgrowing the story, the way many hard-mode hacks do. Turn on `LEVEL CAP` in the companion's `GAMEPLAY` group and no Pokémon goes past the highest level on the next boss's team: the same boss the guide's [NEXT BOSS](guide.md#next-boss-the-next-gym-leader) page shows. The row says the cap now, like `LV 14`.
+A level cap keeps your team from outgrowing the story, the way many hard-mode hacks do. Turn on `LEVEL CAP` in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and no Pokémon goes past the highest level on the next boss's team: the same boss the guide's [NEXT BOSS](guide.md#next-boss-the-next-gym-leader) page shows. The row says the cap now, like `LV 14`.
 
 A Pokémon at the cap gains nothing from a win until you beat that boss. One that reaches the cap during a win stops there, and the rest of that win's EXP is lost. Beat the boss and the cap moves up to the next one's top level by itself. Once every boss is beaten there's no cap.
 
@@ -329,7 +331,7 @@ It works in FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language an
 
 In the games, the moves you use out on the field (cutting down a small tree, smashing a cracked rock, pushing a boulder, crossing water, climbing a waterfall, diving) need two things: the right badge, and a Pokémon in your party that knows the move. That second part means teaching those moves to Pokémon you'd rather keep for battles, or carrying one around just for them.
 
-Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` group, and the badge is enough. Walk up to the tree, the rock, the boulder or the water and press A as usual: the game asks, and your first Pokémon (the first one that isn't an egg) does the move, with its own picture and all. If a Pokémon in your party does know the move, that one still goes.
+Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE`, and the badge is enough. Walk up to the tree, the rock, the boulder or the water and press A as usual: the game asks, and your first Pokémon (the first one that isn't an egg) does the move, with its own picture and all. If a Pokémon in your party does know the move, that one still goes.
 
 The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in the [quick menu](#the-quick-menu)) follow it too: with the badge, they no longer need someone who knows the move. The badges stay: a move the game would refuse without its badge is still refused.
 

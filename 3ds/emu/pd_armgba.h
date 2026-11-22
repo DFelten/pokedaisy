@@ -60,8 +60,12 @@ struct pd_armgba_cache {
     unsigned codeUsedKiB, codeSizeKiB, compiled;
     unsigned fullFlushes;  // out of room: code memory or the heap
     unsigned askedFlushes; // the cartridge changed, work RAM's waits changed
+    unsigned warmed;       // compiled ahead from the warm list (pd_armgba_warm_one)
 };
 void pd_armgba_cache_get(struct pd_armgba_cache* out);
+// One block of the game's warm list (what it ran compiled last time, kept on the SD card) compiled ahead of need: call it
+// while a frame has time to spare, one at a time. False when there's nothing left to compile.
+bool pd_armgba_warm_one(void);
 bool pd_armgba_threaded(void);
 // Ruby, Sapphire, FireRed, LeafGreen and Emerald start and stop a timeout timer round every byte they save, the worst
 // case for the recompiler's exact events (a save held the game at about 41 FPS for four seconds on a New 3DS). This

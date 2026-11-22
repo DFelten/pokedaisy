@@ -579,12 +579,10 @@ static void draw_list(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int w
 }
 
 static int draw_pages(struct pd_ui* ui, struct pd_canvas* c, const char* const* labels, int count) {
-    // The pages, in a column on the left like GuideScreen's: a GUIDE title
-    // window over a list window, the open page the white row.
+    // The pages, in a column on the left like GuideScreen's: a list window from the top (no GUIDE title over it: the tab
+    // chip already says so), the open page the white row.
     int colW = c->w * 30 / 100;
-    int tf = pd_title_box(c, MARGIN, CONTENT_Y, colW, CHIP_H, PD_TITLE_FILL);
-    pd_text(c, MARGIN + tf + 6, pd_text_y(CONTENT_Y, CHIP_H), pd_tr("GUIDE"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
-    int py = CONTENT_Y + CHIP_H + 4;
+    int py = CONTENT_Y;
     int pf = pd_list_box(c, MARGIN, py, colW, c->h - py - MARGIN);
     int rowH = (c->h - py - MARGIN - 2 * pf) / (count > 0 ? count : 1);
     if (rowH > 26) rowH = 26;

@@ -22,7 +22,7 @@ Many rows are on both. They're the same setting, so changing it on one screen ch
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
 | `DESCRIPTIONS` | **`SHOWN`**, `HIDDEN` | The grey line under each setting. Also on the companion's SETTINGS, the same switch. | [Companion](companion.md) |
-| `GROUP TABS` | **`SHOWN`**, `HIDDEN` | The group buttons beside the list. Hidden, the list takes the whole width. Also on the companion's SETTINGS. | [Companion](companion.md) |
+| `GROUP TABS` | **`SHOWN`**, `HIDDEN` | The group buttons beside the list. Hidden, the list takes the whole width. Also on the companion's SETTINGS. With a controller, L and R step to the previous or next group, and after tapping one the D-pad starts on its first setting. | [Companion](companion.md) |
 
 ### FF and speed
 
@@ -102,6 +102,7 @@ The `SHADERS` page:
 | --- | --- | --- | --- |
 | `RESUME GAMES` | **`ON`**, `OFF` | On, a game opens right where you left it. Off, it starts at the title screen and loads your save. | [Saves](saves.md) |
 | `GAME NAMES` | **`GAME TITLE`**, `FILE NAME` | How the library names your games. A name you gave a game with `RENAME` stays. | [Library](library.md#game-names) |
+| `GAME PATHS` | **`WHEN NAMES MATCH`**, `FULL PATH`, `OFF` | What the list shows under a game's name: its file's name only where two games share a name, every game's whole path, or nothing. | [Library](library.md#game-names) |
 | `SUPPORTED ONLY` | `ON`, **`OFF`** | Leaves games the companion can't read out of the library. Your files stay where they are. | [Library](library.md) |
 | `DUAL-SCREEN LAUNCHER` | **`ON`**, `OFF` | With two screens, the library shows the game list on one and the selected game's media on the other. Off, the plain library. | [Library](library.md#the-dual-screen-launcher) |
 | `COVER ART` | `ON` once a key is saved, else **`OFF`** (a page) | Your own free keys for RetroAchievements box art and SteamGridDB icons (`GET KEY` opens the page to make one). `REPLACE ALL` fetches every cover again. | [Library](library.md) |
@@ -187,7 +188,7 @@ At the top of SETTINGS, in a blue frame, in the games where any of it works.
 | `PLAYER LOOK` | **`OFF`**, another game's hero, or a Pokémon in your party | Plays as the hero of another FireRed, LeafGreen, Ruby, Sapphire or Emerald game (or Heart and Soul) you have, taken from your own copy, picked from tiles that show each one. With a game whose Pokémon follow you (Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass), your party's Pokémon too. `N/A` until one is found. | [Companion](companion.md#player-look) |
 | `RIVAL LOOK` | **`ON`**, `OFF` | Your rival wears the other hero of the game you picked. Ruby, Sapphire and Emerald only; `N/A` until you pick a `PLAYER LOOK`. | [Companion](companion.md#rival-look) |
 | `TEXT LOOK` | **`OFF`**, or the other game | FireRed's text boxes and letters in Emerald, or Emerald's in FireRed and LeafGreen, from your own copy of that game. Shows once that game is found. | [Companion](companion.md#text-look) |
-| `FOLLOWER` | `ON`, **`OFF`** | Your first Pokémon walks behind you on the map, drawn over the game. Needs Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass too (their sprites); not in games whose Pokémon follow you already. | [Companion](companion.md#follower) |
+| `FOLLOWER` | `ON`, **`OFF`** | Your first Pokémon walks behind you on the map, drawn over the game. Needs Heart and Soul, R.O.W.E., Recharged Yellow or Emerald Seaglass too (their sprites), except in Crystal, which uses its own party pictures; not in games whose Pokémon follow you already. | [Companion](companion.md#follower) |
 | `RIDE ON` | **`BIKE`**, `MOTORCYCLE`, `SCOOTER` | What you ride when you get on your bike: the game's own, or one of ours. The same in every game; shows in the games where `PLAYER LOOK` works. | [Companion](companion.md#ride-on) |
 | `FLY ON` | **`BIRD`**, `AIR BALLOON`, `HELICOPTER`, `ZEPPELIN`, `PLANE` | What you ride when you fly over the map: your Pokémon's bird, or a vehicle with you in it. The same in every game; shows in the games that have `TAKE OFF`. | [Companion](companion.md#fly-on) |
 | `DAY AND NIGHT` | `ON`, **`OFF`** | The map outdoors follows your clock: dawn, dusk and night tints. Text boxes, menus, buildings and battles keep their colours. Every GBA game but those with a day and night of their own. | [Companion](companion.md#day-and-night) |
@@ -196,6 +197,7 @@ At the top of SETTINGS, in a blue frame, in the games where any of it works.
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
+| `QUALITY OF LIFE` | | A page of its own holding `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON` (below). Its row says how many you've changed from the game's own way. | [Companion](companion.md) |
 | `WILD ENCOUNTERS` | **`ON`**, `OFF` | Wild Pokémon jumping out in grass, caves and water, or none. `N/A` in a game where it can't work. | [Controls](controls.md) |
 | `INSTANT TEXT` | `ON`, **`OFF`** | Words in a text box appear at once, and nothing else speeds up. `N/A` where it can't work. | [Fast-forward](fast-forward.md#instant-text) |
 | `FLY STYLE` | `CLASSIC`, **`SCENIC`** | How flying to a town looks: the game's own animation, or flying there over the map. `N/A` where it can't work. | [Map](map.md#the-scenic-way) |
@@ -259,7 +261,7 @@ The `DISPLAY OPTIONS` page:
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
-| `POKéMON PICTURES` | **`GAME`**, `DETAILED` | Pokémon Crystal only: `DETAILED` shows each Pokémon's own picture instead of the game's shared icons, on the `PARTY` tab and everywhere else the companion and the HUD draw one. | [Party](party.md) |
+| `POKéMON PICTURES` | **`GAME`**, `DETAILED` | Pokémon Red, Blue, Yellow, Gold, Silver and Crystal only: `DETAILED` shows each Pokémon's own picture instead of the game's shared icons, on the `PARTY` tab and everywhere else the companion and the HUD draw one. | [Party](party.md) |
 | `BATTLE INFO` | **`ON`**, `OFF` | Off, the `BATTLE` tab has only your battle buttons: no `INFO`, `SUGGESTIONS` or move ratings. | [Battle](battle.md) |
 | `BATTLE HINTS` | **`ON`**, `OFF` | Move ratings, the foe's weaknesses and suggestions during battles. | [Battle](battle.md) |
 | `BATTLE VIEW` | **`BUTTONS`**, `INFO`, `SUGGESTIONS` | What the `BATTLE` tab opens on. | [Battle](battle.md) |

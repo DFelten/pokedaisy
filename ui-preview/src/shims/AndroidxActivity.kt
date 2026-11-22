@@ -11,6 +11,8 @@ open class ComponentActivity : Context() {
     val intent: Intent = Intent()
     val contentResolver = android.content.ContentResolver()
     val packageManager = android.content.pm.PackageManager()
+    /** No views here: nothing ever has the focus (SettingsActivity's tap focus check). */
+    val window = PreviewWindow()
     open fun onCreate(savedInstanceState: android.os.Bundle?) {}
     open fun onResume() {}
     open fun onPause() {}
@@ -32,3 +34,7 @@ open class ComponentActivity : Context() {
     fun <I, O> registerForActivityResult(c: ActivityResultContract<I, O>, cb: (O) -> Unit): ActivityResultLauncher<I> =
         ActivityResultLauncher()
 }
+
+/** The activity's window as far as the app asks it: its focused view, never one here. */
+class PreviewWindow { val currentFocus: PreviewFocusedView? = null }
+class PreviewFocusedView { fun hasFocus(): Boolean = false }
