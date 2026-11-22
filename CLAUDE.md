@@ -964,12 +964,15 @@ rev 1, LeafGreen rev 0 / 1 - found in retail by the shifted `$DECOMPS` build's m
 every language) `TRADE_EVO_PORTS` from `port_field_items.py`; hacks / Kaizo / Legacy off.
 **INSTANT TEXT** (GitHub #111, GAMEPLAY on the companion, `Prefs.instantText` OFF, NEW tag; `InstantText.kt`): a game-option patch like REUSABLE TMS (`pkRomPatch` in 4-byte pieces, `EmulatorEngine.applyTmPatch` does both). RenderFont rewritten in its own 40 bytes (no free ROM): it goes on past RENDER_PRINT until a control code, textSpeed 0; Ruby / Sapphire: UpdateWindowText's delay turned into a `b` back to PrintNextChar. A delay of 0 (the game's own instant path) would lose everything after a page break. Found in the ROM's first 64 KB by code; gcc builds: N/A. TEXT SPEED stays: it's the emulator's speed, stops at what the device runs.
 **NO HMS NEEDED** (2026-11-14, GAMEPLAY on the companion, `Prefs.hmFree` OFF, NEW tag; `HmFree.kt`): the field moves with the badge
-alone, a game-option patch beside INSTANT TEXT's. Every field-move script runs `checkpartymove` after its badge check: ScrCmd_checkpartymove
-is rewritten in its own 124 bytes (`scripts/hm_free.s`, assembled with clang `--target=thumbv4t-none-eabi`; calls and literals filled per
-ROM) to answer the first Pokémon that isn't an egg when nobody knows the move (a knower still first; MOVE_SECRET_POWER keeps the game's
+and the HM in the bag (not taught), a game-option patch beside INSTANT TEXT's. Every field-move script runs `checkpartymove` after its badge check: ScrCmd_checkpartymove
+jumps (its first 8 bytes) to a 204-byte replacement in the ROM's longest 0xFF run (`scripts/hm_free.s`, assembled with clang `--target=thumbv4t-none-eabi`;
+far calls through r3, words filled per ROM) that answers the first Pokémon that isn't an egg when nobody knows the move and its HM is in the bag
+(CheckBagHasItem from gScriptCmdTable's checkitem; vanilla HM items 339-346, checked by the HMs' moves ending the TM / HM table; without them, or no checkitem, the
+replacement's `have:` becomes `b set`: no bag check, the badge alone as before - the user's call, so no hack loses it) (a knower still first; MOVE_SECRET_POWER keeps the game's
 rule), and PartyHasMonWithSurf's `beq` becomes a `nop` (the A press on water). Both found by agbcc's code, all or nothing, cross-checked
-(same GetMonData / MonKnowsMove / gPlayerParty, gSpecialVar_Result = 0x8004 + 0x10). `HmFree.active` makes FLY / FREE FLIGHT / FLASH's
-`flyer` / `flasher` fall back the same way. Played headless with `rompatch` (FireRed Cut / Surf, Emerald Rock Smash, Ruby by calls).
+(same GetMonData / MonKnowsMove / gPlayerParty, gSpecialVar_Result = 0x8004 + 0x10). `HmFree.lets(hmItem)` makes FLY / FREE FLIGHT / FLASH's
+`flyer` / `flasher` (and the CENTER's last-Surf rule) fall back the same way. Gold / Silver / Crystal: `GbGamePatches.hm`, a trampoline after
+CheckPartyMove's own check, wTMsHMs' HM bit. Played headless with `rompatch` (FireRed Cut / Surf, Emerald Rock Smash, Ruby by calls).
 **EXP SHARE** (2026-11-14, GAMEPLAY on the companion, `Prefs.expShare` OFF / SPLIT / FULL EXP, NEW tag; `ExpShare.kt`): Gen 3's getexp pays the
 Pokémon in gSentPokesToOpponent (nothing else reads it), the EXP divided by their count. SPLIT: the engine writes the party's non-egg slots there
 every frame (`ExpShare.mark`, mask from each sample; per frame because the battle's first turn resets it after the intro). FULL EXP: also the two

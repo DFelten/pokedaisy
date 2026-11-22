@@ -96,6 +96,7 @@ class GameOptions internal constructor(
         if (closed.value) return
         desired.update { it.copy(hm = patch.takeIf { on }) }
         HmFree.active = !closed.value && allowed() && on && patch != null
+        HmFree.bagCheck = patch?.checkBagHasItem ?: 0L
     }
     fun setFullExp(found: ExpShare.Found?, on: Boolean) {
         desired.update { it.copy(full = found.takeIf { on }) }
@@ -189,9 +190,9 @@ class GameOptions internal constructor(
         if (closed.value || !allowed()) return
         val ticket = generation.value
         scan = scope.launch {
-            // A Game Boy cart: its own three options (GbGamePatches), nothing of the GBA's finders.
+            // A Game Boy cart: its own options (GbGamePatches), nothing of the GBA's finders.
             val gb = if (gameBoy) runCatching { GbGamePatches.find(path) }.getOrNull() else null
-            val result = if (gameBoy) Discovery(sites = gb?.tms.orEmpty(), text = gb?.text, exp = gb?.exp, gbBeep = gb?.beep, gbPoison = gb?.poison, gbRun = gb?.run) else Discovery(
+            val result = if (gameBoy) Discovery(sites = gb?.tms.orEmpty(), text = gb?.text, exp = gb?.exp, gbBeep = gb?.beep, gbPoison = gb?.poison, gbRun = gb?.run, hm = gb?.hm) else Discovery(
                 runCatching { WildEncounters.find(path) }.getOrDefault(0L),
                 runCatching { ReusableTms.find(path) }.getOrDefault(emptyList()),
                 runCatching { InstantText.find(path) }.getOrNull(),

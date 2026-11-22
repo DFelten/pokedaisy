@@ -139,9 +139,9 @@ The quick menu puts the things you'd otherwise dig through menus for under one b
 | --- | --- |
 | `PC` | Opens your game's own PC right where you stand, as in the [bag](bag.md). |
 | `HEAL` | Heals the whole party, as the nurse at a POKéMON CENTER does. It asks first (`YES` / `NO`), then shows each Pokémon's HP bar filling up. The other services are on a Pokémon's summary: see [CENTER](party.md#center-heal-relearn-forget-rename). |
-| `FLY` | Lists the places you can fly to; pick one and off you go. Needs a Pokémon in your party that knows the move, or any Pokémon with [`NO HMS NEEDED`](#no-hms-needed) on. In a game whose own party menu lets a Pokémon fly without knowing the move (Unbound), it goes by the game's rule. |
+| `FLY` | Lists the places you can fly to; pick one and off you go. Needs a Pokémon in your party that knows the move, or any Pokémon with [`NO HMS NEEDED`](#no-hms-needed) on and the machine for it in your bag. In a game whose own party menu lets a Pokémon fly without knowing the move (Unbound), it goes by the game's rule. |
 | `TAKE OFF` | Takes off on your Pokémon's bird and lets you [fly over the map](map.md#flying-over-the-map); while you're up it says `LAND` and brings you down. The original games in every language, Emerald Legacy and the hacks listed in [Map](map.md#flying-over-the-map). |
-| `FLASH` | Lights up a dark cave, the way the move does from the game's party menu: the Pokémon that knows it shows up and the cave lights up. It only shows while a Pokémon in your party knows `FLASH` (any Pokémon will do with [`NO HMS NEEDED`](#no-hms-needed) on), and it's greyed out where it isn't dark. In Emerald it also opens the sealed wall in the ancient tomb when you stand where the game asks. It needs the same badge as in the game. |
+| `FLASH` | Lights up a dark cave, the way the move does from the game's party menu: the Pokémon that knows it shows up and the cave lights up. It only shows while a Pokémon in your party knows `FLASH` (any Pokémon will do with [`NO HMS NEEDED`](#no-hms-needed) on and the machine for it in your bag), and it's greyed out where it isn't dark. In Emerald it also opens the sealed wall in the ancient tomb when you stand where the game asks. It needs the same badge as in the game. |
 | The keep-away spray | Uses an item from your bag that keeps wild Pokémon away (the tile shows its icon and name). With more than one kind in your bag, it lists them with how many you have and how many steps each lasts, so you pick. While one is still working it's greyed out and says how many steps are left. |
 | `BIKE` | Gets on your bike. While you're riding it says `GET OFF` and gets you off. |
 | `ROD` | Casts your best fishing rod. Face the water first. |
@@ -327,13 +327,13 @@ It works in FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language an
 
 ## NO HMS NEEDED
 
-In the games, the moves you use out on the field (cutting down a small tree, smashing a cracked rock, pushing a boulder, crossing water, climbing a waterfall, diving) need two things: the right badge, and a Pokémon in your party that knows the move. That second part means teaching those moves to Pokémon you'd rather keep for battles, or carrying one around just for them.
+In the games, the moves you use out on the field (cutting down a small tree, smashing a cracked rock, pushing a boulder, crossing water, climbing a waterfall, diving) need the right badge, the machine that teaches the move, and a Pokémon in your party that knows it. That second part means teaching those moves to Pokémon you'd rather keep for battles, or carrying one around just for them.
 
-Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` group, and the badge is enough. Walk up to the tree, the rock, the boulder or the water and press A as usual: the game asks, and your first Pokémon (the first one that isn't an egg) does the move, with its own picture and all. If a Pokémon in your party does know the move, that one still goes.
+Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` group, and the badge and the machine are enough: you still have to find the machine in the game first, but you don't have to teach it. Walk up to the tree, the rock, the boulder or the water and press A as usual: the game asks, and your first Pokémon (the first one that isn't an egg) does the move, with its own picture and all. If a Pokémon in your party does know the move, that one still goes.
 
-The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in the [quick menu](#the-quick-menu)) follow it too: with the badge, they no longer need someone who knows the move. The badges stay: a move the game would refuse without its badge is still refused.
+The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in the [quick menu](#the-quick-menu)) follow it too: with the badge and the machine in your bag, they no longer need someone who knows the move. The badges stay: a move the game would refuse without its badge is still refused.
 
-It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
+It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code, and in Gold, Silver and Crystal. In those three it covers the small tree, the boulder, the water, the whirlpool and the waterfall; butting a tree and smashing a rock come from teaching machines there, not from the badges' moves, so they still need a Pokémon that knows them. In a few hacks that changed the machines, the badge alone is enough. Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
 
 ## External controllers
 

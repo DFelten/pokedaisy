@@ -27,6 +27,10 @@ package com.pokedaisy.app.companion.data
  *   (surfing above all), and says "bike" for walking only while the joypad byte (Gen 1's hJoyHeld from DoBikeSpeedup's
  *   Cycling Road check, Gen 2's hJoyDown from .GetDPad) has B. It goes at the very end of the hook's bank (bank 0 for
  *   Gen 1: its caller is home code), in the cart's padding, which its write checks is still there.
+ * - NO HMS NEEDED (Gen 2): CheckPartyMove (engine/events/overworld.asm), which every A press at a tree, a boulder, the
+ *   water, a whirlpool or a waterfall asks after its badge check, answers the first Pokémon that isn't an egg when nobody
+ *   knows the move and its HM is in the bag ([hmFree]). Only for the HMs: Headbutt and Rock Smash are TMs there and keep the
+ *   game's rule.
  *
  * Found in Red, Blue, Yellow (every language), Gold, Silver, Crystal (rev 0, rev 1, Australia) and the hacks on that code
  * (Brown, Yellow Legacy, Crystal Clear, Crystal Legacy); PureRed / PureBlue's text check is three places, so INSTANT TEXT
@@ -36,7 +40,7 @@ object GbGamePatches {
     const val TAG = 0x10000000L
 
     class Found(val tms: List<ReusableTms.Site>, val text: InstantText.Patch?, val beep: InstantText.Patch?, val poison: InstantText.Patch? = null,
-                val exp: ExpShare.Found? = null, val run: InstantText.Patch? = null)
+                val exp: ExpShare.Found? = null, val run: InstantText.Patch? = null, val hm: HmFree.Patch? = null)
 
     private const val ANY = -1
     private val TEXT = sig("fa????cb??c0fa????cb??c8")
@@ -56,6 +60,18 @@ object GbGamePatches {
     // Gen 2's .BikeCheck and .GetDPad (`ldh a, [hJoyDown]; ld [wCurInput], a`, then the downhill bike's own code).
     private val RUN_GS = sig("fa????fe01c8fe02c9")
     private val RUN_GS_DPAD = sig("f0??ea????21????cb??c84fe6f0c079f680ea????c9")
+    // Gen 2's CheckPartyMove: `ld e, 0; xor a; ld [wCurPartyMon], a`, the party loop (wPartySpecies, EGG, wPartyMon1Moves,
+    // AddNTimes, the four moves against d), .yes (`ld a, e; ld [wCurPartyMon], a; xor a; ret`) and .no (`scf; ret`).
+    private val HM2 = sig("1e00afea????4b060021????097ea728??feff28??fe??28??013000 21????7bcd????06042aba28??0520f91c18??7bea????afc937c9".replace(" ", ""))
+    private const val HM2_SPECIES = 10
+    private const val HM2_EGG = 22
+    private const val HM2_YES = 47
+    /** pokecrystal's HMs (constants/move_constants.asm): CUT, FLY, SURF, STRENGTH, WATERFALL, FLASH, WHIRLPOOL, and each
+     * one's HM number - 1 (HM01 CUT ... HM05 FLASH, HM06 WHIRLPOOL, HM07 WATERFALL): its count at wTMsHMs + 50 + that. */
+    private val GEN2_HMS = intArrayOf(0x0F, 0x13, 0x39, 0x46, 0x7F, 0x94, 0xFA)
+    private val GEN2_HM_INDEX = intArrayOf(0, 1, 2, 3, 6, 4, 5)
+    // CheckTMHM: `dec c; ld b, 0; ld hl, wTMsHMs; add hl, bc; ld a, [hl]; and a; ret z; scf; ret`.
+    private val CHECK_TMHM = sig("0d060021????097ea7c837c9")
 
     /** What [rom] (a whole Game Boy cart) has; null for anything that isn't one. */
     fun find(rom: ByteArray): Found? {
@@ -91,7 +107,58 @@ object GbGamePatches {
             if (flags !in 0xC000..0xDFFF) null
             else ExpShare.Found(addr, listOf(InstantText.Write(TAG + cp, rom.copyOfRange(cp, cp + 2), byteArrayOf(0xC9.toByte(), 0))), width = 1, battle = battle)
         }
-        return Found(tms, text, beep, poisonPatch, exp, runPatch(rom, ::one))
+        return Found(tms, text, beep, poisonPatch, exp, runPatch(rom, ::one), hmFree(rom, ::one))
+    }
+
+    /**
+     * NO HMS NEEDED ([Found.hm]): CheckPartyMove's first three bytes (`ld e, 0; xor a`) jump to a trampoline near the end of
+     * its bank (clear of RUNNING SHOES'), which runs the game's own check (from its `ld [wCurPartyMon], a`, with e and a set as it would) and keeps
+     * its answer when someone knows the move. Else, for an HM the player has (its count in wTMsHMs), it walks the party
+     * as the game does and hands the first Pokémon that isn't an egg to the game's own .yes (wCurPartyMon = it, no carry); a TM, an HM not yet got, or a party
+     * of eggs gets the game's carry. d (the move) comes back from the game's check untouched.
+     */
+    private fun hmFree(rom: ByteArray, one: (IntArray) -> Int?): HmFree.Patch? {
+        val f = one(HM2) ?: return null
+        fun u8(i: Int) = rom[i].toInt() and 0xFF
+        fun cpu(off: Int) = if (off < 0x4000) off else 0x4000 + off % 0x4000
+        fun lohi(v: Int) = listOf(v and 0xFF, v shr 8)
+        // wTMsHMs, from CheckTMHM's `ld hl, wTMsHMs`: a count per TM / HM, the HMs after the 50 TMs.
+        val tmhm = one(CHECK_TMHM)?.let { u8(it + 4) or (u8(it + 5) shl 8) }?.takeIf { it in 0xC000..0xDFFF } ?: return null
+        val bank = f / 0x4000
+        val size = 8 + GEN2_HMS.size * 6 + 2 + 10 + 2 + 9 + 14 + 2
+        val end = (bank + 1) * 0x4000
+        // Clear of RUNNING SHOES' trampoline, which takes the bank's last 18 bytes when it's the same bank.
+        val at = end - 32 - size
+        if (end > rom.size || run(rom, bank) < size + 48) return null
+        val t = ArrayList<Int>()
+        t += listOf(0x1E, 0x00, 0xAF, 0xCD) + lohi(cpu(f + 3)) + listOf(0xD0, 0x7A)   // ld e, 0; xor a; call the check; ret nc; ld a, d
+        val hmAt = t.size + GEN2_HMS.size * 6 + 2
+        GEN2_HMS.forEachIndexed { i, id ->                                              // ld c, HM number; cp HM; jr z, .hm
+            t += listOf(0x0E, GEN2_HM_INDEX[i], 0xFE, id, 0x28, hmAt - (t.size + 6))
+        }
+        t += listOf(0x37, 0xC9)                                                       // scf; ret
+        check(t.size == hmAt)
+        val fail = t.size + 10 + 2 + 9 + 14
+        // .hm: ld b, 0; ld hl, wTMsHMs + NUM_TMS; add hl, bc; ld a, [hl]; and a; jr z, .fail (the HM isn't in the bag)
+        t += listOf(0x06, 0x00, 0x21) + lohi(tmhm + 50) + listOf(0x09, 0x7E, 0xA7, 0x28)
+        t += fail - (t.size + 1)
+        val loop = t.size + 2
+        t += listOf(0x1E, 0x00)                                                       // ld e, 0
+        t += listOf(0x4B, 0x06, 0x00, 0x21, u8(f + HM2_SPECIES), u8(f + HM2_SPECIES + 1), 0x09, 0x7E, 0xA7)
+        t += listOf(0x28, fail - (t.size + 2))                                        // and a; jr z, .fail
+        t += listOf(0xFE, 0xFF, 0x28, fail - (t.size + 4))                            // cp -1; jr z, .fail
+        t += listOf(0xFE, u8(f + HM2_EGG), 0xC2) + lohi(cpu(f + HM2_YES))             // cp EGG; jp nz, .yes
+        t += listOf(0x1C, 0x18, (loop - (t.size + 3)) and 0xFF)                       // inc e; jr .loop
+        check(t.size == fail)
+        t += listOf(0x37, 0xC9)                                                       // .fail: scf; ret
+        check(t.size == size)
+        val tramp = ByteArray(t.size) { t[it].toByte() }
+        fun pieces(off: Int, value: ByteArray) = (value.indices step 4).map { i ->
+            val n = minOf(4, value.size - i)
+            InstantText.Write(TAG + off + i, rom.copyOfRange(off + i, off + i + n), value.copyOfRange(i, i + n))
+        }
+        val jp = byteArrayOf(0xC3.toByte(), (cpu(at) and 0xFF).toByte(), (cpu(at) shr 8).toByte())
+        return HmFree.Patch(pieces(at, tramp) + pieces(f, jp))
     }
 
     /**

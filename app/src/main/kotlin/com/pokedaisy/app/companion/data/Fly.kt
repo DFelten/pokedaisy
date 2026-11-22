@@ -234,8 +234,8 @@ data class FlyTargets(
 private const val GET_MON_PERSONALITY = 0
 
 /** The first party Pokémon that knows Fly (not an egg): its slot and personality, or null. Else the one the game's own
- * party menu would offer Fly to without the move ([FlyFns.withoutMove]), and with NO HMS NEEDED ([HmFree.active]) the
- * first that isn't an egg: the game's own Fly checks no move after the menu. */
+ * party menu would offer Fly to without the move ([FlyFns.withoutMove]), and with NO HMS NEEDED and HM02 in the bag
+ * ([HmFree.lets]) the first that isn't an egg: the game's own Fly checks no move after the menu. */
 private fun flyer(fns: FieldItemFns, fly: FlyFns, g: GameCalls): Pair<Int, Long>? {
     val p = fns.party ?: return null
     val count = (g.read(p.partyCount, 1)[0].toInt() and 0xFF).coerceAtMost(6)
@@ -248,7 +248,7 @@ private fun flyer(fns: FieldItemFns, fly: FlyFns, g: GameCalls): Pair<Int, Long>
             return slot to g.call(p.getMonData, mon, GET_MON_PERSONALITY)
         }
     }
-    val slot = fly.withoutMove?.let { w -> withoutMoveFlyer(fns, w, mons, g) } ?: mons.firstOrNull()?.takeIf { HmFree.active }
+    val slot = fly.withoutMove?.let { w -> withoutMoveFlyer(fns, w, mons, g) } ?: mons.firstOrNull()?.takeIf { HmFree.lets(HmFree.ITEM_HM02_FLY, g) }
         ?: return null
     return slot to g.call(p.getMonData, (p.party + slot * p.monStride).toInt(), GET_MON_PERSONALITY)
 }

@@ -256,6 +256,9 @@ sealed class GbField {
         private val FLY_SCRIPT_BANK = 0x03
         private val PARTY_MON_SIZE = 0x30
         private val EGG = 0xFD
+        /** HM02's count in wTMsHMs (right after wJohtoBadges and wKantoBadges, the HMs after the 50 TMs): NO HMS NEEDED's
+         * FLY wants it in the bag, as the field moves do (GbGamePatches' trampoline). */
+        private val HM02 = JOHTO_BADGES + 2 + 51
         private val KANTO_FLYPOINT = 12
         private val SPAWN_INDIGO = 13
 
@@ -285,7 +288,7 @@ sealed class GbField {
             return (0 until n).firstOrNull { i ->
                 (species[i].toInt() and 0xFF) != EGG &&
                     g.read(PARTY_MON1_MOVES + i * PARTY_MON_SIZE, 4).any { (it.toInt() and 0xFF) == FLY_MOVE_ID }
-            } ?: -1
+            } ?: (0 until n).firstOrNull { HmFree.active && u8(g, HM02) != 0 && (species[it].toInt() and 0xFF) != EGG } ?: -1
         }
 
         private fun visited(g: GameCalls, spawn: Int) = u8(g, VISITED_SPAWNS + spawn / 8) shr (spawn % 8) and 1 != 0

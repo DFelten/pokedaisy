@@ -258,7 +258,7 @@ fun centerForget(
     val moves = (0 until 4).map { g.call(p.getMonData, mon!!, MON_MOVE1 + it) }
     if (moveIndex !in 0 until 4 || moves[moveIndex] != move.toLong() || move == 0) return CenterResult.PARTY_CHANGED
     if (moves.count { it != 0L } <= 1) return CenterResult.LAST_MOVE
-    if (move.toLong() == MOVE_SURF && !HmFree.active) {
+    if (move.toLong() == MOVE_SURF && !HmFree.lets(HmFree.ITEM_HM03_SURF, g)) {
         val count = (g.read(p.partyCount, 1)[0].toInt() and 0xFF).coerceAtMost(6)
         val others = (0 until count).filter { it != slot }.any { s ->
             val m = (p.party + s * p.monStride).toInt()
