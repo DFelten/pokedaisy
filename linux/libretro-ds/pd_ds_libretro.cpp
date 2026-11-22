@@ -110,6 +110,7 @@ hud_hits hudLayerHits{};
 bool hudLayerValid=false;
 void clear_hud_focus(){hudHits.n=0;hudCursor=-1;hudConsumed=0;hudLayerValid=false;}
 bool supported=false, companion=false, quickOpen=false, swallowMenuInput=false;
+bool compDimHeld=false; // the press on the dimmed game that closed the companion window: kept from the game until let go
 int quickSelected=0,companionHold=0;
 struct FlyDestination { int x,y; const char* name; int header=0; };
 enum class FlyStage { Idle, Menu, Party, Member, Move, Town, Release };
@@ -429,13 +430,27 @@ void draw_companion() {
       const uint32_t p=stage[i];
       dimmed[i]=0xFF000000u|(((p>>16&255)*115/255)<<16)|(((p>>8&255)*115/255)<<8)|((p&255)*115/255);
     }
+    // The companion PD_COMPANION_PAD inside the window's picture, its backdrop running on under the padding.
+    static uint32_t inner_pixels[uiMaxW*uiMaxH];
+    const int pad=PD_COMPANION_PAD,iw=cw-2*pad,ih=ch-2*pad;
     pd_canvas c;pd_canvas_init(&c,cw,ch,ui_pixels);
     pd_fill(&c,0,0,cw,ch,0);
-    shell.draw(&c,snapshot,companionGame!=DsGame::Unsupported,map,icons);
-    pd_fill(&c,0,0,cw,1,0x101418);pd_fill(&c,0,ch-1,cw,1,0x101418);pd_fill(&c,0,0,1,ch,0x101418);pd_fill(&c,cw-1,0,1,ch,0x101418);
-    for(int i=0;i<cw*ch;++i)ui_pixels[i]|=0xFF000000u;
+    pd_canvas inner;pd_canvas_init(&inner,iw,ih,inner_pixels);
+    shell.backdropFrame=&c;shell.backdropX=shell.backdropY=pad;
+    shell.draw(&inner,snapshot,companionGame!=DsGame::Unsupported,map,icons);
+    shell.backdropFrame=nullptr;
+    pd_canvas_copy(&c,pad,pad,&inner,0,0,iw,ih);
+    pd_window_edge(&c,pd_cur->title,pd_cur->titleCount,4); // the app's WindowFrame
     pd_companion msg{};msg.pixels=ui_pixels;msg.src_w=cw;msg.src_h=ch;msg.active=1;
     environment(PD_ENV_SET_COMPANION,&msg);
+    // The host's mouse over the window (its answer, in the picture's pixels): a press in it is the companion's, as a tap
+    // (the Windows core's); a press on the dimmed game beside it closes it, and stays out of the game until let go.
+    static bool touchWas=false;
+    const bool on=msg.ptr_valid&&msg.ptr_down;
+    if(on&&!touchWas&&!compDimHeld&&!msg.ptr_inside){compDimHeld=true;companion=false;}
+    else if(on&&(msg.ptr_inside||touchWas)&&!compDimHeld){shell.touch(msg.ptr_x-pad,msg.ptr_y-pad,true);touchWas=true;}
+    else if(!on&&touchWas){shell.touch(msg.ptr_x-pad,msg.ptr_y-pad,false);touchWas=false;}
+    if(!on)compDimHeld=false;
     geometry(512,384);
     submit(dimmed,512,384);
     return;
@@ -1020,6 +1035,10 @@ int16_t filtered_input(unsigned p,unsigned d,unsigned i,unsigned id) {
   // DSperate expects a pointer over stacked screens. Reproject the current
   // layout into that convention before its input::apply receives it.
   if(d==RETRO_DEVICE_POINTER) {
+    if(compDimHeld){
+      if(!input(p,d,i,RETRO_DEVICE_ID_POINTER_PRESSED))compDimHeld=false;
+      return 0;
+    }
     bool stylus=buttons&(1u<<RETRO_DEVICE_ID_JOYPAD_SELECT);
     if(stylus) {
       if(id==RETRO_DEVICE_ID_POINTER_PRESSED)return !!(buttons&(1u<<RETRO_DEVICE_ID_JOYPAD_A));
@@ -1327,7 +1346,7 @@ RETRO_API void retro_run(){
     pd_front_rows front{};
     front.press=pd_ds::shell.take_front_press();
     if(pd_ds::environment(PD_ENV_FRONT_ROWS,&front)){
-      pd_ds::shell.set_front_rows(front.count,front.label,front.value);
+      pd_ds::shell.set_front_rows(front.count,front.label,front.value,front.group);
       if(front.open_settings){
         pd_ds::refresh();
         pd_ds::companion=true;pd_ds::quickOpen=false;pd_ds::clear_hud_focus();

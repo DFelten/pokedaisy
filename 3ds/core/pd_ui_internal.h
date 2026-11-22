@@ -187,6 +187,9 @@ void ui_mono(struct pd_canvas* c, const struct pd_mono* icon, int x, int y, int 
 void ui_art(struct pd_canvas* c, const struct pd_art* art, int x, int y, int scale);
 // TEXT SIZE SMALL's line between a list's rows (the bag's divider, on the grey lists): a pixel at [y], [w] wide. Nothing at NORMAL.
 void ui_row_divider(struct pd_canvas* c, int x, int y, int w);
+// A list row's background (the app's banded rows): every other one ([index] odd) a shade darker; the cursor's row white
+// with a drawn arrow at x - 1 (labels go ROW_ARROW = 8 in from x to leave it room).
+void ui_list_row_back(struct pd_canvas* c, int x, int y, int w, int index, bool cursor);
 // An icon drawn [size] pixels square, smoothed: Scale2x (its edges kept), then averaged down to [size] and blended in.
 // One of [art] (its colours) or [mono] (in [color]); 32 x 32 at most.
 void ui_icon_smooth(struct pd_canvas* c, const struct pd_art* art, const struct pd_mono* mono, uint32_t color, int x, int y, int size);

@@ -317,8 +317,9 @@ pauses while it's open.
 | `SETTINGS` | Opens the companion's `SETTINGS`, at the program's own rows (below). |
 | `QUIT` | Leave the game (`QUIT TO GAME LIST` when you picked it from the list). It asks first. |
 
-Every setting is in one place, the companion's `SETTINGS`: the companion's own rows first, then the program's,
-under a line:
+Every setting is in one place, the companion's `SETTINGS`, in the same groups and order as on Android. The program's
+own rows sit in those groups too: `FF SPEED` and `REWIND` under `FF / SPEED`, `LCD FILTER` under `SCREEN`, and
+`A/B BUTTONS`, `KEYBOARD` and `HOTKEYS` under `CONTROLS`:
 
 | Row | What it does |
 | --- | --- |
@@ -353,7 +354,10 @@ PokeDaisy only when Steam passes them on.
 ### Keyboard
 
 `KEYBOARD` lists every action with the key it uses, and you can give any of them another key. Pick a row, then press
-the key you want. Escape or B cancels, and Backspace or SELECT turns that row off. A key another row had moves to the one you picked. Your
+the key you want. Escape or B cancels, and Backspace or SELECT turns that row off. A key another row had moves to the one you picked.
+A and B always keep a key, so you can't lock yourself out: they can't be turned off, and giving another row the key A
+or B uses is refused. To move one, pick the A or B row and press the new key; the row that had it gets A's or B's old
+key in return. Your
 keys are kept in `host.ini` in the data folder, so they stay as you set them.
 
 The keys it starts with are the ones above: Z for A, X for B, Enter for START, Backspace for SELECT, the arrows for

@@ -39,7 +39,7 @@ struct pd_hud {
  * active = 0 withdraws it. A frontend without the command: the core keeps its companion filling the canvas. */
 #define PD_ENV_SET_COMPANION 0x20004
 struct pd_companion {
-  const uint32_t *pixels; /* src_w x src_h, XRGB8888 (0xFFRRGGBB), opaque */
+  const uint32_t *pixels; /* src_w x src_h, ARGB8888: alpha 0 past the window's rounded corners, else 0xFF */
   int src_w, src_h;
   int active;
   /* Filled by the host: the mouse in the picture's pixels; inside = over the picture; down = its button held;
@@ -60,14 +60,16 @@ struct pd_front_rows {
   int count;                            /* out: the rows */
   char label[PD_FRONT_ROWS_MAX][24];
   char value[PD_FRONT_ROWS_MAX][24];    /* "" = a row that opens a page */
+  char group[PD_FRONT_ROWS_MAX][16];    /* the companion's SETTINGS group it goes in, as the app has it: "FF / SPEED",
+                                           "GAMEPLAY", "SCREEN", "COMPANION", "CONTROLS", "APP" */
   int open_settings;                    /* out: 1 once, when the host's menu asked for the companion's SETTINGS */
 };
 
-/* Where the host puts the companion's picture in a ow x oh window: the largest whole scale that keeps it within 88% of the
+/* Where the host puts the companion's picture in a ow x oh window: the largest whole scale that keeps it within 94% of the
  * window's height and 97% of its width (at least 1), centred. Shared, so the core sizes the picture (pd_companion_size)
  * for exactly the scale the host draws it at. Returns the scale. */
 static inline int pd_companion_place(int ow, int oh, int sw, int sh, int *x, int *y, int *w, int *h) {
-  int k = sw > 0 && sh > 0 ? (oh * 88 / 100) / sh : 0, kw = sw > 0 ? (ow * 97 / 100) / sw : 0;
+  int k = sw > 0 && sh > 0 ? (oh * 94 / 100) / sh : 0, kw = sw > 0 ? (ow * 97 / 100) / sw : 0;
   if (kw < k)
     k = kw;
   if (k < 1)
@@ -79,31 +81,47 @@ static inline int pd_companion_place(int ow, int oh, int sw, int sh, int *x, int
   return k;
 }
 
-/* The companion window's picture for a ow x oh window (Android's companionWindowSize): 88% of the height, at least the
- * Thor bottom screen's shape and wider on a wider screen (0.78 of the window's aspect, up to 1.4:1), at the largest whole
- * scale that still leaves it 320 x 240 or more. Returns that scale; 0 = the window can't show a window of the companion at
- * 2x (a small handheld screen: the companion fills it, as before). [maxW] x [maxH]: the most the core holds. */
+/* The companion window's padding: the companion is drawn this many pixels inside the window's picture on every side, its
+ * backdrop running on under the frame (the app's window keeps its tabs clear of its frame the same way). */
+#define PD_COMPANION_PAD 6
+
+/* The companion window's picture for a ow x oh window: the companion inside it (PD_COMPANION_PAD round it) 240 to 270 game
+ * pixels tall, the companion's own size on Android (a
+ * font pixel about 1/240-1/270 of the screen's height; a taller picture drew every slot and row large around the same small
+ * text), at the largest whole scale that keeps it within 94% of the window, 88% where that leaves more than 270 rows; as
+ * wide as Android's window (0.78 of the window's aspect, between the Thor bottom screen's 1.15:1 and 1.4:1) and at least
+ * 320. Returns that scale; 0 = the window can't show it at 2x (a small handheld screen: the companion fills it, as before).
+ * [maxW] x [maxH]: the most the core holds. */
 static inline int pd_companion_size(int ow, int oh, int maxW, int maxH, int *sw, int *sh) {
   if (ow <= 0 || oh <= 0)
     return 0;
-  int boxH = oh * 88 / 100;
+  const int pad2 = 2 * PD_COMPANION_PAD;
+  int k = (oh * 94 / 100) / (240 + pad2);
+  if (k < 2)
+    return 0;
+  int h = (oh * 88 / 100) / k - pad2;
+  if (h < 240)
+    h = 240;
+  if (h > 270)
+    h = 270;
   int aspect1000 = (int)((long long)ow * 780 / oh); /* 0.78 of the window's aspect, in 1/1000ths */
   if (aspect1000 < 1148)
     aspect1000 = 1148;
   if (aspect1000 > 1400)
     aspect1000 = 1400;
-  int boxW = boxH * aspect1000 / 1000;
-  if (boxW > ow * 97 / 100)
-    boxW = ow * 97 / 100;
-  int k = boxH / 240;
-  if (boxW / 320 < k)
-    k = boxW / 320;
-  if (k < 2)
+  int w = h * aspect1000 / 1000;
+  if (w > (ow * 97 / 100) / k - pad2)
+    w = (ow * 97 / 100) / k - pad2;
+  if (w < 320) /* the companion's layouts want 320: wider than Android's shape on a 4:3 window */
+    w = 320;
+  if ((w + pad2) * k > ow * 97 / 100)
     return 0;
-  while (boxW / k > maxW || boxH / k > maxH) /* more than the core holds: a scale up, a smaller picture */
-    k++;
-  *sw = boxW / k;
-  *sh = boxH / k;
+  if (w + pad2 > maxW)
+    w = maxW - pad2;
+  if (h + pad2 > maxH)
+    h = maxH - pad2;
+  *sw = w + pad2;
+  *sh = h + pad2;
   return k;
 }
 

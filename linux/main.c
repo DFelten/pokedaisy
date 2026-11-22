@@ -162,6 +162,50 @@ static int kbKeys[KB_COUNT] = {SDLK_z,   SDLK_x,       SDLK_TAB,  SDLK_f,     SD
                                SDLK_2,   SDLK_RETURN,  SDLK_BACKSPACE, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
                                SDLK_ESCAPE, SDLK_SPACE, SDLK_r,   SDLK_F2,    SDLK_F4};
 static int kbCapture = -1; // the KEYBOARD page's row waiting for a key, -1 none
+static const int kbDefaults[KB_COUNT] = {SDLK_z,   SDLK_x,       SDLK_TAB,  SDLK_f,     SDLK_q,     SDLK_e,   SDLK_1,
+                                         SDLK_2,   SDLK_RETURN,  SDLK_BACKSPACE, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
+                                         SDLK_ESCAPE, SDLK_SPACE, SDLK_r,   SDLK_F2,    SDLK_F4};
+/* A and B always have a key (without them a keyboard player can't press anything on a page): never OFF, and a key one of
+ * them has goes to another row only by swapping - A or B takes that row's old key. Returns NULL, or why it was refused. */
+static bool kb_protected(int row) { return row == KB_A || row == KB_B; }
+static const char *kb_assign(int row, int key) {
+  if (row < 0 || row >= KB_COUNT)
+    return NULL;
+  if (!key && kb_protected(row))
+    return row == KB_A ? "A always needs a key" : "B always needs a key";
+  const int old = kbKeys[row];
+  for (int i = 0; key && i < KB_COUNT; i++)
+    if (i != row && kbKeys[i] == key && kb_protected(i) && !old)
+      return i == KB_A ? "That key is A's: give this one another" : "That key is B's: give this one another";
+  for (int i = 0; key && i < KB_COUNT; i++)
+    if (i != row && kbKeys[i] == key)
+      kbKeys[i] = kb_protected(i) ? old : SDLK_UNKNOWN; // A / B swap; any other row lets the key go
+  kbKeys[row] = key;
+  return NULL;
+}
+/* After host.ini: A and B with a key each (a file from before they were kept, or edited by hand). */
+static void kb_keep_ab(void) {
+  for (int row = KB_A; row <= KB_B; row++) {
+    if (kbKeys[row])
+      continue;
+    int want = kbDefaults[row];
+    for (int i = 0; i < KB_COUNT; i++)
+      if (kbKeys[i] == want) {
+        want = 0;
+        break;
+      }
+    if (!want) { // its usual key is another row's: the first letter no row has
+      for (int k = SDLK_a; k <= SDLK_z && !want; k++) {
+        bool used = false;
+        for (int i = 0; i < KB_COUNT; i++)
+          used |= kbKeys[i] == k;
+        if (!used)
+          want = k;
+      }
+    }
+    kbKeys[row] = want;
+  }
+}
 static int lastKey;        // the key that went down this frame (that page reads it)
 static int keyboard(SDL_Keycode k) {
   for (int i = 0; i < KB_COUNT; i++)
@@ -689,6 +733,7 @@ static void host_load(void) {
   }
   if (f)
     fclose(f);
+  kb_keep_ab();
   if (!modifierSaved && hostSet.dsHotkey[HK_FF] == R3 && hostSet.dsHotkey[HK_REWIND] == L3) {
     hostSet.dsHotkey[HK_FF] = R2;
     hostSet.dsHotkey[HK_REWIND] = L2;
@@ -1115,9 +1160,14 @@ static bool environment(unsigned cmd, void *data) {
       frontPress = f->press;
     static const char *const labels[FRONT_COUNT] = {"A/B BUTTONS", "FF SPEED", "REWIND", "LCD FILTER", "KEYBOARD",
                                                     "HOTKEYS"};
+    // Their places in the app's SETTINGS: GAME BUTTONS / HOTKEYS are CONTROLS, FF SPEED / REWIND FF / SPEED, the LCD
+    // look SCREEN (its DISPLAY OPTIONS).
+    static const char *const groups[FRONT_COUNT] = {"CONTROLS", "FF / SPEED", "FF / SPEED", "SCREEN", "CONTROLS",
+                                                    "CONTROLS"};
     f->count = FRONT_COUNT;
     for (int i = 0; i < FRONT_COUNT; i++) {
       snprintf(f->label[i], sizeof f->label[i], "%s", labels[i]);
+      snprintf(f->group[i], sizeof f->group[i], "%s", groups[i]);
       f->value[i][0] = 0;
     }
     snprintf(f->value[FRONT_SWAP], 24, "%s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
@@ -1363,14 +1413,21 @@ static void present_game(const struct pd_menu *menu) {
       compTexW = compMsg.src_w;
       compTexH = compMsg.src_h;
       if (compTexture) {
-        SDL_SetTextureBlendMode(compTexture, SDL_BLENDMODE_NONE);
+        SDL_SetTextureBlendMode(compTexture, SDL_BLENDMODE_BLEND); // its corners are see-through
         SDL_SetTextureScaleMode(compTexture, SDL_ScaleModeNearest);
       }
     }
     if (compTexture) {
       SDL_UpdateTexture(compTexture, NULL, compMsg.pixels, compMsg.src_w * 4);
       SDL_Rect dst;
-      pd_companion_place(ow, oh, compMsg.src_w, compMsg.src_h, &dst.x, &dst.y, &dst.w, &dst.h);
+      const int k = pd_companion_place(ow, oh, compMsg.src_w, compMsg.src_h, &dst.x, &dst.y, &dst.w, &dst.h);
+      // The app's window shadow: black at 35%, three of its pixels down, under the rounded corners (inset by them).
+      SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 89);
+      SDL_Rect shadow[2] = {{dst.x + 2 * k, dst.y + 3 * k, dst.w - 4 * k, dst.h}, {dst.x, dst.y + 5 * k, dst.w, dst.h - 4 * k}};
+      SDL_RenderFillRects(renderer, shadow, 2);
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+      SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
       SDL_RenderCopy(renderer, compTexture, NULL, &dst);
     }
   }
@@ -2160,19 +2217,22 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       else if (lastKey == SDLK_BACKSPACE || lastKey == SDLK_DELETE)
         lastKey = 0, pressed |= 1u << SELECT;
       if (lastKey) {
-        for (int i = 0; i < KB_COUNT; i++)
-          if (kbKeys[i] == lastKey)
-            kbKeys[i] = SDLK_UNKNOWN;
-        kbKeys[kbCapture] = lastKey;
-        host_save();
+        const char *why = kb_assign(kbCapture, lastKey);
+        if (why)
+          notice(why);
+        else
+          host_save();
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       } else if (down(B)) {
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       } else if (down(SELECT)) {
-        kbKeys[kbCapture] = SDLK_UNKNOWN;
-        host_save();
+        const char *why = kb_assign(kbCapture, SDLK_UNKNOWN);
+        if (why)
+          notice(why);
+        else
+          host_save();
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       }
@@ -2777,19 +2837,22 @@ int main(int argc, char **argv) {
           else if (lastKey == SDLK_BACKSPACE || lastKey == SDLK_DELETE)
             lastKey = 0, pressed |= 1u << SELECT;
           if (lastKey) {
-            for (int i = 0; i < KB_COUNT; i++)
-              if (kbKeys[i] == lastKey)
-                kbKeys[i] = SDLK_UNKNOWN;
-            kbKeys[kbCapture] = lastKey;
-            host_save();
+            const char *why = kb_assign(kbCapture, lastKey);
+            if (why)
+              notice(why);
+            else
+              host_save();
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (down(B)) { // a controller's B cancels; a keyboard's keys are the binding
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (down(SELECT)) {
-            kbKeys[kbCapture] = SDLK_UNKNOWN;
-            host_save();
+            const char *why = kb_assign(kbCapture, SDLK_UNKNOWN);
+            if (why)
+              notice(why);
+            else
+              host_save();
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (libraryClick && !onPage) { // a click beside the page closes it, as the app's floating touch screen does

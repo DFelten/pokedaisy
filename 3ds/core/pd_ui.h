@@ -223,6 +223,7 @@ struct pd_host_info {
     int frontCount;
     const char* frontLabels[8];
     const char* frontValues[8];
+    const char* frontGroups[8]; // the app's group each goes in ("FF / SPEED", "SCREEN", "CONTROLS" ...)
     bool hasCoreRows;    // the compact list adds AUTO-RUN (with fieldSupported), DARK MODE and RESET SETTINGS (the libretro cores)
     int batteryPct;     // -1 = unknown
     bool charging;      // the battery is charging (a bolt by it)
@@ -369,7 +370,9 @@ struct pd_map_source {
     int cursorX, cursorY, cursorW, cursorH;
 };
 // Host-owned option rows use the established Settings frame and row widgets.
-struct pd_option_row { const char* label; const char* value; };
+// heading: a group's title over the rows after it (the app's groupTitle), not a row: no value, no hit, but it keeps its
+// place in the list (a tap's HIT_OPTION + i counts it).
+struct pd_option_row { const char* label; const char* value; bool heading; };
 struct pd_option_source { const char* title; const struct pd_option_row* rows; int count, infoCount; };
 struct pd_guide_row {
     const char *title, *detail, *hint, *answer;
@@ -452,6 +455,11 @@ struct pd_ui {
     const struct pd_bag_source* bagSource;
     const struct pd_bag_palette* bagPalette;
     bool keepBackdrop;
+    // A companion window's picture around the canvas (the desktop's padding): the backdrop is drawn across it and its part
+    // at (backdropX, backdropY) taken under the companion, so the padding the host shows round it carries on the same
+    // picture. NULL: the backdrop fills the canvas alone.
+    struct pd_canvas* backdropFrame;
+    int backdropX, backdropY;
     bool bagDetails;
     bool handheldDex, handheldParty;
     bool shoulderTabs; // handheld tab cycle includes More, without D-pad tab focus

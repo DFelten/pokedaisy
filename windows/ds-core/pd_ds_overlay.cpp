@@ -18,6 +18,7 @@
 #include "map_view.h"
 #include "party_view.h"
 #include "pd_canvas.h"
+#include "pd_style.h"
 #include "pd_game.h"
 #include "pd_ui.h"
 #include "pk_nds_call.h"
@@ -56,7 +57,7 @@ bool companionShown = false;               // the companion has the picture
 // The companion as a window over the game (overlay_companion_window): its picture's size (0: it fills the frame) and the
 // host's last answer, the mouse over it.
 int compW = 0, compH = 0;
-std::vector<uint32_t> compPixels;
+std::vector<uint32_t> compPixels, compInner;
 pd_companion compReply {};
 bool compTouchWas = false, compDimHeld = false;
 bool quickShown = false;                   // the quick menu has it
@@ -823,7 +824,7 @@ int overlay_front_press() { return shell.take_front_press(); }
 
 void overlay_front_rows(const pd_front_rows& rows)
 {
-    shell.set_front_rows(rows.count, rows.label, rows.value);
+    shell.set_front_rows(rows.count, rows.label, rows.value, rows.group);
     if (rows.open_settings) {
         companionShown = true;
         quickShown = flyPicker = repelPicker = false;
@@ -899,10 +900,10 @@ bool overlay_pointer(int x, int y, bool down)
             compDimHeld = true;
             companionShown = false;
         } else if (on && (compReply.ptr_inside || compTouchWas) && !compDimHeld) {
-            shell.touch(compReply.ptr_x, compReply.ptr_y, true);
+            shell.touch(compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, true);
             compTouchWas = true;
         } else if (!on && compTouchWas) {
-            shell.touch(compReply.ptr_x, compReply.ptr_y, false);
+            shell.touch(compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, false);
             compTouchWas = false;
         }
         if (!on) compDimHeld = false;
@@ -1048,15 +1049,19 @@ bool overlay_compose(std::vector<uint32_t>& frame, int& w, int& h)
         // is drawn into a picture of its own for the host to put in the middle of the window.
         for (uint32_t& p : frame)
             p = 0xFF000000u | (((p >> 16 & 0xFF) * 115 / 255) << 16) | (((p >> 8 & 0xFF) * 115 / 255) << 8) | ((p & 0xFF) * 115 / 255);
+        // The companion PD_COMPANION_PAD inside the window's picture, its backdrop running on under the padding.
+        const int pad = PD_COMPANION_PAD, iw = compW - 2 * pad, ih = compH - 2 * pad;
         compPixels.assign((size_t) compW * compH, 0xFF000000u);
-        pd_canvas cc;
+        compInner.assign((size_t) iw * ih, 0xFF000000u);
+        pd_canvas cc, inner;
         pd_canvas_init(&cc, compW, compH, compPixels.data());
-        shell.draw(&cc, snapshot, companionGame != DsGame::Unsupported, map, icons);
-        pd_fill(&cc, 0, 0, compW, 1, 0x101418);
-        pd_fill(&cc, 0, compH - 1, compW, 1, 0x101418);
-        pd_fill(&cc, 0, 0, 1, compH, 0x101418);
-        pd_fill(&cc, compW - 1, 0, 1, compH, 0x101418);
-        for (uint32_t& p : compPixels) p |= 0xFF000000u;
+        pd_canvas_init(&inner, iw, ih, compInner.data());
+        shell.backdropFrame = &cc;
+        shell.backdropX = shell.backdropY = pad;
+        shell.draw(&inner, snapshot, companionGame != DsGame::Unsupported, map, icons);
+        shell.backdropFrame = nullptr;
+        pd_canvas_copy(&cc, pad, pad, &inner, 0, 0, iw, ih);
+        pd_window_edge(&cc, pd_cur->title, pd_cur->titleCount, 4); // the app's WindowFrame
         return true;
     }
     const bool windowShaped = (long long) gameW * 10 >= (long long) gameH * 15;

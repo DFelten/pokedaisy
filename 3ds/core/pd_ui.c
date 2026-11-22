@@ -437,12 +437,18 @@ void pd_ui_draw(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g,
     // The BATTLE tab: the DS battle screens' mint and Poké Ball in place of the game's backdrop (a Game Boy game keeps its
     // own plain look).
     if (!ui->keepBackdrop) {
+        struct pd_canvas* b = ui->backdropFrame ? ui->backdropFrame : c;
+        const bool gen5 = ui->tab == PD_TAB_BATTLE && ui->overlay != PD_OVERLAY_MORE && !pd_gb_look && ui_gen5_style(ui, g);
         if (ui->tab == PD_TAB_BATTLE && ui->overlay != PD_OVERLAY_MORE && !pd_gb_look) {
             // BATTLE STYLE > GEN 5: Black's dark closed-ball screen instead, behind INFO / SUGGESTIONS too.
-            if (ui_gen5_style(ui, g)) ui_gen5_backdrop(ui, c, s);
-            else pd_battle_backdrop(c);
+            if (gen5) ui_gen5_backdrop(ui, b, s);
+            else pd_battle_backdrop(b);
         }
-        else if (!pd_party_backdrop(c, g)) pd_backdrop(c);
+        else if (!pd_party_backdrop(b, g)) pd_backdrop(b);
+        if (b != c) {
+            pd_canvas_copy(c, 0, 0, b, ui->backdropX, ui->backdropY, c->w, c->h);
+            if (gen5) ui_gen5_backdrop(ui, c, s); // its dock follows the tab bar, which is the canvas's
+        }
     }
     tab_bar(ui, c, g, host);
     // The tabs draw above the bar: the same pixels, a shorter canvas.

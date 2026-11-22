@@ -723,8 +723,8 @@ static bool hudHost, hudNativeOn;
 // The companion as a window over the running game, for a frontend that shows one (PD_ENV_SET_COMPANION: the Linux /
 // Windows host): its own picture, sized for the window (pd_companion_size), the game's canvas under it, dimmed.
 static bool companionHost;
-static uint32_t *compPx;
-static int compW, compH;               // this window's picture (companion_window)
+static uint32_t *compPx, *compInner;
+static int compW, compH;               // this window's picture (companion_window); the companion is drawn PD_COMPANION_PAD inside it
 static struct pd_companion compReply;  // the host's last answer: the mouse over the window
 static bool compTouchWas, compDimHeld;
 // The frontend's own settings in the companion's SETTINGS (PD_ENV_FRONT_ROWS): its rows, and a row pressed for it.
@@ -1185,7 +1185,7 @@ static void choose_canvas(void) {
  * on a window that holds it at 2x or more. Smaller screens keep the companion filling the canvas. */
 static bool companion_window(void) {
   compW = compH = 0;
-  if (!companionHost || !compPx || panelW <= 0 || panelH <= 0)
+  if (!companionHost || !compPx || !compInner || panelW <= 0 || panelH <= 0)
     return false;
   int w = 0, h = 0;
   if (!pd_companion_size(panelW, panelH, CANVAS_MAX_W, CANVAS_MAX_H, &w, &h))
@@ -1420,8 +1420,10 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
     struct pd_companion off;
     memset(&off, 0, sizeof off);
     companionHost = realEnv && realEnv(PD_ENV_SET_COMPANION, &off);
-    if (companionHost && !compPx)
+    if (companionHost && !compPx) {
       compPx = calloc((size_t)CANVAS_MAX_W * CANVAS_MAX_H, sizeof *compPx);
+      compInner = calloc((size_t)CANVAS_MAX_W * CANVAS_MAX_H, sizeof *compInner);
+    }
     compTouchWas = compDimHeld = false;
   }
   {
@@ -1669,7 +1671,8 @@ RETRO_API void retro_unload_game(void) {
   }
   companionHost = false;
   free(compPx);
-  compPx = NULL;
+  free(compInner);
+  compPx = compInner = NULL;
   cvs = NULL;
   out565 = NULL;
   hudPixels = NULL;
@@ -1883,6 +1886,7 @@ RETRO_API void retro_run(void) {
     for (int i = 0; i < host.frontCount; i++) {
       host.frontLabels[i] = frontRows.label[i];
       host.frontValues[i] = frontRows.value[i];
+      host.frontGroups[i] = frontRows.group[i];
     }
     if (frontRows.open_settings) {
       companion = true;
@@ -2148,7 +2152,7 @@ RETRO_API void retro_run(void) {
         compDimHeld = true;
         companion = false;
       } else if (press && (compReply.ptr_inside || compTouchWas) && !compDimHeld) {
-        pd_ui_touch(&ui, compReply.ptr_x, compReply.ptr_y, true);
+        pd_ui_touch(&ui, compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, true);
         compTouchWas = true;
       } else if (!press && compTouchWas) {
         pd_ui_touch(&ui, 0, 0, false);
@@ -2617,10 +2621,15 @@ RETRO_API void retro_run(void) {
     // As a window: the running game under it, dimmed like the app's, and the companion drawn into its own picture.
     const struct pd_canvas gameCanvas = canvas;
     const bool window = companion_window();
+    struct pd_canvas picture;
     if (window) {
       draw_game();
       dim(0x8C);
-      pd_canvas_init(&canvas, compW, compH, compPx);
+      // The companion inside the window's picture, PD_COMPANION_PAD from its edge; its backdrop runs on under the padding.
+      pd_canvas_init(&picture, compW, compH, compPx);
+      pd_canvas_init(&canvas, compW - 2 * PD_COMPANION_PAD, compH - 2 * PD_COMPANION_PAD, compInner);
+      ui.backdropFrame = &picture;
+      ui.backdropX = ui.backdropY = PD_COMPANION_PAD;
     }
     memset(canvas.px, 0, (size_t)canvas.w * canvas.h * sizeof *canvas.px);
     // Use the Dex's compact font throughout the GBC Companion. Restore the cart font for the in-game HUD.
@@ -2643,13 +2652,10 @@ RETRO_API void retro_run(void) {
         focus_draw(&ui, focus);
     }
     if (window) {
-      // The window's edge: a line of the frame's dark round the picture, as the app's window sits on the dimmed game.
-      pd_fill(&canvas, 0, 0, canvas.w, 1, 0x101418);
-      pd_fill(&canvas, 0, canvas.h - 1, canvas.w, 1, 0x101418);
-      pd_fill(&canvas, 0, 0, 1, canvas.h, 0x101418);
-      pd_fill(&canvas, canvas.w - 1, 0, 1, canvas.h, 0x101418);
-      for (int i = 0; i < canvas.w * canvas.h; i++)
-        compPx[i] |= 0xFF000000u;
+      // The window's edge, the app's WindowFrame: the title window's frame over it, pixel corners (the host draws its shadow).
+      ui.backdropFrame = NULL;
+      pd_canvas_copy(&picture, PD_COMPANION_PAD, PD_COMPANION_PAD, &canvas, 0, 0, canvas.w, canvas.h);
+      pd_window_edge(&picture, pd_cur->title, pd_cur->titleCount, 4);
       canvas = gameCanvas;
     }
   } else if (quickOpen && ovPixels) {
