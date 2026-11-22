@@ -279,6 +279,19 @@ The core built for `android-arm64` with the NDK (28.2, on a Mac: `native-capture
 What it means: a phone-class chip runs it comfortably; what's left for the app is the host side (a GL context on the emu
 thread, input, audio, a game folder in the library) and a memory budget for weaker devices.
 
+## In the app: playable on the Thor (2026-11-17)
+
+Behind `FeatureFlags.pcGames` (off). `PcGameActivity` hosts the core itself (`cpp/pk_pc.c`), not through EmulatorEngine: the core
+draws into our FBO on the activity's GLSurfaceView thread (GLES 3.2, `preserveEGLContextOnPause`), blitted to the screen at the
+largest 4:3 size; frames by the clock (the core's 60 fps, at most two a refresh); sound through a non-blocking AudioTrack fed from a
+ring; the buttons and left stick as a RetroPad; BACK twice closes. A TOOLS card per game in `pc/games/`; the core loads from
+`pc/cores/` (copied into private files first: Android won't load code from shared storage). With a second screen, a small panel
+(party, map, money) from the mailbox, read once a second on a background thread. The games' save folders are backed up first.
+Infinite Fusion booted in it on the Thor: ~5.5 s to load the game from shared storage, then the intro and the title, A taking.
+
+Not yet: resume / states, touch controls, sharp scaling, the real companion (PARTY's slots, summary, BAG), HUD, the manual, the
+strings' translations.
+
 ## Next steps
 
 1. Time Infinite Fusion on the other handhelds: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built

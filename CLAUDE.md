@@ -239,6 +239,12 @@ icons from its folder (`pc_png.c`); `pc-companion-shot` draws its pages from a s
 `POCKET_PC_COMPANION=1`, `POCKET_PC_LOG` (with `POCKET_KEYS`; `save` / `load` press the state keys). A PC game's state is the 512 MB heap:
 `pc_state.c` writes it zstd-compressed (libzstd optional; ~100 MB), reads up to 1 GB, and REWIND is off for it; before it opens,
 `<saves>/mkxp-z/Saves/<game>/` is backed up into `pokedaisy-backups/mkxp-z/` (newest 10 distinct; a failed copy keeps it closed).
+**PC fan games in the app** (prototype, `FeatureFlags.pcGames` off: `-Ppokedaisy.pcGames=true` / marker `pc-games`; 2026-11-17):
+`PcGameActivity` (its own screen, like LINK PLAY: no EmulatorEngine, companion, HUD or states yet) runs the core on its GLSurfaceView's
+thread through `cpp/pk_pc.c` (libretro host, GLES 3.2 into our FBO, blitted to the view; the mailbox read under the core lock) and `PcCore`.
+`PcGames`: the core from `<external files>/pc/cores/` copied into private files before `dlopen` (never bundled), games in `pc/games/`
+(a TOOLS card each), saves in `pc/saves/` backed up before each start; our preloads ride along as `assets/pc_preload/*.rb` (a Sync task
+from `linux/pc_games`). Its few strings aren't translated yet: do that, the manual and NEW tags before the flag goes.
 
 ## Testing: quick by default, full runs only with the user's OK
 

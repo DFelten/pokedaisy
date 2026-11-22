@@ -80,10 +80,13 @@ endif()
 # ---------------------------------------------------------------------------
 # Our JNI bridge.
 # ---------------------------------------------------------------------------
-add_library(pokedaisy SHARED pokedaisy_jni.c pokedaisy_ra.c pk_coop_lock_jni.c pk_link_jni.c
+add_library(pokedaisy SHARED pokedaisy_jni.c pokedaisy_ra.c pk_coop_lock_jni.c pk_link_jni.c pk_pc.c
     nds/pk_nds_core.cpp nds/pk_nds_dsp.cpp nds/pk_nds.cpp nds/pk_nds_platform.cpp nds/pk_nds_field.cpp nds/pk_nds_field_gpu.cpp nds/pk_nds_call.cpp nds/pk_nds_call_melonds.cpp nds/pk_nds_wide.cpp
     nds/pk_nds_music.cpp nds/pk_nds_gl.cpp nds/pk_nds_bnd_load.cpp)
 set_target_properties(pokedaisy PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+# PC fan games (pk_pc.c): a libretro host for the mkxp-z core, which is loaded from the app's files, never linked.
+# libretro.h from mGBA's tree (the API header, the same in every core).
+set_source_files_properties(pk_pc.c PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/mgba/src/platform/libretro")
 # melonDS's headers test these (its own sources get them from its directory's add_definitions).
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
     target_compile_definitions(pokedaisy PRIVATE ARCHITECTURE_ARM64=1)
