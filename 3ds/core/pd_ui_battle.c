@@ -612,7 +612,13 @@ static void foe_details(struct pd_canvas* c, const struct battle_data* d, const 
                         int iy, int iw, int ih, bool hints) {
     const int gap = 3, strip = PD_ICON + 2 + 6;
     // The strip: YOU over the icon, then an upright HP bar emptying from the top, the numbers under it.
-    pd_text(c, ix, iy, pd_tr("YOU"), PD_VALUE, PD_VALUE_SHADOW);
+    const struct pd_cells* fc = pd_style ? &pd_style->foeCells : NULL;
+    if (fc) { // the style's YOU tag, as INFO's
+        const char* yw = pd_tr("YOU");
+        pd_fill(c, ix - 1, iy + 1, pd_text_width(yw) + 6, 14, pd_style->cells.head);
+        pd_text(c, ix + 2, iy, yw, pd_style->cells.headText, pd_style->cells.headShadow);
+    } else
+        pd_text(c, ix, iy, pd_tr("YOU"), PD_VALUE, PD_VALUE_SHADOW);
     icon(c, d, you->species, you->shiny, ix, iy + 14, false);
     int barX = ix + (PD_ICON + 2 - 8) / 2, barY = iy + 14 + PD_ICON + 2 + 6, barH = iy + ih - 32 - barY;
     if (barH > 12) {
@@ -629,15 +635,16 @@ static void foe_details(struct pd_canvas* c, const struct battle_data* d, const 
     pd_text(c, ix + (PD_ICON + 2 - pd_text_width(t)) / 2, iy + ih - 30, t, PD_LABEL, PD_LABEL_SHADOW);
     snprintf(t, sizeof(t), "/%d", you->maxHp);
     pd_text(c, ix + (PD_ICON + 2 - pd_text_width(t)) / 2, iy + ih - 16, t, PD_MUTED, PD_MUTED_SHADOW);
-    separator(c, ix + strip, iy, ih, true);
+    if (!fc) separator(c, ix + strip, iy, ih, true);
     int rx = ix + strip + 2 + gap, rw = iw - strip - 2 - gap, y = iy + 2;
     if (!foe) {
         pd_text(c, rx, y - 2, pd_tr("NO FOE"), PD_MUTED, PD_MUTED_SHADOW);
         return;
     }
+    if (fc) pd_cell(c, rx - 3, iy - 1, rw + 6, CARD_H + 3, fc->line, fc->a); // the foe's card in its red cell
     side_card(c, d, rx, y, rw, foe, s->isTrainer ? "FOE" : "WILD", foeState, caught_species(d, s, foe->species));
     y = iy + CARD_H + 4;
-    separator(c, rx, y, rw, false);
+    if (!fc) separator(c, rx, y, rw, false);
     y += 5;
     y += foe_facts(c, d, foeBattler, rx, y, rw);
     int bottom = iy + ih;
@@ -648,13 +655,15 @@ static void foe_details(struct pd_canvas* c, const struct battle_data* d, const 
     for (int i = 0; i < PD_NUM_MOVES && y + rowH <= bottom; i += 2) {
         for (int j = 0; j < 2; j++) {
             int cw = j == 1 && y + rowH > buttonTop ? colW - (PD_ICON_SHRINK.w + 10) - 4 : colW;
+            // The style's foe moves: a red cell each, rows by turn.
+            if (fc) pd_cell(c, rx + j * (colW + 6) - 2, y - 1, cw + 4, rowH + 1, fc->line, ((i / 2) & 1) ? fc->b : fc->a);
             threat_row(c, d, rx + j * (colW + 6), y, cw, rowH, foe->moves[i + j], foe->pp[i + j], you);
         }
         y += rowH;
     }
     if (hints && y + 30 <= bottom) {
-        separator(c, rx, y + 1, rw, false);
-        matchups(c, d, foe, rx, y + 5, rw, bottom);
+        if (!fc) separator(c, rx, y + 1, rw, false);
+        matchups(c, d, foe, rx, y + (fc ? 7 : 5), rw, bottom);
     }
 }
 
