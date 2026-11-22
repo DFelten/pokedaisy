@@ -384,8 +384,10 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   types, stats, IVs / EVs (arrays, the stats' order), nature (its place in `$cache.natures`: Gen 3's numbering), ability
   and moves (`$cache.moves`); the bag's pockets with a `kind` each (their sixth is Crystals / Enhancements, not Mail:
   `PcCompanion` takes the kind over the place), counts from `contents`; the Town Map from `$cache.town_map` (a region's
-  `{name, filename}` by number, a `TownMapData` per tile by `[x, y]`, Essentials' own tile rule, the spot moved through a big
-  map by `MapSize` as their RegionMap does); HERE from `@enctypes` (species to `[chance, min, max]` lists; the grass list
+  `{name, filename}` by number, a `TownMapData` per tile by `[x, y]`, the spot moved through a big map by `MapSize` as their
+  RegionMap does; Reborn's picture in `Graphics/Pictures` with Essentials' own tile rule, Rejuvenation's own map scene
+  `Rejuv/RegionMap.rb` with its pictures in `Graphics/Pictures/RegionMap` and a sprite's corner at tile * 16, told apart by
+  their `Rejuv` constant); HERE from `@enctypes` (species to `[chance, min, max]` lists; the grass list
   by their clock, as `pbEncounterType` picks it; Rejuvenation's `[species, :Season]` keys); party icons as
   `pbPokemonIconBitmap` finds them (Reborn's `Graphics/Icons/<species>`, Rejuvenation's `Graphics/Icons/Pokemon/icon<dex>`:
   a 128 x 64 row a form, which the icon's `x` / `y` / `w` / `h` crop); Rejuvenation's genders as letters and its Pokédex's

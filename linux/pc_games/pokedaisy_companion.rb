@@ -720,8 +720,10 @@ module PokeDaisyReborn
   end
 
   # Their Town Map: $cache.town_map holds each region's {name, filename} by number and a TownMapData per tile by [x, y].
-  # The player's spot is the map's MapPosition, moved through a big map by MapSize as their RegionMap does; tiles are
-  # drawn by Essentials' own rule (centred on tile * 16).
+  # The player's spot is the map's MapPosition, moved through a big map by MapSize as their RegionMap does. Reborn's map
+  # is Essentials' own (Graphics/Pictures, a tile's sprites centred on tile * 16); Rejuvenation's its own
+  # (Rejuv/RegionMap.rb: Graphics/Pictures/RegionMap, a sprite's corner at tile * 16, so a tile's middle 8 in).
+  def rejuv? = defined?(::Rejuv) && ::Rejuv ? true : false
   def town_map
     md = try { $cache.mapdata[$game_map.map_id] }
     pos = md && try { md.MapPosition }
@@ -737,7 +739,7 @@ module PokeDaisyReborn
     data = town_map_region(region)
     return nil unless data
     {
-      "region" => region, "x" => x, "y" => y, "picture" => data[:picture], "tile" => 16, "centre" => 0,
+      "region" => region, "x" => x, "y" => y, "picture" => data[:picture], "tile" => 16, "centre" => rejuv? ? 8 : 0,
       "head" => try { pbPlayerHeadFile($Trainer.trainertype) }, "hidden" => [],
       "points" => PokeDaisyCompanion::Raw.new(data[:json]),
     }
@@ -753,7 +755,7 @@ module PokeDaisyReborn
       points = tm.select { |k, v| k.is_a?(Array) && (try { v.region }.nil? || v.region == region) }.map do |k, v|
         [k[0], k[1], place_name(try { v.name }), place_name(try { v.poi })]
       end
-      { picture: file, json: PokeDaisyCompanion.j(points) }
+      { picture: rejuv? && file ? "RegionMap/#{file}" : file, json: PokeDaisyCompanion.j(points) }
     }
   end
 
