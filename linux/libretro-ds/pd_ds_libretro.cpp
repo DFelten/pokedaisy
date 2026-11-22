@@ -1060,6 +1060,14 @@ void controls() {
     if(hit(RETRO_DEVICE_ID_JOYPAD_B))flyJob={};
     return;
   }
+  // L3 (the desktop's QUICK MENU button): a press opens the ring, another closes it. L2 keeps its tap for the
+  // companion and hold for the quick menu.
+  if(hit(RETRO_DEVICE_ID_JOYPAD_L3)){
+    if(quickOpen){quickOpen=false;repelPicker=flyPicker=false;return;}
+    if(!companion){
+      hudCursor=-1;quickOpen=true;quickSelected=0;companionHold=0;repelPicker=flyPicker=false;flyWhy=nullptr;refresh();return;
+    }
+  }
   const int hudButton=shell.hud_id();
   if(hudCursor>=0){
     if(buttons&(1u<<RETRO_DEVICE_ID_JOYPAD_SELECT))select_used=true;
@@ -1231,7 +1239,7 @@ RETRO_API bool retro_load_game(const retro_game_info* info){
     // Preserve the existing exact-ROM guard: offsets and art are rev-specific.
     uint8_t hash[20];ds::crypto::sha1(rom.data(),rom.size(),hash);
     char dump[41];for(int i=0;i<20;++i)std::sprintf(dump+2*i,"%02x",hash[i]);
-    const char* hex=ds_canonical_sha1(dump);
+    const char* hex=ds_open_cart(dump);
     pd_ds::supported=!std::strcmp(hex,pd_ds_data::sha1);
     pd_ds::companionGame=ds_companion_game(hex);
     pd_ds::soulSilver=!std::strcmp(hex,pd_ds_data::soulSilverSha1);
