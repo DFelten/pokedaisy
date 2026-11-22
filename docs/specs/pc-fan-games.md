@@ -415,8 +415,10 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   ones to their file after every slot is back (a stream before its file in the table would have failed the same way). Both
   games now save and load (Rejuvenation 0.33 s, Reborn 0.04 s, 512 MB states). The fix changes the core's sandbox hash, so
   states from an older core are refused (a resume state is set aside, as for any refused load).
-- Not yet: playing in (a new game, a save), states (their heaps), timings on a device, their updater's `patch/` files
-  (our core reads the game folder alone; the downloads ship it empty); Rejuvenation's cross-game bonuses (it can't see
+- Their mkxp.json's `"patches"` folders aren't mounted by the libretro core (the desktop build mounts them), which doesn't
+  matter here: Reborn's updater writes its fixes into the game folder itself (`applyPatch('patch.zip', '.')`) and `patch/`
+  ships empty, so an updated folder copied to the device plays as it is.
+- Not yet: playing far in, timings on a device, Rejuvenation's cross-game bonuses (it can't see
   your Reborn save). A cheat that runs the game's own loop (a battle) runs again inside it until the sandbox overflows: the
   core clears a cheat only once it returns, so a test starts one from the next frame update instead.
 
