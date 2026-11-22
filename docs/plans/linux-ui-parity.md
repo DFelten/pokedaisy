@@ -53,7 +53,10 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
   - [x] The DS core's companion in the style, with FONT TYPE in its SETTINGS (SCREEN, under DARK MODE)
   - [x] Battle INFO and SUGGESTIONS in cells (`pd_cell`, `pd_cells`): your card and moves blue, the foe's card and
         matchups red under a heading cell, the side words as tags
-  - [ ] The game list (`linux/library.c`), FOE DETAILS' rows, the summary's MOVES cells
+  - [x] The game list in the style (the host turns it on): the header a band docked to the top and right edges with
+        its buttons as keys, the rail and cards in the list window's frame, SETTINGS' section bands and striped rows,
+        TOOLS' cards; the host's menu, HOTKEYS and KEYBOARD under a header band (`pd_menu`)
+  - [ ] FOE DETAILS' rows, the summary's MOVES cells, the game list's button legend
   - [ ] Folder tabs on the window's side (`FolderTab`), the header joined to its list (`OptionTitleWindow(joined)`)
   - [ ] `PanelHeader` bands, `GameTag` tags (12 px, notched corners, #424242 shadow)
   - [ ] Themes move the whole palette (`themedStylePalette`, `rehued`), the focus ring in the theme's opposite colour

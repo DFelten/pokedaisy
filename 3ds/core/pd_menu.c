@@ -36,8 +36,8 @@ static void keep_visible(struct pd_menu* m, int rows) {
 void pd_menu_draw(struct pd_menu* m, struct pd_canvas* c) {
     if (!m->overlay) pd_backdrop(c);
     int w = c->w - 2 * MARGIN;
-    int f = pd_title_box(c, MARGIN, MARGIN, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, MARGIN + f + 6, pd_text_y(MARGIN, TITLE_H), m->title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, MARGIN, MARGIN, w, TITLE_H);
+    pd_text(c, MARGIN + f + 6, pd_text_y(MARGIN, TITLE_H), m->title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
 
     pd_list_box(c, MARGIN, LIST_Y, w, c->h - LIST_Y - MARGIN);
     int rows = visible_rows(c);

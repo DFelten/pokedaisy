@@ -1547,17 +1547,31 @@ static void draw_rail(struct pd_canvas *c) {
 }
 
 static void draw_header(struct pd_canvas *c, int x, int w, const char *title, bool buttons) {
-  int f = pd_title_box(c, x, M, w, HEADER_H, PD_TITLE_FILL);
+  int f;
+  if (pd_style) {
+    // The app's LibraryHeaderBar: a band docked to the screen's top and right edges, its frame only along the bottom and
+    // the side facing the rail; the header's buttons as keys.
+    const int bx = x - 3, bw = c->w - bx, bh = M + HEADER_H;
+    pd_fill(c, bx, 0, bw, bh, pd_style->header[0].color);
+    pd_fill(c, bx + 1, 0, bw - 1, bh - 1, pd_style->header[1].color);
+    pd_fill(c, bx + 2, 0, bw - 2, bh - 2, pd_style->headerFill);
+    f = 2;
+  } else
+    f = pd_title_box(c, x, M, w, HEADER_H, PD_TITLE_FILL);
   lib_draw_logo_24(c, x + f + 3, M + (HEADER_H - 24) / 2);
-  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
   if (!buttons)
     return;
   // SORT and GRID / LIST: the app's HeaderIcons, at the window's right end.
   for (int i = 0; i < 2; i++) {
     int bw = 26, bh = HEADER_H - 2 * f - 4, bx = x + w - f - 4 - (2 - i) * (bw + 4), by = M + f + 2;
-    pd_layered_two_tone(c, bx, by, bw, bh, 3, pd_cur->chip, pd_cur->chipCount, pd_cur->tabIdleFill, 0);
+    if (pd_style)
+      pd_key(c, bx, by, bw, bh, &pd_style->button);
+    else
+      pd_layered_two_tone(c, bx, by, bw, bh, 3, pd_cur->chip, pd_cur->chipCount, pd_cur->tabIdleFill, 0);
     const struct pd_mono *icon = i == 0 ? &SORT_ICON : grid ? &LIST_ICON : &GRID_ICON;
-    mono(c, icon, bx + (bw - icon->w * 2) / 2, by + (bh - icon->h * 2) / 2, 2, PD_LABEL);
+    mono(c, icon, bx + (bw - icon->w * 2) / 2, by + (bh - icon->h * 2) / 2 - (pd_style ? 1 : 0), 2,
+         pd_style ? pd_style->button.text : PD_LABEL);
     if (focus == F_HEADER && headerCursor == i)
       ring(c, bx, by, bw, bh);
     hit_add(bx, by, bw, bh, i == 0 ? LIB_HIT_SORT : LIB_HIT_GRID, 0);
@@ -1783,20 +1797,28 @@ static void draw_settings(struct pd_canvas *c) {
     settingsScroll = 0;
   f = pd_list_box(c, contentX, contentY, contentW, contentH);
   pd_clip(c, contentX + f, contentY + f, contentW - 2 * f, contentH - 2 * f);
-  int y = contentY + f - settingsScroll;
+  int y = contentY + f - settingsScroll, parity = 0;
   last = NULL;
   for (int i = 0; i < n; i++) {
     if (!last || strcmp(last, setting_group(i))) {
       last = setting_group(i);
-      pd_text(c, contentX + f + 8, pd_text_y(y, rowH), last, PD_MUTED, PD_MUTED_SHADOW);
-      pd_fill(c, contentX + f + 8, y + rowH - 3, contentW - 2 * f - 16, 1, PD_DIVIDER);
+      if (pd_style) { // the style's section band, as the companion's SETTINGS
+        pd_section_title(c, contentX + f + 4, y, contentW - 2 * f - 8, rowH, last);
+      } else {
+        pd_text(c, contentX + f + 8, pd_text_y(y, rowH), last, PD_MUTED, PD_MUTED_SHADOW);
+        pd_fill(c, contentX + f + 8, y + rowH - 3, contentW - 2 * f - 16, 1, PD_DIVIDER);
+      }
       y += rowH;
+      parity = 0;
     }
     char label[48], value[48];
     setting_label(i, label, sizeof label, value, sizeof value);
     bool cur = i == settingsCursor && focus == F_GAMES;
     if (cur)
       pd_fill(c, contentX + f, y, contentW - 2 * f, rowH, PD_ROW_SELECTED);
+    else if (pd_style && (parity & 1)) // striped rows
+      pd_fill(c, contentX + f, y, contentW - 2 * f, rowH, pd_style->stripe);
+    parity++;
     pd_text(c, contentX + f + 12, pd_text_y(y, rowH), label, PD_LABEL, PD_LABEL_SHADOW);
     pd_text_right(c, contentX + contentW - f - 12, pd_text_y(y, rowH), value, PD_VALUE, PD_VALUE_SHADOW);
     hit_add_clipped(contentX + f, y, contentW - 2 * f, rowH, contentX + f, contentY + f, contentW - 2 * f, contentH - 2 * f,
@@ -1813,7 +1835,9 @@ static void draw_tools(struct pd_canvas *c) {
   for (int i = 0; i < 2; i++) {
     int y = contentY + i * 64, h = 56;
     bool cur = focus == F_GAMES && toolCursor == i;
-    int f = pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->title, pd_cur->titleCount, cur ? PD_ROW_SELECTED : PD_TITLE_FILL);
+    // A card (ToolsPage's): the list window's frame in the style, the title window's without.
+    int f = pd_style ? pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->list, pd_cur->listCount, cur ? PD_ROW_SELECTED : PD_LIST_FILL)
+                     : pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->title, pd_cur->titleCount, cur ? PD_ROW_SELECTED : PD_TITLE_FILL);
     ui_art_at(c, art[i], contentX + f + 6, y + (h - 32) / 2, 2);
     pd_text(c, contentX + f + 48, y + f + 6, NAMES[i], PD_LABEL, PD_LABEL_SHADOW);
     pd_text_fit(c, contentX + f + 48, y + f + 24, contentW - f * 2 - 56, BLURBS[i], PD_MUTED, PD_MUTED_SHADOW);

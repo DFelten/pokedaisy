@@ -9,6 +9,7 @@
 #include "display_filter.h"
 #include "pd_canvas.h"
 #include "pd_menu.h"
+#include "pd_style.h"
 #include <SDL.h>
 #include <dirent.h>
 #ifdef _WIN32
@@ -2830,6 +2831,10 @@ int main(int argc, char **argv) {
   snprintf(savesDir, sizeof savesDir, "%s/saves", root);
   snprintf(hostIni, sizeof hostIni, "%s/host.ini", root);
   host_load();
+  // The app's RETRO look for the host's own windows (its menu, HOTKEYS, KEYBOARD, the game list), as the cores draw
+  // the companion: the game list applies the player's THEME and DARK MODE over it (library.c's pd_look_apply).
+  pd_style_enable(true);
+  pd_look_apply(NULL, NULL);
   faceLabels = getenv("POCKET_FACE_LABELS") && !strcmp(getenv("POCKET_FACE_LABELS"), "1");
   comboMenu = !(getenv("POCKET_MENU_COMBO") && !strcmp(getenv("POCKET_MENU_COMBO"), "off"));
   // A window manager can give another window the focus over the game (plorpOS's in-game menu on the GKD): the
