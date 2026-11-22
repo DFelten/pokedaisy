@@ -111,6 +111,37 @@ class PcCompanionTest {
         assertEquals(listOf("BUBBLEFIN", "THORNLET"), v.enemyParty.map { it.name })
         assertEquals(0, v.enemyActive)
         assertEquals(listOf(0), v.playerBattlers)
+        // The game's command window waits: the companion's buttons are live.
+        assertEquals(com.pokedaisy.app.companion.data.BATTLE_INPUT_ACTION_SELECT, v.battleInputState)
+    }
+
+    @Test fun theWaitingMenu() {
+        fun state(menu: String?) = PcCompanion(tmp.newFolder(), tmp.newFolder()).snapshot(
+            org.json.JSONObject(PcCompanionSample.BATTLE_JSON).apply { getJSONObject("battle").put("menu", menu ?: org.json.JSONObject.NULL) }.toString(),
+        )!!.battleInputState
+        assertEquals(com.pokedaisy.app.companion.data.BATTLE_INPUT_MOVE_SELECT, state("fight"))
+        assertEquals(com.pokedaisy.app.companion.data.BATTLE_INPUT_PARTY_OPEN, state("party"))
+        assertEquals(com.pokedaisy.app.companion.data.BATTLE_INPUT_BUSY, state(null))
+        assertEquals(com.pokedaisy.app.companion.data.BATTLE_INPUT_NONE, view().battleInputState)
+    }
+
+    @Test fun partySlotsAreTheSwitchKey() {
+        assertEquals(listOf(1L, 2L, 3L, 4L), view().party.map { it.personality })
+    }
+
+    @Test fun picksAreTheGamesRequests() {
+        val sent = mutableListOf<String>()
+        val input = PcBattleInput { sent += it; true }
+        input.selectMove(2)
+        input.selectAction(3)
+        input.back()
+        input.switchTo(3)
+        input.switchTo(0)   // unknown: nothing
+        input.selectMove(7) // no such move: nothing
+        assertEquals(listOf(
+            "PokeDaisyCompanion.request(:fight, 2)", "PokeDaisyCompanion.request(:action, 3)",
+            "PokeDaisyCompanion.request(:back)", "PokeDaisyCompanion.request(:switch, 2)",
+        ), sent)
     }
 
     @Test fun noBattleNoBattleFields() {

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.pokedaisy.app.companion.data.CoreKey
 import com.pokedaisy.app.companion.data.GameKind
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.activeGame
@@ -35,6 +36,8 @@ import com.pokedaisy.app.companion.i18n.tr
 import com.pokedaisy.app.companion.ui.CompanionBack
 import com.pokedaisy.app.companion.ui.CompanionScreen
 import com.pokedaisy.app.companion.ui.OwnItemNames
+import com.pokedaisy.app.companion.ui.TouchControls
+import com.pokedaisy.app.companion.ui.TouchInput
 import com.pokedaisy.app.companion.ui.AppBackdrop
 import com.pokedaisy.app.companion.ui.OptionColors
 import com.pokedaisy.app.companion.ui.OptionTitleWindow
@@ -73,6 +76,10 @@ class PcGameActivity : ComponentActivity() {
     @Volatile private var resumed = false
     private var keyMask = 0
     private var stickMask = 0
+    /** The on-screen controls' buttons held, as RetroPad bits ([touchBits]). */
+    @Volatile private var touchMask = 0
+    /** A real button played the game: AUTO's on-screen controls step aside, as PokeDaisyActivity's do. */
+    private var physicalPadUsed by mutableStateOf(false)
     private var lastBack = 0L
     private var presentation: DualScreenPresentation? = null
     private var ini: File? = null
@@ -85,6 +92,8 @@ class PcGameActivity : ComponentActivity() {
     private var snapshot by mutableStateOf(SnapshotView(connected = true, game = GameKind.ESSENTIALS))
     private var companion: PcCompanion? = null
     private val companionBack = CompanionBack()
+    /** The companion's battle buttons: picks sent to the game's own menus ([PcBattleInput]). */
+    private val battleInput = PcBattleInput()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,6 +102,8 @@ class PcGameActivity : ComponentActivity() {
         val ini = intent?.getStringExtra(EXTRA_GAME)?.let { File(it) }
         this.ini = ini
         val root = FrameLayout(this)
+        // The app's own touch controls over the game (TOUCH CONTROLS' style and layout), then the notice over both.
+        root.addView(ComposeView(this).apply { setContent { AppTheme { Touch() } } })
         root.addView(ComposeView(this).apply { setContent { AppTheme { Notice() } } })
         setContentView(root)
         if (ini == null || !ini.isFile) {
@@ -291,7 +302,7 @@ class PcGameActivity : ComponentActivity() {
         if (presentation != null) return
         val display = (if (Prefs(this).singleScreen) null else Screens.second(this)) ?: return
         presentation = DualScreenPresentation(this, display) { ctx: Context ->
-            ComposeView(ctx).apply { setContent { AppTheme { CompanionScreen(snapshot = snapshot, back = companionBack) } } }
+            ComposeView(ctx).apply { setContent { AppTheme { CompanionScreen(snapshot = snapshot, back = companionBack, battleInput = battleInput) } } }
         }.also { runCatching { it.show() } }
     }
 
@@ -334,7 +345,8 @@ class PcGameActivity : ComponentActivity() {
             KeyEvent.ACTION_DOWN -> keyMask = keyMask or (1 shl bit)
             KeyEvent.ACTION_UP -> keyMask = keyMask and (1 shl bit).inv()
         }
-        PcCore.pcInput(keyMask or stickMask)
+        if (event.action == KeyEvent.ACTION_DOWN && !physicalPadUsed && event.source and InputDevice.SOURCE_TOUCHSCREEN == 0) physicalPadUsed = true
+        sendInput()
         return true
     }
 
@@ -350,11 +362,58 @@ class PcGameActivity : ComponentActivity() {
         if (y < -0.5f) m = m or (1 shl PcCore.UP)
         if (y > 0.5f) m = m or (1 shl PcCore.DOWN)
         stickMask = m
-        PcCore.pcInput(keyMask or stickMask)
+        sendInput()
         return true
     }
 
+    private fun sendInput() = PcCore.pcInput(keyMask or stickMask or touchMask)
+
+    /** The on-screen controls' GBA / DS buttons ([com.pokedaisy.app.companion.data.CoreKey]) as the core's RetroPad bits. */
+    private fun touchBits(gba: Int): Int {
+        var m = 0
+        for ((core, pad) in CORE_TO_PAD) if (gba and core != 0) m = m or (1 shl pad)
+        return m
+    }
+
+    private val CORE_TO_PAD = listOf(
+        CoreKey.A to PcCore.A, CoreKey.B to PcCore.B, CoreKey.X to PcCore.X, CoreKey.Y to PcCore.Y,
+        CoreKey.SELECT to PcCore.SELECT, CoreKey.START to PcCore.START, CoreKey.UP to PcCore.UP, CoreKey.DOWN to PcCore.DOWN,
+        CoreKey.LEFT to PcCore.LEFT, CoreKey.RIGHT to PcCore.RIGHT, CoreKey.L to PcCore.L, CoreKey.R to PcCore.R,
+    )
+
     // ---- what's drawn over the game and on the second screen -----------------------------------------------------
+
+    /**
+     * TOUCH CONTROLS as the other games have them (style, layout, skin left out), sideways, with X and Y (Essentials
+     * games use more than A and B). AUTO shows them until a controller is there or used. FF, the QUICK MENU and the
+     * state buttons do nothing here yet, so they're left off.
+     */
+    @Composable
+    private fun Touch() {
+        val style = androidx.compose.runtime.remember { Prefs(this).touchControlsStyle }
+        val shown = when (style.show) {
+            com.pokedaisy.app.companion.TouchShow.ALWAYS -> true
+            com.pokedaisy.app.companion.TouchShow.NEVER -> false
+            com.pokedaisy.app.companion.TouchShow.AUTO -> !physicalPadUsed && !Controllers.anyConnected()
+        }
+        if (!shown || notice != null) return
+        TouchControls(
+            style = style,
+            portrait = false,
+            input = androidx.compose.runtime.remember {
+                TouchInput(onKeys = { gba, turbo ->
+                    touchMask = touchBits(gba or turbo)
+                    sendInput()
+                })
+            },
+            modifier = Modifier.fillMaxSize(),
+            gameAspect = 4f / 3f,
+            ds = true,
+            unavailable = PC_UNAVAILABLE,
+        )
+    }
+
+    private val PC_UNAVAILABLE = com.pokedaisy.app.companion.TouchButton.entries.filter { it.extra }.toSet()
 
     @Composable
     private fun Notice() {

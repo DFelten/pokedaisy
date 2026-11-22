@@ -35,10 +35,14 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 ## Playing
 
 - The buttons and the stick work as in the game itself: A to pick, B to go back.
+- On a screen with no controller, the on-screen controls show, the same ones (and the same `TOUCH CONTROLS` settings)
+  as in your other games, with X and Y too.
 - Press BACK twice to close the game.
 - With a second screen, the companion is there: your team (tap one for its summary, its moves and its stats) and your
   bag, every name and type as the game has them. In a battle the BATTLE tab joins them: both sides' Pokémon, how well
-  each move works on the other side, what the foe is weak to, and a trainer's whole team.
+  each move works on the other side, what the foe is weak to, and a trainer's whole team. When the game asks what to
+  do, the companion's buttons answer it: FIGHT and a move, RUN, or POKéMON to pick who switches in. BAG opens the
+  game's own bag.
 
 ## Your progress
 
@@ -52,7 +56,6 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 
 ## What doesn't work yet
 
-- Touch controls on screen.
 - The companion's other tabs (the map, the guide) and its settings.
-- Picking moves from the companion: in a battle, use the game's own menu.
+- Double battles: their picks stay in the game's own menu.
 - Games made with older versions of Essentials.

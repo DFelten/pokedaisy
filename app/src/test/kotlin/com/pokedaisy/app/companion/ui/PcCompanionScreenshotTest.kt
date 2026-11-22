@@ -29,6 +29,7 @@ class PcCompanionScreenshotTest {
     private lateinit var companion: PcCompanion
 
     @Before fun game() {
+        installTestHosts(paparazzi.context)
         activeGame = GameKind.ESSENTIALS
         OptionColors.inGame = true
         companion = PcCompanion(Files.createTempDirectory("pc-game").toFile(), Files.createTempDirectory("pc-files").toFile())
@@ -41,9 +42,10 @@ class PcCompanionScreenshotTest {
         OwnItemNames.lookup = null
     }
 
-    private fun shot(tab: String, mon: Int? = null, json: String = PcCompanionSample.JSON) {
+    private fun shot(tab: String, mon: Int? = null, json: String = PcCompanionSample.JSON, controls: Boolean = false) {
         val view = companion.snapshot(json)!!
-        paparazzi.snapshot { CompanionScreen(view, initialTab = tab, initialMonIndex = mon) }
+        val input = if (controls) com.pokedaisy.app.PcBattleInput { true } else null
+        paparazzi.snapshot { CompanionScreen(view, initialTab = tab, initialMonIndex = mon, battleInput = input) }
     }
 
     @Test fun party() = shot("PARTY")
@@ -51,6 +53,7 @@ class PcCompanionScreenshotTest {
     @Test fun summaryWater() = shot("PARTY", mon = 1)
     @Test fun bag() = shot("ITEMS")
     @Test fun battle() = shot("BATTLE", json = PcCompanionSample.BATTLE_JSON)
+    @Test fun battleButtons() = shot("BATTLE", json = PcCompanionSample.BATTLE_JSON, controls = true)
 
     /** The summary's STATS page: IVs and EVs as the game sends them, its nature. */
     @Test fun stats() {

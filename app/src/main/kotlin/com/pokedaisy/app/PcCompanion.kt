@@ -2,6 +2,12 @@ package com.pokedaisy.app
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_ACTION_SELECT
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_BAG_OPEN
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_BUSY
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_MOVE_SELECT
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_NONE
+import com.pokedaisy.app.companion.data.BATTLE_INPUT_PARTY_OPEN
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_FEMALE
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_MALE
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_NONE
@@ -93,6 +99,16 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             enemyBattlers = foes.map { it.second },
             enemyParty = foeParty,
             enemyActive = foes.firstOrNull()?.second?.takeIf { foeParty.isNotEmpty() } ?: -1,
+            // Which of the game's menus waits (the preload's hooks): the companion's battle buttons follow it.
+            // (No menu named - JSON null reads "null" - is the battle between menus: messages, animations.)
+            battleInputState = if (battle == null) BATTLE_INPUT_NONE else when (battle.optString("menu")) {
+                "command" -> BATTLE_INPUT_ACTION_SELECT
+                "fight" -> BATTLE_INPUT_MOVE_SELECT
+                "party" -> BATTLE_INPUT_PARTY_OPEN
+                "bag" -> BATTLE_INPUT_BAG_OPEN
+                else -> BATTLE_INPUT_BUSY
+            },
+            battleActiveBattler = battle?.optInt("menuBattler") ?: 0,
         )
     }
 
@@ -161,6 +177,8 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             abilityName = m.optString("ability").takeIf { it.isNotEmpty() && it != "null" },
             heldItem = if (m.isNull("item")) "" else m.optString("item"),
             nickname = m.optString("name").takeIf { it.isNotEmpty() },
+            // The key the battle's switch goes by ([PcBattleInput.switchTo]): the party slot, + 1 (0 = unknown).
+            personality = (slot + 1).toLong(),
             shiny = m.optBoolean("shiny"),
         )
     }

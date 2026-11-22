@@ -14,7 +14,7 @@ module PokeDaisyCompanion
   CAPACITY = 256 * 1024
   HEADER = 24
   EVERY = 15 # frames between snapshots (4 a second at 60 fps)
-  VERSION = 4
+  VERSION = 5
   # Essentials' stat keys, in the order "stats" sends them.
   STAT_KEYS = [:HP, :ATTACK, :DEFENSE, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :SPEED]
   # A battler's stat stages, in the order the companion keeps them (its battle stats, then accuracy and evasion).
@@ -70,6 +70,137 @@ module PokeDaisyCompanion
     )
   end
 
+  # ---- picks from the companion ---------------------------------------------------------------------------------------
+  # The host asks with one line of Ruby (the core's cheat call runs it once): PokeDaisyCompanion.request(:fight, 2). The
+  # game's own menus then take it on their next update - the command or fight window's cursor set, and the game's next
+  # USE check answered once - so the pick goes through the game's own code, sounds and checks. A switch skips the party
+  # screen and asks the battle's own switch checks (a refusal opens the screen as usual). Unused picks go stale.
+  PICK_FRAMES = 180
+
+  class << self
+    attr_accessor :menu, :menu_battler
+  end
+
+  def self.request(kind, arg = nil)
+    @pick = { kind: kind, arg: arg, frame: @frame }
+  end
+
+  def self.pick
+    return nil unless @pick
+    if @frame - @pick[:frame] > PICK_FRAMES
+      @pick = nil
+      return nil
+    end
+    @pick
+  end
+
+  def self.drop_pick
+    @pick = nil
+  end
+
+  # Input.trigger?'s answer for [button] once ([press]): what a pick presses in the game's menu loop.
+  def self.press(button)
+    @press = button
+    @press_frame = @frame
+  end
+
+  # Only within a few frames of [press]: a menu that closed first must not leave a press for the next text box.
+  def self.take_press(button)
+    return false unless @press && @press == button
+    fresh = @frame - (@press_frame || 0) <= 10
+    @press = nil
+    fresh
+  end
+
+  def self.use_button
+    Input.const_defined?(:USE) ? Input::USE : Input::C
+  end
+
+  def self.back_button
+    Input.const_defined?(:BACK) ? Input::BACK : Input::B
+  end
+
+  # From the battle scene's update (pbUpdate(cw)): the command or fight window waiting, and a pick for it.
+  def self.on_menu_update(scene, cw)
+    p = pick
+    return unless p && cw
+    sprites = scene.instance_variable_get(:@sprites) || {}
+    if cw.equal?(sprites["commandWindow"])
+      cmd = { fight: 0, action: p[:arg], switch: 2 }[p[:kind]]
+      return drop_pick unless cmd.is_a?(Integer) && cmd.between?(0, 3)
+      cw.index = cmd
+      press(use_button)
+      drop_pick if p[:kind] == :action  # a fight / switch carries on to the next window
+    elsif cw.equal?(sprites["fightWindow"])
+      case p[:kind]
+      when :back
+        press(back_button)
+        drop_pick
+      when :fight
+        moves = try { cw.battler.moves } || []
+        if p[:arg].is_a?(Integer) && moves[p[:arg]] && moves[p[:arg]].id
+          cw.index = p[:arg]
+          press(use_button)
+        end
+        drop_pick
+      else
+        drop_pick
+      end
+    end
+  end
+
+  # The battle scene gets its hooks once the game's scripts have defined it: which menu waits ([menu]) and the picks.
+  def self.hook_scene
+    return if @scene_hooked
+    cls = (defined?(::PokeBattle_Scene) && ::PokeBattle_Scene) || (defined?(::Battle::Scene) && ::Battle::Scene)
+    return unless cls && cls.method_defined?(:pbCommandMenuEx) && cls.method_defined?(:pbUpdate)
+    @scene_hooked = true
+    cls.prepend(Module.new do
+      def pbUpdate(cw = nil)
+        r = super
+        PokeDaisyCompanion.on_menu_update(self, cw)
+        r
+      end
+
+      def pbCommandMenuEx(idxBattler, *args, &block)
+        PokeDaisyCompanion.menu = "command"
+        PokeDaisyCompanion.menu_battler = idxBattler
+        super
+      ensure
+        PokeDaisyCompanion.menu = nil
+      end
+
+      def pbFightMenu(idxBattler, *args, &block)
+        PokeDaisyCompanion.menu = "fight"
+        PokeDaisyCompanion.menu_battler = idxBattler
+        super
+      ensure
+        PokeDaisyCompanion.menu = nil
+      end
+
+      def pbItemMenu(idxBattler, *args, &block)
+        PokeDaisyCompanion.menu = "bag"
+        super
+      ensure
+        PokeDaisyCompanion.menu = nil
+      end
+
+      # A switch picked on the companion: the battle's own checks with the party index, no party screen. Refused (or
+      # none picked), the game's own screen as usual.
+      def pbPartyScreen(idxBattler, *args, &block)
+        p = PokeDaisyCompanion.pick
+        if p && p[:kind] == :switch && p[:arg].is_a?(Integer) && block
+          PokeDaisyCompanion.drop_pick
+          return if block.call(p[:arg], nil)
+        end
+        PokeDaisyCompanion.menu = "party"
+        super
+      ensure
+        PokeDaisyCompanion.menu = nil
+      end
+    end)
+  end
+
   def self.battle_snapshot(bt)
     list = try { bt.battlers } || []
     out = {
@@ -77,6 +208,8 @@ module PokeDaisyCompanion
       "double" => (try { bt.pbSideSize(0) } || 1) > 1 || (try { bt.pbSideSize(1) } || 1) > 1,
       "player" => list.each_with_index.select { |b, i| b && i.even? }.map { |b, _| battler(b) },
       "foes" => list.each_with_index.select { |b, i| b && i.odd? }.map { |b, _| battler(b) },
+      "menu" => @menu,
+      "menuBattler" => @menu_battler,
     }
     if out["trainer"]
       out["foeParty"] = try { bt.pbParty(1).map { |p| p ? mon(p) : nil } }
@@ -272,6 +405,7 @@ module PokeDaisyCompanion
   def self.tick
     @frame += 1
     hook_battle
+    hook_scene
     return if @frame % EVERY != 0
     publish(j(snapshot))
   rescue Exception => e
@@ -287,6 +421,19 @@ module Graphics
         r = __pokedaisy_update(*args)
         PokeDaisyCompanion.tick
         r
+      end
+    end
+  end
+end
+
+# A pick's press (PokeDaisyCompanion.press): the game's next check of that button reads it as pressed, once.
+module Input
+  class << self
+    unless method_defined?(:__pokedaisy_trigger)
+      alias_method :__pokedaisy_trigger, :trigger?
+      def trigger?(button)
+        return true if PokeDaisyCompanion.take_press(button)
+        __pokedaisy_trigger(button)
       end
     end
   end

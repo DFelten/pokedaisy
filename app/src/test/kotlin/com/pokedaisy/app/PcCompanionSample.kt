@@ -55,7 +55,7 @@ object PcCompanionSample {
 
     /** [JSON] mid-battle (snapshot VERSION 4): Pip out against a trainer's BUBBLEFIN, a second foe in reserve. */
     val BATTLE_JSON: String = org.json.JSONObject(JSON).put("battle", org.json.JSONObject("""
-    {"trainer":true,"double":false,
+    {"trainer":true,"double":false,"menu":"command","menuBattler":0,
      "player":[{"name":"Pip","species":"EMBERPUP","level":18,"hp":40,"totalhp":51,"status":"BURN","egg":false,"shiny":false,
        "gender":0,"types":[10],"item":"Ember Charm","ability":"Blaze","natureId":3,
        "stats":[51,32,25,22,24,30],"ivs":[31,20,18,10,25,30],"evs":[12,40,0,0,4,30],

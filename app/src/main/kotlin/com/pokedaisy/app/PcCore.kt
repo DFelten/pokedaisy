@@ -55,5 +55,8 @@ object PcCore {
     /** Loads the state at [path]: GL thread, after at least one [pcFrame]. */
     @JvmStatic external fun pcLoadState(path: String): Boolean
 
+    /** Queues one line of Ruby for the game, run once before the next frame (the companion's battle picks). Any thread. */
+    @JvmStatic external fun pcRuby(code: String): Boolean
+
     @JvmStatic external fun pcStop()
 }

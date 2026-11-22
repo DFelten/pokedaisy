@@ -249,7 +249,9 @@ fingerprint beside them holds (`PcGames.savesFingerprint`), like `pkStateMatches
 over `PcCompanion`'s `SnapshotView` from the mailbox: the game's own strings, its types / chart through `PcGameTypes` (what
 `activeTypeNames` / `activeTypeEffectiveness` read while it runs), the bag's names through `OwnItemNames`, icons rebuilt from its PNGs
 into `rom-art/pc/`. In a battle the BATTLE tab (INFO / SUGGESTIONS, read-only) is fed by the preload's wrapper round
-`pbStartBattle`, which keeps the battle object while it runs. Texts in `TrPcGames.kt`; manual draft
+`pbStartBattle`, which keeps the battle object while it runs; its buttons pick through `PcBattleInput` (one line of Ruby, `pcRuby`, run
+by the core's cheat call) and the preload's battle-scene hooks, which steer the game's own menus. The app's `TouchControls` sit over
+the game (RetroPad bits). Texts in `TrPcGames.kt`; manual draft
 `docs/manual-drafts/pc-games.md` (into `docs/manual/` with a NEW tag when the flag goes).
 
 ## Testing: quick by default, full runs only with the user's OK

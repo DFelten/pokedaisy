@@ -33,6 +33,7 @@ static struct {
     void (*av)(struct retro_system_av_info *);
     void *(*mem)(unsigned);
     size_t (*mem_size)(unsigned);
+    void (*cheat_set)(unsigned, bool, const char *);
     size_t (*ser_size)(void);
     bool (*ser)(void *, size_t), (*unser)(const void *, size_t);
 } core;
@@ -283,7 +284,7 @@ JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcStart(JNIEnv *jenv, j
     SYM(set_audio, "retro_set_audio_sample") SYM(set_audio_batch, "retro_set_audio_sample_batch")
     SYM(set_poll, "retro_set_input_poll") SYM(set_state, "retro_set_input_state") SYM(load, "retro_load_game")
     SYM(av, "retro_get_system_av_info") SYM(mem, "retro_get_memory_data") SYM(mem_size, "retro_get_memory_size")
-    SYM(ser_size, "retro_serialize_size") SYM(ser, "retro_serialize") SYM(unser, "retro_unserialize")
+    SYM(cheat_set, "retro_cheat_set") SYM(ser_size, "retro_serialize_size") SYM(ser, "retro_serialize") SYM(unser, "retro_unserialize")
 #undef SYM
 
     core.set_env(env);
@@ -331,6 +332,36 @@ done:
     return ok;
 }
 
+// Lines of Ruby for the game (the companion's battle picks: linux/pc_games/pokedaisy_companion.rb's request): queued from
+// any thread, handed to the core's cheat call on the GL thread just before a frame (it runs each once, then clears it).
+#define RUBY_QUEUE 8
+static char *rubyQueue[RUBY_QUEUE];
+static int rubyCount;
+static unsigned rubyIndex;
+static pthread_mutex_t rubyLock = PTHREAD_MUTEX_INITIALIZER;
+
+static void drainRuby(void) {
+    pthread_mutex_lock(&rubyLock);
+    for (int i = 0; i < rubyCount; i++) {
+        if (running && core.cheat_set) core.cheat_set(rubyIndex++, true, rubyQueue[i]);
+        free(rubyQueue[i]);
+    }
+    rubyCount = 0;
+    pthread_mutex_unlock(&rubyLock);
+}
+
+/** Queues [code] (one line of Ruby) for the game; false when the queue is full. Any thread. */
+JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcRuby(JNIEnv *jenv, jclass cls, jstring jcode) {
+    (void) cls;
+    const char *code = (*jenv)->GetStringUTFChars(jenv, jcode, NULL);
+    pthread_mutex_lock(&rubyLock);
+    bool ok = rubyCount < RUBY_QUEUE && (rubyQueue[rubyCount] = strdup(code)) != NULL;
+    if (ok) rubyCount++;
+    pthread_mutex_unlock(&rubyLock);
+    (*jenv)->ReleaseStringUTFChars(jenv, jcode, code);
+    return ok;
+}
+
 /** The core's sample rate (after pcStart). */
 JNIEXPORT jint JNICALL Java_com_pokedaisy_app_PcCore_pcSampleRate(JNIEnv *jenv, jclass cls) {
     (void) jenv;
@@ -351,6 +382,7 @@ JNIEXPORT jint JNICALL Java_com_pokedaisy_app_PcCore_pcFrame(JNIEnv *jenv, jclas
     if (nextFrame == 0 || t - nextFrame > 0.25) nextFrame = t; // first frame, or a long stall: don't catch up
     int ran = 0;
     while (ran < 2 && t >= nextFrame) {
+        if (ran == 0) drainRuby();
         pthread_rwlock_rdlock(&coreLock);
         core.run();
         if (audioCb) audioCb();

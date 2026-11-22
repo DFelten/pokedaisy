@@ -309,8 +309,17 @@ ability) and a trainer's `foeParty`, in a guard of its own. `PcCompanion` makes 
 verdict on the other side by the game's chart) and the FOE TEAM: the BATTLE tab's INFO / SUGGESTIONS, read-only (no `BattleInput`: the
 game's own menu picks). Checked against stand-in classes in plain Ruby and `PcCompanionTest`, not yet in a real battle.
 
-Not yet: touch controls, sharp scaling, the companion's map / guide, picks from the companion, HUD, NEW tag, and a way for players to
-get the core.
+Touch controls and battle picks (2026-11-23): the PC game screen hosts the app's `TouchControls` (TOUCH CONTROLS' style, AUTO
+until a controller is there or used, X / Y as in a DS game, the extras left off), its GBA / DS bits mapped to the RetroPad. The
+BATTLE tab's buttons are live (`PcBattleInput`): each pick is one line of Ruby, `PokeDaisyCompanion.request(:fight, 2)`, queued by
+`pcRuby` and run by the core's cheat call before the next frame (it runs a cheat once, then clears it). The preload hooks the battle
+scene once the game defines it: `pbCommandMenuEx` / `pbFightMenu` / `pbItemMenu` / `pbPartyScreen` name the menu waiting (the
+snapshot's `menu`, VERSION 5: the companion's battle input state), `pbUpdate(cw)` sets the command or fight window's cursor for a
+pick and `Input.trigger?` answers the game's next USE (or BACK) once, within 10 frames; a switch goes straight to the battle's own
+`pbCanSwitch?` / `pbRegisterSwitch` block with no party screen (every message there is guarded `if partyScene`), a refusal opening
+the game's screen. Picks older than 180 frames are dropped. Checked against Essentials 19's loops in plain Ruby; not yet in a game.
+
+Not yet: sharp scaling, the companion's map / guide, picks in double battles, HUD, NEW tag, and a way for players to get the core.
 
 ## Next steps
 
