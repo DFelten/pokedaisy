@@ -58,6 +58,11 @@ end
 module PokeDaisyCursorTextEntry
   def textinput = 0
 end
+# Reborn's and Rejuvenation's options ask useKeyboard? (their KEYBOARD option, on by default): no, so their name entry
+# is their own letter grid as well.
+module PokeDaisyNoKeyboard
+  def useKeyboard? = false
+end
 module Graphics
   class << self
     unless method_defined?(:__pokedaisy_text_entry_update)
@@ -66,6 +71,7 @@ module Graphics
         unless @__pokedaisy_text_entry
           @__pokedaisy_text_entry = true
           PokemonSystem.prepend(PokeDaisyCursorTextEntry) if defined?(PokemonSystem)
+          PokemonOptions.prepend(PokeDaisyNoKeyboard) if defined?(PokemonOptions) && PokemonOptions.method_defined?(:useKeyboard?)
         end
         __pokedaisy_text_entry_update(*args)
       end

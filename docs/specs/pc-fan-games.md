@@ -415,6 +415,9 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   ones to their file after every slot is back (a stream before its file in the table would have failed the same way). Both
   games now save and load (Rejuvenation 0.33 s, Reborn 0.04 s, 512 MB states). The fix changes the core's sandbox hash, so
   states from an older core are refused (a resume state is set aside, as for any refused load).
+- Their name entry asks `$Settings.useKeyboard?` (their KEYBOARD option, on by default; typed text never reaches the game in
+  the libretro core, as for Infinite Fusion): the compat preload answers no, so it's their letter grid (checked in Reborn's
+  intro: "Your name?" over the grid, A typing a letter).
 - Their mkxp.json's `"patches"` folders aren't mounted by the libretro core (the desktop build mounts them), which doesn't
   matter here: Reborn's updater writes its fixes into the game folder itself (`applyPatch('patch.zip', '.')`) and `patch/`
   ships empty, so an updated folder copied to the device plays as it is.
