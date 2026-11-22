@@ -392,7 +392,8 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   `pbPokemonIconBitmap` finds them (Reborn's `Graphics/Icons/<species>`, Rejuvenation's `Graphics/Icons/Pokemon/icon<dex>`:
   a 128 x 64 row a form, which the icon's `x` / `y` / `w` / `h` crop); Rejuvenation's genders as letters and its Pokédex's
   `seen?` / `owned?`, Reborn's `dexList` hashes. Their file names differ in case from what their scripts ask for
-  (`POTION` / `potion.png`), so `PcCompanion.gameFile` matches in any case. Their battle scene runs its own loops:
+  (`POTION` / `potion.png`), so `PcCompanion.gameFile` matches in any case (and the Linux companion's `load_png`, which
+  crops the icon's row too: `pc-companion-shot` drew Reborn's party with its icons). Their battle scene runs its own loops:
   `pbFrameUpdate(cw)` for the picks, `commandwindow` / `fightwindow`, the fight window's `setIndex`, a switch answering
   their scene's `pbSwitch` (Reborn: the party index) or `pbSwitchPlayer` (Rejuvenation: an index per battler) after the
   battle's own `pbCanSwitch?` (Rejuvenation's takes `showMessage:`), the bag their battle's or scene's `pbItemMenu`,

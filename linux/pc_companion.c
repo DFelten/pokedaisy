@@ -11,7 +11,9 @@
 #include "pd_ui_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <string.h>
+#include <strings.h>
 
 #define ICON 32 // the party icon as the shared slots draw it: 32 x 32 (the game's are 64 x 64, drawn 2x)
 #define MAX_ITEMS 512
@@ -75,17 +77,55 @@ static struct {
 } icons[ICON_CACHE];
 static int iconNext;
 
-static uint32_t* load_png(const char* rel, int* w, int* h) {
-  if (!rel || !*rel)
-    return NULL;
+// [rel] under the game's folder, its file name matched in any case if it isn't there as given: the Reborn engine's
+// scripts ask for POTION where the file is potion.png, which their own mkxp-z build forgives (PcCompanion.gameFile).
+static uint32_t* read_any_case(const char* rel, int* w, int* h) {
   char path[8192];
   snprintf(path, sizeof path, "%s/%s", m.root, rel);
   uint32_t* px = pc_png_read(path, w, h);
+  if (px)
+    return px;
+  const char* slash = strrchr(path, '/');
+  if (!slash)
+    return NULL;
+  char dir[8192];
+  snprintf(dir, sizeof dir, "%.*s", (int)(slash - path), path);
+  DIR* d = opendir(dir);
+  if (!d)
+    return NULL;
+  for (struct dirent* e; (e = readdir(d));) {
+    if (!strcasecmp(e->d_name, slash + 1)) {
+      snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
+      px = pc_png_read(path, w, h);
+      break;
+    }
+  }
+  closedir(d);
+  return px;
+}
+
+static uint32_t* load_png(const char* rel, int* w, int* h) {
+  if (!rel || !*rel)
+    return NULL;
+  uint32_t* px = read_any_case(rel, w, h);
   if (!px && !strstr(rel, ".png")) { // Essentials hands paths without their extension
-    snprintf(path, sizeof path, "%s/%s.png", m.root, rel);
-    px = pc_png_read(path, w, h);
+    char with[4096];
+    snprintf(with, sizeof with, "%s.png", rel);
+    px = read_any_case(with, w, h);
   }
   return px;
+}
+
+// [w] x [h] at ([x], [y]) of a [sw]-wide sheet, in place (a row past its end is its first: their pbPokemonIconBitmap's
+// rule). False if it doesn't fit.
+static bool crop_cell(uint32_t* px, int sw, int sh, int x, int y, int w, int h) {
+  if (y + h > sh)
+    y = 0;
+  if (w <= 0 || h <= 0 || x < 0 || x + w > sw || y + h > sh)
+    return false;
+  for (int r = 0; r < h; r++)
+    memmove(px + (size_t)r * w, px + (size_t)(y + r) * sw + x, (size_t)w * sizeof *px);
+  return true;
 }
 
 // The sheet's first frame (a square of its height), halved to ICON: the games' icons are drawn at 2x.
@@ -103,7 +143,12 @@ static const uint32_t* icon_for(const struct pc_json* icon, char* key, size_t ke
   const char *file = pc_json_str(pc_json_get(icon, "file"), NULL), *head = pc_json_str(pc_json_get(icon, "head"), NULL),
              *body = pc_json_str(pc_json_get(icon, "body"), NULL);
   int offset = (int)pc_json_num(pc_json_get(icon, "offset"), 10);
-  if (file)
+  // A row of a bigger sheet (the Reborn engine's: a 128 x 64 row a form, shiny ones to the right).
+  int cx = (int)pc_json_num(pc_json_get(icon, "x"), 0), cy = (int)pc_json_num(pc_json_get(icon, "y"), 0);
+  int cw = (int)pc_json_num(pc_json_get(icon, "w"), 0), ch = (int)pc_json_num(pc_json_get(icon, "h"), 0);
+  if (file && cw > 0 && ch > 0)
+    snprintf(key, keyLen, "%s|%d,%d,%d,%d", file, cx, cy, cw, ch);
+  else if (file)
     snprintf(key, keyLen, "%s", file);
   else if (head && body)
     snprintf(key, keyLen, "%s|%s|%d", head, body, offset);
@@ -117,6 +162,15 @@ static const uint32_t* icon_for(const struct pc_json* icon, char* key, size_t ke
   icons[slot].ok = false;
   int w, h, bw, bh;
   uint32_t* px = load_png(file ? file : head, &w, &h);
+  if (px && file && cw > 0 && ch > 0) {
+    if (crop_cell(px, w, h, cx, cy, cw, ch)) {
+      w = cw;
+      h = ch;
+    } else if (cx != 0) {
+      free(px);
+      px = NULL;
+    }
+  }
   if (px && !file) {
     // The head's frame, then the body's rows from [offset] below the middle down, every pixel copied (set_pixel).
     uint32_t* bpx = load_png(body, &bw, &bh);
