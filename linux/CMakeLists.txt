@@ -48,9 +48,16 @@ target_link_libraries(pokedaisy-linux PRIVATE pd_host_ui pd_puff ${SDL2_LIBRARY}
 option(POCKET_PC_GAMES "PC fan games on the mkxp-z core (needs EGL)" OFF)
 if(POCKET_PC_GAMES)
   find_library(EGL_LIBRARY NAMES EGL REQUIRED)
+  find_package(ZLIB REQUIRED) # pc_png.c: the games' icons
+  add_library(pd_pc_companion STATIC pc_companion.c pc_json.c pc_png.c)
+  target_link_libraries(pd_pc_companion PUBLIC pd_host_ui ZLIB::ZLIB m)
+  target_compile_options(pd_pc_companion PRIVATE -Wall -Wextra)
   target_sources(pokedaisy-linux PRIVATE hw_gl.c pc_mailbox.c)
   target_compile_definitions(pokedaisy-linux PRIVATE POCKET_PC_GAMES)
-  target_link_libraries(pokedaisy-linux PRIVATE ${EGL_LIBRARY})
+  target_link_libraries(pokedaisy-linux PRIVATE ${EGL_LIBRARY} pd_pc_companion)
+  # Draws the companion's pages from a saved snapshot to PNGs (pc_companion_shot.c).
+  add_executable(pc-companion-shot pc_companion_shot.c ../3ds/desktop/pd_png.c)
+  target_link_libraries(pc-companion-shot PRIVATE pd_pc_companion)
   # The companion's Ruby preload scripts, built into the binary and installed into the core's Scripts/Preload.
   file(GLOB PC_PRELOADS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/*.rb)
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h

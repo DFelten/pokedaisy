@@ -150,7 +150,7 @@ how in `native-capture/pc_probe/README.md`. Infinite Fusion 6.4.5 (its public re
     `caller(1..1)`. Report upstream.
   - mkxp-z's `HTTPLite` isn't in the libretro build. A stub answers "offline", so the game takes its no-internet path:
     no Mystery Gift, Wonder Trade or sprite downloads.
-- **The mailbox works.** `pokedaisy_companion.rb` publishes ~1 KB of JSON 4 times a second: trainer, money, badges,
+- **The mailbox works.** `pokedaisy_companion.rb` publishes its JSON (1-6 KB) up to 4 times a second, only when something changed: trainer, money, badges,
   party (species, nickname, level, HP, status, nature, ability, stats, moves + PP, held item, egg / shiny; fusions too,
   e.g. CHARSAUR = B1H4, dex 505), bag pockets, map id / name / position, battle flag, scene. The host finds it once by
   its magic (250 ms over the 400 MB heap here; once per load), then reads in place: `linux/pc_mailbox.c` writes it to
@@ -181,17 +181,42 @@ What this changes in the risks:
   textures: too much for a 2 GB handheld, and states want compression and fewer slots.
 - **Ruby version drift** is real but cheap: one preload of shims so far.
 
+## The companion on Linux (2026-11-17)
+
+`pokedaisy-linux -DPOCKET_PC_GAMES=ON` draws PARTY, a Pokemon's summary (moves / stats), BAG and TRAINER over a PC game:
+
+- **The shared pieces, not new ones.** `linux/pc_companion.c` hands the snapshot to `3ds/core`'s own views, as the DS
+  companion does (`linux/dsperate/party_view.cpp`): `pd_ui_party_view` with a `pd_party_source`, `pd_ui_summary_page` /
+  `_footer` with a `pd_summary_view`, `pd_ui_bag_view` with a `pd_bag_source`. Ids handed to them are places in the
+  snapshot (species = party slot + 1, item = bag row + 1), and the sources give the names back. So the look is the
+  companion's (the OPTION windows, FireRed's party slots, the bag's pocket tabs), every word the game's own.
+- **The game's types.** The snapshot carries its type table (names and matchups by `id_number`), handed to the summary
+  as a `pd_text` (`typeNames`, `typeChart`): Infinite Fusion's Fairy and its own types read and match up right
+  (GYARADOS: Electric 4x).
+- **Icons from the game folder** (`linux/pc_png.c`, a small PNG reader on zlib): the Ruby side asks the game for each
+  icon's file (`GameData::Species.icon_filename*`, `GameData::Item.icon_filename`, cached there); a fusion's is built as
+  its `createFusionIcon` does (the head's frame, the body's rows from the middle + `FUSION_ICON_SPRITE_OFFSET` down),
+  checked pixel for pixel against the same composition done apart. A zipped `.mkxpz` game gets no icons.
+- **Natures** go by `id_number`, Gen 3's order in Essentials, so the summary names them with their stat arrows.
+- **Buttons**: a lone SELECT tap (the host's MODIFIER, whose tap otherwise goes to the game; Essentials maps nothing to
+  SELECT) opens and closes it; the game runs on without input meanwhile. L / R tabs, D-pad (the party grid's 2 or 3
+  columns, as `ui_party_grid` picks), A summary / its page / an item's details, X the bag's sort, B back, START closes.
+- **Checked** in the real host, headless (`POCKET_KEYS` + test hooks `POCKET_PC_CHEAT="FRAME:ruby"`, run through the
+  core's cheats, and `POCKET_PC_COMPANION=1`, open from the start): Infinite Fusion's intro played to the new game, a
+  party given, SELECT, the D-pad to a fusion's summary, R1 to the bag and its pockets, SELECT again back to the game.
+  `pc-companion-shot SNAPSHOT.json GAME_DIR OUT_DIR [WxH]` draws every page from a saved snapshot (`pc_probe`'s `mbx`).
+- **Not yet**: the HUD over the field, MAP / DEX / GUIDE, battle INFO, item icons in the bag, an ability line (the
+  shared summary has no field for it), DS and GBA cores' settings / states tabs.
+
 ## Next steps
 
-1. A companion in `pokedaisy-linux` drawn from the snapshot: PARTY and BAG first (the host's canvas, `3ds/core`'s
-   look), then the HUD's party icons. Sprites come from the game folder (`Graphics/Battlers`, `Graphics/Icons`).
-2. Build the core for Android arm64 and Linux aarch64 (`Makefile.libretro`'s platforms) and time Infinite Fusion on the
+1. Build the core for Android arm64 and Linux aarch64 (`Makefile.libretro`'s platforms) and time Infinite Fusion on the
    RP6 and a TrimUI: boot, ms a frame, heap, state save / load.
-3. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
+2. Report the `caller` arity, the directory-stream load and the load-before-first-frame trap upstream (mkxp-z issues),
    with the patch.
-4. States: compress them (zstd), keep a slot count that fits the storage, and back up the core's own save folder
+3. States: compress them (zstd), keep a slot count that fits the storage, and back up the core's own save folder
    (`<saves>/mkxp-z/Saves/<title>/`) like every battery save.
-5. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
+4. Reborn / Rejuvenation: confirm their Essentials base and what the compat preload needs for them.
 
 Behind a feature flag (`FeatureFlags.pcGames`, off) when it reaches the app, like co-op and 3DS.
 

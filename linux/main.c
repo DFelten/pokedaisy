@@ -14,6 +14,7 @@
 #include "pd_tr.h"
 #ifdef POCKET_PC_GAMES
 #include "hw_gl.h"
+#include "pc_companion.h"
 #include "pc_mailbox.h"
 #include "pc_preloads.h"
 #endif
@@ -1159,18 +1160,19 @@ static void gl_run(void) {
     frame_upload(px, w, h, pitch);
   pc_companion_poll();
 }
-/* The companion's snapshot from the game (pc_mailbox.c), written to DATA/pc-companion.json at most once a second
- * when it changes: the spike's proof that the host gets PARTY / BAG / map, until a companion draws it. */
+/* The companion's snapshot from the game (pc_mailbox.c), handed to the companion (pc_companion.c) whenever it
+ * changes; with POCKET_PC_LOG also written to DATA/pc-companion.json, at most once a second. */
 static void pc_companion_poll(void) {
   static uint64_t lastWrite;
-  uint64_t now = SDL_GetTicks64();
-  if (now - lastWrite < 1000)
-    return;
   const uint8_t *mem = core.get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
   size_t size = core.get_memory_size(RETRO_MEMORY_SYSTEM_RAM), len = 0;
   uint32_t seq = 0;
   const char *json = pc_mailbox_read(mem, size, &len, &seq);
   if (!json)
+    return;
+  pc_companion_update(json, len);
+  uint64_t now = SDL_GetTicks64();
+  if (!getenv("POCKET_PC_LOG") || now - lastWrite < 1000)
     return;
   lastWrite = now;
   char path[PATH_MAX * 2], tmp[PATH_MAX * 2 + 8];
@@ -1182,8 +1184,23 @@ static void pc_companion_poll(void) {
   bool ok = fwrite(json, 1, len, f) == len;
   if (fclose(f) == 0 && ok)
     rename(tmp, path);
-  if (getenv("POCKET_PC_LOG"))
-    fprintf(stderr, "pc companion: snapshot %u, %zu bytes\n", seq, len);
+  fprintf(stderr, "pc companion: snapshot %u, %zu bytes\n", seq, len);
+}
+// The companion over a PC game: a lone tap of the MODIFIER (SELECT) opens and closes it; while it's up the game runs
+// on without input and the buttons are the companion's.
+static bool pcGame, pcOpen;
+/* POCKET_PC_CHEAT="FRAME:ruby": for tests, a line of Ruby run in the game at that frame through the core's cheats
+ * (retro_cheat_set: mkxp-z runs a cheat as Ruby), e.g. giving a party to look at. */
+static void pc_test_cheat(int frame) {
+  const char *spec = getenv("POCKET_PC_CHEAT"), *colon = spec ? strchr(spec, ':') : NULL;
+  if (!colon || atoi(spec) != frame)
+    return;
+  void (*cheat_set)(unsigned, bool, const char *) = NULL;
+  *(void **)&cheat_set = dlsym(core.dl, "retro_cheat_set");
+  if (cheat_set) {
+    cheat_set(0, true, colon + 1);
+    fprintf(stderr, "pc companion: test cheat at frame %d\n", frame);
+  }
 }
 static bool gl_serialize(void *d, size_t n) {
   hwgl_begin();
@@ -1736,6 +1753,17 @@ static void present_game(const struct pd_menu *menu) {
   }
   bool any = false;
   overlay_begin();
+#ifdef POCKET_PC_GAMES
+  if (pcOpen && !menu) {
+    pc_companion_draw(&overlay);
+    overlay_notice();
+    overlay_draw(true);
+    uint64_t t0 = SDL_GetPerformanceCounter();
+    SDL_RenderPresent(renderer);
+    presentMs += (double)(SDL_GetPerformanceCounter() - t0) * 1000.0 / SDL_GetPerformanceFrequency();
+    return;
+  }
+#endif
   if (menu) {
     pd_menu_draw((struct pd_menu *)menu, &overlay);
     any = true;
@@ -2356,6 +2384,17 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     core_wrap_gl();
     pc_mailbox_reset();
   }
+  pcGame = !strcmp(coreName, "mkxp-z_libretro.so");
+  pcOpen = false;
+  if (pcGame) {
+    // Icons are read from the game's folder: a Game.ini's (a zipped .mkxpz game has none to read).
+    char dir[PATH_MAX];
+    const char *slash = strrchr(path, '/');
+    snprintf(dir, sizeof dir, "%.*s", slash ? (int)(slash - path) : 1, slash ? path : ".");
+    pc_companion_start(strstr(path, ".mkxpz") ? "" : dir);
+    // POCKET_PC_COMPANION=1 opens it from the start (headless shots: --frames N --shot).
+    pcOpen = getenv("POCKET_PC_COMPANION") != NULL;
+  }
 #endif
   srcRate = av.timing.sample_rate > 0 ? av.timing.sample_rate : 32768;
   double hz = av.timing.fps > 0 ? av.timing.fps : 59.7275;
@@ -2480,8 +2519,14 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
                       && (held & stylus & ~latched & ~menuConsumed) && !(latched & hotkeyMask);
       modifierUsed |= !!(latched & hotkeyMask) || dsStylus;
       if (!(held & modifier)) {
-        if (modifierPending && !modifierUsed)
-          pulseLeft = MODIFIER_TAP_FRAMES;
+        if (modifierPending && !modifierUsed) {
+#ifdef POCKET_PC_GAMES
+          if (pcGame)
+            pcOpen = !pcOpen; // the tap is the companion's, not the game's (Essentials maps nothing to SELECT)
+          else
+#endif
+            pulseLeft = MODIFIER_TAP_FRAMES;
+        }
         modifierPending = modifierUsed = false;
       } else
         pulseLeft = 0; // held again: it's the modifier now, not a tap
@@ -2710,7 +2755,24 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     pointerDown = pointerHeld || pointerPulse > 0;
     if (pointerPulse > 0)
       pointerPulse--;
-    gameKeys = joypad((held & ~hotkeyMask & ~((1u << MENU) | (1u << FFKEY) | (1u << RWKEY))) | modifierPulse);
+#ifdef POCKET_PC_GAMES
+    if (pcOpen) {
+      static const struct {
+        int key;
+        enum pc_key pc;
+      } pcKeys[] = {{UP, PC_KEY_UP},       {DOWN, PC_KEY_DOWN}, {LEFT, PC_KEY_LEFT}, {RIGHT, PC_KEY_RIGHT}, {A, PC_KEY_A},
+                    {B, PC_KEY_B},         {X, PC_KEY_X},       {L, PC_KEY_L},       {R, PC_KEY_R}};
+      for (size_t i = 0; i < sizeof pcKeys / sizeof pcKeys[0] && pcOpen; i++)
+        if (down(pcKeys[i].key) && !(hotkeyMask & (1u << pcKeys[i].key)) && !pc_companion_key(pcKeys[i].pc))
+          pcOpen = false;
+      if (down(START))
+        pcOpen = false;
+      if (!pcOpen)
+        menuConsumed |= held; // the button that closed it stays away from the game until let go
+      gameKeys = 0;
+    } else
+#endif
+      gameKeys = joypad((held & ~hotkeyMask & ~((1u << MENU) | (1u << FFKEY) | (1u << RWKEY))) | modifierPulse);
     uint64_t t = SDL_GetPerformanceCounter();
     if (rewinding) {
       muted = true;
@@ -2775,6 +2837,10 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     }
     if (++frames % 120 == 0)
       sram_write(sav, &sramCopy, true);
+#ifdef POCKET_PC_GAMES
+    if (pcGame)
+      pc_test_cheat(frames);
+#endif
     present_game(NULL);
     if (maxFrames && frames >= maxFrames) {
       if (shot && !capture(shot))

@@ -232,7 +232,11 @@ built per `native-capture/pc_probe/README.md`; never in the repo). The core draw
 into the host's frame texture, every core call bracketed so SDL's context comes back). The companion's data comes from our Ruby preloads
 (`linux/pc_games/*.rb`, built into the binary and installed into the core's `Scripts/Preload`): a JSON mailbox in the Ruby heap that
 `pc_mailbox.c` finds by its magic, never by address. Run a frame before loading a state; call `retro_unload_game` before `retro_deinit`.
-`native-capture/pc_probe` drives the core headless (frames, states, mailbox, `cheat` = Ruby run in the game).
+`native-capture/pc_probe` drives the core headless (frames, states, mailbox, `cheat` = Ruby run in the game). The companion over it
+(`pc_companion.c`: PARTY / summary / BAG / TRAINER, a lone SELECT tap) is the shared `3ds/core` views fed from the snapshot through their
+sources (`pd_party_source` / `pd_summary_view` / `pd_bag_source`, as `linux/dsperate/party_view.cpp`), names and type table the game's own,
+icons from its folder (`pc_png.c`); `pc-companion-shot` draws its pages from a saved snapshot. Test hooks: `POCKET_PC_CHEAT="FRAME:ruby"`,
+`POCKET_PC_COMPANION=1`, `POCKET_PC_LOG` (with `POCKET_KEYS`).
 
 ## Testing: quick by default, full runs only with the user's OK
 
