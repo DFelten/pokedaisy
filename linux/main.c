@@ -2359,7 +2359,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   }
 #ifdef POCKET_PC_GAMES
   // A PC game keeps its saves in the core's folder under the saves folder, not in a .sav.
-  if (!strcmp(coreName, "mkxp-z_libretro.so") && !pc_saves_backup(savesDir, backups)) {
+  if (!strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT) && !pc_saves_backup(savesDir, backups)) {
     free(rom);
     dlclose(core.dl);
     appError = 1;
@@ -2387,7 +2387,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   core.set_input_poll(input_poll);
   core.set_input_state(input_state);
 #ifdef POCKET_PC_GAMES
-  if (!strcmp(coreName, "mkxp-z_libretro.so")) {
+  if (!strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT)) {
     // The core reads preload scripts from <system dir>/mkxp-z/Scripts/Preload: put ours there (rewritten each launch).
     char dir[PATH_MAX * 2], file[PATH_MAX * 3];
     snprintf(dir, sizeof dir, "%s/mkxp-z", root);
@@ -2430,7 +2430,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     core_wrap_gl();
     pc_mailbox_reset();
   }
-  pcGame = !strcmp(coreName, "mkxp-z_libretro.so");
+  pcGame = !strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT);
   pcOpen = false;
   if (pcGame) {
     // Icons are read from the game's folder: a Game.ini's (a zipped .mkxpz game has none to read).
