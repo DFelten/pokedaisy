@@ -12,15 +12,15 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Yellow (GB) | DE / FR / IT / ES | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
 | Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
 | Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
+| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | — | n/a | — | — | — | — ³⁶ |
-| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | — | — | — | — ³⁶ |
+| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
@@ -43,26 +43,26 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Ruby / Sapphire | USA rev 0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ⁵³ | ✅ | ✅ |
 | Ruby / Sapphire | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ |
 | Ruby / Sapphire | JP | ✅ | ✅ | ✅ | — | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ |
-| Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | Platinum (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
 | Platinum (DS) | Spain, Germany rev 0 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | HeartGold (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
 | HeartGold (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ |
-| SoulSilver (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| SoulSilver (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | SoulSilver (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
 | SoulSilver (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ |
 | HeartGold (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
 | SoulSilver (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| Black (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| Black (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | Black (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
 | Black (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| White (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| White (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | White (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
 | White (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Black 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| Black 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | Black 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| White 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁵⁸ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
+| White 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶⁰ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
 | White 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
 | Origin HeartGold (DS) | 4.0.3 English 1.0.0 | ✅ ¹⁴ | — ²⁹ | — | — | — | ✅ ²⁹ | — | ✅ ²⁹ | ✅ ¹⁴ | ✅ ²⁹ | ✅ ²⁹ | — | n/a | — | — | — | — ³⁶ |
 | Heartfelt Gold (DS) | 1.0.15 (+ Zoomed In) | ✅ ³⁷ | ✅ ³⁷ | — | — | — | ✅ ³⁷ | — | ✅ ³⁷ | — | ✅ ³⁷ | ✅ ³⁷ | — | n/a | — | — | — | — ³⁶ |
@@ -214,8 +214,14 @@ change to any of the places listed under "Where it's decided" updates its rows h
     `scripts/gen_polished_wide.py`). Checked headless on the new-game save: a walk round its route and grass, the START menu and OPTION
     (2197 of 2265 map frames exact; the other 68 are a wild battle's wipe, which the camera now pulls in for, as on Crystal).
     German Crystal (Kristall) is English's rebuild but for one ROM address (SpriteMovementData, 0x4276 in bank 1): a walk on
-    Route 29 and its grass, 777 map frames, every one exact.
-    The other languages' Yellows, Red / Blue, Gold / Silver, Prism and the other Polished Crystal builds aren't mapped yet (—).
+    Route 29 and its grass, 777 map frames, every one exact. German Red / Blue (Rote / Blaue Edition, 2026-11-20) are English
+    Red's rebuild with the RAM 5 bytes on from wOnSGB up (`GB_RED_BLUE_DE`): the same walk as English Red's on both carts, 1404
+    of 1408 map frames exact, the other four the door's fade English Red also shows.
+    German Gold / Silver (Goldene / Silberne Edition, 2026-11-20) are English Gold's row with SpriteMovementData a byte later
+    (`GB_GOLD_SILVER_DE`, found by its bytes; every other table and the RAM where English's are): Route 29 from the gold
+    fixture's save, the START menu, east and back west through the grass, every map frame exact (Silberne 2836, Goldene 2065
+    up to a wild battle) but those the game wrote VRAM or a palette in mid-frame.
+    The other languages' (not German) Red / Blue, Gold / Silver, Prism and the other Polished Crystal builds aren't mapped yet (—).
 13. FLY, WILD ENCOUNTERS and PC anywhere on Red / Blue (English and German), Yellow (all five languages) and Crystal (rev 0, rev 1, Australia)
     are `GbField.kt`, each the game's own way in (pret/pokered's, pokeyellow's and pokecrystal's sources; the European
     Yellows' addresses mapped by scripts/port_gen1.py; each cart's code checked in it first: `GbFieldTest` finds every Gen 1
@@ -237,7 +243,11 @@ change to any of the places listed under "Where it's decided" updates its rows h
     branch): PCScript in bank 0x40, wDefaultSpawnpoint in bank 0, the Kanto landmarks from 46, Silver's Fly script 2 bytes before
     Gold's. Headless on the Gold / Silver save in Route 29: the PC opened ("GOLD turned on the PC.") and backed out of, FLY (the badge,
     the move and Cherrygrove's spawn poked in) landed at Cherrygrove's Pokémon Center, 100 steps in the grass with the cooldown held met
-    nothing (one without). German Gold / Silver and the Crystal hacks: not yet (their ROM / RAM moved).
+    nothing (one without). German Gold / Silver (`GbField.GoldDe` / `.SilverDe`, 2026-11-20): English's RAM, PCScript, Fly scripts and
+    cooldown check, RunMemScript 0x1F later (0x7A80) and the Flypoints table 0x31 later (0x5BFD); headless on the German Gold / Silver
+    save in Route 29: the PC opened ("GOLD schaltet den PC ein."), FLY (the badge, the move and Cherrygrove's spawn poked in) landed
+    at Rosalia City's Pokémon Center, 100 steps in the grass with the cooldown held met nothing (one within ~30 without). The Crystal
+    hacks: not yet (their ROM / RAM moved).
     PureRed / PureBlue (`GB_FIELD_PURE_RGB`, pureRGB's own source; both carts the same code): Red's ways in at its places -
     the PC routine in bank 0x33, called from 0x03D7 (its loop waits at OverworldLoop's `rst DelayFrame`), the wild data in
     bank 0x2C, the game state in WRAM bank 1 (read and written by bank). Checked headless on the converted Red save: the PC
@@ -551,7 +561,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
     badge from isUnlocked or the party menu (Lazarus's switch asks badge 3, 0x869). Each lit a dark cave of its own map
     table headless.
 
-34. FREE FLIGHT and the scenic FLY (`Flight.kt`, `ScenicFly.kt`, `app/src/main/cpp/pk_flight.c`; `FieldItemFns.flight`,
+34. FREE FLIGHT and the scenic FLY (`Flight.kt`, `ScenicFly.kt`, `shared/src/commonMain/cpp/pk_flight.c`; `FieldItemFns.flight`,
     `FLIGHT_FIRERED_REV1` from pret's pokefirered built as firered_rev1): TAKE OFF / LAND on the MAP tab, the QUICK MENU and
     the FREE FLIGHT hotkey, and FLY STYLE > SCENIC. Retail FireRed rev 1 and Emerald (`FLIGHT_EMERALD`, from pret's
     pokeemerald symbols; its rider a sprite of its own, the player's surfing graphics as its FLY seats them). Emerald was
@@ -721,7 +731,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
     the alarm two `nop`s), each found by its code's shape and unique in the cart, patched through `pk_cheats_patch`'s Game Boy branch
     (`PK_GB_ROM_TAG` + the cart offset, mGBA's GBPatch8; the cart's bytes overlaid for the Poller's hash). Played headless (mgba_dump
     `rompatch`): Yellow (the nurse's line whole at once, TM01 taught and still in the bag, the alarm byte 0 at 5 HP) and Crystal (TM10
-    taught and kept, the alarm byte 0). Found in every retail Red / Blue / Yellow / Gold / Silver / Crystal here and Brown, Yellow Legacy,
+    taught and kept, the alarm byte 0). Found in every retail Red / Blue / Yellow / Gold / Silver / Crystal here (the German carts too: the same code, each
+    patch put in with `rompatch` on Rote / Blaue / Gelbe / Goldene / Silberne / Kristall-Edition, 2026-11-20) and Brown, Yellow Legacy,
     Crystal Clear, Crystal Legacy; PureRed / PureBlue get the beep only. FIELD POISON off: Gen 1's ApplyOutOfBattlePoisonDamage `jp nz`
     (every fourth step) made a `jp`, Gen 2's DoPoisonStep `jr z, .no_faint` made a `jr`; walked headless with a poisoned lead: Yellow
     182 HP -> 178 without, 182 with; Crystal (a repel on) 19 -> 14 without, 19 with.
@@ -801,7 +812,9 @@ change to any of the places listed under "Where it's decided" updates its rows h
     release's .sym agrees: rev 0, rev 1, AU; Gold's and Silver's do). Checked headless in Crystal rev 1, Gold and Silver from
     the `crystal` / `gold` fixtures' saves (`scripts/gen2_save_from_fixture.py`): a wild Lv3 grass foe, the game's stats
     equal to the formula's, the rewrite still in place after the battle started, the foe sliding in shiny with the game's own
-    sparkle beside the same battle left plain (`GbShinyOddsTest`). The German carts keep RAM of their own: not checked.
+    sparkle beside the same battle left plain (`GbShinyOddsTest`). The German carts (Goldene / Silberne Edition, Kristall, 2026-11-20)
+    keep English's RAM: battle mode / type, wEnemyMon, wEnemyStats, wBaseDexNo and wBaseGender read the same on their
+    `gold_de_battle` / `silver_de_battle` / `crystal_de_battle` fixtures as on English's, so they share its target.
 
 ## What each column is
 
@@ -839,7 +852,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 - **Low HP beep / field poison**: GAMEPLAY > LOW HP BEEP / FIELD POISON, OFF = a game-option patch each (`QuietPatches.kt`): HandleLowHpMusicChange's `bl PlaySE` (SE_LOW_HEALTH 83 FireRed family / 90 Emerald family: the one call of that id whose target the m4aSongNumStop ones don't share) becomes two `nop`s; UpdatePoisonStepCounter's `bl DoPoisonFieldEffect` (after the SECRET_BASE map type check, before its switch) becomes `movs r0, #0`. Every retail FireRed / LeafGreen / Emerald / Ruby / Sapphire cart (`QuietPatchesTest`) and the hacks on that code. Played headless on FireRed rev 1: a poisoned lead walking ten steps, 127 HP -> 125 without, 127 with.
 - **POKéMON CENTER**: the summary's CENTER (heal, relearn, forget a move, nickname) and the QUICK MENU's HEAL (`PokemonCenter.kt`): the game's own specials - HealPlayerParty, TeachMoveRelearnerMove's screen, MoveDeleterForgetMove, ChangePokemonNickname - found in gSpecials by agbcc's code, run by a few script commands in free EWRAM (0x0203FFD8). Every retail FireRed / LeafGreen / Emerald / Ruby / Sapphire (all languages) and most binary hacks; CFRU rewrote ChangePokemonNickname (no NICKNAME there); RELEARN needs a TM screen table (`tmFnsFor`) and the learnsets; Ruby / Sapphire, with no TM screen table, run the Fallarbor tutor's own script instead (`centerRelearnScript`: `special DisplayMoveTutorMenu`, which fades, opens the screen and hands the field back by itself; Ruby rev 1 headless, 2026-11-18). FireRed's relearner needs LoadStdWindowFrameGfx first: its words use the message box's palette, which the recap after a loaded save replaces. Played headless on FireRed rev 1 (all four, the relearner right after loading), Emerald (relearner) and Ruby (the move checks).
 - **Shiny odds**: GAMEPLAY > SHINY ODDS, a new wild foe made shiny at the odds picked (`ShinyOdds.kt`).
-- **Player look**: MAKEOVER > PLAYER LOOK, the player as another game's hero (`PlayerLook.kt`); RIVAL LOOK dresses the rival too (Emerald, Ruby, Sapphire).
+- **Player look**: MAKEOVER > PLAYER LOOK, the player as another game's hero (`PlayerLook.kt`); RIVAL LOOK dresses the rival too (Emerald, Ruby, Sapphire). ◐ on Crystal: FOLLOWER alone (note 58).
 - **Area map**: the MAP tab's and the HUD minimap's AREA map, a cave's or a building's own map with its floors (`AreaMap.kt`).
 
 ## Where it's decided
@@ -847,7 +860,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 - **Area map**: `gamedata/gen3/area_maps.toml` by ROM CRC32 (`AreaMapTablesGen.kt`), written by `scripts/gen_area_maps.py
   --scan <ROM folder>` from EXPAND's rows and the ROMs; a ROM it can't do is listed at the file's end with why. Check with
   `make test-quick T='*AreaMapTest'` (every row against its ROM, drawn).
-- **EXPAND**: `app/src/main/cpp/pk_wide_games.h`, generated by `scripts/gen_wide_tables.py` (retail by SHA-1, the
+- **EXPAND**: `shared/src/commonMain/cpp/pk_wide_games.h`, generated by `scripts/gen_wide_tables.py` (retail by SHA-1, the
   hacks in its `HACKS`; `pending` ones only in `verify_wide.py`'s build). Check with `scripts/verify_wide.py`. A
   randomized retail ROM goes by retail's CRC (`WideScreen.tablesCrc`, `RandomizedRetail`), the field reads too. An
   unknown hack proven to keep retail's engine gets a rebuilt row under its own CRC (`RetailEngine`, `pk_wide_add_derived`).
@@ -951,7 +964,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
   calling one function; the native patch checks them again, `pk_cheats_patch`) and `ReusableTms.BUILT_IN` (by
   `GameKind`). The newer-engine hacks build that check another way: each needs its own site.
 - **Player look**: `PlayerLook.scan` (every hero's graphics by fingerprint, `PlayerLookSigsGen.kt`) and
-  `PlayerLookRunner` (retail carts, `GameTitles.isRetail` or a collection dump of one (`RetailDumps`), and
+  `PlayerLookAssets` (retail carts, `GameTitleCatalog.isRetail` or a collection dump of one (`RetailDumps`), and
   `PlayerLook.HACKS`).
 - **Trainer card**: `NativeConfig.trainerCard` (Emerald Legacy's: its own card style, `CardStyle.LEGACY`, for its fifth
   star's black card). SoulGold (every build), Lazarus and Recharged Yellow (every build) draw their own cards
@@ -1051,11 +1064,28 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     operands read from the cart's own code; the trampoline (21 / 16 / 18 bytes) at the end of the hook's bank in the cart's
     padding, which its write checks. Only walking speeds up: the bike and the skates keep the game's own answer, and every
     other state (surfing) is "not the bike". Found in English Red, Blue, Yellow, Gold, Silver, Crystal (rev 0, rev 1, AU),
-    Italian Yellow and Crystal Legacy (not played); N/A in the Spanish / German / French Yellows (12 to 14 bytes of bank 0
+    Italian Yellow and Crystal Legacy (not played), and in German Red / Blue, Gold / Silver and Crystal (Kristall; tried on a
+    Thor in Goldene, Blaue and Kristall, 2026-11-20); N/A in the Spanish / German / French Yellows (12 to 14 bytes of bank 0
     padding for a 16-byte trampoline), Brown, PureRed / PureBlue, Yellow Legacy, Crystal Clear (1 byte), Prism (27 bytes,
     under the 64 kept) and Polished Crystal (no .GetDPad). `GbRunningShoesTest`.
-
-58. The DS games' bag on a Pokémon (`DsBag.kt`, `nds/stub/pk_nds_item.c`, `pk_nds_call.cpp`'s `PK_NDS_ACTION_ITEM`, 2026-11-14):
+58. Crystal's TRAINER CARD (2026-11-21, `Gen2TrainerCard`, `CardStyle.CRYSTAL`): the game's two pages (STATUS, then BADGES with
+    the leaders and the spinning badges; Kanto's third page is never reached in the game) rebuilt from the cart's tiles,
+    palettes and words (`Gen2Art.extractTo` -> `gen2/crystal/trainer_card.bin`), the save's side from wPlayerID / wPlayerName,
+    wMoney, wGameTime, wPokedexCaught (left out without the POKéDEX flag, wStatusFlags bit 0) and wJohtoBadges. The card's
+    addresses come from its own code (`scripts/find_crystal_card.py`); Kristall's are English's shifted, its top line without
+    NAME/. Every frame of both pages matched the games' own card headless, English and German, on the save as it is and with
+    everything poked in (`CrystalTrainerCardTest`). Not on Crystal's hacks (Clear, Legacy, Prism, Polished).
+59. FOLLOWER on Crystal (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+    (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
+    the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
+    player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's
+    edge into the next keeps it); the battle's slide
+    doesn't count as walking. Its lower half goes behind tall grass (the player object's OVERHEAD flag) and every BG-priority
+    tile, the window and, with wStateFlags bit 6, the menu / text tiles (0x60+) cover it; it goes behind the game's sprites
+    unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
+    Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
+    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+60. The DS games' bag on a Pokémon (`DsBag.kt`, `nds/stub/pk_nds_item.c`, `pk_nds_call.cpp`'s `PK_NDS_ACTION_ITEM`, 2026-11-14):
     USE of medicine, PP items, vitamins and the field berries, GIVE and TAKE, each the party menu's own functions in one job
     (Platinum's `Pokemon_CheckItemEffects` / `Pokemon_ApplyItemEffects` / `Bag_TryRemoveItem` / `Bag_TryAddItem` /
     `Pokemon_SetValue` / `Pokemon_SetArceusForm`, HeartGold / SoulSilver's `CanUseItemOnPokemon` / `UseItemOnPokemon` /

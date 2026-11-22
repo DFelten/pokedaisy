@@ -7,7 +7,7 @@ import kotlinx.atomicfu.locks.synchronized
 /**
  * Per-game work and field visibility shared by the two frame loops. Posting is thread safe; servicing,
  * scene observation, reset and close belong to the game thread, between frames. Render/audio pacing
- * stays with the host. A host services posted work, applies dirty patches, then services field work.
+ * stays with the host.
  */
 class GameSession(
     private val calls: GameCalls,
@@ -17,8 +17,9 @@ class GameSession(
     private class FieldJob(val inBattle: Boolean, var delay: Int, val run: (GameCalls, Boolean) -> Unit) {
         var waited = 0
     }
+    private class PostedJob(val forwardOnly: Boolean, val run: () -> Unit)
     private val lock = SynchronizedObject()
-    private val posted = ArrayDeque<() -> Unit>()
+    private val posted = ArrayDeque<PostedJob>()
     private val fields = ArrayDeque<FieldJob>()
     private var open = true
     var mapOpen = false
@@ -29,16 +30,42 @@ class GameSession(
         private set
     private var fieldFrames = 0
 
-    fun post(job: () -> Unit) = synchronized(lock) { if (open) posted.addLast(job) }
+    fun post(job: () -> Unit) = enqueue(PostedJob(false, job))
+
+    /** A gameplay mutation can wait until the game runs forward again. */
+    fun postForward(job: () -> Unit) = enqueue(PostedJob(true, job))
+
+    private fun enqueue(job: PostedJob) = synchronized(lock) { if (open) posted.addLast(job) }
     fun requestField(inBattle: Boolean, delayFrames: Int = 0, run: (GameCalls, Boolean) -> Unit) =
         synchronized(lock) { if (open) fields.addLast(FieldJob(inBattle, delayFrames, run)) }
 
+    enum class FrameWork { ADVANCING, HELD, REWINDING }
+
+    /** Service worker callbacks and patches between frames. Field delays count only forward frames. */
+    fun servicePending(work: FrameWork, gba: Boolean, gbOnField: () -> Boolean, applyPatches: () -> Unit = {}) {
+        servicePosted(work)
+        if (work == FrameWork.REWINDING) return
+        applyPatches()
+        if (work == FrameWork.ADVANCING) serviceField(gba, gbOnField())
+    }
+
     /** Snapshot the batch: work posted by a callback waits until the next service pass. */
-    fun servicePosted() {
+    fun servicePosted(work: FrameWork = FrameWork.ADVANCING) {
         val count = synchronized(lock) { posted.size }
+        var next = 0
         repeat(count) {
-            val job = synchronized(lock) { if (open) posted.removeFirstOrNull() else null } ?: return@repeat
-            runCatching(job).onFailure { failed("emu job failed", it) }
+            val job = synchronized(lock) {
+                val candidate = if (open) posted.getOrNull(next) else null
+                when {
+                    candidate == null -> null
+                    candidate.forwardOnly && work != FrameWork.ADVANCING -> {
+                        next++
+                        null
+                    }
+                    else -> posted.removeAt(next)
+                }
+            } ?: return@repeat
+            runCatching(job.run).onFailure { failed("emu job failed", it) }
         }
     }
 
@@ -69,11 +96,16 @@ class GameSession(
         menuOpen = gba && FfMenuWatch.tick(reader) && !ShopWatch.isOpen(reader) || dsMenu
     }
 
-    /** Positive field detection; fades keep the prior value, field re-entry settles for twenty frames. */
-    fun observeField(screen: Boolean, wideScene: Int, battleState: Int, holdPicture: Boolean) {
+    /**
+     * Positive field detection; fades keep the prior value, field re-entry settles for twenty frames. [flying] (FREE
+     * FLIGHT up): the controls are locked and nothing can open, so a new area's name sign doesn't read as a text box
+     * over the field - the HUD stayed hidden through each sign and for twenty frames after it (the user's report,
+     * 2026-11-22: it blinked out on every map crossing).
+     */
+    fun observeField(screen: Boolean, wideScene: Int, battleState: Int, holdPicture: Boolean, flying: Boolean = false) {
         if (wideScene == SCENE_FADE) return
         val field = screen && !holdPicture && battleState == BATTLE_INPUT_NONE &&
-            (wideScene == -1 || wideScene == SCENE_FIELD)
+            (wideScene == -1 || wideScene == SCENE_FIELD || flying && (wideScene == SCENE_TEXT || wideScene == SCENE_OVERLAY))
         fieldFrames = if (field) (fieldFrames + 1).coerceAtMost(FIELD_SETTLE_FRAMES) else 0
         onField = fieldFrames >= FIELD_SETTLE_FRAMES
     }
@@ -93,6 +125,8 @@ class GameSession(
         private const val CALL_WAIT_FRAMES = 120
         private const val FIELD_SETTLE_FRAMES = 20
         private const val SCENE_FIELD = 0
+        private const val SCENE_TEXT = 1
+        private const val SCENE_OVERLAY = 2
         private const val SCENE_FADE = 5
     }
 }
