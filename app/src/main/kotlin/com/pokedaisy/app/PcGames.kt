@@ -96,6 +96,29 @@ object PcGames {
         }
     }
 
+    /** A game's resume state (gzip; see pk_pc.c) and its sidecar ([sidecarFor]). */
+    fun resumeState(context: Context, ini: File): File =
+        File(root(context), "states/${ini.parentFile?.name ?: "game"}.resume.gz").apply { parentFile?.mkdirs() }
+
+    fun sidecarFor(state: File) = File(state.path + ".json")
+
+    /**
+     * The games' save folders as they are now: every file's path, size and CRC32. A resume state remembers it, and is
+     * loaded only while it still matches, as the GBA side's pkStateMatchesSave: a state holds the game's progress, and
+     * resumed after a newer in-game save, an in-game save from it would write the older progress over the newer.
+     * Every game's saves count (one PC game saving drops another's resume): the core names the folders, not us.
+     */
+    fun savesFingerprint(context: Context): String {
+        val dir = File(saveDir(context), "mkxp-z/Saves")
+        val crc = java.util.zip.CRC32()
+        dir.walkTopDown().filter { it.isFile }.sortedBy { it.relativeTo(dir).path }.forEach { f ->
+            crc.update(f.relativeTo(dir).path.toByteArray())
+            crc.update(f.length().toString().toByteArray())
+            runCatching { f.inputStream().use { input -> val b = ByteArray(65536); while (true) { val n = input.read(b); if (n <= 0) break; crc.update(b, 0, n) } } }
+        }
+        return "%08x".format(crc.value)
+    }
+
     private fun sameFiles(a: File, b: File): Boolean {
         val fa = a.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(a).path }
         val fb = b.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(b).path }

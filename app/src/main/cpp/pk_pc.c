@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+#include <zlib.h>
 
 #include "libretro.h"
 
@@ -31,6 +33,8 @@ static struct {
     void (*av)(struct retro_system_av_info *);
     void *(*mem)(unsigned);
     size_t (*mem_size)(unsigned);
+    size_t (*ser_size)(void);
+    bool (*ser)(void *, size_t), (*unser)(const void *, size_t);
 } core;
 
 static void *lib, *gles;
@@ -279,6 +283,7 @@ JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcStart(JNIEnv *jenv, j
     SYM(set_audio, "retro_set_audio_sample") SYM(set_audio_batch, "retro_set_audio_sample_batch")
     SYM(set_poll, "retro_set_input_poll") SYM(set_state, "retro_set_input_state") SYM(load, "retro_load_game")
     SYM(av, "retro_get_system_av_info") SYM(mem, "retro_get_memory_data") SYM(mem_size, "retro_get_memory_size")
+    SYM(ser_size, "retro_serialize_size") SYM(ser, "retro_serialize") SYM(unser, "retro_unserialize")
 #undef SYM
 
     core.set_env(env);
@@ -460,6 +465,153 @@ JNIEXPORT jbyteArray JNICALL Java_com_pokedaisy_app_PcCore_pcMailbox(JNIEnv *jen
     }
     pthread_rwlock_unlock(&coreLock);
     return result;
+}
+
+// Resume states. A PC game's state is the whole Ruby heap (mkxp-z_saveStateSize, 512 MB): copied out on the GL thread
+// (~0.2 s on the Thor), then gzip -1'd (about a fifth of that) on a thread of its own into <path>.tmp, renamed over
+// <path>, and only then the sidecar (<path>.json, the game's save folder as it was) written beside it, so a sidecar
+// always belongs to the state next to it. One write at a time: a pause while one is still writing keeps the older.
+static atomic_bool stateWriting;
+
+struct StateJob {
+    void *buf;
+    size_t size;
+    char path[512], sidecar[512];
+    char *sidecarText;
+};
+
+static void *writeState(void *arg) {
+    struct StateJob *job = arg;
+    char tmp[600];
+    snprintf(tmp, sizeof tmp, "%s.tmp", job->path);
+    double t = now();
+    bool ok = false;
+    gzFile f = gzopen(tmp, "wb1");
+    if (f) {
+        size_t done = 0;
+        ok = true;
+        while (done < job->size) {
+            unsigned chunk = (unsigned) (job->size - done > (1u << 26) ? (1u << 26) : job->size - done);
+            if (gzwrite(f, (const char *) job->buf + done, chunk) != (int) chunk) {
+                ok = false;
+                break;
+            }
+            done += chunk;
+        }
+        if (gzclose(f) != Z_OK) ok = false;
+    }
+    free(job->buf);
+    if (ok && rename(tmp, job->path) == 0) {
+        char stmp[600];
+        snprintf(stmp, sizeof stmp, "%s.tmp", job->sidecar);
+        FILE *sf = fopen(stmp, "wb");
+        if (sf) {
+            fputs(job->sidecarText, sf);
+            ok = fclose(sf) == 0 && rename(stmp, job->sidecar) == 0;
+        } else ok = false;
+        LOGI("state written: %s in %.2f s (%s)", job->path, now() - t, ok ? "ok" : "sidecar FAILED");
+    } else {
+        unlink(tmp);
+        LOGW("state write FAILED: %s", job->path);
+    }
+    free(job->sidecarText);
+    free(job);
+    atomic_store(&stateWriting, false);
+    return NULL;
+}
+
+/**
+ * Copies the game's state out and writes it to [path] (gzip), then [sidecar] next to it, on a thread of its own. The
+ * GL thread. False if nothing was taken (no game, a write still running, no memory).
+ */
+JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcSaveState(JNIEnv *jenv, jclass cls, jstring jpath, jstring jsidecar,
+                                                                     jstring jtext) {
+    (void) cls;
+    if (!running || !core.ser) return false;
+    bool expected = false;
+    if (!atomic_compare_exchange_strong(&stateWriting, &expected, true)) {
+        LOGW("a state is still being written: this pause keeps the older one");
+        return false;
+    }
+    struct StateJob *job = calloc(1, sizeof *job);
+    size_t size = core.ser_size();
+    void *buf = job && size ? malloc(size) : NULL;
+    double t = now();
+    pthread_rwlock_rdlock(&coreLock);
+    bool ok = buf && core.ser(buf, size);
+    pthread_rwlock_unlock(&coreLock);
+    if (!ok) {
+        LOGW("serialize failed (%zu bytes)", size);
+        free(buf);
+        free(job);
+        atomic_store(&stateWriting, false);
+        return false;
+    }
+    LOGI("state taken: %zu bytes in %.0f ms", size, (now() - t) * 1e3);
+    job->buf = buf;
+    job->size = size;
+    const char *path = (*jenv)->GetStringUTFChars(jenv, jpath, NULL);
+    const char *sidecar = (*jenv)->GetStringUTFChars(jenv, jsidecar, NULL);
+    const char *text = (*jenv)->GetStringUTFChars(jenv, jtext, NULL);
+    snprintf(job->path, sizeof job->path, "%s", path);
+    snprintf(job->sidecar, sizeof job->sidecar, "%s", sidecar);
+    job->sidecarText = strdup(text);
+    (*jenv)->ReleaseStringUTFChars(jenv, jpath, path);
+    (*jenv)->ReleaseStringUTFChars(jenv, jsidecar, sidecar);
+    (*jenv)->ReleaseStringUTFChars(jenv, jtext, text);
+    pthread_t th;
+    if (pthread_create(&th, NULL, writeState, job) != 0) {
+        free(job->buf);
+        free(job->sidecarText);
+        free(job);
+        atomic_store(&stateWriting, false);
+        return false;
+    }
+    pthread_detach(th);
+    return true;
+}
+
+/** True while a state is still being written (a close waits for it). */
+JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcStateWriting(JNIEnv *jenv, jclass cls) {
+    (void) jenv;
+    (void) cls;
+    return atomic_load(&stateWriting);
+}
+
+/**
+ * Loads the state at [path] (gzip). The GL thread, after at least one frame: a load before the first retro_run traps
+ * in the core's WASM.
+ */
+JNIEXPORT jboolean JNICALL Java_com_pokedaisy_app_PcCore_pcLoadState(JNIEnv *jenv, jclass cls, jstring jpath) {
+    (void) cls;
+    if (!running || !core.unser) return false;
+    const char *path = (*jenv)->GetStringUTFChars(jenv, jpath, NULL);
+    double t = now();
+    bool ok = false;
+    size_t size = core.ser_size();
+    void *buf = size ? malloc(size) : NULL;
+    gzFile f = buf ? gzopen(path, "rb") : NULL;
+    if (f) {
+        gzbuffer(f, 1 << 20);
+        size_t got = 0;
+        while (got < size) {
+            unsigned want = (unsigned) (size - got > (1u << 26) ? (1u << 26) : size - got);
+            int n = gzread(f, (char *) buf + got, want);
+            if (n <= 0) break;
+            got += (size_t) n;
+        }
+        gzclose(f);
+        if (got == size) {
+            pthread_rwlock_wrlock(&coreLock);
+            ok = core.unser(buf, size);
+            pthread_rwlock_unlock(&coreLock);
+        } else LOGW("state %s: %zu of %zu bytes", path, got, size);
+    }
+    free(buf);
+    LOGI("state load %s: %s in %.2f s", path, ok ? "ok" : "FAILED", now() - t);
+    (*jenv)->ReleaseStringUTFChars(jenv, jpath, path);
+    nextFrame = 0;
+    return ok;
 }
 
 /** Unloads the game and the core (the GL thread, while its context is still current). */

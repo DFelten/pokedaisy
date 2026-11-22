@@ -46,5 +46,14 @@ object PcCore {
     /** The companion's JSON (UTF-8) when it changed since the last call, else null. */
     @JvmStatic external fun pcMailbox(): ByteArray?
 
+    /** Takes the game's state (GL thread) and writes it to [path] (gzip), then [sidecarText] to [sidecar], on a thread of its own. */
+    @JvmStatic external fun pcSaveState(path: String, sidecar: String, sidecarText: String): Boolean
+
+    /** True while a state write runs. */
+    @JvmStatic external fun pcStateWriting(): Boolean
+
+    /** Loads the state at [path]: GL thread, after at least one [pcFrame]. */
+    @JvmStatic external fun pcLoadState(path: String): Boolean
+
     @JvmStatic external fun pcStop()
 }

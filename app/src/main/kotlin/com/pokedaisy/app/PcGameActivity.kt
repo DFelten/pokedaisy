@@ -49,6 +49,11 @@ import kotlin.concurrent.thread
  * mkxp-z core ([PcCore]), drawn on this activity's GL thread. The game alone on the main screen; with a second screen
  * a small companion there (the party, from the game's own data through our preload's mailbox). BACK twice closes it;
  * the games save in their own menus (their save folder is backed up before each start, [PcGames.backupSaves]).
+ *
+ * Resume: each pause and close writes a resume state ([PcGames.resumeState], the Ruby heap, ~100 MB gzipped) with the
+ * save folders' fingerprint beside it; a fresh launch with RESUME GAMES on loads it after the first frame, only while
+ * that fingerprint still holds (else it's set aside as `.replaced` and the game boots as usual). A quit from the game's
+ * own menu drops it.
  */
 class PcGameActivity : ComponentActivity() {
 
@@ -67,6 +72,9 @@ class PcGameActivity : ComponentActivity() {
     private var stickMask = 0
     private var lastBack = 0L
     private var presentation: DualScreenPresentation? = null
+    private var ini: File? = null
+    /** The state to load after the first frame (GL thread), or null. */
+    @Volatile private var pendingResume: File? = null
 
     /** What the overlay says (loading, an error), null once the game shows. */
     private var notice by mutableStateOf<String?>("LOADING...")
@@ -77,6 +85,7 @@ class PcGameActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         goImmersive()
         val ini = intent?.getStringExtra(EXTRA_GAME)?.let { File(it) }
+        this.ini = ini
         val root = FrameLayout(this)
         root.addView(ComposeView(this).apply { setContent { AppTheme { Notice() } } })
         setContentView(root)
@@ -89,6 +98,7 @@ class PcGameActivity : ComponentActivity() {
             val sys = runCatching { PcGames.installPreloads(this) }.getOrNull()
             val saves = PcGames.saveDir(this).apply { mkdirs() }
             val backedUp = PcGames.backupSaves(this)
+            pendingResume = if (backedUp) resumeToLoad(ini) else null
             runOnUiThread {
                 when {
                     core == null -> notice = "NO CORE: put ${PcGames.CORE_NAME} in Android/data/$packageName/files/pc/cores/"
@@ -122,7 +132,7 @@ class PcGameActivity : ComponentActivity() {
                 runOnUiThread {
                     if (ok) {
                         startAudio(PcCore.pcSampleRate())
-                        notice = null
+                        if (pendingResume == null) notice = null else notice = "RESUMING..."
                         startMailbox()
                     } else notice = "THE GAME DIDN'T START (logcat pokedaisy/pc)"
                 }
@@ -136,8 +146,16 @@ class PcGameActivity : ComponentActivity() {
             override fun onDrawFrame(unused: GL10?) {
                 if (!started || closing) return
                 if (PcCore.pcFrame(w, h) < 0) {
-                    closeGame()
+                    // The game's own quit: its resume state would be older than what the player chose.
+                    ini?.let { PcGames.resumeState(this@PcGameActivity, it).delete() }
+                    closeGame(saveState = false)
                     return
+                }
+                pendingResume?.let { state ->
+                    pendingResume = null
+                    val ok = PcCore.pcLoadState(state.path)
+                    if (!ok) Log.w(TAG, "resume state didn't load: the game goes on from its boot")
+                    runOnUiThread { notice = null }
                 }
                 val n = PcCore.pcAudio(buf)
                 if (n > 0) audio?.write(buf, 0, n, AudioTrack.WRITE_NON_BLOCKING)
@@ -171,7 +189,31 @@ class PcGameActivity : ComponentActivity() {
         }
     }
 
-    private fun closeGame() {
+    /** The resume state for [ini] if it should load now (RESUME GAMES on, its saves unchanged), else null. */
+    private fun resumeToLoad(ini: File): File? {
+        val state = PcGames.resumeState(this, ini)
+        val sidecar = PcGames.sidecarFor(state)
+        if (!state.isFile || !Prefs(this).autoResume) return null
+        val made = runCatching { JSONObject(sidecar.readText()).optString("saves") }.getOrNull()
+        val now = PcGames.savesFingerprint(this)
+        if (made == now) return state
+        // The saves changed since (played elsewhere, a save copied in): the state would bring older progress back.
+        Log.w(TAG, "resume state set aside: the saves changed since it was made ($made -> $now)")
+        state.renameTo(File(state.path + ".replaced"))
+        sidecar.delete()
+        return null
+    }
+
+    /** Queues a resume state write on the GL thread (before it pauses or the game unloads). */
+    private fun queueStateSave(view: GLSurfaceView) {
+        val game = ini ?: return
+        if (!started || pendingResume != null) return // not running yet, or the resume hasn't even loaded
+        val state = PcGames.resumeState(this, game)
+        val text = JSONObject().put("saves", PcGames.savesFingerprint(this)).put("game", game.path).toString()
+        view.queueEvent { if (started) PcCore.pcSaveState(state.path, PcGames.sidecarFor(state).path, text) }
+    }
+
+    private fun closeGame(saveState: Boolean = true) {
         if (closing) return
         closing = true
         PcCore.pcInput(0)
@@ -180,6 +222,7 @@ class PcGameActivity : ComponentActivity() {
             finish()
             return
         }
+        if (saveState) queueStateSave(view)
         view.queueEvent {
             PcCore.pcStop()
             started = false
@@ -204,6 +247,9 @@ class PcGameActivity : ComponentActivity() {
         stickMask = 0
         PcCore.pcInput(0)
         audio?.pause()
+        // HOME, another app, the screen going off: the game waits here, and a resume state goes down in case Android
+        // ends the app meanwhile (taken now, written on a thread of its own).
+        gl?.let { if (!closing) queueStateSave(it) }
         gl?.onPause()
         presentation?.dismiss()
         presentation = null
