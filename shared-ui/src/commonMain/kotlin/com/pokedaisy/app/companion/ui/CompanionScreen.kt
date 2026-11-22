@@ -318,7 +318,8 @@ fun CompanionScreen(
         val guideUi = remember { GuideUiState() }
         val guide = rememberGuide(game, dex, snapshot.guideTables)
         // The GUIDE's AI notice, once per game; GO BACK returns to [backTab].
-        var noticeAccepted by remember { mutableStateOf(game == null || settings?.guideNoticeAccepted(game.name) != false) }
+        // (A PC fan game's GUIDE is the game's own data, nothing written by us: no notice.)
+        var noticeAccepted by remember { mutableStateOf(game == null || game.isPcGame || settings?.guideNoticeAccepted(game.name) != false) }
 
         // The player's pick of tabs (SETTINGS > TAB BAR). Settings aren't
         // Compose state, so the SETTINGS tab reports changes back here.
@@ -334,7 +335,9 @@ fun CompanionScreen(
             if (game.isN3ds) return@filter id in N3DS_TABS
             // A PC fan game: what its own data sends (linux/pc_games/pokedaisy_companion.rb).
             // Its MAP once the game's Town Map has the player's region (PcTownMap).
-            if (game.isPcGame) return@filter id in PC_GAME_TABS || id == "MAP" && com.pokedaisy.app.companion.data.PcTownMap.model != null
+            // Its GUIDE once the map's wild Pokémon have come (PcGuide).
+            if (game.isPcGame) return@filter id in PC_GAME_TABS || id == "MAP" && com.pokedaisy.app.companion.data.PcTownMap.model != null ||
+                id == "GUIDE" && guide != null
             when (id) {
                 "DEX" -> dex != null || id in cachedTabs
                 "GUIDE" -> guide != null || id in cachedTabs

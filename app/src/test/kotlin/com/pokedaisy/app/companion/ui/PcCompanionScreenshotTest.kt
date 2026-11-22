@@ -49,6 +49,7 @@ class PcCompanionScreenshotTest {
         OptionColors.inGame = false
         OwnItemNames.lookup = null
         com.pokedaisy.app.companion.data.PcTownMap.clear()
+        com.pokedaisy.app.companion.data.PcGuide.clear()
         com.pokedaisy.app.companion.data.RomArt.dirOverride = artBefore
     }
 
@@ -91,6 +92,7 @@ class PcCompanionScreenshotTest {
     @Test fun summaryWater() = shot("PARTY", mon = 1)
     @Test fun bag() = shot("ITEMS")
     @Test fun map() = shot("MAP")
+    @Test fun guide() = shot("GUIDE")
     @Test fun battle() = shot("BATTLE", json = PcCompanionSample.BATTLE_JSON)
     @Test fun battleButtons() = shot("BATTLE", json = PcCompanionSample.BATTLE_JSON, controls = true)
 

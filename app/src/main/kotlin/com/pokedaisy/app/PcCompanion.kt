@@ -27,6 +27,7 @@ import com.pokedaisy.app.companion.data.POCKET_MEDICINE
 import com.pokedaisy.app.companion.data.POCKET_POKE_BALLS
 import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.PcGameTypes
+import com.pokedaisy.app.companion.data.PcGuide
 import com.pokedaisy.app.companion.data.PcTownMap
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.TYPE_NONE
@@ -40,8 +41,8 @@ import java.util.zip.CRC32
 /**
  * A PC fan game's companion data ([GameKind.ESSENTIALS]): the snapshot our preload sends from the game
  * (linux/pc_games/pokedaisy_companion.rb, through [PcCore.pcMailbox]) turned into the [SnapshotView] the real
- * companion draws - PARTY with its summaries, the bag and the MAP ([PcTownMap]: the game's own Town Map picture and
- * places), every name and type the game's own. Party and item icons are
+ * companion draws - PARTY with its summaries, the bag, the MAP ([PcTownMap]: the game's own Town Map picture and
+ * places) and the GUIDE's HERE ([PcGuide]: the map's wild Pokémon), every name and type the game's own. Party and item icons are
  * the game's PNGs, rebuilt into the art cache the companion already reads ([iconDir]): a party icon as the companion's
  * 32 x 64 two-frame sheet, a fusion's put together the way Infinite Fusion's createFusionIcon does (linux/pc_companion.c).
  *
@@ -55,10 +56,12 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
     private val mapDir = File(filesDir, "rom-art/regionmap/pc")
     private var lastTypes: String? = null
     private var lastTownMap: String? = null
+    private var lastWild: String? = null
 
     init {
         // Another game's map must not show before this one's first snapshot.
         PcTownMap.clear()
+        PcGuide.clear()
     }
 
     /** The bag's names by the [ItemView.itemId]s [snapshot] made up (the companion's item names lookup). */
@@ -83,6 +86,8 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
         itemNames = names
         val map = o.optJSONObject("map")
         val town = townMap(o.optJSONObject("townMap"))
+        val place = town?.name ?: map?.optString("name").orEmpty()
+        wild(o.optJSONArray("wild"), place)
         // The battle (pbStartBattle's own object): the battlers on each side as the battle has them, each move's verdict
         // on the other side, and a trainer's whole team for the FOE TEAM strip.
         val battle = o.optJSONObject("battle")
@@ -99,7 +104,7 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             items = items,
             // The Town Map's name for the place (as the GBA games' map sections: a town's, not its buildings'), else the
             // game's own map name.
-            location = LocationView(town?.name ?: map?.optString("name").orEmpty(), null, 0, 0, 0, 0),
+            location = LocationView(place, null, 0, 0, 0, 0),
             regionMapSectionId = town?.section ?: 0,
             regionMapTile = town?.tile,
             x = map?.optInt("x") ?: 0,
@@ -125,6 +130,32 @@ class PcCompanion(private val gameDir: File, filesDir: File) {
             },
             battleActiveBattler = battle?.optInt("menuBattler") ?: 0,
         )
+    }
+
+    /** The GUIDE's HERE for the map's wild Pokémon ([PcGuide]), rebuilt when they or the place change; none without
+     * the game's encounters (it has no `$PokemonEncounters`). */
+    private fun wild(a: JSONArray?, place: String) {
+        val key = a?.let { "$place|$it" }
+        if (key == lastWild) return
+        lastWild = key
+        PcGuide.set(a?.let {
+            PcGuide.of(place, (0 until it.length()).mapNotNull { i ->
+                val k = it.optJSONObject(i) ?: return@mapNotNull null
+                val slots = k.optJSONArray("slots") ?: return@mapNotNull null
+                PcGuide.Kind(k.optString("kind"), (0 until slots.length()).mapNotNull { j ->
+                    val s = slots.optJSONObject(j) ?: return@mapNotNull null
+                    PcGuide.Slot(
+                        name = s.optString("name"),
+                        min = s.optInt("min"),
+                        max = s.optInt("max"),
+                        percent = s.optInt("percent"),
+                        seen = if (s.isNull("seen")) null else s.optBoolean("seen"),
+                        owned = if (s.isNull("owned")) null else s.optBoolean("owned"),
+                        icon = icon(s.optJSONObject("icon")),
+                    )
+                })
+            })
+        })
     }
 
     /** Where the player is on the Town Map: the place's section ([PcTownMap.build]'s), its name (null where the map

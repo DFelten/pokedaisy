@@ -33,6 +33,9 @@ data class GuideEntry(
     val pinSpecies: Int = 0,
     /** ... and by which method (GRASS / CAVE, SURFING, ROCK SMASH, the rods' FISHING); null = no PIN. */
     val pinMethod: WildPin.Method? = null,
+    /** The row's party icon as an art path, for a game whose Pokémon have no species number of ours (a PC fan game's);
+     * null = [icon]'s. */
+    val iconAsset: String? = null,
 ) {
     /** Taps until the answer shows: one straight to it, two via the hint; 0 = nothing hidden. */
     val steps: Int get() = when {

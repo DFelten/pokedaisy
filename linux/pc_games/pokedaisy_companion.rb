@@ -14,7 +14,7 @@ module PokeDaisyCompanion
   CAPACITY = 256 * 1024
   HEADER = 24
   EVERY = 15 # frames between snapshots (4 a second at 60 fps)
-  VERSION = 6
+  VERSION = 7
   # Essentials' stat keys, in the order "stats" sends them.
   STAT_KEYS = [:HP, :ATTACK, :DEFENSE, :SPECIAL_ATTACK, :SPECIAL_DEFENSE, :SPEED]
   # A battler's stat stages, in the order the companion keeps them (its battle stats, then accuracy and evasion).
@@ -440,6 +440,69 @@ module PokeDaisyCompanion
     t ? try { GameData::TrainerType.player_map_icon_filename(t.trainer_type) } : nil
   end
 
+  # --- the wild Pokémon here (the GUIDE's HERE) ---
+  # The encounter kinds a map can have, as Essentials names them; the game picks the time of day's own of each
+  # (find_valid_encounter_type_for_time: LandDay, WaterNight...). The Bug Contest's isn't the player's to meet.
+  WILD_BASES = [:Land, :Land1, :Land2, :Land3, :Cave, :Water, :OldRod, :GoodRod, :SuperRod, :RockSmash, :HeadbuttLow,
+                :HeadbuttHigh]
+
+  # The current map's wild Pokémon as the game set them up for it ($PokemonEncounters' tables, after any mode or
+  # randomizer of the game's own), the kinds that hold now, each Pokémon once a kind: its levels, its share of the odds,
+  # its icon, and whether the Pokédex has seen and caught it. Built once per map and time of day; the Pokédex each time.
+  def self.wild
+    enc = defined?($PokemonEncounters) && $PokemonEncounters
+    return nil unless enc
+    tables = try { enc.instance_variable_get(:@encounter_tables) }
+    return nil unless tables.is_a?(Hash)
+    time = try { pbGetTimeNow }
+    types = WILD_BASES.map { |b| try { enc.find_valid_encounter_type_for_time(b, time) } || (tables.key?(b) ? b : nil) }
+    types = types.compact.uniq
+    key = [try { $game_map.map_id }, types, tables.object_id]
+    if key != @wild_key
+      @wild_key = key
+      @wild = types.map { |t| wild_kind(t, WILD_BASES.select { |b| t.to_s.start_with?(b.to_s) }.max_by { |b| b.to_s.size } || t, tables[t]) }.compact
+    end
+    dex = try { ((defined?($Trainer) && $Trainer) || (defined?($player) && $player)).pokedex }
+    @wild.map do |k|
+      { "kind" => k[:kind], "slots" => k[:slots].map { |sl|
+        sl.merge("seen" => dex ? !!try { dex.seen?(sl[:id]) } : nil, "owned" => dex ? !!try { dex.owned?(sl[:id]) } : nil)
+          .reject { |key, _| key == :id }
+      } }
+    end
+  end
+
+  # One kind's list: [chance, species, min level, max level] entries, a species' chances added up.
+  def self.wild_kind(type, base, list)
+    return nil if !list || list.empty?
+    total = list.sum { |e| e[0].to_i }
+    return nil if total <= 0
+    by = {}
+    list.each do |e|
+      s = (by[e[1]] ||= { id: e[1], chance: 0, min: e[2], max: e[3] || e[2] })
+      s[:chance] += e[0].to_i
+      s[:min] = [s[:min], e[2]].min
+      s[:max] = [s[:max], e[3] || e[2]].max
+    end
+    slots = by.values.sort_by { |s| -s[:chance] }.map do |s|
+      {
+        id: s[:id], "name" => try { GameData::Species.get(s[:id]).name } || s[:id].to_s,
+        "min" => s[:min], "max" => s[:max], "percent" => (s[:chance] * 100.0 / total).round,
+        "icon" => @wild_icons[s[:id]] ||= wild_icon(s[:id], s[:min]),
+      }
+    end
+    { kind: base.to_s, slots: slots }
+  end
+  @wild_icons = {}
+
+  # A wild species' party icon, from a Pokémon made for it (never shiny, never added anywhere): the party's own rules,
+  # a fusion's two halves included.
+  def self.wild_icon(species, level)
+    pk = try { Pokemon.new(species, [level.to_i, 1].max) }
+    return nil unless pk
+    try { pk.shiny = false }
+    try { icon(pk) }
+  end
+
   def self.snapshot
     out = { "v" => VERSION, "frame" => (Graphics.frame_count rescue 0), "typeTable" => type_table }
     t = (defined?($Trainer) && $Trainer) || (defined?($player) && $player)
@@ -461,6 +524,8 @@ module PokeDaisyCompanion
       }
       tm = try { town_map }
       out["townMap"] = tm if tm
+      w = try { wild }
+      out["wild"] = w if w
     end
     out["inBattle"] = try { $game_temp ? !!$game_temp.in_battle : false } || false
     # Its own guard: whatever a battle does, the party and bag above still go out.

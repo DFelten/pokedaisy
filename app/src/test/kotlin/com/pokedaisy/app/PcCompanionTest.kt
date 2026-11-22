@@ -28,6 +28,7 @@ class PcCompanionTest {
     @After fun reset() {
         activeGame = GameKind.FIRERED
         com.pokedaisy.app.companion.data.PcTownMap.clear()
+        com.pokedaisy.app.companion.data.PcGuide.clear()
     }
 
     private fun view() = PcCompanion(tmp.newFolder("game"), tmp.newFolder("files")).snapshot(PcCompanionSample.JSON)!!
@@ -175,6 +176,30 @@ class PcCompanionTest {
         assertEquals(com.pokedaisy.app.companion.data.PcTownMap.PLAYER_ONLY, off.regionMapSectionId)
         assertEquals("Quiet Path", off.location.mapSecName)
         assertEquals(6 to 7, off.regionMapTile)
+    }
+
+    @Test fun theGuidesHere() {
+        view()
+        val here = com.pokedaisy.app.companion.data.PcGuide.guide!!.pages.single()
+        assertEquals("HERE", here.title)
+        // The place first, with how many of its Pokémon are caught, then each way to meet them.
+        assertEquals("ROUTE 2", here.sections[0].heading)
+        assertEquals("1 of 5 caught here.", here.sections[0].note)
+        val grass = here.sections[1]
+        assertEquals("GRASS / CAVE", grass.heading)
+        // The game's two grass lists as one, each Pokémon once; an unseen one stays ??? until tapped.
+        assertEquals(listOf("???", "EMBERPUP", "BUBBLEFIN", "???"), grass.entries.map { it.title })
+        assertEquals("THORNLET", grass.entries[0].answer)
+        assertEquals("LV 2-4  50%", grass.entries[0].detail)
+        assertTrue(grass.entries[1].owned)
+        assertEquals("OLD ROD", here.sections[2].heading)
+    }
+
+    @Test fun noEncountersNoGuide() {
+        PcCompanion(tmp.newFolder(), tmp.newFolder()).snapshot(
+            org.json.JSONObject(PcCompanionSample.JSON).apply { remove("wild") }.toString(),
+        )
+        assertNull(com.pokedaisy.app.companion.data.PcGuide.guide)
     }
 
     @Test fun noPictureNoMap() {

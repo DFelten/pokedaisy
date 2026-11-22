@@ -41,7 +41,9 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 - Press BACK twice to close the game.
 - With a second screen, the companion is there: your team (tap one for its summary, its moves and its stats), your
   bag and the MAP, every name and type as the game has them. The MAP is the game's own Town Map with where you are on it:
-  tap a spot to see what it's called, or pick a place from `PLACES`. In a battle the BATTLE tab joins them: both sides' Pokémon, how well
+  tap a spot to see what it's called, or pick a place from `PLACES`. The GUIDE's HERE lists the wild Pokémon where you
+  are right now: how to meet them, their levels and how often they show up. One you haven't seen yet stays hidden until
+  you tap it. In a battle the BATTLE tab joins them: both sides' Pokémon, how well
   each move works on the other side, what the foe is weak to, and a trainer's whole team. When the game asks what to
   do, the companion's buttons answer it: FIGHT and a move, RUN, or POKéMON to pick who switches in. BAG opens the
   game's own bag.
@@ -58,7 +60,7 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 
 ## What doesn't work yet
 
-- The companion's GUIDE and its settings.
+- The GUIDE's other pages (the next boss, where things are) and the companion's settings.
 - The MAP only shows once the game's Town Map has a spot for where you are.
 - Double battles: their picks stay in the game's own menu.
 - Games made with older versions of Essentials.

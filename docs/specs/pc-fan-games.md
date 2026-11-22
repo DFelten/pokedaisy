@@ -338,7 +338,17 @@ whole-number size with hard pixels into a copy of its own (3x), then smooths tha
 one screen pixel at most. A whole-number fit is one hard-pixel draw; a GPU refusing the copy gets the old smooth stretch. The sizes
 are `pk_pc_fit.h`'s, checked by `native-capture/pc_probe/pc_fit_test.c`; not yet looked at on a device.
 
-Not yet: the companion's guide, picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
+The GUIDE's HERE (2026-11-23): the snapshot's `wild` (VERSION 7) is the current map's encounter tables as the game set them up
+(`$PokemonEncounters`' `@encounter_tables`, so Infinite Fusion's modern / random modes come through), only the kinds that hold now
+(`find_valid_encounter_type_for_time` per kind: LandDay by day, LandNight at night; the Bug Contest's left out), each Pokémon once a
+kind with its levels, its share of the odds (chances added up), its party icon (from a `Pokemon.new` of it, never shiny, built once
+per species) and the Pokédex's seen / caught. Built once per map and time, the Pokédex each snapshot. `PcGuide` makes it the GUIDE's
+one page (a hand-written page's way: every game's headings, a game's several grass lists as one, an unseen Pokémon ??? until tapped,
+the caught count); `GuideEntry.iconAsset` carries the game's icon. No AI notice (nothing in it is ours). Checked in plain Ruby against
+stand-ins (`find_valid_encounter_type_for_time`'s day / night pick, Land1 apart from Land) and by `PcGuideTest` / `PcCompanionTest` /
+`PcCompanionScreenshotTest`; not yet in a game. NEXT BOSS, WHERE IS and EVOLUTIONS would need each game's own data.
+
+Not yet: picks in double battles (no game has them in the companion), HUD, NEW tag, and a way
 for players to get the core.
 
 ## Next steps

@@ -55,6 +55,15 @@ object PcCompanionSample {
        "points":[[4,3,"Petal Town",null],[5,3,"Petal Town",null],[4,4,"Route 2",null],[4,5,"Route 2",null],[4,6,"Route 2",null],
                  [4,9,"Clover City",null],[9,9,"Mossy Cave","Moss Tower"],[12,2,"Secret Island",null],[7,9,"Route 3",null],
                  [8,9,"Route 3",null]]},
+     "wild":[
+       {"kind":"Land","slots":[
+         {"name":"THORNLET","min":2,"max":4,"percent":50,"seen":false,"owned":false},
+         {"name":"EMBERPUP","min":3,"max":6,"percent":30,"seen":true,"owned":true},
+         {"name":"BUBBLEFIN","min":4,"max":4,"percent":20,"seen":true,"owned":false}]},
+       {"kind":"Land1","slots":[{"name":"MOSSLING","min":8,"max":8,"percent":100,"seen":false,"owned":false},
+         {"name":"EMBERPUP","min":7,"max":7,"percent":100,"seen":true,"owned":true}]},
+       {"kind":"OldRod","slots":[{"name":"BUBBLEFIN","min":5,"max":5,"percent":70,"seen":true,"owned":false},
+         {"name":"FINLING","min":5,"max":10,"percent":30,"seen":false,"owned":false}]}],
      "inBattle":false,"scene":"Scene_Map"}
     """.trimIndent()
 
