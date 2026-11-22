@@ -10,6 +10,8 @@
 #include "pd_canvas.h"
 #include "pd_menu.h"
 #include "pd_style.h"
+#include "pd_settings.h"
+#include "pd_tr.h"
 #include <SDL.h>
 #include <dirent.h>
 #ifdef _WIN32
@@ -89,7 +91,7 @@ static void stop(int sig) {
   running = 0;
 }
 static void notice(const char *s) {
-  snprintf(message, sizeof message, "%s", s);
+  snprintf(message, sizeof message, "%s", pd_tr(s));
   messageUntil = SDL_GetTicks() + 2500;
   fprintf(stderr, "%s\n", s);
 }
@@ -2222,13 +2224,14 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     snprintf(rows[M_RESUME], 40, "RESUME");
     snprintf(rows[M_SAVE], 40, "SAVE STATE");
     snprintf(rows[M_LOAD], 40, "LOAD STATE");
+    // A label and its value, each in the player's language (pd_menu translates whole rows only).
     if (hostSet.ffSpeed)
-      snprintf(rows[M_FFSPEED], 40, "FF SPEED  %dx", hostSet.ffSpeed);
+      snprintf(rows[M_FFSPEED], 40, "%s  %dx", pd_tr("FF SPEED"), hostSet.ffSpeed);
     else
-      snprintf(rows[M_FFSPEED], 40, "FF SPEED  MAX");
-    snprintf(rows[M_REWIND], 40, "REWIND  %s", hostSet.rewind ? "ON" : "OFF");
-    snprintf(rows[M_LCD], 40, "LCD FILTER  %s", hostSet.lcd ? "ON" : "OFF");
-    snprintf(rows[M_SWAP], 40, "A/B BUTTONS  %s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
+      snprintf(rows[M_FFSPEED], 40, "%s  %s", pd_tr("FF SPEED"), pd_tr("MAX"));
+    snprintf(rows[M_REWIND], 40, "%s  %s", pd_tr("REWIND"), pd_tr(hostSet.rewind ? "ON" : "OFF"));
+    snprintf(rows[M_LCD], 40, "%s  %s", pd_tr("LCD FILTER"), pd_tr(hostSet.lcd ? "ON" : "OFF"));
+    snprintf(rows[M_SWAP], 40, "%s  %s", pd_tr("A/B BUTTONS"), pd_tr(hostSet.swapAB ? "SWAPPED" : "NORMAL"));
     snprintf(rows[M_HOTKEYS], 40, "HOTKEYS");
     snprintf(rows[M_KEYBOARD], 40, "KEYBOARD");
     snprintf(rows[M_QUIT], 40, fromList ? "QUIT TO GAME LIST" : "QUIT");
@@ -2238,10 +2241,10 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     for (int i = 0; i < menuN; i++)
       rowPtrs[i] = rows[menuMap[i]];
     for (int i = 0; i < HK_ACTIONS; i++) {
-      snprintf(hkRows[i], 40, "%s  %s", hkNames[i], capturing == i ? "..." : hotkey_label(hotkeys[i]));
+      snprintf(hkRows[i], 40, "%s  %s", pd_tr(hkNames[i]), capturing == i ? "..." : hotkey_label(hotkeys[i]));
       hkPtrs[i] = hkRows[i];
     }
-    snprintf(hkRows[HK_ACTIONS], 40, "MODIFIER  %s",
+    snprintf(hkRows[HK_ACTIONS], 40, "%s  %s", pd_tr("MODIFIER"),
              capturing == HK_ACTIONS ? "..." : hotkey_label(hostSet.modifier));
     hkPtrs[HK_ACTIONS] = hkRows[HK_ACTIONS];
     for (int i = 0; i < KB_COUNT; i++) {
@@ -2883,7 +2886,15 @@ int main(int argc, char **argv) {
   // The app's RETRO look for the host's own windows (its menu, HOTKEYS, KEYBOARD, the game list), as the cores draw
   // the companion: the game list applies the player's THEME and DARK MODE over it (library.c's pd_look_apply).
   pd_style_enable(true);
-  pd_look_apply(NULL, NULL);
+  {
+    // The player's THEME, DARK MODE and LANGUAGE (the companion's settings.ini) for the host's own windows from the
+    // start, a game opened straight from the command line too; the game list applies them again when it opens.
+    struct pd_settings look;
+    char lookPath[PATH_MAX * 2];
+    snprintf(lookPath, sizeof lookPath, "%s/pokedaisy/settings.ini", savesDir);
+    pd_settings_defaults(&look);
+    pd_look_apply(NULL, pd_settings_load(&look, lookPath) ? &look : NULL);
+  }
   faceLabels = getenv("POCKET_FACE_LABELS") && !strcmp(getenv("POCKET_FACE_LABELS"), "1");
   comboMenu = !(getenv("POCKET_MENU_COMBO") && !strcmp(getenv("POCKET_MENU_COMBO"), "off"));
   // A window manager can give another window the focus over the game (plorpOS's in-game menu on the GKD): the
