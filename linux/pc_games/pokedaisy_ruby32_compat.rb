@@ -163,9 +163,12 @@ module Kernel
 end
 
 # Reborn's and Rejuvenation's own mkxp-z builds add buttons D, E and F (hold to run, turbo, mute: their mkxp.json's
-# bindingNames), which the libretro core's Input hasn't got. They're the "no button" code here: never pressed.
+# bindingNames), which the libretro core's Input hasn't got. E, their turbo (Graphics.frame_rate up from 40, which the
+# core paces by itself), is START here: the pad's START reaches the core as Alt, which they only read to stop running
+# while it's held. D and F are the "no button" code: never pressed (A runs as well, and the app has its own volume).
 module Input
-  %i[D E F].each { |c| const_set(c, 0) unless const_defined?(c, false) }
+  const_set(:E, const_defined?(:ALT) ? ALT : 0) unless const_defined?(:E, false)
+  %i[D F].each { |c| const_set(c, 0) unless const_defined?(c, false) }
 end
 
 # Their builds' System.file_exist?: File.exist? that also looks in the folders mkxp.json's "patches" names, where the

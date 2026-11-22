@@ -35,7 +35,8 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 ## Playing
 
 - The game fills the screen in its own shape, its pixels kept sharp.
-- The buttons and the stick work as in the game itself: A to pick, B to go back.
+- The buttons and the stick work as in the game itself: A to pick, B to go back. In Pokémon Reborn and Pokémon
+  Rejuvenation, START turns their speed-up on and off.
 - On a screen with no controller, the on-screen controls show, the same ones (and the same `TOUCH CONTROLS` settings)
   as in your other games, with X and Y too.
 - With two screens, the companion is on the other one. Press BACK twice to close the game.

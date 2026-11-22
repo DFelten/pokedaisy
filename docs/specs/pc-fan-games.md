@@ -415,6 +415,9 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   ones to their file after every slot is back (a stream before its file in the table would have failed the same way). Both
   games now save and load (Rejuvenation 0.33 s, Reborn 0.04 s, 512 MB states). The fix changes the core's sandbox hash, so
   states from an older core are refused (a resume state is set aside, as for any refused load).
+- Their turbo (E, TAB on a PC: `Graphics.toggleTurbo`, `Graphics.frame_rate` 40 -> 40 x their multiplier, which the core
+  paces by itself) is START: the pad's START reaches the core as Alt, which they only read to keep from running while it's
+  held. Checked at Reborn's title: START -> `$speed_up` true, frame rate 120.
 - Their name entry asks `$Settings.useKeyboard?` (their KEYBOARD option, on by default; typed text never reaches the game in
   the libretro core, as for Infinite Fusion): the compat preload answers no, so it's their letter grid (checked in Reborn's
   intro: "Your name?" over the grid, A typing a letter).
