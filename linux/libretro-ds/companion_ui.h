@@ -13,9 +13,23 @@ struct DsCompanionUi {
   // A host whose picture can EXPAND (the Windows core): its SETTINGS gain ASPECT, ZOOM and AUTO ZOOM IN, and it lays the
   // game out for settings.aspect / settings.zoom (the app's SETTINGS > SCREEN). Off: the DS layouts alone.
   bool hasExpand=false;
+  // The frontend's own settings (the desktop host's A/B BUTTONS, FF SPEED, KEYBOARD ...: PD_ENV_FRONT_ROWS), at the end of
+  // SETTINGS as rows Rows + i, so every setting is in one place. set_front_rows each frame; a press is taken by
+  // take_front_press (-1 none) and handed back to the frontend; open_front_rows puts SETTINGS on the first of them.
+  static constexpr int FrontMax=8;
+  int frontCount=0;
+  std::string frontLabel[FrontMax], frontValue[FrontMax], frontGroup[FrontMax];
+  int frontPressed=-1;
+  void set_front_rows(int count,const char (*labels)[24],const char (*values)[24],const char (*groups)[16]);
+  int take_front_press(){const int r=frontPressed;frontPressed=-1;return r;}
+  void open_front_rows();
   std::vector<Row> order; // settingsOrder: the list shown, ASPECT / ZOOM / AUTO ZOOM IN first when hasExpand
   void build_order();
   pd_ui frame{}, options{};
+  // A companion window's picture around the canvas (the desktop's padding, PD_COMPANION_PAD): the backdrop drawn across
+  // it, its part at (backdropX, backdropY) taken under the companion, so the padding carries on the same picture.
+  pd_canvas* backdropFrame=nullptr;
+  int backdropX=0, backdropY=0;
   pd_snapshot battle{};
   unsigned displayRevision=0;
   int layout=0, autoBattles=1, companionButton=0, screenButton=1, penSpeed=1;

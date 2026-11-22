@@ -293,6 +293,11 @@ pixel, so there its text was as large for the screen as on a GBA): `LocalTextSte
    rewritten to `Icons.Filled`, a stale incremental cache once faked "Unresolved
    reference" errors — delete `build/kotlin` if errors look impossible).
 
+**Its colours are PokeDaisy's blues since 2026-11-22** (the user's call: `retroStylePalette`, #3D6FE0; `themedStylePalette` moves them
+to a THEME's hue, `Color.rehued`; `uiStylePalette`'s SUMMARY MINT keeps the sampled teal for reference). Top-screen headers (library,
+TOOLS, Settings, every tool: `LibraryHeaderBar`, `ToolHeader`) and Settings HOME's footer (`AppAboutBar`) are full-width bands on the
+screen's edges; a panel's title inside a window is a band across its top (`PanelHeader`, `LocalWindowInset`). The library header drops
+HELP and narrows its buttons when they'd cut POKéDAISY short (`compactActions`).
 **The menus' look is SUMMARY MINT** (2026-11-12, the user's pick of eight looks tried; `theme/UiStyle.kt`, `UiStyles`,
 `OptionColors.style`): the OPTION pieces below drawn over a `UiStylePalette` - Emerald's summary pages (sampled headless): a teal
 header joined to a mint list window (`OptionTitleWindow(joined)`, `WindowGap`), green section bands (`StyledGroupTitle`), banded
@@ -1011,7 +1016,7 @@ two steps like the TM screen (`centerRelearnStart` / `Finish`: fade, then cleanu
 LoadStdWindowFrameGfx first: the relearner never loads the message box palette (15), which a loaded save's recap leaves dark (black word
 boxes). Ruby / Sapphire (no TM screen table): the Fallarbor tutor's own script, `special DisplayMoveTutorMenu` (`centerRelearnScript`). Offered only when `relearnableMoves` (DexDetails.levelUp) has some.
 **PLAYER LOOK** (2026-10-22, the companion's MAKEOVER group - first, a blue-framed `featuredGroupTitle`, only in a game it works in; per ROM: `Prefs.playerLookFor`, NEW tag; `PlayerLook.kt`,
-`PlayerLookRunner.kt`, docs/DEVELOPMENT.md's "PLAYER LOOK"): play retail FireRed / LeafGreen / Ruby / Sapphire / Emerald (and Kaizo, Legacy, Imperium, Ultra
+`PlayerLookSession.kt`, docs/DEVELOPMENT.md's "PLAYER LOOK"): play retail FireRed / LeafGreen / Ruby / Sapphire / Emerald (and Kaizo, Legacy, Imperium, Ultra
 Violet: `PlayerLook.HACKS`) as another game's hero, picked from tiles of the heroes walking (`PlayerLookPicker`),
 its graphics found by fingerprint in the player's own ROMs (`scripts/gen_player_look_sigs.py`; kept in `rom-art/look/`, never
 bundled) and patched into the running ROM in memory as blocks (`pk_cheats_block`, overlaid for the Poller / RA hashes like the
@@ -1248,7 +1253,7 @@ a row matches on its label (English and translated), value, `subtitle` and its w
 label, shared by both screens: "rebind", "keybinds", "turbo"... - give a new row its words). The companion's SETTINGS has
 no search (the Presentation can't host a keyboard). `SettingRow.subtitle` / `OptionLine(subtitle)` draw a grey line
 under the label (GAME BUTTONS: key bindings; each TWEAKS switch its own `Tweak.description`, on a wider label column). **Rebinding is always by pressing the keys,
-never a list of key names** (the user's rule: a list confused players): `KeyCapture` (companion/KeyCapture.kt) + `KeyBindRow` /
+never a list of key names** (the user's rule: a list confused players): `KeyCapture` (shared/src/commonMain/kotlin/com/pokedaisy/app/companion/KeyCapture.kt) + `KeyBindRow` /
 `KeyCaptureBar` / `KeyCapturePopup` (companion/ui/KeyCaptureUi.kt), one per activity - top-screen Settings, first-time setup's
 GAME BUTTONS step (`SetupState.capture`: rows rebind in place, never another screen) and the game, which runs the companion's
 (`CompanionSettings.keyCapture`: the Presentation gets no keys, so `PokeDaisyActivity` takes every key / trigger first and shows
@@ -1270,6 +1275,14 @@ SCREEN > DISPLAY OPTIONS (STATUS BAR, SHADERS, OVERLAY, an upright phone's COMPA
 opens from DISPLAY OPTIONS, so BACK returns there (`Page.parent`, SettingsActivity's `goBack`). A row that opens a page of its own (not a pick-list) sets
 `SettingRow.opensPage`: a pixel chevron (`PixelIcons.chevronRight`) at its right end. Sub-pages and pick-lists get the title window's back arrow (`onBack`). The tabs not in the tab bar used to sit under the
 list as a second row of chips (TOOLS); they're the MORE tab now.
+**QUALITY OF LIFE** (companion GAMEPLAY, 2026-11-22, the user's call): WILD ENCOUNTERS, INSTANT TEXT, AUTO-RUN, RUN INDOORS, AUTO REFILL,
+REUSABLE TMS, NO HMS NEEDED, EXP SHARE, LEVEL CAP, TRADE EVOS, SHINY ODDS, SHINY ALERT, BOSS RETRY, LOW HP BEEP and FIELD POISON live on
+`Page.QOL`: `homeRows` still builds them, `withQolPage` moves them off HOME (`QOL_ROWS`; the row counts those changed from the game's
+own way, `QOL_UNUSED`). A new helper of that kind goes in `QOL_ROWS`. **D-pad after a tap** (`FocusJump`, SettingRows.kt): a focus
+asked for in touch mode doesn't take, so a tap parks a target - `target` (a group tab's first row, a pick-list's choice: the press
+lands there) or `from` (the last thing tapped, set by `soundClickable` / `menuClickable` / the library's cards: the press moves on
+from it) - which SettingsActivity / LibraryActivity / `sendFocusKey` take on the next D-pad press, after `leaveTouchMode`. L / R step
+the top-screen Settings' group tabs (`LocalGroupStep`). The launcher's pieces take no Compose focus (`LocalKeyDriven`).
 **DESCRIPTIONS / GROUP TABS** (2026-11-15, the first two rows of HOME on both screens, NEW tag `SETTINGS_LOOK`; `SettingsLook` in SettingRows.kt, Compose state, `Prefs.settingsDescriptions` / `settingsTabs` loaded by PokeDaisyApp): `GroupedRows` drops rows' subtitles (a featured group's tagline stays) and its `GroupTabs`. ui-preview resets both before each shot.
 **Settings round (2026-11-01, the user's calls)**: the top-screen Settings draws a step smaller (`LocalTextStep` -1 for the whole
 activity); rows whose label says it all carry no subtitle; a row can be a slider (`SettingRow.slider` -> `SettingSlider` /
@@ -1749,6 +1762,12 @@ BACK tap (`companionBackTap`); connect / disconnect show a HUD notice. Not tried
 Analog L2 / R2 (Retroid's triggers send no keys) are the BUTTON_L2 / R2 keys past half way (`triggerKey`): hotkeys first
 (their switch and bindings), then the game's controls, and the top-screen rebind capture takes them too. They used to be
 hard-wired to FF / slow-mo holds, which ignored HOTKEYS OFF and any rebinding (issue #54).
+**No L3 / R3** (`Hotkeys.noStickClicks`, found by PokeDaisyApp at start: the Retroid Pocket Classic by name - its driver lists
+stick buttons it doesn't have - else a gamepad without them): QUICK MENU on Y and COMPANION on X by default (an old file's L3 QUICK
+MENU moves too), START 2 / SELECT 2 lose X / Y (`GbaControls`' `x_y_to_hotkeys` mark); a DS game keeps its X / Y (`Hotkeys.dsOwnKeys`:
+a hotkey made only of them is off there). The companion window's X sits at the end of its top bar, as tall as it, where the window
+has no room beside it (`WithTopBarClose`, `LocalTopBarClose`). The HUD stays up through a map's name sign while FREE FLIGHT flies
+(`GameSession.observeField(flying)`).
 **Device BACK**: a BACK tap (from either screen - the Presentation forwards every key to
 `PokeDaisyActivity`) is the companion's back; a hold still leaves the game. Anything that
 opens over / inside a tab registers `CompanionBackHandler` (`companion/ui/CompanionBack.kt`,
@@ -2120,7 +2139,7 @@ Soul's and R.O.W.E.'s (`BOTTOM_ROW_MAPS`: land and routes fill their top right),
 on the sea left of the label window - checked on all three of R.O.W.E.'s maps (ui-preview `rowe-map-region*`).
 **FREE FLIGHT + the scenic FLY** (2026-11-10, retail FireRed rev 1 and Emerald; then FireRed rev 0, LeafGreen, Ruby / Sapphire, every language (port_field_items.py's port_flight), the randomized builds, Emerald Legacy and the hacks on retail code - Radical Red, Unbound, Glazed, Ultra Violet, Orange Islands, Ghost Grey (its blank bird: the balloon, in greys), Let's Go, Odyssey, Gaia, Amethyst, Sword and Shield, GS Chronicles, Rocket Edition, Ash Gray, Emerald Kaizo (FLY over the map only: `classicFly` false, its warp crashed), and the expansion hacks Imperium, Lazarus, Heart and Soul, Seaglass, TMT2, R.O.W.E., Mariomon 1.5.x, Quetzal Alpha 9 and SoulGold's five builds (their following Pokemon removed at take-off and brought back once down: `followerRemove` / `followerUpdate`; SoulGold's 11-bit grid: `mapGridUndefined`); the player inanimate while up (fast movements' step anims ran past FireRed's table: Rocket Edition reset) - `flightAllowed`, docs/DEVELOPMENT.md's "Which games"; `pk_flight.c` after every frame, `Flight.kt`, `ScenicFly.kt`,
 `FLIGHT_FIRERED_REV1` / `FLIGHT_EMERALD` on `FieldItemFns.flight` - Emerald's from pret's `symbols` branch, its rider a sprite of its own; NEW tags `FREE_FLIGHT` / `SCENIC_FLY`; docs/DEVELOPMENT.md's section): TAKE OFF / LAND on the
-MAP tab, the QUICK MENU (`QuickAction.FLIGHT`) and the FREE FLIGHT hotkey; MAKEOVER > FLY ON (`FlightVehicle`, NEW tag `FLY_ON`) swaps the bird for our own balloon / helicopter / zeppelin / plane; MAKEOVER > RIDE ON (`RideOn.kt`, `RideVehicle`, `Prefs.rideVehicleId`, NEW tag `RIDE_ON`; `scripts/gen_ride_vehicles.py` -> `RideVehiclesGen.kt`) swaps the bike for a motorcycle / scooter: PLAYER LOOK's patch leaves the rider alone in the hero's bike sheets (`PlayerLookRunner.ride`: after the look's writes, their upper body from their standing frames, holes where front parts go, no pedalling) and the vehicle is a sprite of its own behind them in its own 15 colours (`RideOn.Sprite` on `Patch.ride` -> `MgbaCore.pkRideSet` / `pkRideShow`, pk_wide.c's ride: OBJ tiles 944-975 as one 32 x 64 sprite (the wheels reach below the rider's frame), its exhaust smoke a 16 x 8 sprite behind it (tiles 942-943, `PK_RIDE_BYTES`), their OAM entries right after the player's with the game's later shown ones moved down a place for the frame (its tyre tracks and grass effects were drawn over the wheels), only while `onBike`, rider and vehicle bobbed a pixel together - slow standing, quick moving; mgba_dump `rideset` / `rideon`). Taking off (TAKE OFF, the scenic FLY) gets off the bike first (`offBikeThen`) (the rider in a standing pose facing west, the whole picture mirrored going east - never mirror the rider again; from behind / the front in the balloon going up / down: `upDown`) (`scripts/gen_flight_vehicles.py` -> `pk_flight_vehicles.h`, the player's sprite in its seat); GAMEPLAY > FLIGHT AREA (`FlightArea.kt`, NEW tag `FLIGHT_AREA`): VISITED (default) flies only over maps the save has seen (kept per save, seeded from its towns, the routes between them and maps with a beaten trainer), ANYWHERE pauses RetroAchievements from the first take-off; the companion's GAMEPLAY > FLY STYLE CLASSIC / SCENIC (`Prefs.flyStyleId`, SCENIC by default; the first scenic landing asks
+MAP tab, the QUICK MENU (`QuickAction.FLIGHT`) and the FREE FLIGHT hotkey; MAKEOVER > FLY ON (`FlightVehicle`, NEW tag `FLY_ON`) swaps the bird for our own balloon / helicopter / zeppelin / plane; MAKEOVER > RIDE ON (`RideOn.kt`, `RideVehicle`, `Prefs.rideVehicleId`, NEW tag `RIDE_ON`; `scripts/gen_ride_vehicles.py` -> `RideVehiclesGen.kt`) swaps the bike for a motorcycle / scooter: PLAYER LOOK's patch leaves the rider alone in the hero's bike sheets (`RideOn.withAppearance`: after the look's writes, their upper body from their standing frames, holes where front parts go, no pedalling) and the vehicle is a sprite of its own behind them in its own 15 colours (`RideOn.Sprite` on `Patch.ride` -> `MgbaCore.pkRideSet` / `pkRideShow`, pk_wide.c's ride: OBJ tiles 944-975 as one 32 x 64 sprite (the wheels reach below the rider's frame), its exhaust smoke a 16 x 8 sprite behind it (tiles 942-943, `PK_RIDE_BYTES`), their OAM entries right after the player's with the game's later shown ones moved down a place for the frame (its tyre tracks and grass effects were drawn over the wheels), only while `onBike`, rider and vehicle bobbed a pixel together - slow standing, quick moving; mgba_dump `rideset` / `rideon`). Taking off (TAKE OFF, the scenic FLY) gets off the bike first (`offBikeThen`) (the rider in a standing pose facing west, the whole picture mirrored going east - never mirror the rider again; from behind / the front in the balloon going up / down: `upDown`) (`scripts/gen_flight_vehicles.py` -> `pk_flight_vehicles.h`, the player's sprite in its seat); GAMEPLAY > FLIGHT AREA (`FlightArea.kt`, NEW tag `FLIGHT_AREA`): VISITED (default) flies only over maps the save has seen (kept per save, seeded from its towns, the routes between them and maps with a beaten trainer), ANYWHERE pauses RetroAchievements from the first take-off; the companion's GAMEPLAY > FLY STYLE CLASSIC / SCENIC (`Prefs.flyStyleId`, SCENIC by default; the first scenic landing asks
 KEEP IT / USE CLASSIC once, `FlyStyleAsk` in FeatureTip.kt where the tips show, `Prefs.flyStyleAsked`).
 No ROM patch: controls locked, held movements written into the player's ObjectEvent (no collision; nothing a step triggers runs), the player
 hidden with localId 127 (the game then skips its ground effects), the game's own FLY bird sprite at the player's fixed screen spot, a see-through
@@ -2465,7 +2484,12 @@ window's cost 160 ms a frame) - `pixelClip` (smooth while LIGHT COMPANION is on)
 instead of clipping. Composition must not touch the disk or a system service (`MonArt.available` is cached, `secondScreen()` kept half a
 second): SETTINGS' getters run row by row. The touch pad (and, with LIGHT COMPANION, the companion window) sits in an offscreen layer
 the renderer keeps. A view over the stage keeps a fixed size (`WRAP_CONTENT` with changing text re-measured the whole stage). The
-`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet).
+`benchmark` build is profileable from adb; profile a debug build with simpleperf's `app_profiler.py` (`-e task-clock` on that tablet). **The Retroid Pocket Classic** (2026-11-22): a pixel
+staircase drawn as a path is painted into a mask on the CPU and uploaded (77 MB of them in SETTINGS): `drawPixelRoundRect` / `Frame`
+draw rows of rectangles (`Stairs`, PixelShapes.kt) - never `drawPath` a big staircase. `DaisyBackdrop` moves 4 times a second in an
+offscreen layer (at 60 it repainted the screen behind still menus). SETTINGS' home lists are lazy (`GroupedRows(groupTabs, lazy)`;
+ui-preview turns that off, `SettingsLook.lazyHome`). Its firmware names a missing `telephony-common.jar` in BOOTCLASSPATH, so no app
+there gets AOT code (`pm art dump`: `verify`): everything runs interpreted / JIT, one thread maxed at ~12% total CPU.
 **Crash reports** (`CrashReports.kt`, Firebase Crashlytics + -ndk): opt-in, off by default (manifest
 `firebase_crashlytics_collection_enabled=false`); on via Settings > CRASH REPORTS or the Library's one-time ask
 (`CrashReports.shouldAsk`: third app open - `PokeDaisyApp` counts process starts - and 48 h after
@@ -2518,8 +2542,9 @@ fails while it's stale: `UPDATE_SITE_DATA=1 ./gradlew :app:testDebugUnitTest --t
 **Website** (`website/`, Astro, static, Node 22.23.4+): its ROM check (`src/lib/compat.js`) runs
 `isSupported`'s rules in the browser over that JSON - the ROM is never uploaded; keep the two in step.
 Deployed to Firebase Hosting (`pokedaisy.com`) by `.github/workflows/website.yml` **only with an app release**
-(the user's rule: the site never lists games the downloadable APK can't run): a published, non-pre-release release
-deploys its tag's `website/`; pushes to main only build + test; a manual run takes a release tag (redeploy / roll
+(the user's rule: the site never lists games the downloadable APK can't run, except the newest beta's, tagged BETA with how
+to get it - the user's call, 2026-11-22: `src/lib/beta.js` / `betaRelease.js`, read from the beta's tag on GitHub at build
+time): a published, non-pre-release release deploys its tag's `website/`, a published pre-release the newest release's again; pushes to main only build + test; a manual run takes a release tag (redeploy / roll
 back). A site-only fix therefore waits for the next release (or a manual run of the current tag after moving it); the checker's ASK FOR SUPPORT opens the feedback form, prefilled through its #hash.
 The site's game matrix is README's Supported games table; a row of all "—" means detected but no companion yet,
 so the export lists it under `inProgress` - off the matrix, and "in progress" in the ROM check (none since R.O.W.E.

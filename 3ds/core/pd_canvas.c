@@ -120,6 +120,22 @@ static int layer_rings(struct pd_canvas* c, int x, int y, int w, int h, int r, c
     return inset;
 }
 
+void pd_canvas_copy(struct pd_canvas* dst, int dx, int dy, const struct pd_canvas* src, int sx, int sy, int w, int h) {
+    for (int j = 0; j < h; j++)
+        memcpy(&dst->px[(dy + j) * dst->w + dx], &src->px[(sy + j) * src->w + sx], (size_t) w * sizeof(uint32_t));
+}
+
+void pd_window_edge(struct pd_canvas* c, const struct pd_layer* layers, int n, int r) {
+    int rIn;
+    layer_rings(c, 0, 0, c->w, c->h, r, layers, n, &rIn);
+    // Opaque inside the rounded outline, see-through past its corners (the host blends it over the dimmed game).
+    for (int j = 0; j < c->h; j++) {
+        int in = corner_inset(r * 2 > c->w ? c->w / 2 : r, j < c->h - 1 - j ? j : c->h - 1 - j);
+        uint32_t* row = &c->px[j * c->w];
+        for (int i = 0; i < c->w; i++) row[i] = i < in || i >= c->w - in ? 0 : row[i] | 0xFF000000u;
+    }
+}
+
 int pd_layered_box(struct pd_canvas* c, int x, int y, int w, int h, int r,
                    const struct pd_layer* layers, int n, uint32_t fill) {
     int rIn, inset = layer_rings(c, x, y, w, h, r, layers, n, &rIn);

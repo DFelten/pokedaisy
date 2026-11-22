@@ -49,7 +49,8 @@ int main(int argc,char** argv){
   press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);press(ui,RETRO_DEVICE_ID_JOYPAD_A);
   assert(ui.settings.hudLayout==0); // LAYOUT is N/A on DS: one layout
   press(ui,RETRO_DEVICE_ID_JOYPAD_B);assert(ui.frame.overlay==PD_OVERLAY_NONE && ui.setting==DsCompanionUi::Hud);
-  press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);assert(ui.setting==DsCompanionUi::QuickStyle);
+  // SCREEN, the app's order: DS LAYOUT, HUD, MINIMAL HUD, COMPANION BUTTON.
+  press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);assert(ui.setting==DsCompanionUi::HudMinimal);
   press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);assert(ui.setting==DsCompanionUi::CompanionButton);
   press(ui,RETRO_DEVICE_ID_JOYPAD_A);
   press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);press(ui,RETRO_DEVICE_ID_JOYPAD_DOWN);press(ui,RETRO_DEVICE_ID_JOYPAD_A);

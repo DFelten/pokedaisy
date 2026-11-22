@@ -109,7 +109,7 @@ RetroArch、NXRedux、ほかのフロントエンドでは、セーブデータ�
 - **起動すると Permission denied と出る：** 展開したときに、プログラムの実行の許可が消えています。フォルダの中で `chmod +x pokedaisy-linux` を実行してください。
 - **`GLIBC_2.35` や `libSDL2` という名前の出るエラー：** LinuxがPokeDaisyに必要なものより古いか、SDL2が入っていません。ディストリビューションからSDL2を入れるか（Ubuntuなら `sudo apt install libsdl2-2.0-0`）、新しいシステムで試してください。
 - **ゲームが一覧に出ない：** `roms` の中に直接（中のフォルダではなく）、展開して置き、名前が `.gba`、`.gb`、`.gbc`、`.nds` で終わっている必要があります。
-- **AとBが逆になっている：** メニューを開き（STARTとSELECTを一緒に押すか、GuideボタンかMenuボタン）、`A/B BUTTONS` を `SWAPPED` にしてください。
+- **AとBが逆になっている：** メニューを開き（STARTとSELECTを一緒に押すか、GuideボタンかMenuボタン）、`SETTINGS` を選んで `A/B BUTTONS` を `SWAPPED` にしてください。
 - **セーブデータが読まれない：** セーブデータは `saves` の中に、ROMのファイル名全体に `.sav` をつけた名前で置く必要があります。古いコピーは `saves/pokedaisy-backups` を見てください。
 - **コントローラーが反応しない：** SDLがまだそのコントローラーを知りません。そのマッピングの入った `gamecontrollerdb.txt` をデータフォルダ（`roms` の隣）に置いてください。
 
