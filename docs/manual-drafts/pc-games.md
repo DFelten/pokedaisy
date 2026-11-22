@@ -68,4 +68,7 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 - The GUIDE's other pages (the next boss, where things are) and the companion's settings.
 - The MAP only shows once the game's Town Map has a spot for where you are.
 - Double battles: their picks stay in the game's own menu.
-- Games made with older versions of Essentials.
+- Games made with older versions of Essentials (Pokémon Reborn and Pokémon Rejuvenation aside).
+- Anything a game does online. Its update check, online play and Discord status act as on a computer with no internet,
+  so update a game by copying its newer folder in. Pokémon Rejuvenation can't see your Pokémon Reborn save for its
+  bonuses either.
