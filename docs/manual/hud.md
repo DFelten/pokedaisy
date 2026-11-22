@@ -10,7 +10,7 @@ Modern Pokémon games keep the important things on screen while you explore: you
 
 It's on by default. Turn it off, or change how it looks, in `HUD`, in the `SCREEN` group of Settings on either screen.
 
-On the Game Boy it shows in Red and Blue (the English carts), Yellow (in every language), Yellow Legacy, Gold, Silver, Crystal, Crystal Legacy, Crystal Clear and Polished Crystal (3.2.3, the normal build) too, with or without `EXPAND`. Those games have no pictures for their items, so the bag lists your items by name, the way their own bag does. In Crystal each kind of ball shows as the game throws it in battle, in its own colour; in the others your balls show as a plain drawn ball with the count.
+On the Game Boy it shows in Red and Blue (the English and German carts), Yellow (in every language), Yellow Legacy, Gold, Silver, Crystal, Crystal Legacy, Crystal Clear and Polished Crystal (3.2.3, the normal build) too, with or without `EXPAND`. Those games have no pictures for their items, so the bag lists your items by name, the way their own bag does. In Gold, Silver and Crystal each kind of ball shows as the game throws it in battle, in its own colour (the blue ones a little lighter, so they stand out on the HUD). Red, Blue and Yellow throw every kind alike, so there the HUD colours each kind the way Crystal does, and the one ball Crystal doesn't have gets a camouflage pattern. In the others your balls show as a plain drawn ball with the count.
 
 ## What it shows
 
@@ -22,7 +22,7 @@ On the Game Boy it shows in Red and Blue (the English carts), Yellow (in every l
 | Steps left | While an item that keeps wild Pokémon away is working, a window by your balls shows its icon and the steps it has left, counting down as you walk, over a bar that drains from green to yellow to red. The count turns gold for the last 20 steps, and the window goes when the effect wears off. It shows for the games whose [bag](bag.md) can use those items. | Open the bag. |
 | `PC` | Your game's own PC, opened right where you stand, so you can reach your Pokémon and stored items without walking to a Pokémon Center. The small arrow on its corner means it opens the game's own screen, not one of the HUD's. It shows for the games whose [bag](bag.md) has the `PC` button. | |
 | `BAG` | A compact bag: the pockets as tabs and your items as a grid with counts. Pick an item to read about it, and `USE` it where the companion can. The button and the bag carry the game's own name for it, like the [bag tab](bag.md) (`PACK`, `CUBE`, `ITEM`...). | |
-| `WILD` | This area's wild Pokémon: by grass, water, fishing rod or rock, with their levels and how often they show up. Ones you haven't seen stay `???`, and a ball marks the ones you've caught. `KEEP OPEN` leaves the list up without dimming the game, so it follows you from map to map until you close it with its X. The red number on the button counts the ones you haven't caught yet. | |
+| `WILD` | This area's wild Pokémon: by grass, water, fishing rod or rock, with their levels and how often they show up. Ones you haven't seen stay `???` until you tap them (tap again to hide them), and a ball marks the ones you've caught. `KEEP OPEN` leaves the list up without dimming the game, so it follows you from map to map until you close it with its X. The red number on the button counts the ones you haven't caught yet. | |
 
 The game keeps running while the map, bag, wild list or a summary is open. Tap anywhere around it, or press `BACK`, to close it. With the `GLASS` and `WHITE GLASS` looks these open in see-through panels too.
 
@@ -30,7 +30,7 @@ The game keeps running while the map, bag, wild list or a summary is open. Tap a
 
 ## When it shows
 
-Only while you're walking around. The first time you play a game, it shows up once you've taken a few steps (PokeDaisy learns what that game's field looks like, and remembers it). It fades out for a battle, a menu screen like the party or the bag, the game's own town map, and a moment later it comes back. With `EXPAND` on it also steps aside for a conversation or a sign. In a DS game it always does, and for a menu the game opens over the field too, like the PC's. On a phone held upright it's off for now: the companion sits right under the game there.
+Only while you're walking around. The first time you play a game, it shows up once you've taken a few steps (PokeDaisy learns what that game's field looks like, and remembers it). It fades out for a battle, a menu screen like the party or the bag, the game's own town map, and a moment later it comes back. When PokeDaisy can read the game's field controls, it also steps aside for a conversation, a sign, a cutscene or the START menu, with `ORIGINAL`, `STRETCH` and `EXPAND`. `EXPAND` also uses its scene detection for these transitions. In a DS game it does that for a menu the game opens over the field too, like the PC's. On a phone held upright it's off for now: the companion sits right under the game there.
 
 Without `EXPAND`, the HUD stays on the game's picture, not in the bars beside it (except `RAILS`, which is made for those bars). If the touch controls are showing, the HUD moves its corners in so it never covers the rows of buttons along the top and bottom of the game. Held sideways it keeps to the middle of the screen with `EXPAND` too, away from the sides where the buttons sit. Buttons you move further in with `EDIT LAYOUT` don't push it around: with `CORNERS` and `CORNERS 2`, the party, the minimap and the buttons each step just far enough to sit beside a button that's in their corner, and go back to the corner when it's clear.
 
@@ -60,13 +60,3 @@ drawn at about half the app's size (half of `LARGE`'s): smaller pictures of your
 and buttons with their pictures but no names. `LARGE` draws it at full size, with the names on the buttons. Every
 `LAYOUT` works at each size, and the HUD keeps to its corners on screen at every `ZOOM` step. When your party and the rest don't fit side by side, the HUD keeps to the bottom left corner, with a `MAP` button
 in place of the minimap.
-
-## On iPhone and iPad
-
-The same field HUD appears in supported GBA games when you hold the device sideways. It waits for the field
-to settle, then hides during battles and game menus. In portrait, the companion below the game shows this information.
-Open `SETTINGS` > `HUD` to change its layout, look, size and visible parts. Your choices are kept for the next game.
-The HUD makes room for your touch controls. Its party, map, bag and wild windows use the same screens and supported
-field actions as the companion. Opening `QUICK MENU` closes any open HUD window.
-
-Battle buttons are not available on iPhone or iPad yet.

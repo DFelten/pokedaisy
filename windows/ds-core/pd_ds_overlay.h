@@ -39,6 +39,16 @@ void overlay_hud_box(int x, int y, int w, int h);
 // A host that draws the HUD itself (PD_ENV_SET_HUD): draw_hud keeps it out of the frame then, and overlay_hud_native hands
 // it the picture at its own resolution, so a ZOOM step's canvas scaling never resamples it.
 void overlay_hud_host(bool host);
+// The companion as a window over the running game (PD_ENV_SET_COMPANION): [host] the frontend shows one; [panelW] x
+// [panelH] its window. Set before overlay_compose each frame; the window is used where pd_companion_size gives one.
+void overlay_companion_window(bool host, int panelW, int panelH);
+// After overlay_compose: the window's picture for the host (active 0 = none), then the host's answer (the mouse over it).
+void overlay_companion_native(struct pd_companion* msg);
+void overlay_companion_reply(const struct pd_companion& reply);
+// The frontend's own settings in the companion's SETTINGS (PD_ENV_FRONT_ROWS): the row pressed for it (-1 none), then
+// its answer (the rows, and its menu's SETTINGS opening the companion there).
+int overlay_front_press();
+void overlay_front_rows(const struct pd_front_rows& rows);
 // This frame's HUD for that host: its 256x192 picture (SMALL and NORMAL at half, in the box's corners) and the box. False
 // when no HUD is on the picture, and the core withdraws it.
 bool overlay_hud_native(struct pd_hud* msg);

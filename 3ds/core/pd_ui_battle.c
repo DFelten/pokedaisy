@@ -85,11 +85,7 @@ static struct mon_view from_party(const struct battle_data* d, const struct pd_m
 
 // A small pill of white text (VerdictPill): returns its width.
 static int pill(struct pd_canvas* c, int x, int y, const char* text, uint32_t fill) {
-    text = pd_tr(text);
-    int w = pd_text_width(text) + 6;
-    pd_round_rect(c, x, y + 1, w, 14, 2, fill);
-    pd_text(c, x + 3, y - 1, text, 0xFFFFFF, PD_NO_SHADOW);
-    return w;
+    return ui_game_tag(c, x, y + 2, pd_tr(text), fill, 0xFFFFFF, 0); // the app's VerdictPill is a GameTag
 }
 
 // The icon on the window's grey (a shiny one in its own colours, on pale gold in a gold frame: the app's monIconBox), or a
@@ -182,14 +178,10 @@ static int move_verdict(struct pd_canvas* c, const struct battle_data* d, int x,
         fill = verdict_color(pct);
         const char* word = pct == 0 ? "IMMUNE" : pct > 100 ? "SUPER" : pct < 100 ? "RESISTED" : "NEUTRAL";
         snprintf(text, sizeof(text), "%s %s", pd_tr(word), multiplier(pct));
-        if (pd_text_width(text) + 6 > room) snprintf(text, sizeof(text), "%s", multiplier(pct));
+        if (ui_game_tag(NULL, 0, 0, text, 0, 0, 0) > room) snprintf(text, sizeof(text), "%s", multiplier(pct));
     }
-    int w = pd_text_width(text) + 6;
-    if (draw) {
-        pd_round_rect(c, x, y, w, 13, 2, fill);
-        pd_text(c, x + 3, y - 2, text, 0xFFFFFF, PD_NO_SHADOW);
-    }
-    return w;
+    // MultiplierChip: a GameTag in the verdict's colour.
+    return ui_game_tag(draw ? c : NULL, x, y, text, fill, 0xFFFFFF, 0);
 }
 
 // SummaryBar: "HP" in the value colour, the bar in the window's dark frame, then hp / max.
@@ -327,19 +319,13 @@ static void matchups(struct pd_canvas* c, const struct battle_data* d, const str
         y += 14;
         int cx = x;
         for (int i = 0; i < k; i++) {
-            char chip[24];
-            const char* name = pd_type_name(d->game, list[i]);
-            int nl = 0;
-            for (; name[nl] && nl < 12; nl++) chip[nl] = name[nl] >= 'a' && name[nl] <= 'z' ? (char) (name[nl] - 32) : name[nl];
-            chip[nl] = 0;
-            if (g < 2) snprintf(chip + nl, sizeof(chip) - (size_t) nl, " %s", multiplier(pcts[i]));
-            int cw = pd_text_width(chip) + 6;
+            // The app's matchup tag: "FIRE 2x", "WATER 1/2x", "GHOST 0x" (TypeBadgeWithLabel).
+            int cw = ui_matchup_tag(NULL, 0, 0, d->game, list[i], pcts[i]);
             if (cx + cw > x + w && cx > x) {
                 cx = x;
                 y += 14;
             }
-            pd_round_rect(c, cx, y, cw, 12, 2, ui_type_color(list[i]));
-            pd_text(c, cx + 3, y - 2, chip, 0xFFFFFF, PD_NO_SHADOW);
+            ui_matchup_tag(c, cx, y, d->game, list[i], pcts[i]);
             cx += cw + 3;
         }
         y += 16;
@@ -535,11 +521,10 @@ static void threat_row(struct pd_canvas* c, const struct battle_data* d, int x, 
         snprintf(pillText, sizeof(pillText), "%s", multiplier(pct));
         fill = threat_color(pct);
     }
-    int pw = *pillText ? pd_text_width(pillText) + 6 : 0;
+    int pw = *pillText ? ui_game_tag(NULL, 0, 0, pillText, 0, 0, 0) : 0;
     pd_text_fit(c, tx, ty, iw - pw - (pw ? 3 : 0), move_name(d, move, buf, sizeof(buf)), PD_LABEL, PD_LABEL_SHADOW);
     if (pw) {
-        pd_round_rect(c, tx + iw - pw, ty + 3, pw, 13, 2, fill);
-        pd_text(c, tx + iw - pw + 3, ty + 1, pillText, 0xFFFFFF, PD_NO_SHADOW);
+        ui_game_tag(c, tx + iw - pw, ty + 3, pillText, fill, 0xFFFFFF, 0);
     }
     if (h < 30) return;
     int ly = ty + 17;
@@ -553,10 +538,7 @@ static void threat_row(struct pd_canvas* c, const struct battle_data* d, int x, 
 static int stage_pill(struct pd_canvas* c, int x, int y, int stage) {
     char t[6];
     snprintf(t, sizeof(t), stage > 0 ? "+%d" : "%d", stage);
-    int w = pd_text_width(t) + 6;
-    pd_round_rect(c, x, y, w, 13, 2, stage > 0 ? verdict_color(50) : verdict_color(200));
-    pd_text(c, x + 3, y - 2, t, 0xFFFFFF, PD_NO_SHADOW);
-    return w;
+    return ui_game_tag(c, x, y, t, stage > 0 ? verdict_color(50) : verdict_color(200), 0xFFFFFF, 0);
 }
 
 // FoeFacts (wide): ABILITY and HELD ITEM on a line, then the five stats as the battle has them, a stage pill on any raised or

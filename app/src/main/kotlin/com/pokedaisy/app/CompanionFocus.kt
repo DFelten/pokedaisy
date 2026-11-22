@@ -74,6 +74,12 @@ fun sendFocusKey(view: View, key: MenuKey, repeat: Boolean, start: () -> Unit): 
     }
     if (key == MenuKey.A && repeat) return true
     if (view.isInTouchMode) view.requestFocusFromTouch() else if (!view.hasFocus()) view.requestFocus()
+    // A group tab just tapped: this press lands on its first row ([com.pokedaisy.app.companion.ui.FocusJump]).
+    if (key != MenuKey.A) com.pokedaisy.app.companion.ui.FocusJump.take()?.let { row ->
+        if (runCatching { row.requestFocus() }.isSuccess) return true
+    }
+    // The thing last tapped: focused, and this press moves on from there.
+    if (key != MenuKey.A) com.pokedaisy.app.companion.ui.FocusJump.takeFrom()?.let { tapped -> runCatching { tapped.requestFocus() } }
     start()
     val now = SystemClock.uptimeMillis()
     view.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, if (repeat) 1 else 0))

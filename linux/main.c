@@ -162,6 +162,50 @@ static int kbKeys[KB_COUNT] = {SDLK_z,   SDLK_x,       SDLK_TAB,  SDLK_f,     SD
                                SDLK_2,   SDLK_RETURN,  SDLK_BACKSPACE, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
                                SDLK_ESCAPE, SDLK_SPACE, SDLK_r,   SDLK_F2,    SDLK_F4};
 static int kbCapture = -1; // the KEYBOARD page's row waiting for a key, -1 none
+static const int kbDefaults[KB_COUNT] = {SDLK_z,   SDLK_x,       SDLK_TAB,  SDLK_f,     SDLK_q,     SDLK_e,   SDLK_1,
+                                         SDLK_2,   SDLK_RETURN,  SDLK_BACKSPACE, SDLK_UP, SDLK_DOWN, SDLK_LEFT, SDLK_RIGHT,
+                                         SDLK_ESCAPE, SDLK_SPACE, SDLK_r,   SDLK_F2,    SDLK_F4};
+/* A and B always have a key (without them a keyboard player can't press anything on a page): never OFF, and a key one of
+ * them has goes to another row only by swapping - A or B takes that row's old key. Returns NULL, or why it was refused. */
+static bool kb_protected(int row) { return row == KB_A || row == KB_B; }
+static const char *kb_assign(int row, int key) {
+  if (row < 0 || row >= KB_COUNT)
+    return NULL;
+  if (!key && kb_protected(row))
+    return row == KB_A ? "A always needs a key" : "B always needs a key";
+  const int old = kbKeys[row];
+  for (int i = 0; key && i < KB_COUNT; i++)
+    if (i != row && kbKeys[i] == key && kb_protected(i) && !old)
+      return i == KB_A ? "That key is A's: give this one another" : "That key is B's: give this one another";
+  for (int i = 0; key && i < KB_COUNT; i++)
+    if (i != row && kbKeys[i] == key)
+      kbKeys[i] = kb_protected(i) ? old : SDLK_UNKNOWN; // A / B swap; any other row lets the key go
+  kbKeys[row] = key;
+  return NULL;
+}
+/* After host.ini: A and B with a key each (a file from before they were kept, or edited by hand). */
+static void kb_keep_ab(void) {
+  for (int row = KB_A; row <= KB_B; row++) {
+    if (kbKeys[row])
+      continue;
+    int want = kbDefaults[row];
+    for (int i = 0; i < KB_COUNT; i++)
+      if (kbKeys[i] == want) {
+        want = 0;
+        break;
+      }
+    if (!want) { // its usual key is another row's: the first letter no row has
+      for (int k = SDLK_a; k <= SDLK_z && !want; k++) {
+        bool used = false;
+        for (int i = 0; i < KB_COUNT; i++)
+          used |= kbKeys[i] == k;
+        if (!used)
+          want = k;
+      }
+    }
+    kbKeys[row] = want;
+  }
+}
 static int lastKey;        // the key that went down this frame (that page reads it)
 static int keyboard(SDL_Keycode k) {
   for (int i = 0; i < KB_COUNT; i++)
@@ -339,6 +383,17 @@ static bool pointerHeld; // the left button is down (pointerDown is that, held f
 static int pointerPulse;
 static int wheelSteps;     // the wheel's notches this frame (+ up), for RETRO_DEVICE_MOUSE
 static int mouseWindowX, mouseWindowY; // the pointer over the window, for the library (the cores get it normalised)
+/* A core's companion window (PD_ENV_SET_COMPANION): its picture in the middle of the window at a whole scale. */
+static struct pd_companion compMsg;
+static bool compPending, compActive, compHave;
+static SDL_Texture *compTexture;
+static int compTexW, compTexH;
+/* The host's rows in the companion's SETTINGS (PD_ENV_FRONT_ROWS): the core asked (so the menu is the short one), the row
+ * it pressed (acted on in run_game, after the frame), and SETTINGS picked in the menu (handed to the core once). */
+enum { FRONT_SWAP, FRONT_FFSPEED, FRONT_REWIND, FRONT_LCD, FRONT_KEYBOARD, FRONT_HOTKEYS, FRONT_COUNT };
+static bool frontRowsCore;
+static int frontPress = -1;
+static bool frontOpenSettings;
 static bool libraryClick;              // a left press this frame
 static int libraryWheel;               // wheel notches this frame (+ up)
 
@@ -678,6 +733,7 @@ static void host_load(void) {
   }
   if (f)
     fclose(f);
+  kb_keep_ab();
   if (!modifierSaved && hostSet.dsHotkey[HK_FF] == R3 && hostSet.dsHotkey[HK_REWIND] == L3) {
     hostSet.dsHotkey[HK_FF] = R2;
     hostSet.dsHotkey[HK_REWIND] = L2;
@@ -1074,6 +1130,57 @@ static bool environment(unsigned cmd, void *data) {
       panelMsg = *p;
     return true;
   }
+  case PD_ENV_SET_COMPANION: {
+    struct pd_companion *p = data;
+    if (!p)
+      return true;
+    compPending = p->active && p->pixels && p->src_w > 0 && p->src_h > 0;
+    compHave = true;
+    if (compPending) {
+      compMsg = *p;
+      // The mouse over the picture, where this frame will draw it (the same rule as present_game's).
+      int ow = W, oh = H, x, y, w, h;
+      SDL_GetRendererOutputSize(renderer, &ow, &oh);
+      int k = pd_companion_place(ow, oh, p->src_w, p->src_h, &x, &y, &w, &h);
+      int mx = mouseWindowX - x, my = mouseWindowY - y;
+      p->ptr_inside = mx >= 0 && my >= 0 && mx < w && my < h;
+      p->ptr_x = mx < 0 ? 0 : mx >= w ? p->src_w - 1 : mx / k;
+      p->ptr_y = my < 0 ? 0 : my >= h ? p->src_h - 1 : my / k;
+      p->ptr_down = pointerDown;
+      p->ptr_valid = 1;
+    }
+    return true;
+  }
+  case PD_ENV_FRONT_ROWS: {
+    struct pd_front_rows *f = data;
+    if (!f)
+      return true;
+    frontRowsCore = true;
+    if (f->press >= 0 && f->press < FRONT_COUNT)
+      frontPress = f->press;
+    static const char *const labels[FRONT_COUNT] = {"A/B BUTTONS", "FF SPEED", "REWIND", "LCD FILTER", "KEYBOARD",
+                                                    "HOTKEYS"};
+    // Their places in the app's SETTINGS: GAME BUTTONS / HOTKEYS are CONTROLS, FF SPEED / REWIND FF / SPEED, the LCD
+    // look SCREEN (its DISPLAY OPTIONS).
+    static const char *const groups[FRONT_COUNT] = {"CONTROLS", "FF / SPEED", "FF / SPEED", "SCREEN", "CONTROLS",
+                                                    "CONTROLS"};
+    f->count = FRONT_COUNT;
+    for (int i = 0; i < FRONT_COUNT; i++) {
+      snprintf(f->label[i], sizeof f->label[i], "%s", labels[i]);
+      snprintf(f->group[i], sizeof f->group[i], "%s", groups[i]);
+      f->value[i][0] = 0;
+    }
+    snprintf(f->value[FRONT_SWAP], 24, "%s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
+    if (hostSet.ffSpeed)
+      snprintf(f->value[FRONT_FFSPEED], 24, "%dx", hostSet.ffSpeed);
+    else
+      snprintf(f->value[FRONT_FFSPEED], 24, "MAX");
+    snprintf(f->value[FRONT_REWIND], 24, "%s", hostSet.rewind ? "ON" : "OFF");
+    snprintf(f->value[FRONT_LCD], 24, "%s", hostSet.lcd ? "ON" : "OFF");
+    f->open_settings = frontOpenSettings;
+    frontOpenSettings = false;
+    return true;
+  }
   case PD_ENV_SET_HUD: {
     const struct pd_hud *h = data;
     hudPending = h && h->active && h->pixels && h->src_w > 0 && h->src_h > 0 && h->w > 0 && h->h > 0;
@@ -1099,6 +1206,9 @@ static bool environment(unsigned cmd, void *data) {
 static void video_refresh(const void *data, unsigned w, unsigned h, size_t pitch) {
   panelActive = panelPending;
   panelPending = false;
+  if (compHave) // a frame the core only repeats keeps the window as it was
+    compActive = compPending;
+  compPending = compHave = false;
   if (hudHave) // a frame the core only repeats keeps the HUD where it was
     hudActive = hudPending;
   hudPending = hudHave = false;
@@ -1292,6 +1402,35 @@ static void present_game(const struct pd_menu *menu) {
     }
   }
   render_lcd();
+  // The core's companion window, after the LCD mask (which is the game's look, not the window's): its own picture over the
+  // dimmed game, at the window's pixels.
+  if (compActive && compMsg.pixels) {
+    if (!compTexture || compTexW != compMsg.src_w || compTexH != compMsg.src_h) {
+      if (compTexture)
+        SDL_DestroyTexture(compTexture);
+      compTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, compMsg.src_w,
+                                      compMsg.src_h);
+      compTexW = compMsg.src_w;
+      compTexH = compMsg.src_h;
+      if (compTexture) {
+        SDL_SetTextureBlendMode(compTexture, SDL_BLENDMODE_BLEND); // its corners are see-through
+        SDL_SetTextureScaleMode(compTexture, SDL_ScaleModeNearest);
+      }
+    }
+    if (compTexture) {
+      SDL_UpdateTexture(compTexture, NULL, compMsg.pixels, compMsg.src_w * 4);
+      SDL_Rect dst;
+      const int k = pd_companion_place(ow, oh, compMsg.src_w, compMsg.src_h, &dst.x, &dst.y, &dst.w, &dst.h);
+      // The app's window shadow: black at 35%, three of its pixels down, under the rounded corners (inset by them).
+      SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 89);
+      SDL_Rect shadow[2] = {{dst.x + 2 * k, dst.y + 3 * k, dst.w - 4 * k, dst.h}, {dst.x, dst.y + 5 * k, dst.w, dst.h - 4 * k}};
+      SDL_RenderFillRects(renderer, shadow, 2);
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+      SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+      SDL_RenderCopy(renderer, compTexture, NULL, &dst);
+    }
+  }
   bool any = false;
   overlay_begin();
   if (menu) {
@@ -1762,7 +1901,12 @@ static bool ds_running(void) { return running != 0; }
 #endif
 // The host menu's rows, top to bottom (fast-forward is the FAST FORWARD hotkey's, held).
 enum { M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT,
+       M_SETTINGS, // a core with the host's rows in its SETTINGS: the short menu's way there
        M_COUNT };
+/* The menu's rows by place: every row, or, for a core that shows the host's rows in its own SETTINGS
+ * (PD_ENV_FRONT_ROWS), RESUME / SAVE / LOAD / SETTINGS / QUIT. */
+static const int MENU_FULL[] = {M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT};
+static const int MENU_SHORT[] = {M_RESUME, M_SAVE, M_LOAD, M_SETTINGS, M_QUIT};
 static void run_game(const char *path, int maxFrames, const char *shot, bool fromList) {
 #ifdef POCKET_DSPERATE
   const char *ext = strrchr(path, '.');
@@ -1882,6 +2026,9 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   static const char *rowPtrs[M_COUNT], *hkPtrs[HK_ACTIONS + 1];
   static const char *const hkNames[HK_ACTIONS] = {"FAST FORWARD", "REWIND", "SAVE STATE", "LOAD STATE"};
   bool hkPage = false, kbPage = false;
+  bool frontPage = false; // KEYBOARD / HOTKEYS opened from the companion's SETTINGS: leaving it goes back there
+  frontPress = -1;
+  frontOpenSettings = frontRowsCore = false;
   unsigned latched = 0, menuConsumed = 0;
   bool modifierPending = false, modifierUsed = false;
   int pulseLeft = 0; // frames the modifier's own tap still reaches the game
@@ -1923,8 +2070,11 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     snprintf(rows[M_HOTKEYS], 40, "HOTKEYS");
     snprintf(rows[M_KEYBOARD], 40, "KEYBOARD");
     snprintf(rows[M_QUIT], 40, fromList ? "QUIT TO GAME LIST" : "QUIT");
-    for (int i = 0; i < M_COUNT; i++)
-      rowPtrs[i] = rows[i];
+    snprintf(rows[M_SETTINGS], 40, "SETTINGS");
+    const int *menuMap = frontRowsCore ? MENU_SHORT : MENU_FULL;
+    const int menuN = frontRowsCore ? (int)(sizeof MENU_SHORT / sizeof *MENU_SHORT) : (int)(sizeof MENU_FULL / sizeof *MENU_FULL);
+    for (int i = 0; i < menuN; i++)
+      rowPtrs[i] = rows[menuMap[i]];
     for (int i = 0; i < HK_ACTIONS; i++) {
       snprintf(hkRows[i], 40, "%s  %s", hkNames[i], capturing == i ? "..." : hotkey_label(hotkeys[i]));
       hkPtrs[i] = hkRows[i];
@@ -1948,12 +2098,12 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     }
     if (menuKey) {
       menuOpen = !menuOpen;
-      hkPage = false, kbPage = false;
+      hkPage = false, kbPage = false, frontPage = false;
       confirming = 0;
       capturing = -1;
       kbCapture = -1;
       if (menuOpen) {
-        pd_menu_init(&menu, "POKEDAISY", rowPtrs, M_COUNT);
+        pd_menu_init(&menu, "POKEDAISY", rowPtrs, menuN);
         menu.overlay = true;
       }
     }
@@ -2049,8 +2199,11 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
         pd_menu_move(&hkMenu, -1);
       if (down(DOWN))
         pd_menu_move(&hkMenu, 1);
-      if (down(B))
+      if (down(B)) {
         hkPage = false;
+        if (frontPage) // opened from the companion's SETTINGS: back to it
+          menuOpen = frontPage = false;
+      }
       if (down(A)) {
         capturing = hkMenu.selected;
         hkMenu.title = "PRESS A BUTTON";
@@ -2064,19 +2217,22 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       else if (lastKey == SDLK_BACKSPACE || lastKey == SDLK_DELETE)
         lastKey = 0, pressed |= 1u << SELECT;
       if (lastKey) {
-        for (int i = 0; i < KB_COUNT; i++)
-          if (kbKeys[i] == lastKey)
-            kbKeys[i] = SDLK_UNKNOWN;
-        kbKeys[kbCapture] = lastKey;
-        host_save();
+        const char *why = kb_assign(kbCapture, lastKey);
+        if (why)
+          notice(why);
+        else
+          host_save();
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       } else if (down(B)) {
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       } else if (down(SELECT)) {
-        kbKeys[kbCapture] = SDLK_UNKNOWN;
-        host_save();
+        const char *why = kb_assign(kbCapture, SDLK_UNKNOWN);
+        if (why)
+          notice(why);
+        else
+          host_save();
         kbCapture = -1;
         kbMenu.title = "KEYBOARD";
       }
@@ -2085,8 +2241,11 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
         pd_menu_move(&kbMenu, -1);
       if (down(DOWN))
         pd_menu_move(&kbMenu, 1);
-      if (down(B))
+      if (down(B)) {
         kbPage = false;
+        if (frontPage)
+          menuOpen = frontPage = false;
+      }
       if (down(A)) {
         kbCapture = kbMenu.selected;
         held = pressed = 0; // the keys it took to get here don't assign themselves
@@ -2101,8 +2260,12 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       if (down(B))
         menuOpen = false;
       if (down(A)) {
-        switch (menu.selected) {
+        switch (menu.selected >= 0 && menu.selected < menuN ? menuMap[menu.selected] : M_RESUME) {
         case M_RESUME:
+          menuOpen = false;
+          break;
+        case M_SETTINGS: // the companion opens on its SETTINGS, at the host's rows
+          frontOpenSettings = true;
           menuOpen = false;
           break;
         case M_SAVE:
@@ -2211,6 +2374,45 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       }
     }
     emuMs = (double)(SDL_GetPerformanceCounter() - t) * 1000.0 / SDL_GetPerformanceFrequency() / runs;
+    // A host row pressed in the companion's SETTINGS (PD_ENV_FRONT_ROWS), as the menu's own row does.
+    if (frontPress >= 0) {
+      const int row = frontPress;
+      frontPress = -1;
+      switch (row) {
+      case FRONT_SWAP:
+        hostSet.swapAB = swapFace = !hostSet.swapAB;
+        held = 0;
+        host_save();
+        break;
+      case FRONT_FFSPEED:
+        hostSet.ffSpeed = hostSet.ffSpeed == 0 ? 2 : hostSet.ffSpeed >= 8 ? 0 : hostSet.ffSpeed + 1;
+        host_save();
+        break;
+      case FRONT_REWIND:
+        hostSet.rewind = !hostSet.rewind;
+        if (!hostSet.rewind)
+          rewind_clear();
+        host_save();
+        break;
+      case FRONT_LCD:
+        hostSet.lcd = !hostSet.lcd;
+        host_save();
+        break;
+      case FRONT_KEYBOARD:
+        menuOpen = frontPage = kbPage = true;
+        hkPage = false;
+        kb_menu_open();
+        held = pressed = 0; // the A that chose it isn't the page's
+        break;
+      case FRONT_HOTKEYS:
+        menuOpen = frontPage = hkPage = true;
+        kbPage = false;
+        pd_menu_init(&hkMenu, "HOTKEYS", hkPtrs, HK_ACTIONS + 1);
+        hkMenu.overlay = true;
+        held = pressed = 0;
+        break;
+      }
+    }
     if (++frames % 120 == 0)
       sram_write(sav, &sramCopy, true);
     present_game(NULL);
@@ -2236,6 +2438,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   free(sramCopy.data);
   rewind_clear();
   core.unload_game();
+  compActive = compPending = compHave = false;
   core.deinit();
   dlclose(core.dl);
   memset(&core, 0, sizeof core);
@@ -2634,19 +2837,22 @@ int main(int argc, char **argv) {
           else if (lastKey == SDLK_BACKSPACE || lastKey == SDLK_DELETE)
             lastKey = 0, pressed |= 1u << SELECT;
           if (lastKey) {
-            for (int i = 0; i < KB_COUNT; i++)
-              if (kbKeys[i] == lastKey)
-                kbKeys[i] = SDLK_UNKNOWN;
-            kbKeys[kbCapture] = lastKey;
-            host_save();
+            const char *why = kb_assign(kbCapture, lastKey);
+            if (why)
+              notice(why);
+            else
+              host_save();
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (down(B)) { // a controller's B cancels; a keyboard's keys are the binding
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (down(SELECT)) {
-            kbKeys[kbCapture] = SDLK_UNKNOWN;
-            host_save();
+            const char *why = kb_assign(kbCapture, SDLK_UNKNOWN);
+            if (why)
+              notice(why);
+            else
+              host_save();
             kbCapture = -1;
             kbMenu.title = "KEYBOARD";
           } else if (libraryClick && !onPage) { // a click beside the page closes it, as the app's floating touch screen does

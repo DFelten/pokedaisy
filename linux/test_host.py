@@ -122,14 +122,17 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     run(d,str(d/'roms/diagnostic.gb'),'--frames','80')
     del env['POCKET_KEYS']
     assert (d/'states/diagnostic.gb.ss').exists(),'SAVE STATE from the host menu wrote nothing'
-    # A/B BUTTONS (eight rows down from RESUME, past KEYBOARD) is saved with the host's settings.
-    env['POCKET_KEYS']='20:menu,'+','.join(f'{30+10*i}:down' for i in range(8))+',120:a'
+    # The host's settings are in the companion's SETTINGS (PD_ENV_FRONT_ROWS): the menu's SETTINGS (three rows down: RESUME,
+    # SAVE STATE, LOAD STATE, SETTINGS, QUIT) opens it at them, A/B BUTTONS first; A flips it, saved with the host's settings.
+    steps=['menu']+['down']*3+['a','a']
+    env['POCKET_KEYS']=','.join(f'{20+10*i}:{k}' for i,k in enumerate(steps))
     run(d,str(d/'roms/diagnostic.gb'),'--frames','150')
     del env['POCKET_KEYS']
     assert 'swap_ab=1' in (d/'host.ini').read_text(),(d/'host.ini').read_text()
-    # HOTKEYS (three rows down): REWIND takes L3; SAVE STATE takes R2, which FAST FORWARD then loses.
+    # HOTKEYS (CONTROLS: A/B BUTTONS, KEYBOARD, HOTKEYS, so two rows down from where SETTINGS opens) opens the host's own
+    # page: REWIND takes L3; SAVE STATE takes R2, which FAST FORWARD then loses.
     ini=(d/'host.ini').read_text();assert 'hk_ff=r2' in ini and 'hk_rewind=l2' in ini,ini
-    steps=['menu']+['down']*3+['a','down','a','l3','down','a','r2']
+    steps=['menu']+['down']*3+['a']+['down']*2+['a','down','a','l3','down','a','r2']
     env['POCKET_KEYS']=','.join(f'{20+10*i}:{k}' for i,k in enumerate(steps))
     run(d,str(d/'roms/diagnostic.gb'),'--frames',str(40+10*len(steps)))
     del env['POCKET_KEYS']

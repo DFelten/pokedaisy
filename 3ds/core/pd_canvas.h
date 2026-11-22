@@ -38,6 +38,11 @@ void pd_round_rect(struct pd_canvas* c, int x, int y, int w, int h, int r, uint3
 // window frames (the app's drawLayeredBox). Returns the frame's total width.
 int pd_layered_box(struct pd_canvas* c, int x, int y, int w, int h, int r,
                    const struct pd_layer* layers, int n, uint32_t fill);
+// A companion window's edge (the app's WindowFrame): [layers] as rings round the whole canvas, corners rounded by [r], the
+// pixels past them made see-through (alpha 0) and the rest opaque (alpha 0xFF), for a host that blends it over the game.
+// [w] x [h] pixels of [src] from (sx, sy) to (dx, dy) in [dst], as they are (no clip, no blend; the caller keeps them inside).
+void pd_canvas_copy(struct pd_canvas* dst, int dx, int dy, const struct pd_canvas* src, int sx, int sy, int w, int h);
+void pd_window_edge(struct pd_canvas* c, const struct pd_layer* layers, int n, int r);
 
 // HeartGold's button face (the app's drawTwoTone): [top] down to just under half way, two lines of [line] stepping between
 // the colours, then [low]; in pd_round_rect's shape.

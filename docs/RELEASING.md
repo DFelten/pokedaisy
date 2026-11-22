@@ -135,6 +135,19 @@ The install guide for all six is the manual's Linux page (`docs/manual/linux.md`
 say the Linux files are a **beta** (Android stays the full app). A file missing from the run means a job failed: fix
 it on `main`, then follow the "If a run fails" steps above.
 
+## Windows
+
+No workflow builds Windows yet: build it on this Mac with MinGW in Docker (the release skill's recipe: `libretro`,
+`libretro/armgba` with `-DARMGBA_JIT=OFF`, `windows/ds-core`, `windows`, each with the mingw64 toolchain file) and upload
+one zip to the draft:
+
+| File | For |
+| --- | --- |
+| `PokeDaisy-<version>-windows-x86_64.zip` | 64-bit Windows 10 / 11: `PokeDaisy.exe`, its three cores' `.dll`s, `SDL2.dll`, the MinGW runtime DLLs (`libgcc_s_seh-1.dll`, `libwinpthread-1.dll`, `zlib1.dll`), `LICENSE`, `NOTICE`, `licenses/` and `SOURCE.txt` |
+
+Check with `x86_64-w64-mingw32-objdump -p` that every DLL the exe and cores name is Windows' own or in the zip. The
+install guide is the manual's `windows-install.md`. Never ship a DS core built with its JIT off.
+
 ## One APK for arm64 and 32-bit ARM
 
 The release APK carries the native code for both arm64 (the Thor, the Retroid Pocket, phones) and 32-bit ARM
@@ -257,7 +270,7 @@ already has your ROMs.
 What it needs:
 
 - **ROMs only.** No save files: the saves and memory dumps the tests use are already
-  committed as fixtures (`app/src/test/resources/fixtures/`). No decomp builds either:
+  committed as fixtures (`test-fixtures/resources/fixtures/`). No decomp builds either:
   only the generator scripts and `ui-preview` use `$DECOMPS`, not the tests.
 - Your ROMs, named the way the tests expect. The tests read
   `~/Downloads/Game ROMs & Emulation/gba/` on your Mac by default (every language's GBA carts), and from beside it `gbc/`

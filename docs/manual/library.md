@@ -3,7 +3,7 @@ title: Your game library
 summary: Add games, sort and favorite them, set covers, and use each game's menu for saves, info, cheats and more.
 section: start
 order: 4
-keywords: [shortcut, home screen, launcher icon, search, find a game, filter, support, donate, donation, tip, patreon, ko-fi, kofi, buy me a coffee, games list, add rom, import, folder, folders, multiple folders, several folders, add folder, zip, 7z, archive, cover, box art, artwork, icon, steamgriddb, rename, delete, hide, favourite, star, sort, grid, list view, frontend, es-de, esde, iisu, cocoon, launcher, filter, tabs, recently played, history, hacks, game boy, gbc, gba, console, platform, patch, patching, bps, apply patch, base rom, checksum, crc32, rom hack patch, tools, toolbox, rail, bottom bar, where is settings, sprite pack]
+keywords: [shortcut, home screen, launcher icon, search, find a game, filter, support, donate, donation, tip, patreon, ko-fi, kofi, buy me a coffee, games list, add rom, import, folder, folders, multiple folders, several folders, add folder, zip, 7z, archive, cover, box art, artwork, icon, steamgriddb, rename, delete, hide, favourite, star, sort, grid, list view, frontend, es-de, esde, iisu, cocoon, launcher, filter, tabs, recently played, history, hacks, game boy, gbc, gba, console, platform, patch, patching, bps, apply patch, base rom, checksum, crc32, rom hack patch, tools, toolbox, rail, bottom bar, where is settings, small screen, rg ds, sprite pack]
 ---
 
 The library is the first thing you see when you open PokeDaisy: every game you've added, in the order you pick. Tap a game to play it.
@@ -27,7 +27,7 @@ The game you have open says `PLAYING`, and a small save icon next to a name mean
 
 ## Games, tools and settings
 
-Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. They stay on screen whichever one is open, and the page beside them changes.
+Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. They stay on screen whichever one is open, and the page beside them changes. On a small screen, like the RG DS's, they show their icons alone (the controller, the toolbox and the gear) and the rest of the library packs in tighter: a lower header, smaller covers, one line per game, so more of your games fit.
 
 - `GAMES` is your library, the games and the quick views over them.
 - `TOOLS` shows, in the games' place, what PokeDaisy can do with your games besides playing them. Tap one to open it. Its header has only the help button, since sorting and adding are for your games.
@@ -124,6 +124,8 @@ To call a game something else, use `RENAME` in its menu. It only changes what th
 
 Prefer your own file names? Set `GAME NAMES` to `FILE NAME` in Settings, in the `LIBRARY` group.
 
+Two games with the same name, say two versions of one hack? The list shows each one's file name under its name, so you can tell them apart. `GAME PATHS`, in the same group, changes that: `FULL PATH` shows where every game's file is, `OFF` shows nothing under the names.
+
 ## Searching
 
 Tap the search button in the header and start typing. The games behind the window follow what you type, by the name the library shows or by the file name. Case and accents don't matter, and the words can come in any order, so `red fire` finds FireRed.
@@ -200,7 +202,7 @@ To use your own image instead, tap `SET COVER` in the menu and pick a picture fr
 
 On a device with two screens, the library is made for buttons. It's the same library: `GAMES`, `TOOLS` and `SETTINGS` down the left (see [Games, tools and settings](#games-tools-and-settings)), the [quick views](#quick-views) at the top, then the open view's games as a list or a grid (the view button in the header switches), each row with where its file is.
 
-The D-pad moves a cursor through it: up and down a row, left and right along a row of the grid. Up from the top of the list reaches the quick views: left and right open the next view, and down, A or B go back to the games. Up once more reaches the header's buttons (sort, view, import and the rest); A presses one, down or B goes back. Left from the header's first button, the first quick view or the grid's first column reaches `GAMES`, `TOOLS` and `SETTINGS`: up and down pick one, A opens it, right or B goes back. On `TOOLS` the D-pad moves between the tools, A opens one, and B or `BACK` returns to your games. L and R jump a page. A small legend in the corner reminds you of the rest:
+The D-pad moves a cursor through it: up and down a row, left and right along a row of the grid. Up from the top of the list reaches the quick views: left and right open the next view, and down, A or B go back to the games. Up once more reaches the header's buttons (sort, view, import and the rest); A presses one, down or B goes back. Left from the header's first button, the first quick view, the grid's first column or any row of the list reaches `GAMES`, `TOOLS` and `SETTINGS`: up and down pick one, A opens it, right or B goes back. On `TOOLS` the D-pad moves between the tools, A opens one, and B or `BACK` returns to your games. L and R jump a page. A small legend in the corner reminds you of the rest:
 
 - **A** opens the game.
 - **B** opens the game's menu (the same entries as a long press). Whatever an entry opens, like `INFO`, B takes you back to the menu.

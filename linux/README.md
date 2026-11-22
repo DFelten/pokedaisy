@@ -56,9 +56,10 @@ frontend: X opens the companion, L3 the quick menu (each can be rebound in the c
 F, the Y key, still opens the quick menu).
 
 START+SELECT (or the controller's Guide / Menu button, or Escape) opens the host menu over the game: RESUME, SAVE
-STATE, LOAD STATE, HOTKEYS, REWIND (keeps the last ~20 s while on, in a 32 MB budget: `POCKET_REWIND_MB`), FF SPEED
+STATE, LOAD STATE, SETTINGS (the companion's SETTINGS, where the host's own rows are, from PD_ENV_FRONT_ROWS: a core
+that doesn't ask for them gets the old list here), QUIT. The host's rows: HOTKEYS, KEYBOARD, REWIND (keeps the last ~20 s while on, in a 32 MB budget: `POCKET_REWIND_MB`), FF SPEED
 (MAX, or 2x to 8x), LCD FILTER, A/B BUTTONS (NORMAL / SWAPPED: devices disagree on which physical button SDL calls A;
-SWAPPED trades A with B and X with Y on controllers) and QUIT (QUIT TO GAME LIST when the game came from the list).
+SWAPPED trades A with B and X with Y on controllers). QUIT says QUIT TO GAME LIST when the game came from the list.
 Fast-forward is the FAST FORWARD hotkey's, while it is held. `POCKET_MENU_COMBO=off` reserves START+SELECT for PortMaster's exit without opening the host menu. The game pauses while it is open.
 
 Hold SELECT and press R2 to fast-forward, or L2 to rewind when enabled. A plain SELECT tap reaches the game

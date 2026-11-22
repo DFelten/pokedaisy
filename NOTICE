@@ -29,7 +29,7 @@ The app shows every license below in full under Settings > LICENSES.
   contributors, Mozilla Public License 2.0 - https://github.com/mgba-emu/mgba
   (source: https://github.com/mgba-emu/mgba/tree/0.10.5). Built with two of
   its bundled libraries: blip_buf (GNU LGPL 2.1) and inih (BSD).
-  app/src/main/cpp/pk_rewind.c is adapted from mGBA's src/core/rewind.c and
+  shared/src/commonMain/cpp/pk_rewind.c is adapted from mGBA's src/core/rewind.c and
   stays under the MPL 2.0 (its header says so).
 - 3DS build only: armGBA (third_party/armgba), Copyright (c) 2026 Magnominus and the armGBA 3DS
   port contributors, Mozilla Public License 2.0 for the parts the 3DS build
@@ -84,6 +84,12 @@ The app shows every license below in full under Settings > LICENSES.
   https://github.com/thwonp/dsperate-lr. It carries DSperate v3.3.0 as its own
   submodule, under the DSperate terms above; the collection package includes
   every license text in that tree.
+- The Windows package (PokeDaisy-<version>-windows-x86_64.zip, never the APK)
+  carries, beside the program and its cores: SDL2 (SDL2.dll), Copyright (C)
+  1997-2025 Sam Lantinga, zlib license - https://libsdl.org; the MinGW-w64
+  runtime's libwinpthread-1.dll, MIT / BSD-style license; GCC's
+  libgcc_s_seh-1.dll, GNU GPL 3.0 with the GCC Runtime Library Exception 3.1;
+  and zlib1.dll (zlib, above). The zip's licenses/ folder has every text.
 - BananaDS (third_party/bananads: the SuperDrastic repository, whose bananads/
   folder is BananaDS), Copyright (c) 2026 JorreFog and the SuperDrastic
   contributors, GNU GPL 3.0 or later - https://github.com/JorreFog/SuperDrastic
@@ -104,7 +110,7 @@ The app shows every license below in full under Settings > LICENSES.
   Collet, BSD 2-Clause; third_party/licenses/xxHash-BSD-2-Clause.txt),
   tiny-AES-c (The Unlicense), SHA-1 by Steve Reid (public domain), blip_buf
   (GNU LGPL 2.1) and Dolphin's ARM64 emitter (GNU GPL 2.0 or later).
-- Shaders (app/src/main/kotlin/com/pokedaisy/app/ScreenShaders.kt): LCD and
+- Shaders (shared-ui/src/commonMain/kotlin/com/pokedaisy/app/ScreenShaders.kt): LCD and
   scanlines adapted from mGBA's, Copyright (C) 2017 Dominus Iniquitatis, MIT
   License (the full notice is in third_party/mgba/res/shaders/lcd.shader/lcd.fs);
   GBA colours from mGBA's gba-color shader by Pokefan531 and hunterk. LCD PAPER
@@ -115,7 +121,8 @@ The app shows every license below in full under Settings > LICENSES.
   xBR level 2 and xBRZ freescale's xBR code, Copyright (C) 2011-2016 Hyllian, MIT
   License; xBRZ, Copyright (C) Zenju, GNU GPL 3.0 (from HqMAME); ScaleFX,
   Copyright (c) 2016 Sp00kyFox, MIT License
-  (third_party/licenses/libretro-shaders.txt).
+  (third_party/licenses/libretro-shaders.txt). iOS bundles the same original
+  assets; its Metal adapter translates shader transport and vector syntax at runtime.
 - Pixel Operator font (app/src/main/assets/fonts), by Jayvee Enaguas,
   CC0 1.0 (public domain dedication).
 - Atkinson Hyperlegible (app/src/main/assets/fonts, website/public/fonts: the manual's
@@ -185,6 +192,6 @@ it reads, the app carries reference data about the supported games: names of
 Pokemon, moves, items, types and places, numeric tables (stats, type matchups,
 map layouts, memory addresses) and checksums of ROM data, extracted from the
 games, the ROM hacks and the decompilation projects for interoperability.
-The unit tests' fixtures (app/src/test/resources/fixtures) are snapshots of
+The unit tests' fixtures (test-fixtures/resources/fixtures) are snapshots of
 the emulated console's RAM while a game ran; like any RAM dump they hold a
 few kilobytes the game copied there from its ROM. They aren't in the app.

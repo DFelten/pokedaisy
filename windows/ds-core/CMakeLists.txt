@@ -25,29 +25,30 @@ find_package(ZLIB REQUIRED)
 # The companion and the quick menu: the same presentation the Linux DS core (linux/libretro-ds/) and the 3DS port draw -
 # the app's portable UI (3ds/core), the DS views, the companion's reader - with the tables generated from the app's
 # Kotlin (linux/dsperate/gen_data.py, gen_guide.py).
-set(KOTLIN ${ROOT}/app/src/main/kotlin/com/pokedaisy/app)
+set(SHARED_KOTLIN ${ROOT}/shared/src/commonMain/kotlin/com/pokedaisy/app)
+set(SHARED_DATA ${SHARED_KOTLIN}/companion/data)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 set(DS_DATA ${CMAKE_CURRENT_BINARY_DIR}/data_gen.h)
 set(DATA_READER ${ROOT}/linux/dsperate/gen_data.py)
-set(DATA_INPUTS ${KOTLIN}/GameTitles.kt)
+set(DATA_INPUTS ${SHARED_KOTLIN}/GameTitleCatalog.kt)
 foreach(name Gen4Reader Gen4TablesPlatinum Gen4TablesHeartGold Gen4Dex Gen4MachinesPlatinum Gen4TownMapPlatinum
              Gen4TownMapHeartGold PokegearMap Gen5TownMapBlack Gen5TownMapBlack2 Gen5Reader Gen5DexBlack Gen5TablesBlack
-             Gen5ItemsBlack Gen5TablesBlack2 NdsArt RegionMapModel MonStats Gen4Charmap)
-  list(APPEND DATA_INPUTS ${KOTLIN}/companion/data/${name}.kt)
+             Gen5ItemsBlack Gen5TablesBlack2 NdsArt NdsPortsGen RegionMapModel MonStats Gen4Charmap)
+  list(APPEND DATA_INPUTS ${SHARED_DATA}/${name}.kt)
 endforeach()
 add_custom_command(OUTPUT ${DS_DATA}
   COMMAND ${CMAKE_COMMAND} -E env PYTHONUTF8=1 ${Python3_EXECUTABLE} ${DATA_READER} --output ${DS_DATA}
   DEPENDS ${DATA_READER} ${DATA_INPUTS} VERBATIM)
 set(GUIDE_DATA ${CMAKE_CURRENT_BINARY_DIR}/guide_gen.h)
 set(GUIDE_READER ${ROOT}/linux/dsperate/gen_guide.py)
-set(GUIDE_INPUTS ${KOTLIN}/companion/data/GuideGen4.kt ${KOTLIN}/companion/data/GuideGen5.kt)
+set(GUIDE_INPUTS ${SHARED_DATA}/GuideGen4.kt ${SHARED_DATA}/GuideGen5.kt)
 foreach(name GuideGen4PlatinumGen GuideGen4HeartGoldGen GuideGen5BlackGen GuideGen5WhiteGen GuideGen5Black2Gen
              GuideGen5White2Gen GuidePlatinum GuideHeartGold GuideBlack GuideBlack2 Gen4TownMapPlatinum Gen4TablesPlatinum
              Gen4TownMapHeartGold Gen5TownMapWhite Gen5TownMapWhite2 Gen5TablesBlack Gen5TablesBlack2 Gen4Reader Gen5Reader)
-  list(APPEND GUIDE_INPUTS ${KOTLIN}/companion/data/${name}.kt)
+  list(APPEND GUIDE_INPUTS ${SHARED_DATA}/${name}.kt)
 endforeach()
 add_custom_command(OUTPUT ${GUIDE_DATA}
-  COMMAND ${CMAKE_COMMAND} -E env PYTHONUTF8=1 ${Python3_EXECUTABLE} ${GUIDE_READER} ${KOTLIN}/companion/data ${GUIDE_DATA}
+  COMMAND ${CMAKE_COMMAND} -E env PYTHONUTF8=1 ${Python3_EXECUTABLE} ${GUIDE_READER} ${SHARED_DATA} ${GUIDE_DATA}
   DEPENDS ${GUIDE_READER} ${GUIDE_INPUTS} VERBATIM)
 add_custom_target(ds-app-data DEPENDS ${DS_DATA} ${GUIDE_DATA})
 
