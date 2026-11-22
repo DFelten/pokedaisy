@@ -2,10 +2,12 @@
  * EGL surfaceless (Mesa llvmpipe) GL context + an FBO for the core's hw render.
  * Build: cc -O2 -I../../third_party/mgba/src/platform/libretro -o pc_probe pc_probe.c -ldl -lEGL -lGL
  * Usage: pc_probe CORE.so GAME_PATH SYSDIR SAVEDIR SCRIPT
- * SCRIPT lines: "run N" | "press BTN N" (hold a RetroPad button N frames) | "shot FILE.ppm"
+ * SCRIPT lines: "run N" | "press BTN N" (hold a RetroPad button N frames) | "key KEY N" (a keyboard key: RETURN, ESCAPE,
+ * BACKSPACE or one character) | "shot FILE.ppm"
  *               | "save FILE" | "load FILE" | "ram FILE" | "mbx FILE" | "cheat RUBY" | "time" | "opt KEY VALUE"
  */
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <dlfcn.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -37,6 +39,7 @@ static int fbw = 640, fbh = 480, lastw, lasth;
 static unsigned held; static int held_frames;
 static long audio_frames, video_frames, dupes;
 static retro_audio_callback_t audio_cb;
+static retro_keyboard_event_t keyboard_cb;
 static struct { char k[96], v[96]; } opts[32]; static int nopts;
 static struct { char k[128], v[64]; } defs[512]; static int ndefs;
 
@@ -93,6 +96,7 @@ static bool env(unsigned cmd, void *data) {
   case RETRO_ENVIRONMENT_SET_MESSAGE: fprintf(stderr, "probe: message: %s\n", ((struct retro_message *)data)->msg); return true;
   case RETRO_ENVIRONMENT_SET_MESSAGE_EXT: fprintf(stderr, "probe: message: %s\n", ((struct retro_message_ext *)data)->msg); return true;
   case RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION: *(unsigned *)data = 1; return true;
+  case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: keyboard_cb = ((struct retro_keyboard_callback *)data)->callback; return true;
   case RETRO_ENVIRONMENT_SHUTDOWN: fprintf(stderr, "probe: core asked to shut down\n"); exit(3);
   default: return false;
   }
@@ -178,7 +182,7 @@ int main(int argc, char **argv) {
   GLuint vao; void (*genva)(GLsizei, GLuint *) = (void *)eglGetProcAddress("glGenVertexArrays");
   void (*bindva)(GLuint) = (void *)eglGetProcAddress("glBindVertexArray"); genva(1, &vao); bindva(vao);
 
-  FILE *sf = fopen(argv[5], "r"); char line[512];
+  FILE *sf = fopen(argv[5], "r"); char line[8192];
   /* options first: lines "opt K V" before anything else */
   while (fgets(line, sizeof line, sf)) {
     char k[96], v[96];
@@ -201,7 +205,18 @@ int main(int argc, char **argv) {
   while (fgets(line, sizeof line, sf)) {
     char a[256], b[256]; int k;
     if (sscanf(line, "run %d", &k) == 1) { for (int i = 0; i < k; i++) frame(); }
-    else if (sscanf(line, "press %31s %d", a, &k) == 2) { int bt = button(a); held = 1u << bt; held_frames = k; for (int i = 0; i < k; i++) frame(); held = 0; }
+    else if (sscanf(line, "key %31s %d", a, &k) == 2) {
+      // A keyboard key held k frames: RETURN, ESCAPE, BACKSPACE or one character (RETROK_* = ASCII for those).
+      unsigned code = !strcmp(a, "RETURN") ? 13 : !strcmp(a, "ESCAPE") ? 27 : !strcmp(a, "BACKSPACE") ? 8 : (unsigned char)tolower((unsigned char)a[0]);
+      if (!keyboard_cb) {
+        fprintf(stderr, "probe: the core has no keyboard callback\n");
+        continue;
+      }
+      keyboard_cb(true, code, code < 128 ? code : 0, 0);
+      for (int i = 0; i < k; i++) frame();
+      keyboard_cb(false, code, 0, 0);
+      frame();
+    } else if (sscanf(line, "press %31s %d", a, &k) == 2) { int bt = button(a); held = 1u << bt; held_frames = k; for (int i = 0; i < k; i++) frame(); held = 0; }
     else if (sscanf(line, "shot %255s", a) == 1) shot(a);
     else if (sscanf(line, "save %255s", a) == 1) {
       size_t sz = p_ser_size(); void *buf = malloc(sz); double t = now(); bool ok = p_ser(buf, sz);

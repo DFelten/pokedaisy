@@ -18,7 +18,8 @@ Script lines:
 | `shot FILE.ppm` | the frame (the core's own size, top row first) |
 | `save FILE` / `load FILE` | `retro_serialize` / `retro_unserialize`, timed |
 | `mbx FILE` | the companion's mailbox (`linux/pc_games/pokedaisy_companion.rb`): found by its magic, the JSON written to FILE |
-| `cheat RUBY` | `retro_cheat_set`: the core runs the line as Ruby in the game (`$Trainer.party << Pokemon.new(:PIKACHU, 12)`) |
+| `key KEY N` | a keyboard key held N frames (the core's keyboard callback): `RETURN`, `ESCAPE`, `BACKSPACE` or one character |
+| `cheat RUBY` | `retro_cheat_set`: the core runs the line as Ruby in the game (`$Trainer.party << Pokemon.new(:PIKACHU, 12)`); lines up to 8 KB |
 | `ram FILE` | `RETRO_MEMORY_SYSTEM_RAM` (the WASM heap Ruby lives in) |
 | `time` | frames run since the last `time`, ms per frame |
 

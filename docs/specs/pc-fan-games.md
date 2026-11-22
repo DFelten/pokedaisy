@@ -238,6 +238,21 @@ nothing about a handheld: the boot (the game compiling its scripts) took ~5 min 
 EGL, zlib, zstd from Ubuntu's arm64 packages). Run under qemu on the aarch64 core, it loaded the state the x86_64 build
 had written (states carry across architectures), saved its own (101 MB, as on x86_64) and loaded that back.
 
+## Playing in: Infinite Fusion to Pallet Town (2026-11-17)
+
+A new game played headless from the title to Pallet Town with a starter, then shown in `pokedaisy-linux` with the companion:
+
+- **Typed text never reaches the game.** The libretro core's `Input.gets` / `text_input` are stubs, so Essentials' keyboard
+  name entry (`$PokemonSystem.textinput` 1, Infinite Fusion's default) stops the intro at "Enter your name": no letter goes
+  in, and its minimum length keeps RETURN from confirming. The compat preload now makes that option read 0, the game's own
+  letter grid (D-pad, A, B to delete, the ACTION button to OK), which works on a pad. The in-game option no longer changes it.
+- **A state loaded before the game's own resize keeps the core's default 640x480.** Infinite Fusion asks for 512x384 as it
+  boots; a state taken in a session that loaded one at frame 1 carries the core's 640x480, and the 512x384 picture then sits
+  in its corner. `hw_gl.c` now logs each frame size change (`hwgl: frame WxH`). Not seen with states made in normal play.
+- Offline, its battle pictures are the "?" placeholder: the game downloads sprites it doesn't ship, and `HTTPLite` is a stub.
+- The probe walked the town with BFS over `Game_Player#passable?` handed to `force_move_route` (a `cheat` line): the
+  player's own movement, no warps. Warping into Pallet Town before the intro had set the player up crashed its events.
+
 ## Next steps
 
 1. Time Infinite Fusion on real hardware: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built against

@@ -228,6 +228,8 @@ void hwgl_capture(unsigned w, unsigned h) {
         frame[(size_t)y * w + x] = frame[(size_t)(h - 1 - y) * w + x];
         frame[(size_t)(h - 1 - y) * w + x] = t;
       }
+  if (w != frameW || h != frameH)
+    fprintf(stderr, "hwgl: frame %ux%u\n", w, h);
   frameW = w;
   frameH = h;
   haveFrame = true;

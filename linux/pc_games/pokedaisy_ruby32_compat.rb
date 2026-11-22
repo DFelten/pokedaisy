@@ -50,3 +50,25 @@ unless defined?(HTTPLite)
     end
   end
 end
+
+# Typed text never reaches the game in the libretro core (its Input.gets / text_input are stubs), so an Essentials name
+# entry in keyboard mode ($PokemonSystem.textinput 1, Infinite Fusion's default) can't take a letter and the intro stops
+# at "Enter your name". The option reads as 0 instead: the game's own letter grid (D-pad, A, B to delete, OK). The game's
+# classes are defined after the preloads, so this goes on at the first frame, when they all are.
+module PokeDaisyCursorTextEntry
+  def textinput = 0
+end
+module Graphics
+  class << self
+    unless method_defined?(:__pokedaisy_text_entry_update)
+      alias_method :__pokedaisy_text_entry_update, :update
+      def update(*args)
+        unless @__pokedaisy_text_entry
+          @__pokedaisy_text_entry = true
+          PokemonSystem.prepend(PokeDaisyCursorTextEntry) if defined?(PokemonSystem)
+        end
+        __pokedaisy_text_entry_update(*args)
+      end
+    end
+  end
+end
