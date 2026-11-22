@@ -737,8 +737,8 @@ void ui_more_page(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
         int tx = ix + (i % cols) * (tile + gap), ty = iy + (i / cols) * (tileH + gap);
         bool pressed = ui->pressedId == HIT_OPTION + i;
         uint32_t fill = pressed ? pd_cur->tabSelectedFill : idle;
-        pd_layered_two_tone(c, tx, ty, tile, tileH, 3, pd_cur->chip, pd_cur->chipCount, fill,
-                            pd_mix(fill, pd_two_tone_low(fill), 128));
+        if (pd_style) pd_key(c, tx, ty, tile, tileH, pressed ? &pd_style->tabOpen : &pd_style->button); // MORE's tiles as keys
+        else pd_layered_two_tone(c, tx, ty, tile, tileH, 3, pd_cur->chip, pd_cur->chipCount, fill, pd_mix(fill, pd_two_tone_low(fill), 128));
         const struct pd_art* art = ui_tab_art(more[i]);
         int icon = tileH - capH - 18;
         if (icon > 28) icon = 28; // Scale2x's 32 averaged down: the smoothing shows
@@ -755,7 +755,8 @@ void ui_more_page(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
         const char* label = ui_tab_label(more[i]);
         int ly = smallText ? top + (art ? icon + 5 : 0) - capTop : ty + tile - 17;
         pd_text_fit(c, tx + 2 + (tile - 4 - pd_text_width(label) > 0 ? (tile - 4 - pd_text_width(label)) / 2 : 0), ly,
-                    tile - 4, label, pressed ? PD_VALUE : PD_TITLE_TEXT, pressed ? PD_VALUE_SHADOW : PD_TITLE_SHADOW);
+                    tile - 4, label, pd_style ? (pressed ? pd_style->tabOpen.text : pd_style->button.text) : pressed ? PD_VALUE : PD_TITLE_TEXT,
+                    pd_style ? (pressed ? pd_style->tabOpen.shadow : pd_style->button.shadow) : pressed ? PD_VALUE_SHADOW : PD_TITLE_SHADOW);
         ui_add_hit(ui, tx, ty, tile, tileH, HIT_OPTION + i);
     }
     // The rule: the window's own inner frame, dark over light (Separator).

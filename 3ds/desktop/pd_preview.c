@@ -373,6 +373,11 @@ int main(int argc, char** argv) {
         draw(&p);
         shot(out, name, "settings-end", px);
         ui.settingsScroll = 0;
+        if (has_hit(&p, HIT_MORE)) { // MORE's grid of the tabs off the bar
+            tap(&p, HIT_MORE, 0);
+            shot(out, name, "more", px);
+            pd_ui_back(&ui);
+        }
         draw(&p);
     }
     tap(&p, HIT_SETTING + SETTING_SCREEN, 0);

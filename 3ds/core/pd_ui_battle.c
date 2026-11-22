@@ -215,9 +215,17 @@ static bool caught_species(const struct battle_data* d, const struct pd_snapshot
 static void side_card(struct pd_canvas* c, const struct battle_data* d, int x, int y, int w, const struct mon_view* m,
                       const char* side, const char* state, bool caught) {
     char buf[40];
+    const bool foeSide = strcmp(side, "YOU") != 0;
     side = pd_tr(side);
     if (state) state = pd_tr(state);
-    const int sideW = pd_text(c, x, y - 2, side, PD_VALUE, PD_VALUE_SHADOW);
+    int sideW;
+    if (pd_style) { // the style's side tag: the cells' heading colour (YOU blue, FOE / WILD red)
+        const struct pd_cells* k = foeSide ? &pd_style->foeCells : &pd_style->cells;
+        sideW = pd_text_width(side) + 6;
+        pd_fill(c, x - 1, y - 1, sideW, 14, k->head);
+        pd_text(c, x + 2, y - 2, side, k->headText, k->headShadow);
+        sideW += 1;
+    } else sideW = pd_text(c, x, y - 2, side, PD_VALUE, PD_VALUE_SHADOW);
     icon(c, d, m->species, m->shiny, x, y + 12, false);
     int tx = x + PD_ICON + 2 + 5, right = x + w;
     // The name beside the side's word (FOE / GEGNER), however long that is; the types and Lv keep [tx].
@@ -287,8 +295,15 @@ static void move_row(struct pd_canvas* c, const struct battle_data* d, int x, in
 static void matchups(struct pd_canvas* c, const struct battle_data* d, const struct mon_view* foe, int x, int y, int w, int bottom) {
     char buf[40], head[48];
     snprintf(head, sizeof(head), pd_tr("%s IS"), species_name(d, foe->species, buf, sizeof(buf)));
-    pd_text_fit(c, x, y - 2, w, head, PD_VALUE, PD_VALUE_SHADOW);
-    y += 15;
+    const struct pd_cells* fc = pd_style ? &pd_style->foeCells : NULL;
+    if (fc) { // the style's heading cell ("PIDGEY IS"), the groups in cells under it
+        pd_cell(c, x - 3, y - 3, w + 6, 17, fc->line, fc->head);
+        pd_text_fit(c, x, y - 2, w, head, fc->headText, fc->headShadow);
+        y += 17;
+    } else {
+        pd_text_fit(c, x, y - 2, w, head, PD_VALUE, PD_VALUE_SHADOW);
+        y += 15;
+    }
     if (foe->type1 == PD_TYPE_NONE) {
         pd_text(c, x, y - 2, pd_tr("NO MATCHUP DATA"), PD_MUTED, PD_MUTED_SHADOW);
         return;
@@ -315,6 +330,19 @@ static void matchups(struct pd_canvas* c, const struct battle_data* d, const str
                 tt = pcts[j]; pcts[j] = pcts[j - 1]; pcts[j - 1] = tt;
             }
         if (y > bottom - 12) break;
+        if (fc) { // its cell: the heading and every line of tags
+            int lines = 1;
+            for (int i = 0, cx = x; i < k; i++) {
+                int cw = ui_matchup_tag(NULL, 0, 0, d->game, list[i], pcts[i]);
+                if (cx + cw > x + w && cx > x) cx = x, lines++;
+                cx += cw + 3;
+            }
+            pd_unclip(c);
+            int cellH = 14 + lines * 14 + 5;
+            if (y - 4 + cellH > bottom + 1) cellH = bottom + 1 - (y - 4); // a short window cuts the cell, not the frame
+            pd_cell(c, x - 3, y - 4, w + 6, cellH, fc->line, (g & 1) ? fc->b : fc->a);
+            pd_clip(c, x - 3, y - 4, w + 6, bottom - y + 4);
+        }
         pd_text(c, x, y - 2, pd_tr(HEADS[g]), PD_LABEL, PD_LABEL_SHADOW);
         y += 14;
         int cx = x;
@@ -451,9 +479,11 @@ static void suggestions(struct pd_canvas* c, const struct battle_data* d, const 
         pd_text(c, ix, iy, pd_tr("NO FOE ON THE FIELD"), PD_MUTED, PD_MUTED_SHADOW);
         return;
     }
+    const struct pd_cells *yc = pd_style ? &pd_style->cells : NULL, *fc = pd_style ? &pd_style->foeCells : NULL;
+    if (fc) pd_cell(c, ix - 3, iy - 1, iw + 6, ROW + 2, fc->line, fc->a); // the foe's VS line in its red cell
     card(c, d, ix, iy, iw, foe, "VS", foeState);
     int y = iy + ROW;
-    rule(c, ix, y, iw);
+    if (!yc) rule(c, ix, y, iw);
     y += RULE;
     struct pick picks[PD_PARTY_SIZE];
     int n = rank(d, s, foe, picks);
@@ -466,9 +496,11 @@ static void suggestions(struct pd_canvas* c, const struct battle_data* d, const 
     int half = (iw - RULE) / 2;
     for (int i = 0; i < n && i < 3; i++) {
         if (i) {
-            rule(c, ix, y, iw);
+            if (!yc) rule(c, ix, y, iw);
             y += RULE;
         }
+        // The style's picks: a cell each, its Pokémon and its move halves of it.
+        if (yc) pd_cell(c, ix - 3, y - 1, iw + 6, rowH + 2, yc->line, (i & 1) ? yc->b : yc->a);
         const struct pick* p = &picks[i];
         int ry = y + (rowH - ROW) / 2;
         // The Pokémon: rank and name, then its level, HP and OUT when it's in battle.
@@ -488,7 +520,8 @@ static void suggestions(struct pd_canvas* c, const struct battle_data* d, const 
         if (barW > 48) barW = 48;
         if (barW >= 16) ui_hp_bar(c, bx, ty + 5, barW, p->mon->hp, p->mon->maxHp);
         // Its best move against the foe.
-        separator(c, ix + half + RULE / 2, y + 2, rowH - 4, true);
+        if (yc) pd_fill(c, ix + half + RULE / 2, y - 1, 1, rowH + 2, yc->line);
+        else separator(c, ix + half + RULE / 2, y + 2, rowH - 4, true);
         move_row(c, d, ix + half + RULE, y + 1, iw - half - RULE, rowH - 2, p->move, p->pp, foe, true);
         y += rowH;
     }
@@ -635,18 +668,26 @@ static void info(struct pd_canvas* c, const struct battle_data* d, const struct 
     const int gap = 3;
     int half = (iw - 2 - 2 * gap) / 2, rx = ix + half + gap + 2 + gap;
     int y = iy + 2;
+    const struct pd_cells *yc = pd_style ? &pd_style->cells : NULL, *fc = pd_style ? &pd_style->foeCells : NULL;
+    if (yc) { // the style's cards: a cell each, the foe's in red
+        pd_cell(c, ix - 3, iy - 1, half + 6, CARD_H + 3, yc->line, yc->a);
+        pd_cell(c, rx - 3, iy - 1, half + 6, CARD_H + 3, fc->line, fc->a);
+    }
     side_card(c, d, ix, y, half, you, "YOU", "", false);
-    separator(c, ix + half + gap, iy, CARD_H + 2, true);
+    if (!yc) separator(c, ix + half + gap, iy, CARD_H + 2, true);
     if (foe) side_card(c, d, rx, y, half, foe, s->isTrainer ? "FOE" : "WILD", foeState, caught_species(d, s, foe->species));
     else pd_text(c, rx, y - 2, pd_tr("NO FOE"), PD_MUTED, PD_MUTED_SHADOW);
     y = iy + CARD_H + 4;
-    separator(c, ix, y, iw, false);
+    if (!yc) separator(c, ix, y, iw, false);
     y += 4;
     int bottom = iy + ih;
-    separator(c, ix + half + gap, y, bottom - y, true);
+    if (!yc) separator(c, ix + half + gap, y, bottom - y, true);
     int rowH = (bottom - y) / PD_NUM_MOVES;
-    for (int i = 0; i < PD_NUM_MOVES; i++)
+    for (int i = 0; i < PD_NUM_MOVES; i++) {
+        // The style's moves: a cell each, sharing their edges, rows by turn.
+        if (yc) pd_cell(c, ix - 3, y + i * rowH - 2, half + 6, rowH + 1, yc->line, (i & 1) ? yc->b : yc->a);
         move_row(c, d, ix, y + i * rowH, half, rowH, you->moves[i], you->pp[i], foe, hints);
+    }
     if (hints && foe) matchups(c, d, foe, rx, y + 2, half, bottom);
 }
 

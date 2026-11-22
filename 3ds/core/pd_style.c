@@ -93,6 +93,7 @@ struct retro_palette {
     struct pd_layer list[3];
     uint32_t stripe, selected, label, labelShadow, sectionFill, sectionText, sectionShadow, separatorDark, well;
     struct pd_key button, tab, tabOpen;
+    struct pd_cells cells, foeCells;
 };
 static const struct retro_palette RETRO[2] = {
     { 0x3D6FE0, 0xFFFFFF, 0x2449B0, { { 0x1A3A90, 1 }, { 0x9DB8FF, 1 } },
@@ -100,13 +101,17 @@ static const struct retro_palette RETRO[2] = {
       0xF2F6FD, 0xE5EDFF, 0x232B40, 0xD5DCEA, 0x5A86EA, 0xFFFFFF, 0x2449B0, 0xA9C1F5, 0xEEF3FC,
       { 0x1A3A90, 0xFFFFFF, 0xE5EDFF, 0x5A86EA, 0x232B40, 0xD5DCEA, PD_NO_SHADOW, false },
       { 0x1A3A90, 0xC9D8FA, 0xA9C1F5, 0x3D6FE0, 0x1A2F6A, 0xE8EFFD, 0xEEF3FF, false },
-      { 0x1A3A90, 0x4C7BE6, 0x3D6FE0, 0x1A3A90, 0xFFFFFF, 0x1A3A90, 0x8AA8F2, true } },
+      { 0x1A3A90, 0x4C7BE6, 0x3D6FE0, 0x1A3A90, 0xFFFFFF, 0x1A3A90, 0x8AA8F2, true },
+      { 0x9DB4EC, 0xFFFFFF, 0xEAF0FD, 0x4C7BE6, 0xFFFFFF, 0x1A3A90 },
+      { 0xC98494, 0xFFF7F8, 0xF9E3E8, 0xC05A70, 0xFFFFFF, 0x6A2234 } },
     { 0x3560D0, 0xFFFFFF, 0x0E1A40, { { 0x050A18, 1 }, { 0x5A7FD8, 1 } },
       0x1C2333, { { 0x05070D, 1 }, { 0x2E4A8A, 2 }, { 0x233A6A, 1 } },
       0x20283A, 0x2B3A62, 0xE8ECF5, 0x2A3348, 0x2F55B8, 0xFFFFFF, 0x0E1A40, 0x05070D, 0x232B3E,
       { 0x05070D, 0x2E3850, 0x262F44, 0x151B28, 0xE8ECF5, 0x141A26, 0x3E4A66, false },
       { 0x05070D, 0x283147, 0x222A3D, 0x151B28, 0xB8C2D8, 0x10141E, 0x364260, false },
-      { 0x05070D, 0x4A70D8, 0x3560D0, 0x1A3A90, 0xFFFFFF, 0x0E1A40, 0x6A8CE8, true } },
+      { 0x05070D, 0x4A70D8, 0x3560D0, 0x1A3A90, 0xFFFFFF, 0x0E1A40, 0x6A8CE8, true },
+      { 0x2E4A8A, 0x1C2333, 0x212A3C, 0x2F55B8, 0xFFFFFF, 0x0E1A40 },
+      { 0x7A3A4A, 0x2A1E22, 0x34252A, 0x7E3A4C, 0xFFFFFF, 0x2A0E16 } },
 };
 // Each THEME's hue (Theme.kt's ThemeSpec.hue): the style's blues move to it. POKéDAISY and RAINBOW keep the blues.
 static const struct { int id; float hue; } THEME_HUES[] = {
@@ -173,6 +178,9 @@ static void style_build(const struct pd_look* base, int themeId, int dark) {
         rehue_key(&p.button, hue);
         rehue_key(&p.tab, hue);
         rehue_key(&p.tabOpen, hue);
+        // Your side's cells move with the theme; the foe's keep their red (UiStylePalette.rehued leaves foeCells alone).
+        uint32_t* cells[] = { &p.cells.line, &p.cells.a, &p.cells.b, &p.cells.head, &p.cells.headText, &p.cells.headShadow };
+        for (size_t i = 0; i < sizeof cells / sizeof *cells; i++) *cells[i] = rehue(*cells[i], hue);
     }
     styledLook = *base;
     struct pd_look* l = &styledLook;
@@ -186,7 +194,12 @@ static void style_build(const struct pd_look* base, int themeId, int dark) {
     l->tabSelectedFill = p.tabOpen.face, l->tabIdleFill = p.tab.face;
     styleColors = (struct pd_style_colors) { p.titleFill, p.titleText, p.titleShadow, { p.title[0], p.title[1] },
                                               p.sectionFill, p.sectionText, p.sectionShadow, p.stripe, p.well,
-                                              p.button, p.tab, p.tabOpen };
+                                              p.button, p.tab, p.tabOpen, p.cells, p.foeCells };
+}
+
+void pd_cell(struct pd_canvas* c, int x, int y, int w, int h, uint32_t line, uint32_t fill) {
+    pd_fill(c, x, y, w, h, line);
+    pd_fill(c, x + 1, y + 1, w - 2, h - 2, fill);
 }
 
 void pd_key(struct pd_canvas* c, int x, int y, int w, int h, const struct pd_key* k) {

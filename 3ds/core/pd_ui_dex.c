@@ -702,10 +702,11 @@ static void entry_view(struct pd_ui* ui, struct pd_canvas* c, const struct pd_ga
         for (int i = 0; i < 4; i++) {
             int cx = ix + i * (cw + 2);
             // The tab bar's chips (two-tone), the open section white.
-            pd_layered_two_tone(c, cx, dy, cw, 18, 3, pd_cur->chip, pd_cur->chipCount,
-                                i == ui->dexSection ? pd_cur->tabSelectedFill : pd_cur->tabIdleFill, 0);
+            const bool on = i == ui->dexSection;
+            pd_chip_face(c, cx, dy, cw, 18, on);
             pd_text(c, cx + (cw - pd_text_width(pd_tr(SECTIONS[i]))) / 2, pd_text_y(dy, 18), pd_tr(SECTIONS[i]),
-                    i == ui->dexSection ? PD_VALUE : PD_LABEL, i == ui->dexSection ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
+                    pd_style ? pd_chip_text(on) : on ? PD_VALUE : PD_LABEL,
+                    pd_style ? pd_chip_shadow(on) : on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
             ui_add_hit(ui, cx, dy, cw, 18, HIT_DEX_SECTION + i);
         }
         dy += 20;

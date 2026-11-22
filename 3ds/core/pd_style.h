@@ -90,12 +90,20 @@ struct pd_key {
     uint32_t outline, face, low, depth, text, shadow, shine; // shine PD_NO_SHADOW = none
     bool pressed;                                            // the open tab: it sits down on its edge
 };
+// A block of connected cells (CellColors: HG's stats and moves, Black's move plates): ruled in [line], rows in [a] and
+// [b] by turn, a heading cell in [head] with [headText] on [headShadow].
+struct pd_cells {
+    uint32_t line, a, b, head, headText, headShadow;
+};
 struct pd_style_colors {
     uint32_t headerFill, headerText, headerShadow; // the header band over a list (OptionTitleWindow: headerFill / Layers)
     struct pd_layer header[2];
     uint32_t sectionFill, sectionText, sectionShadow, stripe, well;
     struct pd_key button, tab, tabOpen;
+    struct pd_cells cells, foeCells; // your side's and the foe's (battle INFO, SUGGESTIONS)
 };
+// A cell: [fill] inside a 1-pixel [line]. Cells that share an edge overlap by a pixel, so it's drawn once.
+void pd_cell(struct pd_canvas* c, int x, int y, int w, int h, uint32_t line, uint32_t fill);
 extern const struct pd_style_colors* pd_style; // NULL = the OPTION look
 void pd_style_enable(bool on);
 // A key filling the box (the app's drawKey): its outline, the depth edge along the bottom, the two-tone face, the shine.

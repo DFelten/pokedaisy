@@ -37,15 +37,17 @@ const int hudButtonIds[]={RETRO_DEVICE_ID_JOYPAD_X,RETRO_DEVICE_ID_JOYPAD_Y,RETR
 const char* const speedNames[]={"SLOW","NORMAL","FAST"};
 const char* const hudSizeNames[]={ "SMALL", "NORMAL", "LARGE" };
 const char* const resetNames[]={"CANCEL","RESET"};
-const char* const labels[]={"DS LAYOUT","AUTO BATTLES","HUD","COMPANION BUTTON","SCREEN BUTTON","STYLUS SPEED","QUICK MENU","RESET SETTINGS","BATTLE STRIP","MINIMAL HUD","POKé BALLS","REPEL STEPS","MINIMAP","DARK MODE","AUTO-RUN","TAB BAR","MORE TABS","HUD CURSOR BUTTON","HUD SIZE","ASPECT","ZOOM","AUTO ZOOM IN"};
+const char* const fontNames[]={"PIXEL SMALL","PIXEL"}; // FONT TYPE: the app's default first
+const char* const labels[]={"DS LAYOUT","AUTO BATTLES","HUD","COMPANION BUTTON","SCREEN BUTTON","STYLUS SPEED","QUICK MENU","RESET SETTINGS","BATTLE STRIP","MINIMAL HUD","POKé BALLS","REPEL STEPS","MINIMAP","DARK MODE","AUTO-RUN","TAB BAR","MORE TABS","HUD CURSOR BUTTON","HUD SIZE","ASPECT","ZOOM","AUTO ZOOM IN","FONT TYPE"};
 const char* const* choices(int row){
   if(row==DsCompanionUi::Zoom)return zoomNames;
   if(row==DsCompanionUi::Aspect||row==DsCompanionUi::AutoZoom)return onOffNames;
   if(row==DsCompanionUi::HudSize)return hudSizeNames;
+  if(row==DsCompanionUi::FontType)return fontNames;
   return row==DsCompanionUi::Layout?layoutNames:row==DsCompanionUi::PenSpeed?speedNames:
     row==DsCompanionUi::Reset?resetNames:row==DsCompanionUi::HudButton?hudButtonNames:buttonNames;
 }
-int count(int row){return row==DsCompanionUi::Zoom?4:row==DsCompanionUi::Aspect||row==DsCompanionUi::AutoZoom?2:row==DsCompanionUi::HudSize?PD_HUD_SIZES:row==DsCompanionUi::Layout?DS_LAYOUTS:row==DsCompanionUi::CompanionButton?4:
+int count(int row){return row==DsCompanionUi::FontType?2:row==DsCompanionUi::Zoom?4:row==DsCompanionUi::Aspect||row==DsCompanionUi::AutoZoom?2:row==DsCompanionUi::HudSize?PD_HUD_SIZES:row==DsCompanionUi::Layout?DS_LAYOUTS:row==DsCompanionUi::CompanionButton?4:
  row==DsCompanionUi::ScreenButton||row==DsCompanionUi::HudButton?5:row==DsCompanionUi::PenSpeed?3:2;}
 }
 void DsCompanionUi::defaults(){
@@ -152,6 +154,7 @@ int DsCompanionUi::value(int row)const{
   if(row==HudButton)return settings.hudBtn;
   if(row==HudSize)return settings.hudSize;
   if(row==DarkMode)return darkMode;
+  if(row==FontType)return settings.fontPixel?1:0;
   if(row==AutoRun)return autoRun;
   if(row==HudMinimal)return hudMinimal;
   if(row==HudMap)return !(settings.hudHidden&(1<<PD_HUD_MAP));
@@ -188,6 +191,7 @@ void DsCompanionUi::apply(int row,int v){
   else if(row==HudMinimal)hudMinimal=v;
   else if(row==HudSize)settings.hudSize=v;
   else if(row==DarkMode)darkMode=v;
+  else if(row==FontType)settings.fontPixel=v!=0;
   else if(row==AutoRun){
     if(game==DsGame::Unsupported){error="Auto-Run unavailable for this ROM";return;}
     autoRun=v;
@@ -218,7 +222,7 @@ void DsCompanionUi::build_order(){
     if(settings.aspect != PD_ASPECT_ORIGINAL){order.push_back(Zoom);order.push_back(AutoZoom);}
   }
   order.push_back(Layout);order.push_back(Hud);order.push_back(HudMinimal);fronts("SCREEN");
-  order.push_back(CompanionButton);order.push_back(DarkMode);end();
+  order.push_back(CompanionButton);order.push_back(DarkMode);order.push_back(FontType);end();
   begin(3);order.push_back(Battles);order.push_back(BattleStrip);order.push_back(TabBar);order.push_back(MoreTabs);
   fronts("COMPANION");end();
   begin(4);fronts("CONTROLS");order.push_back(QuickStyle);order.push_back(HudButton);order.push_back(ScreenButton);
@@ -247,7 +251,8 @@ void DsCompanionUi::draw_settings(pd_canvas* c){
   const char* values[]={layoutNames[layout],autoBattles?"ON":"OFF",settings.hud?"ON":"OFF",
     buttonNames[companionButton],buttonNames[screenButton],speedNames[penSpeed],settings.quickGrid?"GRID":"RING","...",battleStrip?"ON":"OFF",hudMinimal?"ON":"OFF",value(HudBalls)?"ON":"OFF",value(HudRepel)?"ON":"OFF",value(HudMap)?"ON":"OFF",darkMode?"ON":"OFF",game==DsGame::Unsupported?"N/A":autoRun?"ON":"OFF",game==DsGame::Unsupported?"N/A":"EDIT",
     (settings.tabBar & dsTabs)==dsTabs?"NONE HIDDEN":"OPEN",hudButtonNames[settings.hudBtn],hudSizeNames[value(HudSize)],
-    settings.aspect==PD_ASPECT_ORIGINAL?"ORIGINAL":"EXPAND",zoomNames[std::clamp(settings.zoom,0,3)],settings.autoZoom?"ON":"OFF"};
+    settings.aspect==PD_ASPECT_ORIGINAL?"ORIGINAL":"EXPAND",zoomNames[std::clamp(settings.zoom,0,3)],settings.autoZoom?"ON":"OFF",
+    fontNames[settings.fontPixel?1:0]};
   constexpr int infoCount=3;
   pd_option_row rows[Rows+FrontMax+8+infoCount]={{"PLACE",s.valid?ds_place(s.map,s.game):"-"},
     {"MONEY",money},{"HOST","PokeDaisy core"}};
@@ -347,7 +352,10 @@ void DsCompanionUi::update_battle(){
 void DsCompanionUi::draw(pd_canvas* c,const DsCompanion& s,bool match,const DsMapArt& map,const std::vector<std::vector<uint32_t>>& monIcons){
   snapshot=&s;art=&map;icons=&monIcons;supported=match;hits.clear();
   settings.darkMode=darkMode;
+  // The app's RETRO look and FONT TYPE, as the GB / GBA cores draw their companion.
+  pd_style_enable(true);
   pd_look_apply(nullptr,&settings);
+  pd_font_size_set(!settings.fontPixel);
   battleSource={
     this,
     [](void* ctx,int id){return ds_species(id,static_cast<DsCompanionUi*>(ctx)->game);},
@@ -396,6 +404,7 @@ void DsCompanionUi::draw(pd_canvas* c,const DsCompanion& s,bool match,const DsMa
     pd_fill(c,4,c->h-41,c->w-8,16,0x602020);
     pd_text_fit(c,8,c->h-43,c->w-16,error.c_str(),0xffffff,PD_NO_SHADOW);
   }
+  pd_font_size_set(0);
   pd_look_apply(nullptr,nullptr);
 }
 // The party grid (two columns, row by row) as Android's focus moves over it, the GB core's focus search in cell units:
