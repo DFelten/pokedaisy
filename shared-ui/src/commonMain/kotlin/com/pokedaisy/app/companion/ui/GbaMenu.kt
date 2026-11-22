@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -822,6 +823,8 @@ fun OptionButton(
     /** RAINBOW may colour it; false keeps the usual look (STATES' buttons). */
     rainbow: Boolean = true,
     labelBadge: String? = null,
+    /** GBA pixels the label sits higher than centred: "+1" / "-1", whose signs sit low, on a short button (SHINY HUNT's). */
+    labelLift: Int = 0,
 ) {
     val u = m.u
     val interaction = remember { MutableInteractionSource() }
@@ -901,7 +904,8 @@ fun OptionButton(
             ShadowedPixelIcon(pixelIcon, pixelIconColor ?: fg, shadow, m, cell = cell)
         }
         if ((icon != null || pixelIcon != null) && label != null) Spacer(Modifier.width(u * 4))
-        if (label != null) GbaText(tr(label), fg, shadow, m, bold = gameBoldLabels())
+        if (label != null) GbaText(tr(label), fg, shadow, m, bold = gameBoldLabels(),
+            modifier = if (labelLift != 0) Modifier.offset(y = -u * labelLift) else Modifier)
         labelBadge?.let {
             OptionBadge(it, m, Modifier.padding(start = u * 4), fill = OptionColors.newBadge)
         }

@@ -226,9 +226,9 @@ private fun HuntDashboard(
                             }
                             Column(Modifier.width(m.rowHeight * 2.4f), verticalArrangement = Arrangement.spacedBy(u * 3)) {
                                 // Where the D-pad starts: +1 is what a counter is pressed for.
-                                OptionButton("+1", m, onClick = { ShinyHunts.add(1) }, emphasis = true,
+                                OptionButton("+1", m, onClick = { ShinyHunts.add(1) }, emphasis = true, labelLift = 2,
                                     modifier = Modifier.fillMaxWidth().height(buttonH).focusStart(true))
-                                OptionButton("-1", m, onClick = { ShinyHunts.add(-1) }, enabled = hunt.count > 0,
+                                OptionButton("-1", m, onClick = { ShinyHunts.add(-1) }, enabled = hunt.count > 0, labelLift = 2,
                                     modifier = Modifier.fillMaxWidth().height(m.rowHeight * 1.05f))
                             }
                         }
