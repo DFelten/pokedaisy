@@ -255,6 +255,29 @@ open class CompanionScreenshotTest {
     /** NUZLOCKE on a full tab bar: the chip's label narrows to fit. */
     @Test fun nuzlockeOnBar() = nuzlockeShot("NUZLOCKE", listOf("PARTY", "DEX", "MAP", "ITEMS", "NUZLOCKE"))
 
+    /** SHINY HUNT (its flag on): a RESETS hunt for EMBERPUP's species (4), drawn in its shiny colours from the ROM. */
+    @Test fun hunt() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, method = com.pokedaisy.app.companion.data.HuntMethod.RESETS,
+        target = 4, targetName = "EMBERPUP", count = 4321, playMillis = 11_820_000))
+
+    /** An ENCOUNTERS hunt with a phase on the way (no reset buttons, a PHASES cell). */
+    @Test fun huntEncounters() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, target = 16, targetName = "SKYLARK", count = 12_480,
+        playMillis = 30_120_000, phases = listOf(com.pokedaisy.app.companion.data.HuntShiny(19, "NIBBLER", 2875, 2))))
+
+    private fun huntShot(h: com.pokedaisy.app.companion.data.Hunt) {
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = true
+        // Loaded before the shot (the tab loads it off the main thread).
+        PokedexSource.reader?.let { PokedexSource.huntSprite(modernDex.tables, h.target) }
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog(listOf(h)))
+        try {
+            snapshot {
+                CompanionScreen(SampleCompanion.snapshot.copy(pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "HUNT")
+            }
+        } finally {
+            com.pokedaisy.app.companion.ShinyHunts.close(game)
+            com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = false
+        }
+    }
+
     private fun nuzlockeShot(tab: String, barTabs: List<String> = com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS) {
         val party = SampleCompanion.snapshot.party.mapIndexed { i, m -> m.copy(personality = i + 1L, heldItemId = if (i == 1) 200 else 0) }
         val preview = com.pokedaisy.app.companion.Nuzlocke.preview(

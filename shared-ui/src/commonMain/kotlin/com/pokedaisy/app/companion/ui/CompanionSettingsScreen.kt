@@ -251,6 +251,7 @@ fun CompanionSettingsScreen(
                             companionTabLabel(id), if (shown) tk("SHOWN") else tk("HIDDEN"),
                             labelBadge = when (id) {
                                 "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB)
+                                "HUNT" -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
                                 "STATES" -> settings.statesBadge
                                 "CARD" -> if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL) NewFeatures.badge(NewFeatures.CRYSTAL_CARD) else null
                                 else -> null

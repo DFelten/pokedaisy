@@ -307,6 +307,23 @@ class FieldHudScreenshotTest {
     /** Its last steps: gold, the bar red (DOCK's bar, no window of its own). */
     @Test fun repelStepsLow() = shot(FieldHudStyle(FieldHudLayout.DOCK), pc = true, snap = snapshot.copy(progress = repelProgress(14)))
 
+    /** SHINY HUNT's count beside the REPEL's steps (its flag on, a hunt going). */
+    private fun hunting(block: () -> Unit) {
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = true
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog(listOf(
+            com.pokedaisy.app.companion.data.Hunt(id = 1, target = 16, targetName = "SKYLARK", count = 4321))))
+        try { block() } finally {
+            com.pokedaisy.app.companion.ShinyHunts.close(game)
+            com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = false
+        }
+    }
+
+    @Test fun huntCount() = hunting { shot(FieldHudStyle(), pc = true, snap = snapshot.copy(progress = repelProgress(187))) }
+
+    @Test fun huntCountRails() = hunting { shot(FieldHudStyle(FieldHudLayout.RAILS), pc = true) }
+
+    @Test fun huntCountDock() = hunting { shot(FieldHudStyle(FieldHudLayout.DOCK), pc = true) }
+
     @Test fun pcButtonCorners2() = shot(FieldHudStyle(FieldHudLayout.CORNERS_2), pc = true)
 
     @Test fun pcButtonRails() = shot(FieldHudStyle(FieldHudLayout.RAILS), companion = true, pc = true)

@@ -330,6 +330,8 @@ fun CompanionScreen(
                 "ACHIEVEMENTS" -> achievements != null
                 // Always there for a game the tracker follows (under MORE); while it's off the tab says so and turns it on.
                 "NUZLOCKE" -> com.pokedaisy.app.companion.Nuzlocke.supports(game)
+                // SHINY HUNT: under MORE in every game with shinies, on the bar by itself while a hunt goes.
+                "HUNT" -> com.pokedaisy.app.companion.ShinyHunts.supports(game)
                 else -> true
             }
         }
@@ -342,7 +344,9 @@ fun CompanionScreen(
         // The chosen tabs this game has, then - while there's room - its others: a game without a DEX or GUIDE still
         // fills the bar. In the tabs' own order.
         // NUZLOCKE switched off isn't a filler: it waits under MORE unless the player put it on the bar.
-        val fillers = available.filter { it != "NUZLOCKE" || com.pokedaisy.app.companion.Nuzlocke.on }
+        val fillers = available.filter {
+            (it != "NUZLOCKE" || com.pokedaisy.app.companion.Nuzlocke.on) && (it != "HUNT" || com.pokedaisy.app.companion.ShinyHunts.active != null)
+        }
         val picked = available.filter { it in chosenTabs }.take(room).let { c -> c + fillers.filter { it !in c }.take(room - c.size) }
         val bar = available.filter { it in picked }
         // The rest open from MORE, left of the gear (still tabs, just without a chip); no MORE chip with none.
@@ -866,6 +870,8 @@ fun CompanionScreen(
                                 onConfigure = { settingsUi.page = Page.TABS; openTab("SETTINGS") },
                                 usable = { !snapshot.unsupported || snapshot.blocked != null || it == "ACHIEVEMENTS" },
                             )
+                        } else if (tab == "HUNT") {
+                            HuntScreen(snapshot, slots, restart = settings?.let { s -> { s.restartGame() } })
                         } else if (tab == "NUZLOCKE") {
                             NuzlockeScreen(snapshot.regionMapSectionId, snapshot.location.mapSecName)
                         } else if (tab == "ACHIEVEMENTS") {
@@ -1099,6 +1105,7 @@ internal fun companionTabLabel(id: String): String = when (id) {
     "MAP" -> tr("MAP")
     "GUIDE" -> tr("GUIDE")
     "NUZLOCKE" -> tr("NUZLOCKE")
+    "HUNT" -> tr("HUNT")
     "CARD" -> tr("CARD")
     "BOXES" -> tr("BOXES")
     "STATES" -> tr("STATES")

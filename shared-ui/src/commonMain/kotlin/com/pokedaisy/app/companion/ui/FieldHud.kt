@@ -141,6 +141,33 @@ data class HudWild(
     val caught: Boolean,
 )
 
+/** The player's map's wild Pokémon ([hudWild]), read off the UI thread; null = no tables for this game. The HUD's WILD and
+ * SHINY HUNT's target pick. */
+@Composable
+internal fun rememberWildHere(snapshot: SnapshotView): List<HudWild>? {
+    val live = snapshot.guideTables
+    val wildSet = live?.wildSetOf(snapshot.mapGroup, snapshot.mapNum, snapshot.progress) ?: 0
+    val read by produceState(
+        live?.let { GuideRomSource.cachedEncounters(it, snapshot.mapGroup, snapshot.mapNum, wildSet) },
+        live, snapshot.mapGroup, snapshot.mapNum, wildSet,
+    ) {
+        if (live != null) value = withContext(Dispatchers.IO) {
+            snapshot.pokedex?.let { PokedexSource.nationalOf(it.tables, 1) } // warm the species -> dex number map
+            GuideRomSource.encounters(live, snapshot.mapGroup, snapshot.mapNum, wildSet)
+        }
+    }
+    // A game whose guide has its own tables (a DS game, Polished Crystal): GUIDE > HERE's world, for the save and clock.
+    val world = if (live == null) remember(snapshot.game) { gameGuide(guideId(snapshot.game, null))?.world } else null
+    val worldHere = remember(world, snapshot.mapGroup, snapshot.mapNum, snapshot.progress) {
+        world?.encounters(snapshot.mapGroup, snapshot.mapNum, snapshot.progress)
+    }
+    return when {
+        live != null -> remember(read, snapshot.pokedex) { hudWild(read, snapshot.pokedex) }
+        world != null -> remember(worldHere, snapshot.pokedex) { hudWild(worldHere, snapshot.pokedex) }
+        else -> null
+    }
+}
+
 /** [enc]'s slots merged per species and method, most common first; seen / caught from [dex] (null = all seen). */
 fun hudWild(enc: MapEncounters?, dex: PokedexState?): List<HudWild> {
     if (enc == null) return emptyList()
@@ -201,11 +228,12 @@ fun fieldHudRows(
             setStyle(style.copy(size = style.size.next()))
         },
         groupTitle(tk("SHOW")),
-    ) + FieldHudPart.entries.map { p ->
+    ) + FieldHudPart.entries.filter { it != FieldHudPart.HUNT || com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt }.map { p ->
         SettingRow(p.label, onOff(style.shows(p)), enabled = on, labelBadge = when (p) {
             FieldHudPart.PC -> NewFeatures.badge(NewFeatures.HUD_PC)
             FieldHudPart.REPEL -> NewFeatures.badge(NewFeatures.HUD_REPEL)
             FieldHudPart.MOVE_ADVICE -> NewFeatures.badge(NewFeatures.HUD_MOVE_ADVICE)
+            FieldHudPart.HUNT -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
             else -> null
         }, labelIcon = hudPartIcon(p), iconPixels = ROW_ICON_PIXELS) {
             setStyle(style.copy(hidden = if (style.shows(p)) style.hidden + p else style.hidden - p))
@@ -229,6 +257,7 @@ private fun hudPartIcon(part: FieldHudPart): @Composable () -> Unit = {
         FieldHudPart.BAG -> PixelArt(BAG_ICON, BAG_COLORS, fill)
         FieldHudPart.WILD -> PixelArt(GRASS_ICON, GRASS_COLORS, fill)
         FieldHudPart.MOVE_ADVICE -> TabIcons.forTab("PARTY")?.let { PixelArt(it.bitmap, it.palette, fill) }
+        FieldHudPart.HUNT -> PixelArt(TabIcons.sparkles.bitmap, TabIcons.sparkles.palette, fill)
     }
 }
 
@@ -582,27 +611,8 @@ fun FieldHud(
     if (alpha == 0f && !shown) return
 
     // This map's wild Pokémon, read off the UI thread (null: no ROM tables for this game, so no WILD button).
-    val live = snapshot.guideTables
-    val wildSet = live?.wildSetOf(snapshot.mapGroup, snapshot.mapNum, snapshot.progress) ?: 0
-    val read by produceState(
-        live?.let { GuideRomSource.cachedEncounters(it, snapshot.mapGroup, snapshot.mapNum, wildSet) },
-        live, snapshot.mapGroup, snapshot.mapNum, wildSet,
-    ) {
-        if (live != null) value = withContext(Dispatchers.IO) {
-            snapshot.pokedex?.let { PokedexSource.nationalOf(it.tables, 1) } // warm the species -> dex number map
-            GuideRomSource.encounters(live, snapshot.mapGroup, snapshot.mapNum, wildSet)
-        }
-    }
-    // A game whose guide has its own tables (a DS game, Polished Crystal): GUIDE > HERE's world, for the save and clock.
-    val world = if (live == null) remember(snapshot.game) { gameGuide(guideId(snapshot.game, null))?.world } else null
-    val worldHere = remember(world, snapshot.mapGroup, snapshot.mapNum, snapshot.progress) {
-        world?.encounters(snapshot.mapGroup, snapshot.mapNum, snapshot.progress)
-    }
-    val wildHere = wild ?: when {
-        live != null -> remember(read, snapshot.pokedex) { hudWild(read, snapshot.pokedex) }
-        world != null -> remember(worldHere, snapshot.pokedex) { hudWild(worldHere, snapshot.pokedex) }
-        else -> null
-    }
+    val here = rememberWildHere(snapshot)
+    val wildHere = wild ?: here
 
     // SIZE: a density whose GBA pixel (rememberGbaTextMetrics' 20dp / 16) is exactly the wanted whole screen pixels.
     val base = LocalDensity.current
@@ -885,7 +895,7 @@ private fun CustomHudLayout(p: HudParts, places: Map<com.pokedaisy.app.companion
             block(com.pokedaisy.app.companion.HudBlock.PARTY) { PartyRow(p, Modifier) }
             block(com.pokedaisy.app.companion.HudBlock.BALLS) {
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(u * 4)) {
-                    RepelSteps(p)
+                    HudStatus(p)
                     if (p.ballsRow) HudBalls(p, vertical = false)
                 }
             }
@@ -926,9 +936,9 @@ private fun CornersLayout(p: HudParts, swapped: Boolean, obstacles: List<Rect> =
                 // The buttons toward the screen's edge: under the balls at the bottom, over them at the top.
                 // The REPEL's steps on the far side of the balls from the buttons.
                 if (swapped) HudButtons(p, vertical = false)
-                if (!swapped) RepelSteps(p)
+                if (!swapped) HudStatus(p)
                 if (p.ballsRow) HudBalls(p, vertical = false)
-                if (swapped) RepelSteps(p)
+                if (swapped) HudStatus(p)
                 if (!swapped) HudButtons(p, vertical = false)
             }
         },
@@ -1065,7 +1075,7 @@ private fun PartyRow(p: HudParts, modifier: Modifier) {
 @Composable
 private fun BallsAndButtons(p: HudParts, modifier: Modifier = Modifier, alignment: Alignment.Horizontal = Alignment.End, mapButton: Boolean = false) {
     Column(modifier, horizontalAlignment = alignment, verticalArrangement = Arrangement.spacedBy(p.m.u * 4)) {
-        RepelSteps(p)
+        HudStatus(p)
         if (p.ballsRow) HudBalls(p, vertical = false)
         HudButtons(p, vertical = false, mapButton = mapButton)
     }
@@ -1121,7 +1131,7 @@ private fun RailsLayout(p: HudParts, left: Dp, right: Dp) {
             val inner = (side / u).toInt() - 4 - 8
             if (p.map) HudMiniMap(p.snapshot, mapW = inner, mapH = inner, m = p.m, nameLines = 2) { p.open(FieldHudPanel.MAP, 0) }
             Spacer(Modifier.weight(1f))
-            RepelSteps(p, narrow = true)
+            HudStatus(p, narrow = true)
             if (p.ballsRow) HudBalls(p, vertical = true)
             HudButtons(p, vertical = true)
         }
@@ -1164,12 +1174,13 @@ private fun DockBar(p: HudParts, party: Boolean, modifier: Modifier) {
             if (mons.isNotEmpty()) DockDivider(p.m)
             HudBallsInline(p)
         }
-        if (p.repel > 0) {
+        val status = p.repel > 0 || huntShown(p)
+        if (status) {
             if (mons.isNotEmpty() || p.ballsRow) DockDivider(p.m)
-            RepelSteps(p, framed = false)
+            HudStatus(p, framed = false)
         }
         if (buttons) {
-            if (mons.isNotEmpty() || p.ballsRow || p.repel > 0) DockDivider(p.m)
+            if (mons.isNotEmpty() || p.ballsRow || status) DockDivider(p.m)
             HudButtons(p, vertical = false, framed = false)
         }
     }
@@ -1406,6 +1417,49 @@ private fun RepelSteps(p: HudParts, framed: Boolean = true, narrow: Boolean = fa
         }
     }
 }
+
+/** The windows by the balls: REPEL's steps, SHINY HUNT's count. Each draws nothing when it has nothing to say. */
+@Composable
+private fun HudStatus(p: HudParts, framed: Boolean = true, narrow: Boolean = false) {
+    RepelSteps(p, framed, narrow)
+    HuntCount(p, framed, narrow)
+}
+
+/**
+ * SHINY HUNT's count while a hunt goes (its flag on, HUNT shown): the target's icon (sparkles for any shiny) and the count,
+ * the chance of a shiny by now under it. A tap counts one on a BY HAND hunt, else opens the companion.
+ */
+@Composable
+private fun HuntCount(p: HudParts, framed: Boolean = true, narrow: Boolean = false) {
+    if (!huntShown(p)) return
+    val hunt = com.pokedaisy.app.companion.ShinyHunts.active ?: return
+    val u = p.m.u
+    val count = rememberGbaTextMetrics(1.25f)
+    val small = rememberGbaTextMetrics(0.75f)
+    val odds = if (hunt.odds > 0) hunt.odds else com.pokedaisy.app.companion.ShinyHunts.gameOdds
+    val byHand = hunt.method == com.pokedaisy.app.companion.data.HuntMethod.BY_HAND
+    Row(
+        (if (framed) Modifier.hudPanel(u) else Modifier)
+            .soundClickable { if (byHand) com.pokedaisy.app.companion.ShinyHunts.add(1) else p.companion?.invoke() }
+            .padding(start = if (framed) u * 2 else 0.dp, end = if (framed) u * 5 else 0.dp, top = if (framed) u * 3 else 0.dp, bottom = if (framed) u * 3 else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(u * if (narrow) 2 else 3),
+    ) {
+        val size = hudItemSize(p.m) * if (narrow) 1f else 1.25f
+        if (hunt.target != 0) SpeciesIcon(huntIcon(hunt.target), size, Modifier.size(size))
+        else PixelArt(TabIcons.sparkles.bitmap, TabIcons.sparkles.palette, Modifier.size(size))
+        Column(verticalArrangement = Arrangement.spacedBy(u)) {
+            GbaText(com.pokedaisy.app.companion.i18n.groupedNumber(hunt.count), ink.text, ink.shadow, count)
+            if (!narrow) {
+                val chance = com.pokedaisy.app.companion.data.HuntOdds.chanceBy(hunt.count, odds)
+                GbaText(tr("{0}% BY NOW", (chance * 100).toInt().coerceAtMost(99)), ink.muted, ink.shadow, small)
+            }
+        }
+    }
+}
+
+private fun huntShown(p: HudParts) = com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt && p.style.shows(FieldHudPart.HUNT) &&
+    com.pokedaisy.app.companion.ShinyHunts.active != null
 
 /** The plain REPEL's icon for the counter (the game doesn't keep which kind is working). */
 private const val REPEL_ICON_ITEM = 86

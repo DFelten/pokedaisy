@@ -112,6 +112,7 @@ class GameRuntime(
     ) {
         if (closed.value) return
         restoreProgress()
+        huntGame?.let(ShinyHunts::stateLoaded)
         if (!retryAlreadyReset) battleRetry.reset()
         settleAppearance()
         reinstallStoryLock()
@@ -166,6 +167,8 @@ class GameRuntime(
 
     val battleRetry = GameBattleRetry(prefs)
     @Volatile private var nuzlockeGame: Int? = null
+    /** SHINY HUNT's game ([ShinyHunts]), with its flag on. */
+    @Volatile private var huntGame: Int? = null
     val nuzlockeSupported get() = nuzlockeGame != null && telemetry.snapshot.value.let {
         !it.unsupported && Nuzlocke.supports(it.game)
     }
@@ -205,6 +208,7 @@ class GameRuntime(
     fun startSampling(gameBoy: Boolean, nds: Boolean = false, game: CoroutineDispatcher,
                       current: () -> Boolean, after: (SnapshotView) -> Unit = {}, periodMillis: Long? = null,
                       onShinyFound: (GameShinyAlert.Alert) -> Unit = {},
+                      onHuntShiny: (ShinyHunts.Found) -> Unit = {},
                       onNuzlockeNotices: (List<String>) -> Unit = {}) {
         if (closed.value) return
         check(sampler == null) { "Sampling is already configured for this game" }
@@ -213,7 +217,15 @@ class GameRuntime(
             current = { !closed.value && current() }, after = { snapshot ->
                 sampled()
                 battle.sampled()
-                shinyAlert.observe(snapshot, shinyAlertSupported(snapshot.game))?.let(onShinyFound)
+                val reads = shinyAlertSupported(snapshot.game)
+                if (huntGame != null) ShinyHunts.gameOdds = HuntOdds.forGame(shiny?.takeIf { it.active }?.odds)
+                // An active hunt has its own notice; SHINY ALERT's stays for the games without one going.
+                val hunted = huntGame?.let { ShinyHunts.onSample(it, snapshot, reads) }
+                hunted?.let(onHuntShiny)
+                shinyAlert.observe(snapshot, reads)?.let { alert ->
+                    if (huntGame != null) ShinyHunts.shinyShown(snapshot.inBattle)
+                    if (hunted == null && ShinyHunts.active == null) onShinyFound(alert)
+                }
                 after(snapshot)
                 val notices = observeNuzlocke(snapshot)
                 if (notices.isNotEmpty()) onNuzlockeNotices(notices)
@@ -229,6 +241,9 @@ class GameRuntime(
             (shiny?.supported == true || kind.isDsGame || kind.isGen2 && kind != GameKind.POLISHED_CRYSTAL)
 
     fun sample() { if (!closed.value) sampler?.request() }
+
+    /** LOAD STATE / RESTART wait while a shiny is on screen (SHINY HUNT's guard). */
+    fun loadHeldForShiny(): Boolean = huntGame != null && ShinyHunts.loadHeld()
 
     /** Stop producers before native host teardown; safe before or after sampling was configured. */
     fun quiesce() {
@@ -289,6 +304,8 @@ class GameRuntime(
         blocked = BlockedGames.forCrc(romKey) != null
         nuzlockeGame?.let(Nuzlocke::close)
         nuzlockeGame = if (!blocked) Nuzlocke.start(prefs, romKey) else null
+        huntGame?.let(ShinyHunts::close)
+        huntGame = if (!blocked && FlaggedFeatures.shinyHunt) ShinyHunts.start(prefs, romKey) else null
         if (gba && !blocked) battle.ball?.start(romPath, romKey)
         activeAreaMapCrc = if (gba && !blocked) areaMapCrc else 0L
         AreaMaps.romChanged()
@@ -401,6 +418,7 @@ class GameRuntime(
         release { battle.cancel() }
         battleRetry.reset()
         nuzlockeGame?.let(Nuzlocke::close)
+        huntGame?.let(ShinyHunts::close)
         release { autoRefill.reset(); session.close() }
         release {
             if (learnedCallback != null && FfMenuWatch.onLearned === learnedCallback) {

@@ -48,6 +48,7 @@ enum class ModernGlyph(val top: Color, val low: Color) {
     BOXES(Color(0xFF7AB0FF), Color(0xFF3B6CE0)),
     GUIDE(Color(0xFFA596FF), Color(0xFF5848DE)),
     NUZLOCKE(Color(0xFFA2AABB), Color(0xFF5E6676)),
+    HUNT(Color(0xFFFFE07A), Color(0xFFE8A010)),
     CARD(Color(0xFF5AD8EC), Color(0xFF169ABD)),
     STATES(Color(0xFFCB96F4), Color(0xFF8A48D6)),
     ACHIEVEMENTS(Color(0xFFFFD866), Color(0xFFE09C14)),
@@ -86,7 +87,7 @@ enum class ModernGlyph(val top: Color, val low: Color) {
         /** A companion tab's glyph (its id, `"ITEMS"`...), null for one without. */
         fun forTab(id: String): ModernGlyph? = when (id) {
             "PARTY" -> PARTY; "DEX" -> DEX; "MAP" -> MAP; "ITEMS" -> BAG; "BOXES" -> BOXES; "GUIDE" -> GUIDE
-            "NUZLOCKE" -> NUZLOCKE; "CARD" -> CARD; "STATES" -> STATES; "ACHIEVEMENTS" -> ACHIEVEMENTS
+            "NUZLOCKE" -> NUZLOCKE; "HUNT" -> HUNT; "CARD" -> CARD; "STATES" -> STATES; "ACHIEVEMENTS" -> ACHIEVEMENTS
             "BATTLE" -> BATTLE; "SETTINGS" -> SETTINGS; "MORE" -> MORE
             else -> null
         }
@@ -306,6 +307,11 @@ fun DrawScope.drawGlyph(glyph: ModernGlyph, c: Color) {
             path { m(7f, 6f); l(4f, 6f); q(4f, 10f, 7.5f, 11f) }
             path { m(17f, 6f); l(20f, 6f); q(20f, 10f, 16.5f, 11f) }
             line(12f, 14f, 12f, 18f); rrect(8f, 18f, 8f, 3f, 1f)
+        }
+        ModernGlyph.HUNT -> {
+            // Sparkles: a shiny's shine.
+            path(fill = true) { m(10f, 2f); q(10.8f, 8.2f, 17f, 9f); q(10.8f, 9.8f, 10f, 16f); q(9.2f, 9.8f, 3f, 9f); q(9.2f, 8.2f, 10f, 2f); close() }
+            path(fill = true) { m(18f, 13f); q(18.4f, 16.6f, 22f, 17f); q(18.4f, 17.4f, 18f, 21f); q(17.6f, 17.4f, 14f, 17f); q(17.6f, 16.6f, 18f, 13f); close() }
         }
         ModernGlyph.BATTLE -> {
             // A spark: a clash.

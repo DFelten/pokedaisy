@@ -361,6 +361,10 @@ class Prefs(
     fun nuzlockeRunFor(romKey: String): String? = p.getString("nuzlocke_run_$romKey", null)
     fun setNuzlockeRunFor(romKey: String, run: String) = p.edit().putString("nuzlocke_run_$romKey", run).apply()
 
+    /** SHINY HUNT's hunts per ROM (keyed by CRC32, [com.pokedaisy.app.companion.data.HuntLog.encode]). */
+    fun huntsFor(romKey: String): String? = p.getString("hunts_$romKey", null)
+    fun setHuntsFor(romKey: String, log: String) = p.edit().putString("hunts_$romKey", log).apply()
+
     /** On-screen controls: 0 = auto (only if no gamepad), 1 = always, 2 = never. */
     var touchControlsMode: Int
         get() = p.getInt("touch_controls", 0)
