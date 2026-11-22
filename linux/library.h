@@ -47,6 +47,12 @@ void library_open(char *const *paths, int count, const char *dataDir, const char
 void library_keys(unsigned down);
 /* A pointer press or wheel notch on the canvas library_draw gets: (x, y) canvas pixels, click = a left press, wheel > 0 = up. */
 void library_pointer(int x, int y, bool click, int wheel);
+/* SEARCH (the header's magnifier): while its field is open the host turns text input on (Steam's on-screen keyboard in
+ * Game Mode), gives it what's typed, and its Backspace / Enter (done, the list stays filtered) / Escape (cleared). */
+bool library_searching(void);
+void library_text(const char *utf8);
+enum { LIB_SEARCH_BACKSPACE, LIB_SEARCH_DONE, LIB_SEARCH_CANCEL };
+void library_search_key(int key);
 /* A right click at (x, y): the game under it is picked and its menu opens (the app's long press). */
 void library_menu_at(int x, int y);
 void library_tick(void);

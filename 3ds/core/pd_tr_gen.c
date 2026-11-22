@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[781] = {
+const struct pd_tr_entry pd_tr_table[782] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -561,6 +561,7 @@ const struct pd_tr_entry pd_tr_table[781] = {
     { "SCENIC", { "SCENIC", "PANORAMIQUE", "PANORAMA", "PANORAMICO", "PANORÁMICO", "PANORÂMICO", "PANORÂMICO" } },
     { "SCENIC flies over the map, CLASSIC is the game's.", { "SCENIC flies over the map, CLASSIC is the game's.", "PANORAMIQUE survole la carte, CLASSIQUE est celui du jeu.", "PANORAMA fliegt über die Karte, KLASSISCH ist der des Spiels.", "PANORAMICO sorvola la mappa, CLASSICO è quello del gioco.", "PANORÁMICO sobrevuela el mapa, CLÁSICO es el del juego.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo." } },
     { "SCREEN", { "SCREEN", "ÉCRAN", "BILDSCHIRM", "SCHERMO", "PANTALLA", "TELA", "ECRÃ" } },
+    { "SEARCH", { "SEARCH", "CHERCHER", "SUCHEN", "CERCA", "BUSCAR", "BUSCAR", "PESQUISAR" } },
     { "SECOND GAME", { "SECOND GAME", "SECOND JEU", "ZWEITES SPIEL", "SECONDO GIOCO", "SEGUNDO JUEGO", "SEGUNDO JOGO", "SEGUNDO JOGO" } },
     { "SEEN", { "SEEN", "VUS", "GESEHEN", "VISTI", "VISTOS", "VISTOS", "VISTOS" } },
     { "SEEN ", { "SEEN ", "VUS ", "GES. ", "VISTI ", "VISTOS ", "VISTOS ", "VISTOS " } },
@@ -785,4 +786,4 @@ const struct pd_tr_entry pd_tr_table[781] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 781;
+const int pd_tr_table_count = 782;

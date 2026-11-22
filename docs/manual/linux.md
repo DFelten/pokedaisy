@@ -235,6 +235,10 @@ and `HACKS`.
 | START, or START and SELECT together, or Menu / Guide | Closes PokeDaisy (it asks first). |
 
 With a mouse, a click plays a game, a right click opens its menu, and the wheel scrolls the list.
+
+The header's magnifier (or A on it) opens `SEARCH`: type and the list keeps only the games whose name has those
+letters. Enter or a click elsewhere leaves the field with the list still filtered, Escape clears it. On a Steam Deck in
+Game Mode, Steam's keyboard comes up to type with, and B closes the field.
 The game list speaks the language you pick in the companion's `SETTINGS` > `LANGUAGE`, as the companion does.
 
 The header's first button opens `SORT BY`: `NAME`, `LAST PLAYED` or `DATE ADDED`; favorites always come first. A game

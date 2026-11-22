@@ -472,6 +472,9 @@ static void script_rawkeys(void) {
 }
 static bool window_hotkey(const SDL_KeyboardEvent *k);
 static void window_follow(const SDL_WindowEvent *w);
+/* The game list's SEARCH field is open (library_searching): text input is on, and the keyboard types into it instead of
+ * pressing the game's buttons; its Backspace, Enter and Escape edit, finish and clear it. */
+static bool libraryText;
 static void events(void) {
   pressed = 0;
   lastKey = 0;
@@ -490,6 +493,19 @@ static void events(void) {
       controller_removed(e.cdevice.which);
     if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) && kbCapture < 0 && window_hotkey(&e.key))
       continue; // F11 / Alt+Enter: the window's, never the game's
+    if (libraryText) {
+      if (e.type == SDL_TEXTINPUT) {
+        library_text(e.text.text);
+        continue;
+      }
+      if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
+        const SDL_Keycode k = e.key.keysym.sym;
+        if (e.type == SDL_KEYDOWN)
+          library_search_key(k == SDLK_BACKSPACE ? LIB_SEARCH_BACKSPACE : k == SDLK_ESCAPE ? LIB_SEARCH_CANCEL
+                             : k == SDLK_RETURN || k == SDLK_KP_ENTER ? LIB_SEARCH_DONE : -1);
+        continue;
+      }
+    }
     if (e.type == SDL_KEYDOWN && kbCapture >= 0)
       lastKey = (int)e.key.keysym.sym; // the KEYBOARD page's next key: the game sees nothing of it
     else if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) && !e.key.repeat)
@@ -3007,7 +3023,23 @@ int main(int argc, char **argv) {
     library_open(paths, count, root, savesDir, &libraryHost);
     int ticks = 0;
     bool keyPage = false; // the KEYBOARD page over the game list
+    const char *typeAt = getenv("POCKET_TEXT"); // "TICK:text": typed into an open SEARCH field at that tick, for tests
     while (running && !library_quit()) {
+      if (library_searching() != libraryText) {
+        libraryText = library_searching();
+        if (libraryText)
+          SDL_StartTextInput(); // Steam's on-screen keyboard comes up in Game Mode
+        else
+          SDL_StopTextInput();
+      }
+      if (typeAt) {
+        unsigned at = 0;
+        const char *colon = strchr(typeAt, ':');
+        if (colon && sscanf(typeAt, "%u", &at) == 1 && tick >= at) {
+          library_text(colon + 1);
+          typeAt = NULL;
+        }
+      }
       events();
       repeat_directions();
       static const int LIB_KEYS[][2] = {{A, LIB_A},       {B, LIB_B},         {X, LIB_X},           {Y, LIB_Y},
@@ -3101,6 +3133,10 @@ int main(int argc, char **argv) {
       }
       const char *game = library_picked();
       if (game) {
+        if (libraryText) { // the game's keys are the keyboard's again
+          libraryText = false;
+          SDL_StopTextInput();
+        }
         char picked[PATH_MAX];
         snprintf(picked, sizeof picked, "%s", game);
         appError = 0;

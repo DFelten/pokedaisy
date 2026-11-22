@@ -82,6 +82,8 @@ static struct pd_settings settings;
 static int page = P_GAMES, focus = F_GAMES, view = V_ALL, sortBy = S_NAME, railCursor, headerCursor;
 static bool grid = true, quit, menuOpen, closeAsk;
 static bool infoOpen;   // a game's INFO window (its menu's INFO)
+static bool searchOpen; // SEARCH's field in the header takes the keyboard (or Steam's on-screen keyboard)
+static char query[64];  // what SEARCH filters the list by (kept after the field closes, until cleared)
 static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
 static bool addedStore; // the state file has dates already: a game seen now for the first time is new
 static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
@@ -96,7 +98,7 @@ static int contentY, contentH, contentX, contentW;
 
 /* What the last draw laid out under the pointer: the same rectangles it drew, so clicks need no second copy of the layout. */
 enum {
-  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE, LIB_HIT_SORT_PICK,
+  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE, LIB_HIT_SORT_PICK, LIB_HIT_SEARCH,
 };
 struct lib_hit {
   int x, y, w, h, action, arg;
@@ -968,6 +970,18 @@ static int compare(const void *a, const void *b) {
   return byTitle ? byTitle : strcasecmp(x->file, y->file);
 }
 
+/* [needle] in [hay], letters of either case alike (ASCII; MinGW has no strcasestr). */
+static bool contains(const char *hay, const char *needle) {
+  for (; *hay; hay++) {
+    size_t i = 0;
+    while (needle[i] && hay[i] && tolower((unsigned char)hay[i]) == tolower((unsigned char)needle[i]))
+      i++;
+    if (!needle[i])
+      return true;
+  }
+  return !*needle;
+}
+
 static void relist(void) {
   int keep = selected >= 0 && selected < shownCount ? shown[selected] : -1;
   for (int v = 0; v < V_COUNT; v++) {
@@ -979,7 +993,7 @@ static void relist(void) {
     view = V_ALL;
   shownCount = 0;
   for (int i = 0; i < gameCount; i++)
-    if (in_view(&games[i], view))
+    if (in_view(&games[i], view) && (!*query || contains(games[i].title, query) || contains(games[i].file, query)))
       shown[shownCount++] = i;
   if (view == V_RECENT) {
     int save = sortBy;
@@ -1309,6 +1323,13 @@ static void move_games(unsigned down) {
 void library_keys(unsigned down) {
   if (!down)
     return;
+  if (searchOpen) { // the controller while the field is open (Steam's keyboard types): A / B / START close it
+    if (down & (LIB_A | LIB_B | LIB_START | LIB_MENU)) {
+      searchOpen = false;
+      focus = F_GAMES;
+    }
+    return;
+  }
   if (closeAsk) {
     if (down & (LIB_LEFT | LIB_RIGHT | LIB_UP | LIB_DOWN))
       menuCursor ^= 1;
@@ -1414,7 +1435,7 @@ void library_keys(unsigned down) {
       else
         focus = F_RAIL, railCursor = P_GAMES;
     }
-    if ((down & LIB_RIGHT) && headerCursor < 1)
+    if ((down & LIB_RIGHT) && headerCursor < 2)
       headerCursor++;
     if (down & LIB_DOWN)
       focus = F_PILLS;
@@ -1423,7 +1444,9 @@ void library_keys(unsigned down) {
         sortOpen = true; // three orders: a pick-list (the app's), never a cycle
         menuCursor = sortBy;
         relist();
-      } else
+      } else if (headerCursor == 1)
+        searchOpen = true;
+      else
         grid = !grid;
       state_save();
     }
@@ -1623,19 +1646,38 @@ static void draw_header(struct pd_canvas *c, int x, int w, const char *title, bo
   pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), pd_tr(title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
   if (!buttons)
     return;
-  // SORT and GRID / LIST: the app's HeaderIcons, at the window's right end.
-  for (int i = 0; i < 2; i++) {
-    int bw = 26, bh = HEADER_H - 2 * f - 4, bx = x + w - f - 4 - (2 - i) * (bw + 4), by = M + f + 2;
+  // SEARCH's field, between the title and the buttons, while it's open or a search is on (the app's header search).
+  if (searchOpen || *query) {
+    const int fx = x + f + 32 + pd_text_width(pd_tr(title)) + 12, fr = x + w - f - 4 - 3 * 30 - 6;
+    if (fr - fx > 60) {
+      int lf = pd_list_box(c, fx, M + f + 2, fr - fx, HEADER_H - 2 * f - 4);
+      int tx = fx + lf + 4, tw = fr - fx - 2 * lf - 8, ty = pd_text_y(M + f + 2, HEADER_H - 2 * f - 4);
+      if (*query)
+        pd_text_fit(c, tx, ty, tw - 6, query, PD_LABEL, PD_LABEL_SHADOW);
+      else
+        pd_text_fit(c, tx, ty, tw - 6, pd_tr("SEARCH"), PD_MUTED, PD_MUTED_SHADOW);
+      if (searchOpen && (SDL_GetTicks() / 500) % 2 == 0) { // the caret
+        int cx = tx + (*query ? pd_text_width(query) + 1 : 0);
+        if (cx < tx + tw - 2)
+          pd_fill(c, cx, ty + 3, 2, 12, PD_LABEL);
+      }
+      hit_add(fx, M + f + 2, fr - fx, HEADER_H - 2 * f - 4, LIB_HIT_SEARCH, 0);
+    }
+  }
+  // SORT, SEARCH and GRID / LIST: the app's HeaderIcons, at the window's right end.
+  for (int i = 0; i < 3; i++) {
+    int bw = 26, bh = HEADER_H - 2 * f - 4, bx = x + w - f - 4 - (3 - i) * (bw + 4), by = M + f + 2;
     if (pd_style)
       pd_key(c, bx, by, bw, bh, &pd_style->button);
     else
       pd_layered_two_tone(c, bx, by, bw, bh, 3, pd_cur->chip, pd_cur->chipCount, pd_cur->tabIdleFill, 0);
-    const struct pd_mono *icon = i == 0 ? &SORT_ICON : grid ? &LIST_ICON : &GRID_ICON;
-    mono(c, icon, bx + (bw - icon->w * 2) / 2, by + (bh - icon->h * 2) / 2 - (pd_style ? 1 : 0), 2,
+    const struct pd_mono *icon = i == 0 ? &SORT_ICON : i == 1 ? &PD_ICON_SEARCH : grid ? &LIST_ICON : &GRID_ICON;
+    const int sc = icon->w > 10 ? 1 : 2; // the 16-pixel search glass at 1x, the 7-pixel icons at 2x
+    mono(c, icon, bx + (bw - icon->w * sc) / 2, by + (bh - icon->h * sc) / 2 - (pd_style ? 1 : 0), sc,
          pd_style ? pd_style->button.text : PD_LABEL);
     if (focus == F_HEADER && headerCursor == i)
       ring(c, bx, by, bw, bh);
-    hit_add(bx, by, bw, bh, i == 0 ? LIB_HIT_SORT : LIB_HIT_GRID, 0);
+    hit_add(bx, by, bw, bh, i == 0 ? LIB_HIT_SORT : i == 1 ? LIB_HIT_SEARCH : LIB_HIT_GRID, 0);
   }
 }
 
@@ -2113,6 +2155,37 @@ static void wheel_games(int dir) {
   focus = F_GAMES;
 }
 
+bool library_searching(void) { return searchOpen; }
+
+void library_text(const char *utf8) {
+  size_t n = strlen(query), add = strlen(utf8);
+  if (!searchOpen || n + add >= sizeof query)
+    return;
+  memcpy(query + n, utf8, add + 1);
+  relist();
+}
+
+void library_search_key(int key) {
+  if (!searchOpen || key < 0)
+    return;
+  if (key == LIB_SEARCH_BACKSPACE) {
+    size_t n = strlen(query);
+    while (n > 0 && (query[n - 1] & 0xC0) == 0x80) // a whole UTF-8 character
+      n--;
+    if (n > 0)
+      n--;
+    query[n] = 0;
+    relist();
+  } else {
+    searchOpen = false;
+    if (key == LIB_SEARCH_CANCEL) {
+      query[0] = 0;
+      relist();
+    }
+    focus = F_GAMES;
+  }
+}
+
 void library_menu_at(int x, int y) {
   if (menuOpen || closeAsk || sortOpen || infoOpen || page != P_GAMES)
     return;
@@ -2129,6 +2202,8 @@ void library_menu_at(int x, int y) {
 void library_pointer(int x, int y, bool click, int wheel) {
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
+  if (searchOpen && click && (!h || h->action != LIB_HIT_SEARCH))
+    searchOpen = false; // a click elsewhere leaves the field; what it found stays
 
   if (infoOpen) {
     if (click)
@@ -2182,6 +2257,10 @@ void library_pointer(int x, int y, bool click, int wheel) {
     } else if (h->action == LIB_HIT_GRID) {
       grid = !grid;
       state_save();
+      focus = F_HEADER;
+      headerCursor = 2;
+    } else if (h->action == LIB_HIT_SEARCH) {
+      searchOpen = true;
       focus = F_HEADER;
       headerCursor = 1;
     } else if (h->action == LIB_HIT_PILL) {
