@@ -379,3 +379,21 @@
 
 // --- the desktop host (Linux, Windows): its own SETTINGS rows ---
 "FULLSCREEN" to Tr(fr = "PLEIN ÉCRAN", de = "VOLLBILD", it = "SCHERMO INTERO", es = "PANTALLA COMPLETA", br = "TELA CHEIA", pt = "ECRÃ INTEIRO"),
+// --- the desktop game list (linux/library.c) ---
+"No games in this view yet." to Tr(fr = "Aucun jeu dans cette vue pour l'instant.", de = "Noch keine Spiele in dieser Ansicht.", it = "Ancora nessun gioco in questa vista.", es = "Aún no hay juegos en esta vista.", br = "Ainda não há jogos nesta visão.", pt = "Ainda não há jogos nesta vista."),
+"No Pokemon games found. Put them in roms/ beside PokeDaisy." to Tr(fr = "Aucun jeu Pokémon trouvé. Mettez-les dans roms/ à côté de PokeDaisy.", de = "Keine Pokémon-Spiele gefunden. Leg sie in roms/ neben PokeDaisy.", it = "Nessun gioco Pokémon trovato. Mettili in roms/ accanto a PokeDaisy.", es = "No se han encontrado juegos de Pokémon. Ponlos en roms/ junto a PokeDaisy.", br = "Nenhum jogo de Pokémon encontrado. Coloque-os em roms/ ao lado do PokeDaisy.", pt = "Nenhum jogo Pokémon encontrado. Coloca-os em roms/ ao lado do PokeDaisy."),
+"LCD FILTER" to Tr(fr = "FILTRE LCD", de = "LCD-FILTER", it = "FILTRO LCD", es = "FILTRO LCD", br = "FILTRO LCD", pt = "FILTRO LCD"),
+"A/B BUTTONS" to Tr(fr = "BOUTONS A/B", de = "A/B-TASTEN", it = "TASTI A/B", es = "BOTONES A/B", br = "BOTÕES A/B", pt = "BOTÕES A/B"),
+"KEYBOARD" to Tr(fr = "CLAVIER", de = "TASTATUR", it = "TASTIERA", es = "TECLADO", br = "TECLADO", pt = "TECLADO"),
+"BUTTON COLORS" to Tr(fr = "COULEURS DES BOUTONS", de = "TASTENFARBEN", it = "COLORI TASTI", es = "COLORES DE BOTONES", br = "CORES DOS BOTÕES", pt = "CORES DOS BOTÕES"),
+"SWAPPED" to Tr(fr = "INVERSÉS", de = "GETAUSCHT", it = "SCAMBIATI", es = "INVERTIDOS", br = "INVERTIDOS", pt = "TROCADOS"),
+"RED A" to Tr(fr = "A ROUGE", de = "ROTES A", it = "A ROSSO", es = "A ROJO", br = "A VERMELHO", pt = "A VERMELHO"),
+"GREEN A" to Tr(fr = "A VERT", de = "GRÜNES A", it = "A VERDE", es = "A VERDE", br = "A VERDE", pt = "A VERDE"),
+"Your party, PC boxes, money and bag." to Tr(fr = "Votre équipe, vos boîtes PC, votre argent et votre sac.", de = "Dein Team, PC-Boxen, Geld und Beutel.", it = "La tua squadra, i box del PC, i soldi e la borsa.", es = "Tu equipo, las cajas del PC, el dinero y la mochila.", br = "Sua equipe, caixas do PC, dinheiro e mochila.", pt = "A tua equipa, caixas do PC, dinheiro e mochila."),
+"Trade Pokemon between two of your saves." to Tr(fr = "Échangez des Pokémon entre deux de vos sauvegardes.", de = "Tausche Pokémon zwischen zwei deiner Spielstände.", it = "Scambia Pokémon tra due dei tuoi salvataggi.", es = "Intercambia Pokémon entre dos de tus partidas.", br = "Troque Pokémon entre dois dos seus saves.", pt = "Troca Pokémon entre dois dos teus jogos guardados."),
+"CHOOSE" to Tr(fr = "CHOISIR", de = "WÄHLEN", it = "SCEGLI", es = "ELEGIR", br = "ESCOLHER", pt = "ESCOLHER"),
+"CLOSE POKéDAISY?" to Tr(fr = "FERMER POKéDAISY ?", de = "POKéDAISY SCHLIESSEN?", it = "CHIUDERE POKéDAISY?", es = "¿CERRAR POKéDAISY?", br = "FECHAR O POKéDAISY?", pt = "FECHAR O POKéDAISY?"),
+"Sorted by name" to Tr(fr = "Trié par nom", de = "Nach Name sortiert", it = "Ordinati per nome", es = "Ordenados por nombre", br = "Ordenados por nome", pt = "Ordenados por nome"),
+"Sorted by last played" to Tr(fr = "Trié par dernière partie", de = "Nach zuletzt gespielt sortiert", it = "Ordinati per ultima partita", es = "Ordenados por última partida", br = "Ordenados por último jogado", pt = "Ordenados por último jogado"),
+"Sorted by date added" to Tr(fr = "Trié par date d'ajout", de = "Nach Hinzufügedatum sortiert", it = "Ordinati per data di aggiunta", es = "Ordenados por fecha de adición", br = "Ordenados por data de adição", pt = "Ordenados por data de adição"),
+"Coming to the Linux version soon" to Tr(fr = "Bientôt dans la version Linux", de = "Kommt bald in die Linux-Version", it = "In arrivo nella versione Linux", es = "Pronto en la versión de Linux", br = "Em breve na versão Linux", pt = "Em breve na versão Linux"),

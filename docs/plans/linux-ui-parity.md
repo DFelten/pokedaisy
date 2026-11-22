@@ -71,8 +71,7 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
 - [ ] **3. Settings**: `SETTINGS_GROUPS`' order, the QUALITY OF LIFE and BATTLE pages, sub-pages with chevrons,
       DESCRIPTIONS / GROUP TABS, NEW tags, search (a desktop has a keyboard), translations of the host's rows
 - [ ] **4. Library and tools** (done: the header band, SORT BY NAME / LAST PLAYED / DATE ADDED as a pick-list, the NEW
-      tag, a right click for a game's menu; to do: the game list's text isn't translated at all, no `pd_tr` in
-      `linux/library.c`): RECENTLY PLAYED, hidden games, INFO,
+      tag, a right click for a game's menu, the game list's text translated through `pd_tr` with LANGUAGE): RECENTLY PLAYED, hidden games, INFO,
       RENAME, cover picker, WHAT'S NEW, first-time setup, folders; TOOLS' SAVE EDITOR / TRADE / COLLECTION from the 3DS's
       C editor (`pd_library_saves.c`)
 - [ ] **5. Desktop and Deck behaviour**

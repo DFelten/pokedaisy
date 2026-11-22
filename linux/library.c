@@ -32,6 +32,7 @@
 #include "pd_settings.h"
 #include "pd_sha1.h"
 #include "pd_style.h"
+#include "pd_tr.h"
 
 /* The 3DS library's art (pd_library_draw.c): the rail's icons and the flower at 24 px. */
 extern const struct pd_art LIB_ICON_GAMES, LIB_ICON_EDIT, LIB_ICON_TRADE, LIB_ICON_SETTINGS;
@@ -1146,7 +1147,7 @@ void library_tick(void) {
 /* ---- input ---- */
 
 static void say(const char *text) {
-  snprintf(notice, sizeof notice, "%s", text);
+  snprintf(notice, sizeof notice, "%s", pd_tr(text));
   noticeUntil = SDL_GetTicks() + 2500;
 }
 
@@ -1572,8 +1573,8 @@ static void backdrop(struct pd_canvas *c) {
 static int rail_w(void) {
   int w = 0;
   for (int i = 0; i < P_COUNT; i++)
-    if (pd_text_width(PAGE_NAMES[i]) > w)
-      w = pd_text_width(PAGE_NAMES[i]);
+    if (pd_text_width(pd_tr(PAGE_NAMES[i])) > w)
+      w = pd_text_width(pd_tr(PAGE_NAMES[i]));
   return w + 24 < 72 ? 72 : w + 24;
 }
 
@@ -1589,8 +1590,9 @@ static void draw_rail(struct pd_canvas *c) {
     if (on)
       pd_round_rect(c, x, y, w, ih, 3, PD_TITLE_FILL);
     ui_art_at(c, art[i], x + (w - 32) / 2, y + 5, 2);
-    int tw = pd_text_width(PAGE_NAMES[i]);
-    pd_text(c, x + (w - tw) / 2, y + 36, PAGE_NAMES[i], on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
+    const char *name = pd_tr(PAGE_NAMES[i]);
+    int tw = pd_text_width(name);
+    pd_text(c, x + (w - tw) / 2, y + 36, name, on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
     if (focus == F_RAIL && railCursor == i)
       ring(c, x, y, w, ih);
     hit_add(x, y, w, ih, LIB_HIT_RAIL, i);
@@ -1610,7 +1612,7 @@ static void draw_header(struct pd_canvas *c, int x, int w, const char *title, bo
   } else
     f = pd_title_box(c, x, M, w, HEADER_H, PD_TITLE_FILL);
   lib_draw_logo_24(c, x + f + 3, M + (HEADER_H - 24) / 2);
-  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
+  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), pd_tr(title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
   if (!buttons)
     return;
   // SORT and GRID / LIST: the app's HeaderIcons, at the window's right end.
@@ -1632,7 +1634,7 @@ static void draw_header(struct pd_canvas *c, int x, int w, const char *title, bo
 static int pill_width(int v) {
   char count[16];
   snprintf(count, sizeof count, "%d", counts[v]);
-  return 16 + ((v == V_FAV || v == V_RECENT) ? 13 : 0) + pd_text_width(VIEW_NAMES[v]) + 5 + pd_text_width(count);
+  return 16 + ((v == V_FAV || v == V_RECENT) ? 13 : 0) + pd_text_width(pd_tr(VIEW_NAMES[v])) + 5 + pd_text_width(count);
 }
 
 static void draw_pills(struct pd_canvas *c, int x, int y, int w) {
@@ -1671,7 +1673,7 @@ static void draw_pills(struct pd_canvas *c, int x, int y, int w) {
       mono(c, v == V_FAV ? &PD_ICON_STAR : &PD_ICON_CLOCK, tx, y + (PILL_H - 9) / 2, 1, on ? 0xFFFFFF : k->back);
       tx += 13;
     }
-    tx += pd_text(c, tx, ty, VIEW_NAMES[v], text, shadow) + 5;
+    tx += pd_text(c, tx, ty, pd_tr(VIEW_NAMES[v]), text, shadow) + 5;
     char count[16];
     snprintf(count, sizeof count, "%d", counts[v]);
     pd_text(c, tx, ty, count, pd_mix(text, on ? k->back : PD_TITLE_FILL, 77), PD_NO_SHADOW);
@@ -1756,12 +1758,12 @@ static bool is_new(const struct game *g) {
 }
 
 static void title_line(struct pd_canvas *c, const struct game *g, int x, int y, int w) {
-  int newW = is_new(g) ? ui_game_tag(NULL, 0, 0, "NEW", 0, 0, 0) + 3 : 0;
+  int newW = is_new(g) ? ui_game_tag(NULL, 0, 0, pd_tr("NEW"), 0, 0, 0) + 3 : 0;
   int icons = (g->fav ? 13 : 0) + (g->hasSave ? 13 : 0) + newW;
   pd_text_fit(c, x, y, w - icons, g->title, PD_LABEL, PD_LABEL_SHADOW);
   int ix = x + w - icons;
   if (newW) {
-    ui_game_tag(c, ix + 2, y + 2, "NEW", 0x38A048, 0xFFFFFF, 0);
+    ui_game_tag(c, ix + 2, y + 2, pd_tr("NEW"), 0x38A048, 0xFFFFFF, 0);
     ix += newW;
   }
   if (g->fav) {
@@ -1776,7 +1778,7 @@ static void draw_games(struct pd_canvas *c) {
   if (!shownCount) {
     int f = pd_list_box(c, contentX, contentY, contentW, 44);
     pd_text_fit(c, contentX + f + 8, contentY + 14, contentW - 2 * f - 16,
-                gameCount ? "No games in this view yet." : "No Pokemon games found. Put them in roms/ beside PokeDaisy.",
+                pd_tr(gameCount ? "No games in this view yet." : "No Pokemon games found. Put them in roms/ beside PokeDaisy."),
                 PD_LABEL, PD_LABEL_SHADOW);
     return;
   }
@@ -1822,7 +1824,7 @@ static void draw_games(struct pd_canvas *c) {
       int tx = contentX + rh + 4;
       title_line(c, g, tx, y + 5, contentW - rh - 12);
       int v = g->console == C_GB ? V_GB : g->console == C_GBC ? V_GBC : g->console == C_GBA ? V_GBA : V_DS;
-      const char *tags[2] = {VIEW_NAMES[v], g->hack ? "HACK" : NULL};
+      const char *tags[2] = {pd_tr(VIEW_NAMES[v]), g->hack ? pd_tr("HACK") : NULL};
       int lv[2] = {v, V_HACKS};
       for (int k = 0; k < 2 && tags[k]; k++) {
         int bw = pd_text_width(tags[k]) + 8;
@@ -1866,9 +1868,9 @@ static void draw_settings(struct pd_canvas *c) {
     if (!last || strcmp(last, setting_group(i))) {
       last = setting_group(i);
       if (pd_style) { // the style's section band, as the companion's SETTINGS
-        pd_section_title(c, contentX + f + 4, y, contentW - 2 * f - 8, rowH, last);
+        pd_section_title(c, contentX + f + 4, y, contentW - 2 * f - 8, rowH, pd_tr(last));
       } else {
-        pd_text(c, contentX + f + 8, pd_text_y(y, rowH), last, PD_MUTED, PD_MUTED_SHADOW);
+        pd_text(c, contentX + f + 8, pd_text_y(y, rowH), pd_tr(last), PD_MUTED, PD_MUTED_SHADOW);
         pd_fill(c, contentX + f + 8, y + rowH - 3, contentW - 2 * f - 16, 1, PD_DIVIDER);
       }
       y += rowH;
@@ -1882,8 +1884,8 @@ static void draw_settings(struct pd_canvas *c) {
     else if (pd_style && (parity & 1)) // striped rows
       pd_fill(c, contentX + f, y, contentW - 2 * f, rowH, pd_style->stripe);
     parity++;
-    pd_text(c, contentX + f + 12, pd_text_y(y, rowH), label, PD_LABEL, PD_LABEL_SHADOW);
-    pd_text_right(c, contentX + contentW - f - 12, pd_text_y(y, rowH), value, PD_VALUE, PD_VALUE_SHADOW);
+    pd_text(c, contentX + f + 12, pd_text_y(y, rowH), pd_tr(label), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_right(c, contentX + contentW - f - 12, pd_text_y(y, rowH), pd_tr(value), PD_VALUE, PD_VALUE_SHADOW);
     hit_add_clipped(contentX + f, y, contentW - 2 * f, rowH, contentX + f, contentY + f, contentW - 2 * f, contentH - 2 * f,
                     LIB_HIT_SETTING, i);
     y += rowH;
@@ -1902,8 +1904,8 @@ static void draw_tools(struct pd_canvas *c) {
     int f = pd_style ? pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->list, pd_cur->listCount, cur ? PD_ROW_SELECTED : PD_LIST_FILL)
                      : pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->title, pd_cur->titleCount, cur ? PD_ROW_SELECTED : PD_TITLE_FILL);
     ui_art_at(c, art[i], contentX + f + 6, y + (h - 32) / 2, 2);
-    pd_text(c, contentX + f + 48, y + f + 6, NAMES[i], PD_LABEL, PD_LABEL_SHADOW);
-    pd_text_fit(c, contentX + f + 48, y + f + 24, contentW - f * 2 - 56, BLURBS[i], PD_MUTED, PD_MUTED_SHADOW);
+    pd_text(c, contentX + f + 48, y + f + 6, pd_tr(NAMES[i]), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, contentX + f + 48, y + f + 24, contentW - f * 2 - 56, pd_tr(BLURBS[i]), PD_MUTED, PD_MUTED_SHADOW);
     if (cur)
       ring(c, contentX, y, contentW, h);
     hit_add(contentX, y, contentW, h, LIB_HIT_TOOL, i);
@@ -1977,7 +1979,7 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
       pd_fill(c, x + f + 2, ry, w - 2 * f - 4, 22, PD_ROW_SELECTED);
       pd_triangle(c, x + f + 6, ry + 6, 8, PD_RIGHT, PD_VALUE);
     }
-    pd_text_fit(c, x + f + 18, pd_text_y(ry, 22), w - 2 * f - 26, rows[i], PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, x + f + 18, pd_text_y(ry, 22), w - 2 * f - 26, pd_tr(rows[i]), PD_LABEL, PD_LABEL_SHADOW);
     ry += 24;
   }
   return f;
@@ -1994,7 +1996,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
     bool gamesPage = page == P_GAMES;
     int n = gamesPage ? 3 : 2, w = 10;
     for (int i = 0; i < n; i++)
-      w += 22 + pd_text_width(gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1]) + 10;
+      w += 22 + pd_text_width(pd_tr(gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1])) + 10;
     int h = 28, x = c->w - M - w, y = c->h - M - h;
     int f = pd_style ? pd_list_box(c, x, y, w, h) : pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
     int lx = x + f + 5;
@@ -2002,7 +2004,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
       const char *k = gamesPage ? GAMES_LEGEND[i][0] : PAGE_LEGEND[i][0], *l = gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1];
       face(c, lx, y + (h - 18) / 2, k[0]);
       lx += 22;
-      lx += pd_text(c, lx, pd_text_y(y, h), l, PD_LABEL, PD_LABEL_SHADOW) + 10;
+      lx += pd_text(c, lx, pd_text_y(y, h), pd_tr(l), PD_LABEL, PD_LABEL_SHADOW) + 10;
     }
   }
   if (menuOpen && selected < shownCount) {
@@ -2017,7 +2019,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   if (sortOpen) {
     int w = 240, h = 2 * 6 + 24 + S_COUNT * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, "SORT BY", SORT_NAMES, S_COUNT, menuCursor);
+    int f = window(c, x, y, w, h, pd_tr("SORT BY"), SORT_NAMES, S_COUNT, menuCursor);
     for (int i = 0; i < S_COUNT; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_SORT_PICK, i);
   }
@@ -2025,7 +2027,7 @@ void library_draw_top(struct pd_canvas *c, uint32_t clear) {
     const char *rows[2] = {"YES", "NO"};
     int w = 240, h = 2 * 6 + 24 + 2 * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, "CLOSE POKéDAISY?", rows, 2, menuCursor);
+    int f = window(c, x, y, w, h, pd_tr("CLOSE POKéDAISY?"), rows, 2, menuCursor);
     for (int i = 0; i < 2; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_CLOSE, i);
   }
