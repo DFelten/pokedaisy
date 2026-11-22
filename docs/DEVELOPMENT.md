@@ -529,7 +529,10 @@ share every address below. What differs:
   (`Gen1Art.redBlueFont`: German letters).
 - **STEADY music**: Red's PlayMusic, park and songs at the same places (Route 1 loops at 22.90 s and Pallet Town at 32.15 s, as English's, `gbloop`).
 - **PC / FLY / WILD ENCOUNTERS**: `GB_FIELD_RED_BLUE_DE` (Bankswitch 0x35F0, the rest +5): the PC opened and FLY landed at
-  Pewter's Pokémon Center headless in both. No EXPAND, like English Red / Blue.
+  Pewter's Pokémon Center headless in both.
+- **EXPAND** (2026-11-20): `GB_RED_BLUE_DE` in `pk_wide_gb.c`, English Red's row with the RAM + 5 from wOnSGB up, the map header
+  tables where English's are. `widecheck` on English Red's walk from Vermilion's Pokémon Center: 1404 of 1408 map frames exact in
+  both carts, the other four the door's fade English Red shows too.
 
 **Pokémon Brown** (Koolboyman's; 6.1.2 and 6.0.1, `GEN1_BROWN`, 2026-11-16): Rijon on Red's engine, a 2 MB DMG cart with
 Super Game Boy support and no source. pret/pokered built (rgbds 1.0.3, `make red` = retail Red byte for byte) gave
@@ -671,7 +674,15 @@ name table byte for byte. What differs:
 - **DEX** (`GEN2_DEX_GOLD_SILVER_DE`): English Gold's formats at their own addresses, pages metric as Kristall's.
 - **Art**: English's pixels; the icon tables 2 bytes later, the town maps' tilemaps 0x32 later (`Gen2Art.GOLD_DE` / `.SILVER_DE`).
 - **STEADY music**: PlayMusic 0x3D8F, the park 0x29D0; the songs loop as English's (`gbloop`).
+- **PC / FLY / WILD ENCOUNTERS** (`GbField.GoldDe` / `.SilverDe`): English's RAM, PCScript, Fly scripts (their first text byte
+  0x37, not 0x0A) and CheckWildEncounterCooldown; RunMemScript at 0x25:7A80 (English 7A61) and the Flypoints table at 0x24:5BFD
+  (English 5BCC). Checked headless (ROM_FEATURES' note 13).
+- **SHINY ODDS**: English's `GB_GOLD_SILVER` target (Kristall: English Crystal's `GB_CRYSTAL`): the battle RAM it reads is the same
+  on the `*_de_battle` fixtures.
 - The user's German Gold saves were empty, hence the fixture's save.
+- **EXPAND** (2026-11-20): `GB_GOLD_SILVER_DE` in `pk_wide_gb.c`, English Gold's row with SpriteMovementData a byte later
+  (`GB_LINEAR(0x01, 0x4275)`, found by its bytes; MapGroupPointers and OverworldSprites where English's are). `widecheck` on
+  Route 29 from the fixture's save in both carts: every map frame exact but those written mid-frame.
 
 **Pokémon Gold and Silver** (Game Boy Color; `GEN2_GOLD` / `GEN2_SILVER`, `GameKind.GOLD` / `.SILVER`): pret/pokegold
 builds both carts byte for byte (`pokegold.gbc` / `pokesilver.gbc`, its roms.sha1), and the two keep every RAM address at the
@@ -1204,7 +1215,7 @@ guessing:
    extras dump the full EWRAM (256 KB) + IWRAM (32 KB) to a device file —
    `scripts/capture_fixture.sh <key>` drives this (live session if the app's
    already running via `onNewIntent`, cold relaunch otherwise) and pulls the
-   result into `app/src/test/resources/fixtures/<key>/{ewram,iwram}.bin`.
+   result into `test-fixtures/resources/fixtures/<key>/{ewram,iwram}.bin`.
 2. `gPlayerParty` is found by scanning every 4-byte-aligned offset for a valid
    Gen3 `struct Pokemon` (`PID^OTID` key, `PID%24` substruct order, 16-bit
    checksum over the 12 decrypted words) — a checksum match is ~1/65536 odds,
@@ -1263,7 +1274,7 @@ guessing:
    "looks like a valid ROM pointer" alone — Amethyst's mon/item icons were
    confirmed by actually seeing a recognizable Tepig and Potion bottle.
 5. Once addresses are confirmed, add a fixture (step 1) + a
-   `<Game>DecodeTest.kt` under `app/src/test/kotlin/.../companion/data/`
+   `<Game>DecodeTest.kt` under `shared/src/androidUnitTest/kotlin/.../companion/data/`
    asserting the known real values from that capture — this is what keeps a
    future refactor from silently re-breaking a hard-won address. `forkEvery = 1`
    in `build.gradle.kts` restarts the test JVM per class, needed because the
@@ -1416,7 +1427,7 @@ file's own CRC). Checked with mgba_dump's `wideon 22 <retail CRC>` (the new CRC 
 seed of each game, every option on: walking, 636 of 637 frames exact (the first after `wideon` has no snapshot, retail
 the same); a scripted wild battle and a trainer battle with `layers 0x18` + `widecheck all`: exactly as many inexact frames
 as retail on the same script. The field item / FLY / PC functions pass their code CRCs, WILD ENCOUNTERS' switch and REUSABLE
-TMS' sites are found where retail's are (`RandomizedRetailTest`), and PLAYER LOOK is offered (`PlayerLookRunner`). The
+TMS' sites are found where retail's are (`RandomizedRetailTest`), and PLAYER LOOK is offered (`PlayerLookAssets`). The
 library names it "Pokémon FireRed (Randomized)" (`GameTitles.randomizedTitle`, translated when shown), the website's ROM
 check takes the same rule (`compat.js`' `randomizedRetailOf`, over `compat.json`'s `randomizedRetail`).
 
@@ -1606,7 +1617,7 @@ player's own ROM of that game, and the running ROM is patched **in memory only**
   needs their folders added); their front picture is smol (`LookBlob.smol`, `Smol.decompressAny`), which the script
   finds by trying every target of a ROM pointer.
 - **Keeping heroes** (`LookArt`): any scan leaves its whole heroes decoded in `rom-art/look/<hero>/` and their region
-  map head in `regionmap/player_<hero>.png`. `PlayerLookRunner` scans the running ROM on load, then the library's other
+  map head in `regionmap/player_<hero>.png`. `PlayerLookAssets` scans the running ROM on load, then the library's other
   FireRed / LeafGreen / Ruby / Sapphire / Emerald ROMs for heroes still missing (each file once,
   `rom-art/look/scanned.txt`), builds every patch either gender could wear and lets go of the bytes. Only retail carts
   (`GameTitles.isRetail`, `RetailDumps`) and the hacks in `PlayerLook.HACKS` (Kaizo, Legacy, Imperium, Ultra Violet: each
@@ -1673,9 +1684,8 @@ width / height, the bike record's OAM and subsprite tables, `TRACKS_BIKE_TIRE` -
 table into the six frames (in the tail, remapped into the slot like a hero's: `wearMon`); each entry's frame is the way the
 record's animations show it (`facings`: animations in fours, south / north / west / east, the first four standing). The
 back picture fills every throw frame (moved down by its empty bottom rows, `MonArt.asTrainerBack`: the player's picture is
-centred at y 80, a Pokémon's at 80 + its back y_offset, which is those rows), the front picture and palette go where a hero's do. `PlayerLookRunner` keeps the
-scan for these (built on first pick, `monPatch`) and takes the party from the snapshot (`onParty`, national numbers by
-`PokedexSource.nationalOf`). Played headless (`PlayerLookTest.pokemonLooks` -> `<game>-<hero>-as-mon<n>.txt`) in Emerald,
+centred at y 80, a Pokémon's at 80 + its back y_offset, which is those rows), the front picture and palette go where a hero's do. `PlayerLookSession` observes the party and prepares the selected costume from the running game’s scan.
+`PokemonCostumes.party` resolves the national numbers with `PokedexSource.nationalOf`. Played headless (`PlayerLookTest.pokemonLooks` -> `<game>-<hero>-as-mon<n>.txt`) in Emerald,
 FireRed, Ruby and Sapphire: walking, running, both bikes, the card, a battle.
 A look changed mid-game leaves the player's sprite on the old record (a Pokémon's 32x32 shape, a frame table in the tail
 the next look rewrites) and the old colours (a palette swap by content can't know a Pokémon's, nor tell Emerald's May's from
@@ -1694,7 +1704,7 @@ skips a `from` of under 3 colours for the same reason, and `EmulatorEngine.setPl
 ### TEXT LOOK (another game's text boxes and letters)
 
 MAKEOVER > TEXT LOOK (`TextLook.kt`, `Prefs.textLookFor`) puts FireRed's dialogue box and normal font in Emerald, or
-Emerald's in FireRed / LeafGreen, in the same patch as PLAYER LOOK's (`PlayerLookRunner` adds its blocks). The pieces are
+Emerald's in FireRed / LeafGreen, in the same patch as PLAYER LOOK's (`PlayerAppearance` combines the blocks). The pieces are
 found by fingerprint in one pass with the heroes (`PlayerLook.scan(rom, TextBlob.entries)`, `Fingerprints.find`;
 `TextLookSigsGen.kt` from `scripts/gen_text_look_sigs.py`: FireRed's `menu_message.4bpp` + `stdpal_0`, `latin_normal.fwlatfont`
 and text.c's widths; Emerald's `message_box.png` and `latin_normal.png` converted as gbagfx does - `latfont`, four 2bpp tiles a
@@ -1733,6 +1743,17 @@ entries showing its sprite's tiles (subsprites split it; parked entries sit at y
 8-bit graphics id); not on Heart and Soul / SoulGold (followers of their own) or while surfing (`EmulatorEngine.stepFollower`).
 mgba_dump: `follower FILE` (frames + palette), `followon 1`, `followinfo`; checked walking / turning / running in
 Emerald and FireRed, with EXPAND too.
+
+**On Crystal** (`pk_gb_follow.c`, 2026-11-20; rev 0 / rev 1 / AU / German by CRC32, `pk_gb_follow_runs`): no hardware sprite -
+the lead's party icon (`Gen2Art`, `rom-art/gen2/crystal/pokemon/<dex>.png`, two 16 x 16 frames, `EmulatorEngine.gbFollower`) is
+drawn into the finished frame after `runFrame` (`pk_api_run_frame`, before EXPAND reads it), so the game, states and achievements
+never see it. Where: the screen's scroll (SCX / SCY as drawn, unwrapped) is the player's path, since the camera keeps him at
+(64, 60); the follower sits 16 pixels of path behind. A scroll jump with the same map and tile is a redraw (kept), a map or tile
+jump restarts the path (hidden until the first step) unless the screen scrolled in the last 2 frames (walking over a map's
+edge into the next: the map and tile change mid-step), and battle frames don't count (its slide-in scrolls). Hidden on water,
+in battles, with sprites off or no player sprite at OAM (0x48, 0x4C). Grass, BG priority, the window, menu tiles (wStateFlags
+bit 6) and the game's sprites cover it as in the note in docs/ROM_FEATURES.md (58). mgba_dump: `gbfollow CRC FILE` (512 ARGB
+ints), `gbfollowshow`, `gbfollowinfo`.
 
 ### Sprite packs (the makeover's graphics in one file)
 
@@ -2010,7 +2031,7 @@ game (TRADE FROM) and then the partner (TRADE WITH), the same list PC BOXES > TR
 SETTINGS > ASPECT > EXPAND (`GameAspect.WIDE` / WIDE in the code and prefs; renamed on screen once it also went
 up and down on phones) fills a wide screen with the game at full height and square pixels: the middle is the
 game's own 240x160 frame, the strips beside it (22 GBA px per side on the Thor's 1920x1080) are the overworld,
-rebuilt every frame from the game's memory by `app/src/main/cpp/pk_wide.c`. A wider PPU can't do it: the field
+rebuilt every frame from the game's memory by `shared/src/commonMain/cpp/pk_wide.c`. A wider PPU can't do it: the field
 only keeps a 256x256 ring of tiles in VRAM (`field_camera.c`), so the rest would be wrap-around garbage.
 
 - **What it draws from**: the map grid in `VMap` (the map + 7 metatiles of stitched connections per side); past
@@ -2160,7 +2181,7 @@ only keeps a 256x256 ring of tiles in VRAM (`field_camera.c`), so the rest would
   frame's own pixels can be edited per layer (the OVERLAY dim uses it); and the platforms in a terrain's BG3 are the
   tiles its tilemap uses at most ~6 times (sky and ground repeat theirs along the row).
 - **Games**: every retail FireRed, LeafGreen, Emerald, Ruby and Sapphire the user owns (English, Japanese, Spanish,
-  German, French, Italian; every revision): `app/src/main/cpp/pk_wide_games.h`, one row of addresses per ROM by CRC32, generated by
+  German, French, Italian; every revision): `shared/src/commonMain/cpp/pk_wide_games.h`, one row of addresses per ROM by CRC32, generated by
   `scripts/gen_wide_tables.py <roms dirs>` from the English references (FireRed rev 1, Emerald: from the decomp ELFs,
   mapped onto retail through the literal pools - only FireRed's `VMap` / `gSaveBlock1Ptr` differ; Ruby
   rev 1: pret/pokeruby's `ruby_rev1` ELF, byte-identical to retail) through
@@ -2854,7 +2875,7 @@ Code, by layer:
   `companion/ui/CoopBattleUi.kt` / `CoopBattleOverlays.kt` (the join prompt, the waits, the notices).
 
 **Generated tables.** `scripts/gen_coop_emerald.py` reads the pinned pokeemerald ELF / ROM (built with agbcc, byte for byte
-retail) in the `pokedaisy-decomp` image and writes `app/src/main/cpp/pk_coop_emerald.h`: every address, struct offset, the
+retail) in the `pokedaisy-decomp` image and writes `shared/src/commonMain/cpp/pk_coop_emerald.h`: every address, struct offset, the
 first-32-byte CRC32 of each function co-op reads, calls or patches, the few code sites the bridge patches, and the bridge's
 Thumb code (`scripts/coop_link_emerald.s`, assembled) as a `static const` array (the header is included by more than one
 file, so nothing in it may be a plain definition). Rerun it, and `gen_coop_story.py` for the lock, after any change to the
@@ -3200,7 +3221,7 @@ battles, then waits `TextPrinterWaitAutoMode`'s 49 frames instead of an A press)
 ## Co-op lock and story events (Emerald)
 
 `scripts/gen_coop_story.py` (same Docker image and line as `gen_coop_emerald.py`, whose ELF / probe readers it reuses)
-reads the pinned, built pokeemerald (retail by SHA-1) and writes `app/src/main/cpp/pk_coop_lock_emerald.h` (the hook's
+reads the pinned, built pokeemerald (retail by SHA-1) and writes `shared/src/commonMain/cpp/pk_coop_lock_emerald.h` (the hook's
 addresses, `COOP_LK_CRC_ScriptContext_SetupScript`, struct offsets, script command bytes, and the story table
 `COOP_LK_STORY[]` as `static const` data) and `companion/data/coop/CoopStoryGen.kt` (`COOP_STORY_EVENTS`,
 `COOP_TRAINER_WINS` and the ROM / RAM constants Kotlin needs). Rules, one function each:
@@ -3987,10 +4008,28 @@ CGB banks), never ROM, I/O or battery RAM. GBA calls preserve CPU context and re
 (`-1` means failure); GB calls return when scheduled. `pk_calls_api_test` covers real diagnostic calls,
 argument passing, unsigned results, timeout recovery and rejected ranges; `PkApiCoreTest` checks cinterop.
 
+`pk_api_flight_*` exposes the existing free/scenic flight implementation to JNI and Kotlin/Native.
+Configure with the verified `FlightFns.words()` on the game thread between frames; null or short
+configuration disables it. Route directions and seen-area bits are copied by the original flight code.
+The area-turned query consumes its pending notification. The portable frame loop already ticks and
+draws flight, including EXPAND; hosts must not tick it again. The shared `GameFlight` owner composes this transport with `GameSession`, `FlightArea.Keeper`,
+`ScenicFly` and persisted choices for both hosts. It owns dismount waiting, gates, route calculation,
+classic fallback, seen-map updates and the landing question; close or a state change invalidates delayed
+work and delivery. Android retains achievements callbacks; native hosts retain frame scheduling and
+camera/render transport. Both use the same scenic speed and zoom policy. `pk_flight_api_test` and `PkApiCoreTest` check inert behavior without verified
+configuration, across GBA, GB and teardown, including unchanged diagnostic pictures.
+
+`pk_api_follower_set` / `pk_api_follower_show` share the existing visual follower transport with JNI and
+Kotlin/Native, on the game thread between frames. The original renderer copies six 32x32 4bpp frames
+(3072 bytes) and a 32-byte RGB555 palette; incorrect lengths or null clear the graphics. Showing affects
+GBA cores only. The existing field renderer owns drawing; callers must not add another follower tick.
+This transport alone does not expose follower settings or import graphics on iOS. Host/Native bridge
+tests check exact asset sizes, safe clear operations, unknown-game pictures and teardown isolation.
+
 Its host test runs it off Android on `linux/make_diagnostic.py`'s ROMs (CI's "Core C API (host)" job):
 
 ```bash
-cmake -S app/src/main/cpp/test -B build/pk_api_test && cmake --build build/pk_api_test -j4
+cmake -S shared/src/commonTest/cpp -B build/pk_api_test && cmake --build build/pk_api_test -j4
 ctest --test-dir build/pk_api_test --output-on-failure
 ```
 
@@ -4041,31 +4080,29 @@ up first. For automatic resume, establish a save match first; changed or unverif
 State writes target a temporary file before the host atomically replaces its slot. The C host test `pk_state`
 checks round trips, invalid states, cross-platform refusal and detection of a changed battery save.
 
-### The shared module (`shared/`, for the iPad app)
+### The shared module (`shared/`, Android and iOS)
 
-The companion's data and language code, `app/src/main/kotlin/com/pokedaisy/app/companion/data` and `companion/i18n`,
-is compiled by its own Kotlin Multiplatform module, `shared/` (Android and iOS), in place: the files stay where
-they are, the app depends on `:shared` and leaves those two folders out of its own compile. So nothing in them may use
-`java.*` or `android.*`: plain Kotlin first, then the Kotlin libraries (coroutines, atomicfu, kotlinx-datetime), then
-okio. What differs by platform comes in from outside: the emulator through `EmulatorCore` (the app sets it to
-`MgbaEmulatorCore` in `PokeDaisyApp`), logging through `Logs`' sink. Their tests stay in `app/src/test` too and run as
-`:shared:testDebugUnitTest` (from `app/`, as before), except the few that also use the app's classes (the root
-build's `appOnlyTests`), which run with the app's. Something the app uses from those folders must be public, not
-`internal` (another module now). `./gradlew :shared:compileKotlinIosArm64` compiles it for an iPad; since the
+Put portable game rules, save transactions and their tests under `shared/src/commonMain` and
+`shared/src/commonTest`. Common Compose screens and the actions they present belong under
+`shared-ui/src/commonMain`. Both modules compile their own directories for both mobile targets.
+The companion's data and language code lives under `shared/src/commonMain/kotlin/com/pokedaisy/app/companion`.
+Android and iOS provide the emulator through `EmulatorCore` and logging through the `Logs` sink.
+Core JVM tests live in `shared/src/androidUnitTest`. Tests that exercise Android app classes or Paparazzi
+live in `app/src/test`. Both JVM suites read the helpers and RAM captures from `test-fixtures`.
+`./gradlew :shared:compileKotlinIosArm64` compiles it for an iPad; since the
 emulator core comes in through cinterop (see "The core's C API"), that needs a Mac with Xcode. CI's macOS "Shared code
 for iOS" job compiles both iOS targets, then links and runs the iOS tests in the simulator: the core's (`PkApiCoreTest`)
 and the portable smoke tests in `shared/src/commonTest` (files, PNGs, background work / locks and a fake emulator).
 Run them locally with `./gradlew :shared:iosSimulatorArm64Test` on an Apple Silicon Mac with Xcode and an iOS simulator.
 For focused JVM tests, use `make test-quick MODULE=shared T='*RomFilesTest'` (`MODULE=app` for app tests).
-A filter must match a test in that module; unfiltered `make test-quick` still runs both modules.
+A filter must match a test in that module. Unfiltered `make test-quick` runs the app and both shared modules.
 ui-preview still compiles the same files straight into its desktop build.
 
-The canonical key codes, `GbaControls`, `Hotkeys`, `GbaInput`, `ScriptInput` and `KeyCapture` also compile in
-`shared/`, from their existing app paths (`sharedCoreSources` in the root build). Both native hosts can use the same
-bindings, chord capture, deferred taps, turbo and script ownership. `AndroidGbaInput.kt` converts Android motion
-events to the common axis policy; UI badges stay in `shared-ui/`. The app excludes these files from its own compile.
-
-### The companion's screens (`shared-ui/`)
+The input models `GbaControls`, `Hotkeys`, `GbaInput`, `ScriptInput` and `KeyCapture` live in
+`shared/src/commonMain/kotlin`. Both native hosts and the desktop preview use these sources for bindings, chord
+capture, deferred taps, turbo and script ownership. The canonical key codes compile in `shared/` alongside the companion's data
+sources. `AndroidGbaInput.kt` converts Android motion events to the common axis policy, and UI badges live in
+`shared-ui/`.
 
 `GameSaves` shares battery-save import transactions and dated backup names/listing. Hosts choose locations and
 their existing compression/extra-backup adapters. The common import rejects invalid input before opening state
@@ -4075,11 +4112,23 @@ If restoration is blocked too, the error names the retained battery backup. Same
 usual extension. Backup stamps use common date/time code in the device's timezone. Android keeps its RZIP decoder;
 iOS keeps its existing compressed-save refusal. A native host test verifies the iOS save/state paths and backup.
 
+Both restore pickers use `GameSaves.restoreBackups` to combine import backups and snapshots by path. Android keeps
+the date encoded after `.backup-` as its sort key because both sources use dated names. It searches the automatic
+backup folders and matches imports against the ROM's archive aliases. iOS uses modification time, then filename,
+because its automatic snapshots use content hashes. Equal sort keys retain discovery order within each host.
+
+For closed-game edits, `ClosedSaveEdits` checks the pending trade journal before either host opens
+the save. It publishes a fresh-boot marker before replacing a single battery save. A two-save
+trade journals both versions before the first replacement. Recovery keeps both committed edits or
+rolls back a partial trade. The host supplies the save location, backup policy and state directory.
+
 `RomIdentityReader` shares header parsing, console detection, streaming SHA1/MD5 and the DS achievement hash.
 Raw paths use okio; Android's `RomIdentity` supplies its existing archive reader. Both game hosts use the same
 header parser. The DS hash consumes the contained cart too, rather than a compressed archive's bytes, and retains
 the header/code/icon ordering, SuperCard prefix handling, zero padding and code-size limit used for loose carts.
 No core is needed and whole-file fingerprints still stream through a bounded buffer.
+
+### The companion's screens (`shared-ui/`)
 
 The battle menu driver (`BattleInputController.kt`) also compiles in `shared-ui/`, in place. The core module's
 `ScriptInput` interface delivers synthetic keys to the platform input (`GbaInput` on Android); logging uses `Logs` and its lock is
@@ -4118,7 +4167,7 @@ no installed value is rewritten merely by reading it.
 
 The follow-up ownership and host-reduction sequence is in [Shared host composition](specs/shared-host-composition.md).
 
-`Prefs` is common code too, compiled in place by `shared-ui`. `PreferenceStore` is its primitive
+`Prefs` lives in `shared-ui/src/commonMain`. `PreferenceStore` is its primitive
 storage interface: Android keeps the existing `pokedaisy` SharedPreferences file through `PrefsAndroid`,
 and iOS keeps its NSUserDefaults domain through `DefaultsPreferenceStore`. Existing Android `Prefs(context)`
 callers and file-name helpers stay source compatible. Shared getters, codecs and compound edits retain their
@@ -4127,15 +4176,10 @@ The device-performance default for DS CPU boost stays with Android. The iOS sett
 theme store, NEW dates and learned fast-forward callbacks use this same implementation. Other settings
 orchestration and the library's historical format are consolidated separately, without resetting stored data.
 
-`shared-ui/` compiles the companion's screens for Android and iOS the same way, where they live: `companion/ui`, the
-`companion/*.kt` settings and state beside them, the co-op screens' model (`companion/coop`, without the transport and
-session files, which are Android / JVM only: sockets, Android NSD, Bouncy Castle, OkHttp), the manual reader
-(`DocsApi.kt`, `DocsSearch.kt`), `cheats/Cheats.kt` and the binding rows' NEW badges (`InputBadges.kt`), against
-`:shared` and Compose Multiplatform 1.7. The app links it and leaves those files out of its own compile and lint (the
-root build's `sharedUiSources` / `sharedUiAppOnly` name them for both); ui-preview still compiles them straight into its
-desktop build. Their tests stay the app's (Paparazzi and the rest under `app/src/test`), so a declaration the app or its
-tests reach is public, not `internal`. The same rule holds there (no `java.*` / `android.*`); what only the platform can do comes in through a
-host set at start, as `EmulatorCore` does for the data code: `FontSource` (fonts), `PictureCodec` (images), `ThemeStore`,
+The shared companion screens, co-op model, manual reader, cheats and input badges live under
+`shared-ui/src/commonMain/kotlin`. Android and iOS link this module, and the desktop preview compiles
+the same sources. Android socket discovery, transport and platform libraries live in the Android app.
+Shared UI accesses platform services through a host set at start, as `EmulatorCore` does for the data code: `FontSource` (fonts), `PictureCodec` (images), `ThemeStore`,
 `DocsSources`, `CheatParser` (mGBA's code check), `DeviceDates` (the device's date format). A new host is set in
 `PokeDaisyApp`, ui-preview's `installPreviewHosts` and the screenshot tests' `installTestHosts`. CI's "iPad app (simulator
 build)" job compiles it for the iPad (`./gradlew :shared-ui:compileKotlinIosArm64`) and links it for the simulator, on a Mac
@@ -4197,7 +4241,7 @@ The GBA field options use `pk_api_field_wild` to bind the shared finder's verifi
 `pk_api_field_step` once per frame for the existing indoor/encounter policy. JNI delegates the same operations to
 that API; the DS path stays separate. Field stepping owns the core write lock. `pk_field_observe` reads flags
 without changing the encounter switch, ownership or RNG. A resumed OFF state keeps the original ownership rule.
-`AutoRunPolicy` is compiled in place for both hosts and runs on manual keys before battle scripts. The native
+`AutoRunPolicy` lives in the shared core and runs on manual keys before battle scripts. The native
 table and field-callback guards remain required; Game Boy's separate field routines have not been wired on iOS.
 
 Both STATES bridges use common `StateSlotController` over `StateFiles`: slot saves, loads, delete and both
@@ -4394,15 +4438,19 @@ pushing a different file (only one at a time for now). SRAM persists to
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `third_party/mgba/`                                     | mGBA source, git submodule @ `0.10.5`                                                                                                                              |
 | `third_party/rcheevos/`                                 | RetroAchievements' rcheevos, git submodule @ `v12.5.0`                                                                                                             |
-| `app/src/main/cpp/`                                     | `CMakeLists.txt` + JNI bridge                                                                                                                                      |
-| `app/src/main/kotlin/com/pokedaisy/app/`               | app code                                                                                                                                                           |
+| `app/src/main/cpp/` | Android CMake, JNI bindings and DS integration. |
+| `app/src/main/kotlin/` | Android Activities, services and platform adapters. |
+| `shared/src/commonMain/kotlin/` | Game rules, ROM decoding, save operations and emulator contracts. |
+| `shared/src/commonMain/cpp/` | Portable emulator engine, C API and generated tables. |
+| `shared-ui/src/commonMain/kotlin/` | Common Compose UI, settings and loaded-game coordination. |
+| `shared/src/iosMain/`, `shared-ui/src/iosMain/`, `iosApp/` | Apple core bindings, platform adapters and Swift entry point. |
 | `gamedata/gen3/`                                        | Per-ROM `NativeConfig` address tables (TOML, `gamedata/README.md`) — start here for "how is game X read" (each config has an extensive comment on how its addresses were found); `make gamedata` writes `NativeConfigsGen.kt` from them. |
 | `.../companion/data/NativeReader.kt`                    | The `NativeConfig` data class + the decode logic.                                                                                                                  |
 | `.../companion/data/ActiveTables.kt`                    | Picks which species/item/map-name tables and sprite source apply for the currently-detected `GameKind`.                                                            |
 | `.../companion/data/SpeciesNames*.kt`, `Poller.kt`      | Per-hack species tables and the SHA1 detection constants, respectively.                                                                                            |
 | `scripts/capture_fixture.sh`, `scripts/roms.conf`       | Captures a live EWRAM+IWRAM memory fixture for one ROM off the device.                                                                                             |
-| `app/src/test/resources/fixtures/<key>/`                | Captured `{ewram,iwram}.bin` + `README.txt` per ROM — replayed by the JVM decode tests, not committed ROMs/saves themselves.                                       |
-| `app/src/test/kotlin/.../companion/data/*DecodeTest.kt` | One regression test per supported ROM, decoding its fixture and asserting the known-real values.                                                                   |
+| `test-fixtures/resources/fixtures/<key>/`                | Captured `{ewram,iwram}.bin` + `README.txt` per ROM — replayed by the JVM decode tests, not committed ROMs/saves themselves.                                       |
+| `shared/src/androidUnitTest/kotlin/.../companion/data/*DecodeTest.kt` | One regression test per supported ROM, decoding its fixture and asserting the known-real values.                                                                   |
 
 ### Shared touch-control preferences
 
@@ -4616,6 +4664,7 @@ adapters own the core write lock. Core pause/restart keeps the loaded-game owner
 
 ### Shared binding edits
 
+The shared input actions and binding editor live in `shared-ui/src/commonMain`.
 `GameBindings` validates supported hotkey actions and publishes reloads only after a successful edit. Both game
 hosts use it for shared settings. `GbaControls` and `Hotkeys` keep their installed properties formats and return
 write success; each file is replaced atomically. Invalid key names never reach disk. A D-pad edit also removes

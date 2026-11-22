@@ -68,7 +68,7 @@ Each one is `SAME` (the default: it follows `GAME SPEED`, like walking around do
 
 ## Instant text
 
-Turn on `INSTANT TEXT` in the companion's `SETTINGS`, `GAMEPLAY` group, and the words in a text box appear at once, in conversations and in battles alike. Nothing else changes: the music and the rest of the game stay at their normal speed, and a box still waits for your press where the game would. That makes it different from `TEXT SPEED`, which runs the whole game faster while a box is up.
+Turn on `INSTANT TEXT` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE`, and the words in a text box appear at once, in conversations and in battles alike. Nothing else changes: the music and the rest of the game stay at their normal speed, and a box still waits for your press where the game would. That makes it different from `TEXT SPEED`, which runs the whole game faster while a box is up.
 
 It changes the game while it runs, never your ROM file or your save, and you can switch it off at any time.
 
@@ -117,3 +117,5 @@ A save copied off a real cartridge can carry that cartridge's clock with it, and
 ## Rewind
 
 Missed a jump or walked into the wrong trainer? With `REWIND` on, holding the `REWIND HOLD` hotkey plays the last 20 seconds or so backwards. It's off by default and never touches your save file. It works in Game Boy, Game Boy Color and Game Boy Advance games, not DS games. See [Saves](saves.md) for how it works.
+
+Opening the quick menu or leaving the game stops a rewind in progress. Press again when you return to the game. If you hold the controller shortcut and the touch button together, rewind continues until you release both.

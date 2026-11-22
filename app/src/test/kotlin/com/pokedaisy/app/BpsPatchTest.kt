@@ -106,6 +106,9 @@ class BpsPatchTest {
             val out = RomPatcher.outputDir(RomPatcher.Platform.GBA, base, listOf(File(dir, "ROMs").path), imported)
             assertEquals(gba, out)
             assertEquals("My Hack (v1.2).gba", RomPatcher.outputName("My Hack (v1.2).bps", "gba"))
+            assertEquals("My Hack.gba", RomPatcher.outputName("My Hack .bps", "gba"))
+            assertEquals("patched.gba", RomPatcher.outputName(" .bps", "gba"))
+            assertEquals("patched.gba", RomPatcher.outputName(".bps", "gba"))
 
             val first = RomPatcher.apply(p, base, out, "My Hack.gba")
             assertFalse(first.existed)

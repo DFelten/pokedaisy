@@ -42,12 +42,12 @@
 #include "../emu/pd_armgba.h"
 #include "../emu/pd_gpsp.h"
 #include "host.h"
-#include "../../app/src/main/cpp/pk_gb_audio.h"
-#include "../../app/src/main/cpp/pk_host.h"
+#include "../../shared/src/commonMain/cpp/pk_gb_audio.h"
+#include "../../shared/src/commonMain/cpp/pk_host.h"
 #include "devlink.h"
-#include "../../app/src/main/cpp/pk_call.h"
+#include "../../shared/src/commonMain/cpp/pk_call.h"
 #include "gpu.h"
-#include "../../app/src/main/cpp/pk_wide.h"
+#include "../../shared/src/commonMain/cpp/pk_wide.h"
 
 // The dev build keeps to a folder of its own: a test never touches the player's games and saves.
 #ifdef PD_DEV
@@ -1146,9 +1146,10 @@ static bool run_game(const char* file) {
                     // Its compiled code thrown away whole: everything is compiled again after it (a stutter each time).
                     struct pd_armgba_cache current;
                     pd_armgba_cache_get(&current);
-                    host_log("armGBA perf: code %u of %u KiB, blocks compiled %u, flushes (out of room) %u, flushes (asked) %u",
+                    host_log("armGBA perf: code %u of %u KiB, blocks compiled %u (%u ahead from the warm list), flushes (out of room) %u, flushes (asked) %u",
                              current.codeUsedKiB, current.codeSizeKiB, current.compiled - cacheWas.compiled,
-                             current.fullFlushes - cacheWas.fullFlushes, current.askedFlushes - cacheWas.askedFlushes);
+                             current.warmed - cacheWas.warmed, current.fullFlushes - cacheWas.fullFlushes,
+                             current.askedFlushes - cacheWas.askedFlushes);
                     cacheWas = current;
                 }
                 mixesWas = pd_mixer_mixes;
@@ -1204,6 +1205,15 @@ static bool run_game(const char* file) {
         gpu_set_wide_hole(hole->x, hole->y, hole->w, hole->h, hole->gameX, hole->gameY);
         if (session.overlayDirty) gpu_set_overlay(pd_session_overlay(&session));
         gpu_show_overlay(session.overlayShown, session.overlayDim);
+        // What the frame leaves before the refresh compiles the game's warm list ahead of it, a block at a time, up to
+        // 60% of a refresh from the loop's start (gpu_draw then waits for the draw thread, which keeps the refresh's
+        // time): a battle's code then isn't compiled the moment the battle starts (the New 3DS's dips, 2026-11-21).
+        // Not in FF, which wants all of it.
+        if (armgba && !session.ff && !catchUp) {
+            u64 warmUntil = loopBegin + (u64) refreshTicks * 3 / 5;
+            while (svcGetSystemTick() < warmUntil && pd_armgba_warm_one()) {
+            }
+        }
         gpu_draw(true, pd_session_screen(&session));
         devlink_after_frame();
 #ifdef PD_DEV

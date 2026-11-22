@@ -22,7 +22,9 @@ extern struct GBA* gba;
 #if defined(__3DS__)
 void jitWarmLoad(const char* path);
 void jitWarmSave(const char* path);
+bool jitWarmOne(void);
 #endif
+static unsigned warmed; // blocks compiled ahead from the warm list
 
 #define STATE_MAGIC_TEXT "PDaG"
 #define STATE_VERSION 1
@@ -569,7 +571,20 @@ void pd_armgba_cache_get(struct pd_armgba_cache* out) {
     out->compiled = (unsigned) c.compiled;
     out->fullFlushes = (unsigned) c.fullFlushes[1];
     out->askedFlushes = (unsigned) c.fullFlushes[0];
+    out->warmed = warmed;
 #endif
+}
+
+// One block of the warm list compiled ahead of the game (armGBA's own frontend does it in each frame's spare time; ours
+// didn't, so a battle's code was compiled the first time the battle ran it). False: nothing left to do.
+bool pd_armgba_warm_one(void) {
+#if defined(__3DS__)
+    if (E.loaded && gba->jit && jitWarmOne()) {
+        warmed++;
+        return true;
+    }
+#endif
+    return false;
 }
 
 // armGBA's Fast Flash Saves (savedataSkipFlashTimer): the two routines return at once, found by their code and only
