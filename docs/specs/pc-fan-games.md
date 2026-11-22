@@ -235,7 +235,8 @@ title, published the mailbox and did a state round trip (serialize 254 ms, unser
 120, 420 and a load matched the x86_64 core's pixel for pixel, and the mailbox JSON byte for byte. qemu's timings say
 nothing about a handheld: the boot (the game compiling its scripts) took ~5 min against ~15 s natively, the title loop
 16.6 ms a frame against 1.45. `pokedaisy-linux` itself also cross-builds for aarch64 with `-DPOCKET_PC_GAMES=ON` (SDL2,
-EGL, zlib, zstd from Ubuntu's arm64 packages).
+EGL, zlib, zstd from Ubuntu's arm64 packages). Run under qemu on the aarch64 core, it loaded the state the x86_64 build
+had written (states carry across architectures), saved its own (101 MB, as on x86_64) and loaded that back.
 
 ## Next steps
 
