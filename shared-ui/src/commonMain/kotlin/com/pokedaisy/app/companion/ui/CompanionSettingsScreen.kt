@@ -210,7 +210,13 @@ fun CompanionSettingsScreen(
                         { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
                         // The groups and pages where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
-                        .let { rows -> if (settings.shownRows == null) regroupSettings(rows) { name -> page = if (name == BATTLE_PAGE) Page.BATTLE else Page.QOL } else rows }
+                        .let { rows ->
+                            when {
+                                settings.shownRows != null -> rows
+                                com.pokedaisy.app.companion.FlaggedFeatures.modernLook -> regroupSettings(rows) { name -> page = if (name == BATTLE_PAGE) Page.BATTLE else Page.QOL }
+                                else -> withQolPageOnly(rows) { page = Page.QOL }
+                            }
+                        }
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> listOf(
                         // SHOW AS: the chips' names, or each tab's icon (RETRO's pixel tiles, MODERN's glyphs).
@@ -400,13 +406,13 @@ fun CompanionSettingsScreen(
             }
             // SETTINGS FOR (GameSettings.kt): the game's own settings, made only here.
             val rows = remember(pageRows, settings, page, tick) {
-                gameScopedRows(settings?.gameSettings, page, pageRows,
+                com.pokedaisy.app.companion.ui.flaggedRows(gameScopedRows(settings?.gameSettings, page, pageRows,
                     flip = { settings?.gameSettings?.let { it.setThisGame(!it.thisGame) }; tick++ },
                     reset = {
                         confirm = Confirm(tk("RESET THIS GAME?"),
                             tr("Every setting this game has its own value of goes back to the one every game uses."), tk("RESET"),
                         ) { settings?.gameSettings?.reset(); tick++ }
-                    })
+                    }), page.name.takeIf { page != Page.HOME })
             }
             // A page of its own each time: the rows sit in slots by position, so the row the D-pad had focused on HOME
             // (HUD) kept the focus in the next page's row at the same place - near the bottom of SETTINGS > HUD - while the
@@ -641,8 +647,22 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
     }
 }
 
+/** HOME with the QUALITY OF LIFE rows taken out for one row that opens their page, where the first was ("3 ON"): SETTINGS
+ * as it was before [regroupSettings], while that batch is off ([com.pokedaisy.app.companion.FlaggedFeatures.modernLook]). */
+private fun withQolPageOnly(rows: List<SettingRow>, open: () -> Unit): List<SettingRow> {
+    val members = settingsPageRows(rows, QOL_PAGE).toSet()
+    if (members.isEmpty()) return rows
+    val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+    val opener = SettingRow(
+        tk(QOL_PAGE), tr("{0} ON", on), opensPage = true, subtitle = "Helpers that save you time",
+        labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },
+    ) { open() }
+    val at = rows.indexOfFirst { it in members }
+    return rows.filter { it !in members }.let { kept -> kept.take(at) + opener + kept.drop(at) }
+}
+
 /** The pages SETTINGS FOR applies to: the ones holding settings a game can have its own value of. */
-private val GAME_SCOPED_PAGES = setOf(Page.HOME, Page.SPEED, Page.DISPLAY, Page.SHADERS, Page.QOL)
+private val GAME_SCOPED_PAGES = setOf(Page.HOME, Page.SPEED, Page.DISPLAY, Page.SHADERS, Page.QOL, Page.BATTLE)
 
 /**
  * SETTINGS FOR (GameSettings.kt): on HOME, its switch (ALL GAMES / THIS GAME) and RESET THIS GAME at the top of the GAME
@@ -650,7 +670,7 @@ private val GAME_SCOPED_PAGES = setOf(Page.HOME, Page.SPEED, Page.DISPLAY, Page.
  * under each setting this game already has its own value of.
  */
 private fun gameScopedRows(g: GameSettingsControl?, page: Page, rows: List<SettingRow>, flip: () -> Unit, reset: () -> Unit): List<SettingRow> {
-    if (g == null || page !in GAME_SCOPED_PAGES) return rows
+    if (g == null || page !in GAME_SCOPED_PAGES || !com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) return rows
     val own = g.overridden
     val thisGame = g.thisGame
     val marked = rows.map { r -> if (!r.header && r.setting in own) r.withSubtitle("Set for this game only") else r }

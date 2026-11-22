@@ -23,6 +23,8 @@ class PokeDaisyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Before anything reads the settings the next release's batches change.
+        FeatureFlags.applyBatches(this)
         // The data code reads the emulator through MgbaCore (companion/data/EmulatorCore.kt).
         com.pokedaisy.app.companion.data.EmulatorCore.current = MgbaEmulatorCore
         // The app's files folder, where the screens find the art RomArt rebuilt from the player's ROMs.

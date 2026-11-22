@@ -49,7 +49,7 @@ internal class SetupState(
 
     /** The steps shown: GAME MEDIA only while ScreenScraper is on. */
     val flow = com.pokedaisy.app.companion.SetupFlow(
-        Step.entries.filter { it != Step.MEDIA || ScreenScraperClient.enabled },
+        Step.entries.filter { (it != Step.MEDIA || ScreenScraperClient.enabled) && (it != Step.RESTORE || com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) },
         entered = { entered(this, it) }, exited = { exited(this, it) })
     var step: Step
         get() = flow.step

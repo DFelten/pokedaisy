@@ -447,6 +447,13 @@ battle buttons); bags get `BagPalette.night()` (`theme/NightColors.kt`: each col
 yellows lean amber, a dark cream read olive), Yellow's party slots `YellowPartyPaletteNight`, Gen 1 pictures a white card
 (`spritePaper`: their paper is transparent). New colours: read `OptionColors` (or add a getter with both values), never a
 bare white / black fill. Look at it: `gradle render -Pdark=true -Pout=build/shots-dark`, `DarkCompanionScreenshotTest`.
+**Next release's batches** (`companion/FlaggedFeatures.kt`, both off until 1.7.0; `FeatureFlags.settingsPlus` / `modernLook`:
+`-Ppokedaisy.settingsPlus=true` / `modernLook`, or markers `settings-plus` / `modern-look`; ui-preview turns both on, `-PflagsOff=true` off):
+`settingsPlus` = SETTINGS FILE, the SAVE STATES folder and page, per-game settings; `modernLook` = everything of the modern-look merge
+(VIEW, MY LOOK, FONT SIZE, SIDE BARS, tab / menu bar places, kept HUD / touch layouts, library views and pill order, the regrouped
+settings, ScreenScraper on). Off, their rows are left out (`ui/FlaggedRows.kt`'s `flaggedRows`, by label) and their prefs read as before
+(`Prefs` getters); a new row of either goes in `flaggedRows`' lists. Their manual text is already in docs/manual (no release from dev
+before 1.7.0). Flipping them on for 1.7.0: the build defaults (app/build.gradle.kts) to true, or drop the flags.
 **Per-game settings** (companion SETTINGS > GAME > SETTINGS FOR: ALL GAMES / THIS GAME, NEW tag `GAME_SETTINGS`; 2026-11-23,
 `docs/plans/per-game-settings.md`): a game's own value of a setting is `game.<crc>.<key>` beside the normal key; `GameSettingsStore`
 (`companion/GameSettings.kt`) reads it first and writes there under THIS GAME (or once one exists). Only the game's activity sees them

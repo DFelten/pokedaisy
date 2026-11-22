@@ -278,6 +278,7 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FeatureFlags.applyBatches(this)
         RomFolder.useBestEffortStore(this)
         prefs = Prefs(this)
         com.pokedaisy.app.companion.i18n.L10n.apply(prefs.appLanguage, null)
@@ -717,6 +718,10 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
+    /** HOME's groups as the companion's ([com.pokedaisy.app.companion.ui.regroupSettings]) with that batch on, else as built. */
+    private fun regroupIfModern(rows: List<SettingRow>): List<SettingRow> =
+        if (com.pokedaisy.app.companion.FlaggedFeatures.modernLook) com.pokedaisy.app.companion.ui.regroupSettings(rows) else rows
+
     /** The newest savestate thumbnail of any game (a real frame for the ASPECT preview), or null. */
     private fun newestStateThumb(): File? =
         statesDir.listFiles().orEmpty()
@@ -754,7 +759,7 @@ class SettingsActivity : ComponentActivity() {
     @Composable
     private fun SubRowsScreen(m: GbaTextMetrics, rows: () -> List<SettingRow>) {
         @Suppress("UNUSED_EXPRESSION") revision
-        val list = rows()
+        val list = com.pokedaisy.app.companion.ui.flaggedRows(rows(), "SUB")
         Column(Modifier.fillMaxWidth()) {
             OptionListWindow(m, Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 GroupedRows(list, m, cursor = -1, onClick = { list[it].onClick() })
@@ -1116,7 +1121,7 @@ class SettingsActivity : ComponentActivity() {
         val themes = com.pokedaisy.app.companion.ui.theme.availableThemes()
         fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
         // The same groups and order as the bottom screen's SETTINGS where they overlap; first how this list looks.
-        val rows = com.pokedaisy.app.companion.ui.regroupSettings(com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
+        val rows = com.pokedaisy.app.companion.ui.flaggedRows(regroupIfModern(com.pokedaisy.app.companion.ui.settingsLookRows { revision++ } + listOfNotNull(
             groupTitle(tk("FF / SPEED")),
             SettingRow(tk("FF SPEED"), rateLabel(prefs.ffMaxSpeed)) {
                 selector = Selector(tk("FF SPEED"), rateLabels, rateLabel(prefs.ffMaxSpeed)) {
@@ -1470,7 +1475,7 @@ class SettingsActivity : ComponentActivity() {
             ) { openUrl(Discord.URL) },
             // The manual (docs/manual, served by the website), readable offline once fetched.
             SettingRow(tk("HELP"), null, opensPage = true) { screen = Screen.HELP },
-        ))
+        )))
         // Search: every row whose name, value or keywords (SETTING_KEYWORDS: "rebind", "keybinds"...) match.
         // D-pad focus starts on the first setting (it used to land on the search box first), once per visit to Settings;
         // B / BACK in the search box comes back there too.
@@ -1550,11 +1555,11 @@ class SettingsActivity : ComponentActivity() {
     @Composable
     private fun FieldHudScreen(m: GbaTextMetrics) {
         @Suppress("UNUSED_EXPRESSION") revision
-        val rows = com.pokedaisy.app.companion.ui.fieldHudRows(
+        val rows = com.pokedaisy.app.companion.ui.flaggedRows(com.pokedaisy.app.companion.ui.fieldHudRows(
             prefs.fieldHud, prefs.fieldHudStyle,
             setOn = { prefs.fieldHud = it; revision++ },
             setStyle = { prefs.fieldHudStyle = it; revision++ },
-        )
+        ), "FIELD_HUD")
         Column(Modifier.fillMaxWidth()) {
             OptionListWindow(m, Modifier.fillMaxWidth().weight(1f, fill = false)) {
                 GroupedRows(rows, m, cursor = -1, onClick = { rows[it].onClick() })
@@ -1571,7 +1576,7 @@ class SettingsActivity : ComponentActivity() {
         @Suppress("UNUSED_EXPRESSION") revision
         val style = prefs.touchControlsStyle
         val skins = remember(revision) { skinStore.list() }
-        val rows = com.pokedaisy.app.companion.ui.touchControlsRows(
+        val rows = com.pokedaisy.app.companion.ui.flaggedRows(com.pokedaisy.app.companion.ui.touchControlsRows(
             style, set = { prefs.touchControlsStyle = it; revision++ },
             onEdit = { touchEditing = true },
             underGame = prefs.portraitCompanionUnderGame.takeIf { !usesSecondScreen },
@@ -1579,7 +1584,7 @@ class SettingsActivity : ComponentActivity() {
             expand = prefs.gameAspect == com.pokedaisy.app.companion.GameAspect.WIDE, touchShown = touchWouldShow(style),
             skins = skins, skinUi = touchSkinUi, onImportSkin = { pickSkin.launch(arrayOf("*/*")) },
             feel = { TouchHaptics.buzz(this, it) },
-        )
+        ), "TOUCH")
         val shot by produceState<ImageBitmap?>(null) {
             value = withContext(Dispatchers.IO) {
                 runCatching { newestStateThumb()?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }.getOrNull()
@@ -2263,11 +2268,14 @@ class SettingsActivity : ComponentActivity() {
                 subtitle = "A copy of the save each time a game starts",
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.SAVE_BACKUPS),
             ) { screen = Screen.BACKUPS },
-            SettingRow(
+            if (com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) SettingRow(
                 tk("SAVE STATES"), if (prefs.statesDirOverride.isNullOrBlank()) tk("DEFAULT") else tk("CUSTOM"), opensPage = true,
                 subtitle = "Every game's states and their pictures",
                 labelBadge = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.STATES_FOLDER),
-            ) { screen = Screen.STATES_FOLDER },
+            ) { screen = Screen.STATES_FOLDER }
+            else SettingRow(tk("SAVE STATES"), humanSize(statesDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }), opensPage = true) {
+                screen = Screen.STATES_FOLDER
+            },
         )
     }
 
@@ -2380,6 +2388,11 @@ class SettingsActivity : ComponentActivity() {
 
     @Composable
     private fun StatesFolderScreen(m: GbaTextMetrics, small: GbaTextMetrics) {
+        // That batch off: the app's own states, every file with its delete button, as before.
+        if (!com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) {
+            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) { FolderSection(null, statesDir, folderTick, m, small) }
+            return
+        }
         val tick = folderTick
         val root = remember(tick) { statesDir }
         val games by produceState<List<StatesBrowser.Game>?>(null, tick, root) {

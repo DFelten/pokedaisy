@@ -125,6 +125,8 @@ tasks.register<JavaExec>("render") {
     systemProperty("lang", (project.findProperty("lang") as String?) ?: "")
     // -Pdark=true: every screen in DARK MODE (pair with -Pout=build/shots-dark).
     systemProperty("dark", (project.findProperty("dark") as String?) ?: "")
+    // -PflagsOff=true: the next release's two batches off, as players have the app now (FlaggedFeatures).
+    systemProperty("flagsOff", (project.findProperty("flagsOff") as String?) ?: "")
     // -Pstyle=CLASSIC: every screen in FireRed's OPTION look instead of SUMMARY MINT (UiStyle).
     systemProperty("style", (project.findProperty("style") as String?) ?: "")
     // -Pview=MODERN: every screen in VIEW MODERN (AppView), its font with it.

@@ -364,6 +364,7 @@ class LibraryActivity : ComponentActivity() {
         }
 
         // The device's marker can change between visits (FeatureFlags): read before setup builds its steps.
+        FeatureFlags.applyBatches(this)
         ScreenScraperClient.enabled = FeatureFlags.screenScraper(this)
         FeatureFlags.applyBlocked(this)
         // The second screen (and so SWAP) is the game's media page: ScreenScraper's, off until its flag is on.
@@ -1983,7 +1984,7 @@ class LibraryActivity : ComponentActivity() {
                     com.pokedaisy.app.companion.ui.QuickViewPills(
                         views.shown, launcher.view, views.counts, m, small,
                         onPick = { launcher.viewCursor = false; pickQuickView(it) },
-                        onReorder = { this@LibraryActivity.library.reorderViews(it) },
+                        onReorder = if (com.pokedaisy.app.companion.FlaggedFeatures.modernLook) ({ this@LibraryActivity.library.reorderViews(it) }) else null,
                         contentPadding = PaddingValues(horizontal = SCREEN_MARGIN),
                         cursor = launcher.viewCursor,
                     )

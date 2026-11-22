@@ -157,6 +157,7 @@ object CustomLook {
 
     /** Reads what's kept (at start, before the fonts and the theme are put on). */
     fun load() {
+        if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) return
         fonts = fontsDir?.listFiles().orEmpty().filter { it.isFile && FONT_EXTENSIONS.any { e -> it.name.endsWith(e, true) } }
             .mapNotNull { f -> runCatching { CustomFont(fontName(f.name), f, FontFileInfo.capHeight(f.readBytes())) }.getOrNull() }
             .sortedBy { it.label }

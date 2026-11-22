@@ -1118,6 +1118,11 @@ fun previewThemeDay(t: com.pokedaisy.app.companion.ui.theme.ThemeSpec): kotlinx.
 
 /** What PokeDaisyApp.onCreate hands the shared screens on Android: art files and theme storage over the shim Context. */
 fun installPreviewHosts() {
+    // Every screen as the next release has it: both batches on (-PflagsOff=true: as players have it now).
+    (System.getProperty("flagsOff") != "true").let {
+        com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus = it
+        com.pokedaisy.app.companion.FlaggedFeatures.modernLook = it
+    }
     val context = android.content.Context()
     com.pokedaisy.app.companion.data.RomArt.filesDir = okio.Path.Companion.run { context.filesDir.toOkioPath() }
     val prefs = Prefs(context)

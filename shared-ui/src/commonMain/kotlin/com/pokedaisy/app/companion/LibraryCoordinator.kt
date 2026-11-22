@@ -61,7 +61,11 @@ class LibraryCoordinator(
         changed(Change.SORT)
     }
     /** The header's view button: LIBRARY VIEW's pick-list (list, grid, the immersive views). */
-    fun toggleGrid() { dialog = Dialog.LAYOUT }
+    fun toggleGrid() {
+        if (FlaggedFeatures.modernLook) { dialog = Dialog.LAYOUT; return }
+        preferences().setLayout(if (layout == LibraryLayout.GRID) LibraryLayout.LIST else LibraryLayout.GRID)
+        changed(Change.GRID)
+    }
     fun selectLayout(value: LibraryLayout) {
         preferences().setLayout(value)
         dismiss(Dialog.LAYOUT)

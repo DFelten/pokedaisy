@@ -661,7 +661,7 @@ fun <T> LibraryScreen(
                     if (state.hasCatalog) {
                         QuickViewPills(state.views, state.view, state.counts, m, small, actions.view,
                             contentPadding = PaddingValues(horizontal = margin), focusRequester = focus.views,
-                            onReorder = actions.reorderViews)
+                            onReorder = actions.reorderViews.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.modernLook })
                         DisposableEffect(focus) { focus.viewsAttached = true; onDispose { focus.viewsAttached = false } }
                         Spacer(Modifier.height(m.u * if (short) 3 else 8))
                     }

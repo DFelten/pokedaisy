@@ -36,6 +36,7 @@ class SaveStates(statesRoot: File, romCrc: String) {
 
     /** Writes the game's name beside its states ([NAME_FILE]) when it isn't there yet or changed. Never throws. */
     fun noteGame(name: String) {
+        if (!com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) return
         runCatching {
             val f = File(files.directory.toString(), NAME_FILE)
             if (!f.isFile || f.readText() != name) f.writeText(name)
@@ -83,7 +84,7 @@ class SaveStates(statesRoot: File, romCrc: String) {
         /** Where every game's states folder is: the player's SAVE STATES folder while it can be written to, else
          * [defaultRoot]. A folder that went away (an SD card out) never takes the states with it: the default is used meanwhile. */
         fun root(context: android.content.Context, prefs: Prefs = Prefs(context)): File {
-            val custom = prefs.statesDirOverride?.takeIf { it.isNotBlank() }?.let(::File)
+            val custom = prefs.statesDirOverride?.takeIf { it.isNotBlank() && com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let(::File)
             if (custom != null && (custom.isDirectory || custom.mkdirs()) && custom.canWrite()) return custom
             return defaultRoot(context)
         }

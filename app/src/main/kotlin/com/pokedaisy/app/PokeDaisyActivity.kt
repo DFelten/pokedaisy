@@ -1710,7 +1710,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         override val gameName get() = romBlocked?.title ?: com.pokedaisy.app.companion.data.activeGame.displayName()
         override val gameBlocked get() = romBlocked != null
         // SETTINGS FOR: this game's own settings (GameSettings.kt). Made only here, never in the top screen's Settings.
-        override val gameSettings get() = gameSettingsKey?.let {
+        override val gameSettings get() = gameSettingsKey?.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let {
             object : com.pokedaisy.app.companion.GameSettingsControl {
                 override val thisGame get() = ownSettings.thisGame()
                 override fun setThisGame(on: Boolean) = ownSettings.setThisGame(on)
@@ -1764,6 +1764,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         SaveStates.openGames.incrementAndGet()
+        FeatureFlags.applyBatches(this)
         coopOn = FeatureFlags.coop(this)
         RomFolder.useBestEffortStore(this)
         BestEffortShare.flush(this)   // a shared match that couldn't go out last time

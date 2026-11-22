@@ -6,6 +6,10 @@ import com.pokedaisy.app.companion.data.LibraryView
 import kotlin.test.*
 
 class LibraryPreferencesTest {
+    // The library views and the pills' order are the next release's (FlaggedFeatures.modernLook): on here.
+    @BeforeTest fun batchOn() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = true }
+    @AfterTest fun batchOff() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = false }
+
     private var saved: String? = null
     private var time = 100L
     private fun open() = LibraryPreferences({ saved }, { saved = it }, { time })

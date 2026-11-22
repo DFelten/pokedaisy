@@ -15,7 +15,7 @@ interface GameSettingsScope {
 /** Preserve Android callers and the installed SharedPreferences file while sharing all preference policy. */
 fun Prefs(context: Context): Prefs {
     val base: PreferenceStore = AndroidPreferenceStore(context)
-    val store = (context as? GameSettingsScope)?.let { scope -> GameSettingsStore(base) { scope.gameSettingsKey } } ?: base
+    val store = (context as? GameSettingsScope)?.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let { scope -> GameSettingsStore(base) { scope.gameSettingsKey } } ?: base
     return Prefs(store, dsCpuBoostDefault = { !DevicePerformance.looksWeak(context.applicationContext ?: context) })
 }
 

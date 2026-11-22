@@ -5,6 +5,10 @@ import com.pokedaisy.app.companion.ui.LibrarySection
 import kotlin.test.*
 
 class LibraryCoordinatorTest {
+    // The library views and the pills' order are the next release's (FlaggedFeatures.modernLook): on here.
+    @BeforeTest fun batchOn() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = true }
+    @AfterTest fun batchOff() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = false }
+
     private var saved: String? = null
     private val prefs = LibraryPreferences({ saved }, { saved = it })
 
