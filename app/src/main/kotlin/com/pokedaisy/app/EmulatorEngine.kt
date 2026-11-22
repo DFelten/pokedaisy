@@ -1015,6 +1015,10 @@ class EmulatorEngine(
         battleMenuHideSent = -1
         playback.resetTint()
         playback.flight?.reset()
+        // The field read too: the last core's pkDeinit cleared it (pk_field_configure(0)), and a cache left from that
+        // core kept this one unconfigured - AUTO-RUN, RUN INDOORS and WILD ENCOUNTERS dead after HOME and back (#1374).
+        fieldApplied = -1
+        wildApplied = -1L
         endDsHold()
         onCoreReady?.invoke(vw, vh)
 

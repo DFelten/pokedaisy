@@ -119,6 +119,9 @@ class RaSession(
     /** Popups are on unless the player turned them off in Settings > RetroAchievements. */
     private fun notificationsOn() = prefs()?.raPopups ?: true
 
+    /** Which progress pop-ups are news: see [ProgressGate]. */
+    private val progressGate = ProgressGate()
+
     /** [popup] to the hosts, unless the player turned that kind off (progress has its own switch). */
     private fun emitPopup(popup: AchievementPopup) {
         val on = notificationsOn()
@@ -404,6 +407,7 @@ class RaSession(
         closeLeaderboard()
         loadInFlight = false
         _state.update { it.copy(game = null, achievements = emptyList(), challenges = emptyList(), trackers = emptyList(), leaderboards = emptyList()) }
+        progressGate.reset()
     }
 
     /** After the core is gone: answers go back to being delivered from the HTTP thread. */
@@ -437,6 +441,8 @@ class RaSession(
         } else {
             resumeProgress = null
             native.raDeserializeProgress(data)
+            // The state's own progress: the list read next is its start, not what the game before it had reached.
+            progressGate.reset()
             listDirty = true
         }
     }
@@ -444,6 +450,7 @@ class RaSession(
     private fun refreshList() {
         val bytes = native.raAchievementList() ?: return
         val list = parseAchievementList(bytes)
+        list.forEach { progressGate.seen(it.id, it.progress) }
         val boards = native.raLeaderboardList()?.let { parseLeaderboardList(it) }.orEmpty()
         _state.update { s ->
             s.copy(
@@ -594,7 +601,9 @@ class RaSession(
                 AchievementPopup(AchievementPopup.Kind.MASTERED, e.title ?: tr("GAME COMPLETE"), tr("EVERY ACHIEVEMENT UNLOCKED"), e.badgeUrl)
             RaEvent.PROGRESS_SHOW, RaEvent.PROGRESS_UPDATE -> {
                 listDirty = true
-                AchievementPopup(AchievementPopup.Kind.PROGRESS, e.title.orEmpty(), e.extra, e.badgeUrl, achievementId = e.id)
+                if (progressGate.shows(e.id, e.extra)) {
+                    AchievementPopup(AchievementPopup.Kind.PROGRESS, e.title.orEmpty(), e.extra, e.badgeUrl, achievementId = e.id)
+                } else null
             }
             RaEvent.LEADERBOARD_STARTED -> AchievementPopup(AchievementPopup.Kind.LEADERBOARD, e.title.orEmpty(), tr("LEADERBOARD ATTEMPT STARTED"))
             RaEvent.LEADERBOARD_FAILED -> AchievementPopup(AchievementPopup.Kind.LEADERBOARD, e.title.orEmpty(), tr("LEADERBOARD ATTEMPT FAILED"))
@@ -646,3 +655,42 @@ private suspend fun requestAchievements(agent: String, url: String, post: String
  * co-op battle, or a WILD PIN on. */
 internal fun achievementsIdle(cheats: Boolean, shinyOdds: Boolean, coopBattle: Boolean, wildPin: Boolean): Boolean =
     cheats || shinyOdds || coopBattle || wildPin
+
+/**
+ * Progress pop-ups for real progress only. rc_client reports every change of a measured value, and memory that moves for
+ * a moment (a wild battle starting in Emerald or LeafGreen, its save blocks shifting) set off pop-ups for achievements
+ * that had nothing to do with it, in every battle. One shows only when its achievement's progress goes past the most it
+ * has had this game (the achievement list's values count as had). A progress it can't read as "a/b" or "n%" still shows.
+ */
+internal class ProgressGate {
+    private val lock = SynchronizedObject()
+    private val best = HashMap<Int, Double>()
+
+    fun reset() = synchronized(lock) { best.clear() }
+
+    /** The achievement list's [progress] for [id]: had, so only something past it pops up. */
+    fun seen(id: Int, progress: String?) = synchronized(lock) {
+        val f = progressFraction(progress) ?: return@synchronized
+        if (f > (best[id] ?: -1.0)) best[id] = f
+    }
+
+    /** Whether a progress event for [id] at [progress] is news (and remembers it). */
+    fun shows(id: Int, progress: String?): Boolean = synchronized(lock) {
+        val f = progressFraction(progress) ?: return@synchronized true
+        val before = best[id]
+        if (before != null && f <= before) return@synchronized false
+        best[id] = f
+        true
+    }
+}
+
+/** "12/150", "1,024/2,000" or "45%" as a fraction of the way; null = not one of those. */
+internal fun progressFraction(text: String?): Double? {
+    val t = text?.replace(",", "")?.replace(" ", "")?.takeIf { it.isNotEmpty() } ?: return null
+    if (t.endsWith("%")) return t.dropLast(1).toDoubleOrNull()?.div(100.0)
+    val parts = t.split('/')
+    if (parts.size != 2) return null
+    val a = parts[0].toDoubleOrNull() ?: return null
+    val b = parts[1].toDoubleOrNull()?.takeIf { it > 0 } ?: return null
+    return a / b
+}

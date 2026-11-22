@@ -1320,7 +1320,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                 if (flyer == null || flyer.first != targets.flyerSlot || flyer.second != targets.flyerPersonality) {
                     return done(com.pokedaisy.app.companion.data.FlyResult.NO_FLYER)
                 }
+                // The flight is the game's to show: the window goes, and the HUD's map panel it may come from.
                 closeCompanionWindow()
+                hudCloseTick.intValue++
                 // The job's result 1 is the flight's event: none when the game's own check said no (walked indoors since).
                 var refused = false
                 dsAction(MgbaCore.NDS_ACTION_FLY, intArrayOf(flyer.first, spot.mapHeader, 0, 0), ran = { res ->
@@ -1347,6 +1349,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     return done(com.pokedaisy.app.companion.data.FlyResult.NO_FLYER)
                 }
                 closeCompanionWindow()
+                hudCloseTick.intValue++
                 dsAction(MgbaCore.NDS_ACTION_FLY, intArrayOf(flyer.first, spot.mapHeader, spot.x, spot.z)) { o ->
                     completed(when (o.result) {
                         com.pokedaisy.app.companion.data.ItemUseResult.USED -> com.pokedaisy.app.companion.data.FlyResult.OK
@@ -1397,7 +1400,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
      * menuHideBegin; Ruby / Sapphire's cursor sprites hidden with it, the sign drawn in the hidden menu's own tiles) whose
      * battles the companion's buttons can steer (the battle input read). */
     private fun battleMenuHideSupported() = !romIsGameBoy && !romIsNds && romBlocked == null && ::engine.isInitialized &&
-        listOf("BPR", "BPG", "BPE", "AXV", "AXP").any { romCode.startsWith(it) } &&
+        // Ultra Violet (PUVV) is FireRed rev 0 under a code of its own: checked headless, both menus hidden, the sign drawn.
+        (listOf("BPR", "BPG", "BPE", "AXV", "AXP").any { romCode.startsWith(it) } ||
+            romCode.startsWith(com.pokedaisy.app.companion.data.TelemetrySampler.ULTRA_VIOLET_CODE)) &&
         com.pokedaisy.app.companion.data.activeGame.let {
             it == com.pokedaisy.app.companion.data.GameKind.FIRERED || it == com.pokedaisy.app.companion.data.GameKind.EMERALD
         } && com.pokedaisy.app.companion.data.activeNativeConfig?.hasBattleInputAddrs == true &&
