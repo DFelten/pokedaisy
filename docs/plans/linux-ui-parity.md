@@ -73,9 +73,11 @@ The 3DS's own 320x240 (`make -C 3ds preview`) must stay as it is: the code is sh
 - [ ] **4. Library and tools**: header band, RECENTLY PLAYED, LAST PLAYED / DATE ADDED, NEW tags, hidden games, INFO,
       RENAME, cover picker, WHAT'S NEW, first-time setup, folders; TOOLS' SAVE EDITOR / TRADE / COLLECTION from the 3DS's
       C editor (`pd_library_saves.c`)
-- [ ] **5. Desktop and Deck behaviour**: hover, the wheel everywhere, right-click = a game's menu, text entry (Steam's
-      keyboard in Game Mode), file pickers (Windows' own, the desktop portal / zenity on Linux), `%APPDATA%` or portable,
-      Deck touch, button legends per controller
+- [ ] **5. Desktop and Deck behaviour**
+  - [x] The wheel scrolls the companion's list under the pointer (`pd_ui_wheel`); a right click opens a game's menu in
+        the game list (`library_menu_at`); the companion window's X beside its corner (the host's `companion_close_key`)
+  - [ ] Hover, text entry (Steam's keyboard in Game Mode), file pickers (Windows' own, the desktop portal / zenity on
+        Linux), `%APPDATA%` or portable, Deck touch, button legends per controller
 - [ ] **6. Optional**: the companion in a second window on a second monitor
 
 ## Found so far
