@@ -197,7 +197,7 @@ At the top of SETTINGS, in a blue frame, in the games where any of it works.
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
-| `QUALITY OF LIFE` | | A page of its own holding `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON` (below). Its row says how many you've changed from the game's own way. | [Companion](companion.md) |
+| `QUALITY OF LIFE` | | A page of its own holding `WILD ENCOUNTERS`, `INSTANT TEXT`, `AUTO-RUN`, `RUN INDOORS`, `AUTO REFILL`, `REUSABLE TMS`, `NO HMS NEEDED`, `EXP SHARE`, `LEVEL CAP`, `TRADE EVOS`, `QUICK HATCH`, `SHINY ODDS`, `SHINY ALERT`, `BOSS RETRY`, `LOW HP BEEP` and `FIELD POISON` (below). Its row says how many you've changed from the game's own way. | [Companion](companion.md) |
 | `WILD ENCOUNTERS` | **`ON`**, `OFF` | Wild Pokémon jumping out in grass, caves and water, or none. `N/A` in a game where it can't work. | [Controls](controls.md) |
 | `INSTANT TEXT` | `ON`, **`OFF`** | Words in a text box appear at once, and nothing else speeds up. `N/A` where it can't work. | [Fast-forward](fast-forward.md#instant-text) |
 | `FLY STYLE` | `CLASSIC`, **`SCENIC`** | How flying to a town looks: the game's own animation, or flying there over the map. `N/A` where it can't work. | [Map](map.md#the-scenic-way) |
@@ -208,6 +208,7 @@ At the top of SETTINGS, in a blue frame, in the games where any of it works.
 | `AUTO REFILL` | `ON`, **`OFF`** | Another item that keeps wild Pokémon away goes on from your bag before the one working runs out. `N/A` where it can't work. | [Bag](bag.md#auto-refill) |
 | `LEVEL CAP` | `ON`, **`OFF`** | No Pokémon goes past the highest level on the next boss's team; the row shows the cap now. `N/A` where it can't work. | [Controls](controls.md#level-cap) |
 | `TRADE EVOS` | `ON`, **`OFF`** | A Pokémon that evolves by trading can evolve from its summary's `EVOLVE` button, through the game's own evolution. `N/A` where it can't work. | [Party](party.md#trade-evolutions) |
+| `QUICK HATCH` | `ON`, **`OFF`** | An Egg in your party gets a `HATCH` button on its summary: one step on the field and it hatches, the game's own way. `N/A` where it can't work. | [Party](party.md#quick-hatch) |
 | `SHINY ODDS` | **`NORMAL`**, `1 IN 4096`, `1 IN 1024`, `1 IN 512`, `1 IN 128` | How often a wild Pokémon is shiny. Pauses achievements while raised. `N/A` where it can't work. | [Controls](controls.md#shiny-odds) |
 | `SHINY ALERT` | `ON`, **`OFF`** | Counts your wild battles in this game and, when a shiny one shows up, stops fast-forward and turbo and says so. `N/A` where it can't work. | [Controls](controls.md#shiny-alert) |
 | `LOW HP BEEP` | **`ON`**, `OFF` | `OFF` stops the beeping while your Pokémon's health is in the red. `N/A` where it can't work. | [Controls](controls.md#low-hp-beep-and-field-poison) |

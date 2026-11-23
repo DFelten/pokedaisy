@@ -967,6 +967,12 @@ CB2_ReturnToField, controls locked first, from the field only. Which Pokémon ge
 bytes put back (a held-item evolution's item would be spent otherwise). Records `TRADE_EVO_*` in gamedata (retail English FireRed
 rev 1, LeafGreen rev 0 / 1 - found in retail by the shifted `$DECOMPS` build's masked code - and Emerald), the rest of retail (FireRed rev 0,
 every language) `TRADE_EVO_PORTS` from `port_field_items.py`; hacks / Kaizo / Legacy off.
+**QUICK HATCH** (2026-11-12, companion GAMEPLAY > QUALITY OF LIFE, `Prefs.quickHatch` OFF, NEW tag; `QuickHatch.kt`, `FieldQuickHatch`): an
+Egg's summary gets HATCH: the Egg's cycles (MON_DATA_FRIENDSHIP) to 0 through the game's SetMonData and SaveBlock1's daycare.stepCounter
+to 254, so the game's own TryProduceOrHatchEgg starts EventScript_EggHatch on the next step ("Huh?", the scene, the nickname question).
+Free field only; the window closes for the walk. Retail Emerald in every language (+ Kaizo, randomized), counter 0x314C, checked headless
+(one step, the scene, IS_EGG 0). FireRed / LeafGreen 0x309A and Ruby / Sapphire 0x30B6 are in the file's doc from pret's global.h, not
+offered until run.
 **INSTANT TEXT** (GitHub #111, GAMEPLAY on the companion, `Prefs.instantText` OFF, NEW tag; `InstantText.kt`): a game-option patch like REUSABLE TMS (`pkRomPatch` in 4-byte pieces, `EmulatorEngine.applyTmPatch` does both). RenderFont rewritten in its own 40 bytes (no free ROM): it goes on past RENDER_PRINT until a control code, textSpeed 0; Ruby / Sapphire: UpdateWindowText's delay turned into a `b` back to PrintNextChar. A delay of 0 (the game's own instant path) would lose everything after a page break. Found in the ROM's first 64 KB by code; gcc builds: N/A. TEXT SPEED stays: it's the emulator's speed, stops at what the device runs.
 **NO HMS NEEDED** (2026-11-14, GAMEPLAY on the companion, `Prefs.hmFree` OFF, NEW tag; `HmFree.kt`): the field moves with the badge
 alone, a game-option patch beside INSTANT TEXT's. Every field-move script runs `checkpartymove` after its badge check: ScrCmd_checkpartymove
