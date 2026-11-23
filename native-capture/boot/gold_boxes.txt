@@ -1,0 +1,153 @@
+# Pokémon Gold (USA, Europe) with Pokémon in three PC boxes, all by the game's own functions far-called from HandleMap (25:66B8)
+# with gbcallat, as the app does (pret/pokegold's symbols), for the gold_boxes fixture: the gold save (German Gold's
+# file is English's byte for byte; it loads in all four carts), boot/gold.txt's start, then
+#   TryAddMonToParty 03:5892 (wCurPartySpecies D004, wCurPartyLevel D040, wMonType CE5F = 0)
+#   SendGetMonIntoFromBox 03:5B45 (wCurPartyMon D005, wCurPartySpecies, wPokemonWithdrawDepositParameter D008 = 1)
+#   RemoveMonFromPartyOrBox 03:603F (D008 = 0)
+#   SaveBox 05:4DF6 / LoadBox 05:5065 (wCurBox D8BC), what a box change does around its save.
+# BOX 1: GEODUDE 8, MAGIKARP 5 (bank 2); BOX 8 renamed TEAM: ZUBAT 6, HOOTHOOT 4 (bank 3); BOX 3 the current one
+# (sBox, bank 1 AD6C): PIDGEY 3. The party keeps CYNDAQUIL and PIDGEY. Give mgba_dump a fresh copy of the save each run.
+# Pokémon Gold / Silver (USA, Europe) from a save: the intro, the title, CONTINUE and the save summary, then on the
+# field (capture_fixture_headless.sh gold --script native-capture/boot/gold.txt). Silver takes the same timing.
+# Gen 2 can miss a one-frame press outside its menus: START and A are held 3 frames. Three A's (Crystal's script has
+# a fourth): the third already leaves the summary for the field, so a fourth would be a press on the field.
+wait 600
+hold START 3
+wait 200
+hold A 3
+wait 120
+hold A 3
+wait 120
+hold A 3
+wait 200
+gbcallat 2566b8 0008 03 0 5892
+gbpoke 1 d004 81
+gbpoke 1 d040 05
+gbpoke 0 ce5f 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5892
+gbpoke 1 d004 4a
+gbpoke 1 d040 08
+gbpoke 0 ce5f 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbpeek 1 da22 8
+gbcallat 2566b8 0008 03 0 5b45
+gbpoke 1 d005 3
+gbpoke 1 d004 4a
+gbpoke 1 d008 1
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 603f
+gbpoke 1 d005 3
+gbpoke 1 d004 4a
+gbpoke 1 d008 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5b45
+gbpoke 1 d005 2
+gbpoke 1 d004 81
+gbpoke 1 d008 1
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 603f
+gbpoke 1 d005 2
+gbpoke 1 d004 81
+gbpoke 1 d008 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbpeek 1 da22 8
+gbsram 1 ad6c 8
+gbcallat 2566b8 0008 05 0 4df6
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbpoke 1 d8bc 07
+gbcallat 2566b8 0008 05 0 5065
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5892
+gbpoke 1 d004 a3
+gbpoke 1 d040 04
+gbpoke 0 ce5f 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5892
+gbpoke 1 d004 29
+gbpoke 1 d040 06
+gbpoke 0 ce5f 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5b45
+gbpoke 1 d005 3
+gbpoke 1 d004 29
+gbpoke 1 d008 1
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 603f
+gbpoke 1 d005 3
+gbpoke 1 d004 29
+gbpoke 1 d008 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5b45
+gbpoke 1 d005 2
+gbpoke 1 d004 a3
+gbpoke 1 d008 1
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 603f
+gbpoke 1 d005 2
+gbpoke 1 d004 a3
+gbpoke 1 d008 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbsram 1 ad6c 8
+gbcallat 2566b8 0008 05 0 4df6
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbpoke 1 d8bc 02
+gbcallat 2566b8 0008 05 0 5065
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5892
+gbpoke 1 d004 10
+gbpoke 1 d040 03
+gbpoke 0 ce5f 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 5b45
+gbpoke 1 d005 2
+gbpoke 1 d004 10
+gbpoke 1 d008 1
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbcallat 2566b8 0008 03 0 603f
+gbpoke 1 d005 2
+gbpoke 1 d004 10
+gbpoke 1 d008 0
+wait 4
+gbcallat 2566b8 0015 0 0 0
+wait 4
+gbpeek 1 da22 8
+gbsram 1 ad6c 8
+gbpoke 1 d8fe 93 84 80 8c 50
+wait 30

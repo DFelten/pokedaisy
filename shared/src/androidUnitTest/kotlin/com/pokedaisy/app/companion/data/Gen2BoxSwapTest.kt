@@ -8,7 +8,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Crystal's PC moves (Gen2BoxSwap.kt): their code in both carts (skipped without them), and the calls on a stand-in game
+ * Crystal's PC moves (Gen2BoxSwap.kt), and Gold / Silver's at the end: their code in both carts (skipped without them), and the calls on a stand-in game
  * that does what SendGetMonIntoFromBox / RemoveMonFromPartyOrBox do once the loop comes by again - the order, the
  * arguments, the checks and every refusal before a call.
  */
@@ -35,7 +35,6 @@ class Gen2BoxSwapTest {
 
     private val cfg = GEN2_CRYSTAL
     private val calls = GEN2_BOX_CALLS_CRYSTAL
-    private val box = cartRam(1, 0xAD10)
 
     /** WRAM bank 1 and the box: a party and a box of Pokémon told apart by species and OT ID. */
     private class Game(val cfg: Gen2Config, val calls: Gen2BoxCalls) : GameCalls {
@@ -52,7 +51,7 @@ class Gen2BoxSwapTest {
 
         private fun at(addr: Long): Pair<ByteArray, Int> = when {
             addr >= cartRam(1, 0xA000) && (addr and 0xFFFF) < 0xA010 -> sramTop to (addr and 0xFFFF).toInt() - 0xA000
-            addr >= cartRam(1, 0xA000) -> sram to (addr and 0xFFFF).toInt() - 0xAD10
+            addr >= cartRam(1, 0xA000) -> sram to (addr and 0xFFFF).toInt() - (calls.box and 0xFFFF).toInt()
             (addr and 0xFFFF) < 0xD000 -> wram0 to (addr and 0xFFFF).toInt() - 0xC000
             else -> wram to (addr and 0xFFFF).toInt() - 0xD000
         }
@@ -75,9 +74,9 @@ class Gen2BoxSwapTest {
         }
 
         val partyCount get() = this[cfg.partyCount]
-        val boxCount get() = this[cartRam(1, 0xAD10)]
+        val boxCount get() = this[calls.box]
         fun partyMon(i: Int) = read(cfg.partyMons + i * 0x30, 0x30)
-        fun boxMon(i: Int) = read(cartRam(1, 0xAD10) + 0x16 + i * 32, 32)
+        fun boxMon(i: Int) = read(calls.box + 0x16 + i * 32, 32)
 
         // The game's two routines, on wCurPartyMon and wPokemonWithdrawDepositParameter.
         private fun run(fn: Int) {
@@ -92,15 +91,15 @@ class Gen2BoxSwapTest {
                 write(cfg.partyMons + n * 0x30, boxMon(slot) + ByteArray(16))
             } else if (fn == calls.send && param == 1) {   // party -> box's end
                 val n = boxCount
-                this[cartRam(1, 0xAD10)] = n + 1
-                this[cartRam(1, 0xAD11) + n] = this[calls.curPartySpecies]
-                this[cartRam(1, 0xAD12) + n] = 0xFF
-                write(cartRam(1, 0xAD10) + 0x16 + n * 32, partyMon(slot).copyOf(32))
+                this[calls.box] = n + 1
+                this[(calls.box + 1) + n] = this[calls.curPartySpecies]
+                this[(calls.box + 2) + n] = 0xFF
+                write(calls.box + 0x16 + n * 32, partyMon(slot).copyOf(32))
             } else if (fn == calls.remove && param == 1) { // out of the box
                 val n = boxCount
-                for (i in slot until n - 1) { this[cartRam(1, 0xAD11) + i] = this[cartRam(1, 0xAD12) + i]; write(cartRam(1, 0xAD10) + 0x16 + i * 32, boxMon(i + 1)) }
-                this[cartRam(1, 0xAD10) + n] = 0xFF
-                this[cartRam(1, 0xAD10)] = n - 1
+                for (i in slot until n - 1) { this[(calls.box + 1) + i] = this[(calls.box + 2) + i]; write(calls.box + 0x16 + i * 32, boxMon(i + 1)) }
+                this[calls.box + n] = 0xFF
+                this[calls.box] = n - 1
             } else if (fn == calls.remove && param == 0) { // out of the party
                 val n = partyCount
                 for (i in slot until n - 1) { this[cfg.partyCount + 1 + i] = this[cfg.partyCount + 2 + i]; write(cfg.partyMons + i * 0x30, partyMon(i + 1)) }
@@ -121,9 +120,9 @@ class Gen2BoxSwapTest {
         }
 
         fun box(vararg mons: ByteArray) {
-            this[cartRam(1, 0xAD10)] = mons.size
-            mons.forEachIndexed { i, m -> this[cartRam(1, 0xAD11) + i] = m[0].toInt() and 0xFF; write(cartRam(1, 0xAD10) + 0x16 + i * 32, m.copyOf(32)) }
-            this[cartRam(1, 0xAD11) + mons.size] = 0xFF
+            this[calls.box] = mons.size
+            mons.forEachIndexed { i, m -> this[(calls.box + 1) + i] = m[0].toInt() and 0xFF; write(calls.box + 0x16 + i * 32, m.copyOf(32)) }
+            this[(calls.box + 1) + mons.size] = 0xFF
         }
     }
 
@@ -263,5 +262,64 @@ class Gen2BoxSwapTest {
         assertEquals(BoxSwapResult.SWAPPED, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
         g[0xC2DCL] = 1
         assertEquals(BoxSwapResult.NOT_NOW, GbField.Crystal.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED })
+    }
+
+    private val gsDir get() = dir
+    private val goldSilver = listOf(
+        "Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_GOLD,
+        "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_SILVER,
+        "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_GOLD_DE,
+        "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_SILVER_DE,
+    )
+
+    @Test
+    fun `Gold and Silver's calls - each cart's code, only its own`() {
+        val here = goldSilver.filter { File(gsDir, it.first).isFile }
+        assumeTrue("no Gold / Silver cart", here.isNotEmpty())
+        for ((name, own) in here) {
+            val rom = File(gsDir, name).readBytes()
+            for ((_, calls) in goldSilver) {
+                val ok = calls.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) }
+                assertEquals("$name / ${calls.remove.toString(16)}", calls === own, ok)
+            }
+        }
+        assertTrue(GbField.Gold.boxCalls === GEN2_BOX_CALLS_GOLD && GbField.Silver.boxCalls === GEN2_BOX_CALLS_SILVER)
+        assertTrue(GbField.GoldDe.boxCalls === GEN2_BOX_CALLS_GOLD_DE && GbField.SilverDe.boxCalls === GEN2_BOX_CALLS_SILVER_DE)
+    }
+
+    @Test
+    fun `Gold - WITHDRAW, DEPOSIT and CHANGE BOX at its own addresses`() {
+        val cfg = GEN2_GOLD
+        val calls = GEN2_BOX_CALLS_GOLD
+        val g = Game(cfg, calls)
+        g.party(g.mon(155, 1), g.mon(16, 4))
+        g.box(g.mon(129, 2), g.mon(74, 3))
+        assertEquals(BoxSwapResult.SWAPPED, calls.withdraw(g, cfg, 1, gen2MonKey(g.boxMon(1), 0)))
+        assertEquals(listOf(155, 16, 74), g.partySpecies())
+        assertEquals(BoxSwapResult.SWAPPED, calls.deposit(g, cfg, 0, gen2MonKey(g.partyMon(0), 0)))
+        assertEquals(listOf(16, 74), g.partySpecies())
+        assertEquals(listOf(129, 155), g.boxSpecies())
+        assertEquals(listOf(calls.send to 0, calls.remove to 1, calls.send to 1, calls.remove to 0), g.ran)
+        g[calls.curBox] = 0
+        g[calls.saveCheck] = 99
+        g[wramx(1, 0xD1A1)] = 0xD3; g[wramx(1, 0xD1A2)] = 0x48   // wPlayerID, the gold fixture's 54088
+        g[cartRam(1, 0xA009)] = 0xD3; g[cartRam(1, 0xA00A)] = 0x48
+        assertEquals(BoxChangeResult.CHANGED, calls.changeBox(g, 7))
+        assertEquals(listOf(0x4DF6, 0x5065, 0x4C23), g.saved)
+        assertEquals(7, g[wramx(1, 0xD8BC)])
+    }
+
+    @Test
+    fun `Gold - the moves wait where its PC would - a script, a battle, the contest, a link`() {
+        val g = Game(GEN2_GOLD, GEN2_BOX_CALLS_GOLD)
+        fun move() = GbField.Gold.boxMove(g) { _, _ -> BoxSwapResult.SWAPPED }
+        assertEquals(BoxSwapResult.SWAPPED, move())
+        for (addr in listOf(wramx(1, 0xD15F), GEN2_GOLD.battleMode, wramx(1, 0xD042))) {
+            g[addr] = 1
+            assertEquals(BoxSwapResult.NOT_NOW, move())
+            g[addr] = 0
+        }
+        g[wramx(1, 0xD572)] = 0x04   // wStatusFlags2: the Bug-Catching Contest
+        assertEquals(BoxSwapResult.NOT_NOW, move())
     }
 }

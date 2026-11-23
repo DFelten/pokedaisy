@@ -256,7 +256,7 @@ sealed class GbField {
         val boxCalls: Gen2BoxCalls? = null,
         /**
          * wStatusFlags2 (bit 2: the Bug-Catching Contest's timer; the contest hides all but the lead, ContestDropOffMons,
-         * and its START menu has no SAVE) and wLinkMode: no PC there. Null = not mapped (Gold / Silver).
+         * and its START menu has no SAVE) and wLinkMode: no PC there. Null = not mapped.
          */
         private val STATUS_FLAGS2: Long? = null,
         private val LINK_MODE: Long? = null,
@@ -391,10 +391,11 @@ sealed class GbField {
      * Gold and Silver (USA / Europe), pret/pokegold's symbols (its `symbols` branch, 2026-11-18): Crystal's way in - the same
      * RunMemScript queue, PCScript and FlyFunction.FlyScript, CheckWildEncounterCooldown - at their own addresses; PCScript in
      * bank 0x40, wDefaultSpawnpoint in bank 0, the Kanto landmarks from 46. Silver's Fly script sits 2 bytes before Gold's.
+     * [boxCalls]: the PC moves on the current box (Gen2BoxSwap.kt).
      */
     open class GoldSilver(
         cfg: Gen2Config, flyScript: Int, runMemScript: Int = 0x7A61, flypoints: Int = 0x5BCC,
-        runMemScriptCall: String = "48", flyText: String = "0a",
+        runMemScriptCall: String = "48", flyText: String = "0a", boxCalls: Gen2BoxCalls? = null,
     ) : CrystalEngine(
         cfg = cfg,
         QUEUE = wramx(1, 0xD183), PC_SCRIPT = 0x4145, FLY_SCRIPT = flyScript, SCRIPT_RUNNING = wramx(1, 0xD15F),
@@ -408,16 +409,19 @@ sealed class GbField {
             0x25 * 0x4000L + (0x67F4 - 0x4000) to "2179d17ea7c835c837c9",           // CheckWildEncounterCooldown
             0x24 * 0x4000L + (flypoints - 0x4000) to "010e030f",                         // Flypoints: NEW BARK, CHERRYGROVE
         ),
-        DEFAULT_SPAWN = 0xCEEC, PC_SCRIPT_BANK = 0x40, KANTO_LANDMARK = 46,
+        DEFAULT_SPAWN = 0xCEEC, PC_SCRIPT_BANK = 0x40, KANTO_LANDMARK = 46, boxCalls = boxCalls,
+        STATUS_FLAGS2 = wramx(1, 0xD572), LINK_MODE = wramx(1, 0xD042),
     )
 
-    object Gold : GoldSilver(GEN2_GOLD, 0x4AC2)
-    object Silver : GoldSilver(GEN2_SILVER, 0x4AC0)
+    object Gold : GoldSilver(GEN2_GOLD, 0x4AC2, boxCalls = GEN2_BOX_CALLS_GOLD)
+    object Silver : GoldSilver(GEN2_SILVER, 0x4AC0, boxCalls = GEN2_BOX_CALLS_SILVER)
 
     /** German Gold / Silver (Goldene / Silberne Edition): English's RAM, scripts and Fly script, RunMemScript 0x1F later and
      * the Flypoints table 0x31 later (bank 0x24). */
-    object GoldDe : GoldSilver(GEN2_GOLD_DE, 0x4AC2, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37")
-    object SilverDe : GoldSilver(GEN2_SILVER_DE, 0x4AC0, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37")
+    object GoldDe : GoldSilver(GEN2_GOLD_DE, 0x4AC2, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37",
+        boxCalls = GEN2_BOX_CALLS_GOLD_DE)
+    object SilverDe : GoldSilver(GEN2_SILVER_DE, 0x4AC0, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37",
+        boxCalls = GEN2_BOX_CALLS_SILVER_DE)
 
     /** Crystal Legacy v1.3.1 (its pokecrystal.sym): Crystal's scripts and rules at its own addresses. */
     object CrystalLegacy : CrystalEngine(

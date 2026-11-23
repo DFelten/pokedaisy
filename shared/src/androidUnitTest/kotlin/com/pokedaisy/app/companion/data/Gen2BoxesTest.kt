@@ -101,4 +101,31 @@ class Gen2BoxesTest {
         // Nicknames are the German species names the game gave them.
         assertEquals(listOf("RATTFRATZ", "WIESOR"), boxes.boxes[0].mons.take(2).map { it!!.nickname })
     }
+
+    @Test
+    fun `Gold and Silver, English and German - the same boxes at their own places`() {
+        // gold_boxes ...: the gold save, then Pokémon put in three boxes by each cart's own functions (the app's gbCallAt from
+        // HandleMap): BOX 1 GEODUDE 8 + MAGIKARP 5, BOX 8 (renamed TEAM) ZUBAT 6 + HOOTHOOT 4, BOX 3 the current one: PIDGEY 3.
+        for ((fixture, cfg, kind) in listOf(
+            Triple("gold_boxes", GEN2_GOLD, GameKind.GOLD), Triple("silver_boxes", GEN2_SILVER, GameKind.SILVER),
+            Triple("gold_de_boxes", GEN2_GOLD_DE, GameKind.GOLD), Triple("silver_de_boxes", GEN2_SILVER_DE, GameKind.SILVER),
+        )) {
+            activeGame = kind
+            romLanguage = cfg.language ?: 'E'
+            romGameCode = cfg.gameCode ?: ""
+            val t = readGen2Telemetry(FixtureMemoryReader.load(fixture), cfg)
+            assertEquals(fixture, listOf(155, 16), t.party.map { it.species })
+            val boxes = t.pcBoxes!!
+            assertEquals(fixture, 2, boxes.currentBox)
+            assertEquals(fixture, 14, boxes.boxes.size)
+            assertEquals(fixture, "TEAM", boxes.boxes[7].name)
+            assertEquals(fixture, listOf(74 to 8, 129 to 5), boxes.boxes[0].species())
+            assertEquals(fixture, listOf(41 to 6, 163 to 4), boxes.boxes[7].species())
+            assertEquals(fixture, listOf(16 to 3), boxes.boxes[2].species())
+            assertEquals(fixture, setOf(0, 2, 7), boxes.boxes.indices.filter { boxes.boxes[it].mons.any { m -> m != null } }.toSet())
+        }
+        // Each game its own layout; the hacks none.
+        assertEquals(GEN2_GOLD_SILVER_BOXES, gen2BoxLayoutFor(GEN2_SILVER_DE))
+        assertNull(gen2BoxLayoutFor(GEN2_CRYSTAL_LEGACY))
+    }
 }

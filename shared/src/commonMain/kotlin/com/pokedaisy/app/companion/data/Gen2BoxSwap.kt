@@ -224,3 +224,41 @@ val GEN2_BOX_CALLS_CRYSTAL_DE = Gen2BoxCalls(
         0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521097e",
     ) + SAVE_SIGNATURES,
 )
+
+/**
+ * Gold / Silver: pret/pokegold's symbols (its builds are the English carts byte for byte), the same functions as Crystal's at
+ * their own addresses; Silver's bank 3 code sits 2 bytes before Gold's. German Gold / Silver keep English's RAM and bank 3
+ * addresses but RemoveMonFromPartyOrBox (a byte earlier) and bank 5's SaveBox / LoadBox / SaveGameData, found by their code.
+ * Each checked headless on its cart (the `gold_boxes` ... fixtures, a box change saved and rebooted).
+ */
+private fun goldSilverBoxCalls(send: Int, remove: Int, sendCode: String, handleMap: String, saveBox: Int, loadBox: Int, saveGame: Int,
+                               saveCode: List<String>) = Gen2BoxCalls(
+    send = send,
+    remove = remove,
+    signatures = listOf(
+        0x03 * 0x4000L + (send - 0x4000) to sendCode,                 // SendGetMonIntoFromBox: OpenSRAM, the parameter
+        0x03 * 0x4000L + (remove - 0x4000) to "2122dafa08d0a72808",   // RemoveMonFromPartyOrBox: wPartyCount, the parameter
+        0x25 * 0x4000L + (0x66B8 - 0x4000) to handleMap,              // HandleMap
+        0x05 * 0x4000L + (saveBox - 0x4000) to saveCode[0],           // SaveBox
+        0x05 * 0x4000L + (loadBox - 0x4000) to saveCode[1],           // LoadBox
+        0x05 * 0x4000L + (saveGame - 0x4000) to saveCode[2],          // SaveGameData
+    ),
+    at = 0x2566B8,
+    curPartySpecies = wramx(1, 0xD004),
+    curPartyMon = wramx(1, 0xD005),
+    withdrawDeposit = wramx(1, 0xD008),
+    box = GEN2_GOLD_SILVER_BOXES.activeBox,
+    saveBox = saveBox,
+    loadBox = loadBox,
+    saveGame = saveGame,
+    curBox = GEN2_GOLD_SILVER_BOXES.curBox,
+    playerId = wramx(1, 0xD1A1),
+)
+
+private val GOLD_SILVER_SAVE_CODE = listOf("cd4651cd6751c9", "cd4651cdeb51c9", "cdcc4cc9")
+private val GOLD_SILVER_DE_SAVE_CODE = listOf("cd5b51cd7c51c9", "cd5b51cd0052c9", "cdc94cc9")
+
+val GEN2_BOX_CALLS_GOLD = goldSilverBoxCalls(0x5B45, 0x603F, "3e01cde130fa08d0a7", "cdf566cd06673e2521397c", 0x4DF6, 0x5065, 0x4C23, GOLD_SILVER_SAVE_CODE)
+val GEN2_BOX_CALLS_SILVER = goldSilverBoxCalls(0x5B43, 0x603D, "3e01cde130fa08d0a7", "cdf566cd06673e2521397c", 0x4DF6, 0x5065, 0x4C23, GOLD_SILVER_SAVE_CODE)
+val GEN2_BOX_CALLS_GOLD_DE = goldSilverBoxCalls(0x5B45, 0x603E, "3e01cd0e31fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE)
+val GEN2_BOX_CALLS_SILVER_DE = goldSilverBoxCalls(0x5B43, 0x603C, "3e01cd0e31fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE)

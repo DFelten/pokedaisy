@@ -128,7 +128,7 @@ fun BoxesScreen(
     /** SORT is offered (the game supports it); the button opens its confirmation. */
     onSort: (() -> Unit)? = null,
     sorting: Boolean = false,
-    /** CHANGE BOX is offered (Crystal): on any box but the current one, the button opens its confirmation. */
+    /** CHANGE BOX is offered (Gold, Silver, Crystal): on any box but the current one, the button opens its confirmation. */
     onChangeBox: ((Int) -> Unit)? = null,
 ) {
     val boxIndex = ui.boxOf(boxes)
