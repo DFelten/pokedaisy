@@ -3,7 +3,7 @@ test_host.py BINARY CORES_DIR DIAGNOSTICS_DIR. The GB ROM runs on pokedaisy_gbc 
 which has to reach DATA/saves; the GBA ROM runs on pokedaisy_gba (armGBA) and fills its screen red, which has to
 reach the window. The DS ROM fills its top screen green. A second run backs the save up, and the game list draws with no ROM given."""
 from pathlib import Path
-import os,shutil,struct,subprocess,sys,tempfile,time,zlib
+import os,shutil,struct,subprocess,sys,tempfile,time,zipfile,zlib
 
 binary,cores,diag=(Path(a).resolve() for a in sys.argv[1:4])
 
@@ -58,6 +58,19 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     run(d,str(d/'roms/solo.gb'),'--frames','120')
     assert (d/'saves/solo.gb.sav').read_bytes()[:1]==b'\x5a','the ROM-named save did not win'
     (d/'roms/solo.gb').unlink()
+    # A zipped ROM plays as a ROM with the zip's name, its save's too; the DS core gets it as a file.
+    packed=d/'roms'/'Packed (USA).zip'
+    with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.gb','inside.gb')
+    run(d,str(packed),'--frames','120')
+    assert (d/'saves/Packed (USA).gb.sav').read_bytes()[:1]==b'\x5a','the zipped ROM did not run'
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).gb']
+    with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.nds','inside.nds')
+    run(d,str(packed),'--frames','90','--shot',str(d/'ds-zip.png'))
+    w,h,bpp,rows=png_pixels(d/'ds-zip.png')
+    mid=rows[h//2][(w//2)*bpp:(w//2)*bpp+3]
+    assert mid[0]<60 and mid[1]>200 and mid[2]<60,mid
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).nds']
+    packed.unlink()
     # diagnostic.gb has diagnostic.gba and .nds beside it: diagnostic.sav could be any of theirs, so it's left alone.
     (d/'saves/diagnostic.gb.sav').rename(d/'saves/diagnostic.sav')
     (d/'saves/diagnostic.sav').write_bytes(b'\0'*8192)

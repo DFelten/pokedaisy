@@ -35,6 +35,7 @@
 #include "pd_env.h"
 
 #include "library.h"
+#include "rom_zip.h"
 
 /* The cores' file ending: dlopen'd .so objects on Linux, .dll on Windows. */
 #ifdef _WIN32
@@ -2041,13 +2042,10 @@ static const char *core_for(const char *path) {
  * a Game Boy title of Red / Blue / Green / Yellow / Gold / Silver / Crystal and their hacks (not Pinball, the card
  * games or Puzzle Challenge), a DS game code of Diamond / Pearl / Platinum / HeartGold / SoulSilver / Black / White /
  * their sequels. */
-static bool pokemon_rom(const char *path) {
+static bool pokemon_rom(const char *path, const char *name) {
   unsigned char h[0x150];
-  FILE *f = fopen(path, "rb");
-  size_t n = f ? fread(h, 1, sizeof h, f) : 0;
-  if (f)
-    fclose(f);
-  const char *ext = strrchr(path, '.');
+  size_t n = rom_head(path, h, sizeof h);
+  const char *ext = strrchr(name, '.');
   if (!ext)
     return false;
   if (!strcasecmp(ext, ".gba")) {
@@ -2088,6 +2086,15 @@ enum { M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_L
 static const int MENU_FULL[] = {M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT};
 static const int MENU_SHORT[] = {M_RESUME, M_SAVE, M_LOAD, M_SETTINGS, M_QUIT};
 static void run_game(const char *path, int maxFrames, const char *shot, bool fromList) {
+  char unzipped[PATH_MAX - 8]; // its name and .sav still fit sav below
+  if (rom_zipped(path)) {
+    if (!rom_unzip(path, root, unzipped, sizeof unzipped)) {
+      appError = 1;
+      notice("Cannot read ROM");
+      return;
+    }
+    path = unzipped;
+  }
 #ifdef POCKET_DSPERATE
   const char *ext = strrchr(path, '.');
   if (ext && !strcasecmp(ext, ".nds")) {
@@ -3008,11 +3015,12 @@ int main(int argc, char **argv) {
       DIR *d = opendir(dir);
       struct dirent *e;
       while (d && (e = readdir(d)) && count < 1024) {
-        if (core_for(e->d_name)) {
-          snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
-          if (!firmware || pokemon_rom(path))
-            paths[count++] = strdup(path);
-        }
+        if (!core_for(e->d_name) && !rom_zipped(e->d_name))
+          continue;
+        char name[256];
+        snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
+        if (rom_name(path, name, sizeof name) && core_for(name) && (!firmware || pokemon_rom(path, name)))
+          paths[count++] = strdup(path);
       }
       if (d)
         closedir(d);

@@ -13,7 +13,7 @@ O PokeDaisy também corre no Linux: num Steam Deck, num PC com Linux e em consol
 
 - **Um Steam Deck, um PC com Linux (x86_64) ou uma consola portátil com Linux ARM de 64 bits.** Num PC: um Linux com glibc 2.35 ou mais recente e SDL2 (o SteamOS, o Ubuntu 22.04 e mais recentes e a maioria dos ambientes de trabalho atuais têm os dois). Numa consola portátil: glibc 2.33 ou mais recente, o que inclui o TrimUI Brick.
 - **Uma forma de copiar ficheiros para lá:** o próprio dispositivo, ou o cartão SD dele num computador.
-- **Os seus próprios jogos.** O PokeDaisy não traz nenhum jogo. Use ROMs que extraiu dos cartuchos que tem: ficheiros `.gba`, `.gb`, `.gbc` ou `.nds`, descomprimidos.
+- **Os seus próprios jogos.** O PokeDaisy não traz nenhum jogo. Use ROMs que extraiu dos cartuchos que tem: ficheiros `.gba`, `.gb`, `.gbc` ou `.nds`, soltos ou num `.zip`.
 
 ## Que ficheiro transferir
 
@@ -108,7 +108,7 @@ Transfira o zip mais recente e extraia-o por cima da pasta antiga (no NXRedux, o
 
 - **Permission denied ao iniciar:** o extrator perdeu a permissão de execução do programa. Na pasta, execute `chmod +x pokedaisy-linux`.
 - **Um erro que menciona `GLIBC_2.35` ou `libSDL2`:** o seu Linux é mais antigo do que o PokeDaisy precisa, ou o SDL2 não está instalado. Instale o SDL2 a partir da sua distribuição (no Ubuntu, `sudo apt install libsdl2-2.0-0`) ou experimente um sistema mais recente.
-- **Um jogo não aparece na lista:** tem de estar diretamente em `roms` (não numa pasta lá dentro), descomprimido, e terminar em `.gba`, `.gb`, `.gbc` ou `.nds`.
+- **Um jogo não aparece na lista:** tem de estar diretamente em `roms` (não numa pasta lá dentro) e terminar em `.gba`, `.gb`, `.gbc` ou `.nds`, ou ser um `.zip` com um jogo lá dentro. Os ficheiros `.7z` têm de ser descomprimidos.
 - **A e B estão trocados:** abra o menu (START e SELECT em conjunto, ou o botão Guide ou Menu), escolha `SETTINGS` e mude `A/B BUTTONS` para `SWAPPED`.
 - **O meu jogo guardado não carregou:** precisa de ter o nome completo do ficheiro da ROM com `.sav` no fim, em `saves`. Procure uma cópia mais antiga em `saves/pokedaisy-backups`.
 - **O comando não faz nada:** o SDL ainda não o conhece. Ponha um `gamecontrollerdb.txt` com o mapeamento dele na pasta de dados (ao lado de `roms`).

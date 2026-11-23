@@ -17,7 +17,7 @@ PokeDaisy läuft auch unter Linux: auf einem Steam Deck, einem Linux-PC und Linu
 
 - **Ein Steam Deck, einen Linux-PC (x86_64) oder einen 64-Bit-ARM-Linux-Handheld.** Auf einem PC: ein Linux mit glibc 2.35 oder neuer und SDL2 (SteamOS, Ubuntu 22.04 und neuer und die meisten aktuellen Desktops haben beides). Auf einem Handheld: glibc 2.33 oder neuer, was den TrimUI Brick einschließt.
 - **Eine Möglichkeit, Dateien darauf zu kopieren:** das Gerät selbst oder seine SD-Karte in einem Computer.
-- **Deine eigenen Spiele.** PokeDaisy enthält keine Spiele. Nutze ROMs, die du selbst aus Modulen ausgelesen hast, die dir gehören: Dateien mit der Endung `.gba`, `.gb`, `.gbc` oder `.nds`, entpackt.
+- **Deine eigenen Spiele.** PokeDaisy enthält keine Spiele. Nutze ROMs, die du selbst aus Modulen ausgelesen hast, die dir gehören: Dateien mit der Endung `.gba`, `.gb`, `.gbc` oder `.nds`, lose oder gezippt.
 
 ## Welche Datei du herunterlädst
 
@@ -112,7 +112,7 @@ Lade die neuere Zip-Datei herunter und entpacke sie über den alten Ordner (bei 
 
 - **Permission denied beim Starten:** Das Entpackprogramm hat dem Programm die Ausführungsrechte genommen. Führe im Ordner `chmod +x pokedaisy-linux` aus.
 - **Ein Fehler, der `GLIBC_2.35` oder `libSDL2` nennt:** Dein Linux ist älter, als PokeDaisy braucht, oder SDL2 ist nicht installiert. Installiere SDL2 aus deiner Distribution (unter Ubuntu `sudo apt install libsdl2-2.0-0`) oder probiere ein neueres System.
-- **Ein Spiel fehlt in der Liste:** Es muss direkt in `roms` liegen (nicht in einem Ordner darin), entpackt sein und auf `.gba`, `.gb`, `.gbc` oder `.nds` enden.
+- **Ein Spiel fehlt in der Liste:** Es muss direkt in `roms` liegen (nicht in einem Ordner darin) und auf `.gba`, `.gb`, `.gbc` oder `.nds` enden, oder eine `.zip` mit einem Spiel darin sein. `.7z`-Dateien müssen entpackt werden.
 - **A und B sind vertauscht:** Öffne das Menü (START und SELECT zusammen, oder die Guide- oder Menu-Taste), wähle `SETTINGS` und stelle `A/B BUTTONS` auf `SWAPPED`.
 - **Meine Speicherdatei wurde nicht geladen:** Sie braucht den ganzen Dateinamen der ROM mit `.sav` dahinter, in `saves`. Sieh in `saves/pokedaisy-backups` nach einer älteren Kopie.
 - **Der Controller tut nichts:** SDL kennt ihn noch nicht. Lege eine `gamecontrollerdb.txt` mit seiner Belegung in den Datenordner (neben `roms`).

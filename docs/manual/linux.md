@@ -216,7 +216,10 @@ and `FONT TYPE`, which picks the companion's letters: `PIXEL SMALL`, the app's s
 ## Adding games
 
 The program's game list shows the `.gb`, `.gbc`, `.gba` and `.nds` files in the `roms` folder of its data folder (and, on
-PortMaster, the firmware's folders above). Unzip your games first.
+PortMaster, the firmware's folders above). A `.zip` with a game inside is listed too and stays zipped: PokeDaisy unpacks a
+copy into the data folder's `unzipped` folder when you play it and keeps only the last one. Its save goes by the zip's
+name: `My Game.zip` with a GBA game inside saves as `My Game.gba.sav`. A game that's there both loose and zipped is listed
+once. `.7z` files have to be unpacked first.
 
 ## The game list
 

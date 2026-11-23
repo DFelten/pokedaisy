@@ -36,7 +36,7 @@ ctest --test-dir linux/build --output-on-failure
 POCKET_CORE_DIR=build/cores linux/build/pokedaisy-linux --data /your/test-directory /your/game.gba
 ```
 
-Without a ROM argument, choose a `.gb`, `.gbc`, `.gba` or `.nds` from DATA/roms and the folders `POCKET_ROM_DIRS` names
+Without a ROM argument, choose a `.gb`, `.gbc`, `.gba` or `.nds`, or a `.zip` with one inside, from DATA/roms and the folders `POCKET_ROM_DIRS` names
 (colon-separated; the PortMaster launcher passes the firmware's `gba`, `gb`, `gbc` and `nds` folders where they exist, at the roms root or in its `ROMS` folder as on muOS). The host creates DATA/saves and
 DATA/states. Before a game opens its battery save is backed up into DATA/saves/pokedaisy-backups (a new copy only
 when it changed, the newest 10 kept; with `--save FILE`, DATA/backups); a save that can't be backed up keeps the game
