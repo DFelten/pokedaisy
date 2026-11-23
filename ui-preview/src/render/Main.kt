@@ -233,6 +233,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override fun setRunIndoors(on: Boolean) { runIndoorsOn = on }
     override val runIndoorsSupported get() = true
     override val tradeEvolutionsSupported get() = true
+    override val quickHatchSupported get() = true
     private var volumePercent = 70
     override val gameVolume get() = volumePercent
     override fun setGameVolume(percent: Int) { volumePercent = percent }
@@ -557,6 +558,8 @@ fun companion(
 
 /** The preview party with personalities (the POKéMON CENTER's button needs one to check it against). */
 fun centerSnapshot() = snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> m.copy(personality = 0x1000L + i, moves = m.moves.mapIndexed { j, mv -> mv.copy(id = 33 + j) }) }) }
+/** The preview save with its lead an Egg (QUICK HATCH's shots). */
+fun eggSnapshot(): SnapshotView = snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> if (i == 0) m.copy(isEgg = true) else m }) }
 
 /**
  * USE / GIVE as retail FireRed rev 1 answers them (FieldItems.kt), for every game's preview - so each
@@ -580,6 +583,10 @@ class PreviewItemUse(private val party: List<MonView>, private val bagFull: Bool
     override fun centerHeal(done: (com.pokedaisy.app.companion.data.CenterResult) -> Unit) = done(com.pokedaisy.app.companion.data.CenterResult.OK)
     override fun centerForget(slot: Int, personality: Long, moveIndex: Int, move: Int, done: (com.pokedaisy.app.companion.data.CenterResult) -> Unit) =
         done(com.pokedaisy.app.companion.data.CenterResult.OK)
+    // QUICK HATCH: an Egg's summary has HATCH; confirming it says to take a step.
+    override fun canHatch() = true
+    override fun hatch(slot: Int, personality: Long, done: (com.pokedaisy.app.companion.data.HatchResult) -> Unit) =
+        done(com.pokedaisy.app.companion.data.HatchResult.HATCHING)
     // PC anywhere: the button shows; a tap answers "not now" (a menu open), as the BAG pops it up.
     override fun canPc() = true
     override fun openPc(done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
@@ -1760,6 +1767,14 @@ fun main(args: Array<String>) {
         Shot("$g-party-detail-center-healed", bw, bh, bd, companion("PARTY", mon = 1, items = true, snap = ::centerSnapshot)) {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("CENTER")).performSemanticsAction(SemanticsActions.OnClick)
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("HEAL THE PARTY")).performSemanticsAction(SemanticsActions.OnClick)
+        },
+        // QUICK HATCH: the lead as an Egg gets HATCH; its question; what it says once done.
+        Shot("$g-party-detail-hatch", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)),
+        Shot("$g-party-detail-hatch-ask", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)) {
+            onNodeWithText("HATCH").performClick()
+        },
+        Shot("$g-party-detail-hatch-done", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)) {
+            onNodeWithText("HATCH").performClick(); waitForIdle(); onAllNodesWithText("HATCH").onLast().performClick()
         },
         Shot("$g-expand-offer", bw, bh, bd, companion("PARTY", expandOffer = true)),
         Shot("$g-party-detail", bw, bh, bd, companion("PARTY", mon = 0)),

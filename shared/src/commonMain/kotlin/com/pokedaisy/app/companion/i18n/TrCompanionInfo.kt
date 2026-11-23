@@ -171,6 +171,10 @@ internal val trCompanionInfo: Map<String, Tr> = mapOf(
     "DAY" to Tr(ja = "ひる", fr = "JOUR", de = "TAG", it = "GIORNO", es = "DÍA", br = "DIA", pt = "DIA", ko = "낮"),
     "EVENING" to Tr(ja = "ゆうがた", fr = "SOIR", de = "ABEND", it = "SERA", es = "TARDE", br = "TARDE", pt = "TARDE", ko = "저녁"),
     "NIGHT" to Tr(ja = "よる", fr = "NUIT", de = "NACHT", it = "NOTTE", es = "NOCHE", br = "NOITE", pt = "NOITE", ko = "밤"),
+    "HATCH" to Tr(ja = "かえす", fr = "ÉCLORE", de = "BRÜTEN", it = "SCHIUDI", es = "ECLOSIÓN", br = "CHOCAR", pt = "CHOCAR", ko = "부화"),
+    "This Egg hatches the next time you take a step on the field." to Tr(ja = "つぎに フィールドを いっぽ あるくと この タマゴが かえります。", fr = "Cet Œuf éclot la prochaine fois que vous faites un pas.", de = "Dieses Ei schlüpft beim nächsten Schritt, den du machst.", it = "Questo Uovo si schiude al prossimo passo che fai.", es = "Este Huevo eclosiona la próxima vez que des un paso.", br = "Este Ovo choca na próxima vez que você der um passo.", pt = "Este Ovo choca na próxima vez que deres um passo.", ko = "필드에서 다음에 한 걸음 걸으면 이 알이 부화합니다."),
+    "Take one step and it hatches." to Tr(ja = "いっぽ あるくと かえります。", fr = "Faites un pas et il éclot.", de = "Mach einen Schritt, dann schlüpft es.", it = "Fai un passo e si schiude.", es = "Da un paso y eclosionará.", br = "Dê um passo e ele choca.", pt = "Dá um passo e ele choca.", ko = "한 걸음 걸으면 부화합니다."),
+    "This one won't hatch." to Tr(ja = "これは かえらない。", fr = "Celui-ci n'éclora pas.", de = "Daraus schlüpft nichts.", it = "Questo non si schiude.", es = "Este no va a eclosionar.", br = "Este não vai chocar.", pt = "Este não vai chocar.", ko = "이 알은 부화하지 않습니다."),
     // Black's seasons (its wild Pokémon change with them)
     "SPRING" to Tr(ja = "はる", fr = "PRINTEMPS", de = "FRÜHLING", it = "PRIMAVERA", es = "PRIMAVERA", br = "PRIMAVERA", pt = "PRIMAVERA", ko = "봄"),
     "SUMMER" to Tr(ja = "なつ", fr = "ÉTÉ", de = "SOMMER", it = "ESTATE", es = "VERANO", br = "VERÃO", pt = "VERÃO", ko = "여름"),

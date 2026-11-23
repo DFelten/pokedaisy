@@ -133,6 +133,8 @@ fun MonDetailScreen(
     initialCenterMenu: Boolean = false,
     /** Newly available party/storage operations on this host. */
     partyBadge: String? = itemUse?.partyBadge,
+    /** Open with QUICK HATCH's question up (screenshot tests). */
+    initialHatchAsk: Boolean = false,
 ) {
     val m = rememberGbaTextMetrics()
     val small = rememberGbaTextMetrics(1f)
@@ -218,6 +220,10 @@ fun MonDetailScreen(
         }
         return
     }
+    // QUICK HATCH: an Egg's summary gets HATCH; the question, then what it did.
+    val hatches = itemUse?.takeIf { it.canHatch() }
+    var hatchAsk by remember { mutableStateOf(initialHatchAsk) }
+    var hatchResult by remember { mutableStateOf<String?>(null) }
     Row(modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         AnimatedContent(
@@ -305,11 +311,13 @@ fun MonDetailScreen(
         val learns = canLearn && party.getOrNull(index)?.isEgg == false
         val evolve = evolves != null && evoTarget != null && !showLearn
         val centers = center != null && centerMon != null && !showLearn
-        if (stats || learns || evolve || centers || reorders != null || onDeposit != null || onWithdraw != null) {
+        val hatch = hatches != null && party.getOrNull(index)?.isEgg == true && !showLearn
+        if (stats || learns || evolve || hatch || centers || reorders != null || onDeposit != null || onWithdraw != null) {
             val actions = buildList {
                 if (stats) add(SummaryAction(if (showStats) tr("MOVES") else tr("STATS"), StatsPurple, StatsPurpleDark) { showStats = !showStats })
                 if (learns) add(SummaryAction(if (showLearn) tr("MOVES") else tr("LEARN"), SuggestGold, SuggestGoldDark) { showLearn = !showLearn; learnPick = 0 })
                 if (evolve) add(SummaryAction(tr("EVOLVE"), EvolveBlue, EvolveBlueDark, badge = itemUse?.evolveBadge) { evolveResult = null; evolveAsk = true })
+                if (hatch) add(SummaryAction(tr("HATCH"), HatchOrange, HatchOrangeDark) { hatchResult = null; hatchAsk = true })
                 if (reorders != null) add(SummaryAction(tr("SWITCH"), RunBlue, RunBlueDark, badge = partyBadge) { switching = true })
                 if (centers) add(SummaryAction(tr("CENTER"), CenterPink, CenterPinkDark) { centerMenu = true })
                 if (onDeposit != null) add(SummaryAction(tr("DEPOSIT"), PcGreen, PcGreenDark, partyBadge, onDeposit))
@@ -424,6 +432,22 @@ fun MonDetailScreen(
             )
         }
     }
+    val egg = party.getOrNull(index)
+    if (hatchAsk && hatches != null && egg != null) {
+        val said = hatchResult
+        if (said == null) {
+            OptionConfirm(
+                tk("QUICK HATCH"), tr("This Egg hatches the next time you take a step on the field."), tk("HATCH"), m,
+                onConfirm = {
+                    val slot = index
+                    hatches.hatch(slot, egg.personality) { r -> hatchResult = hatchMessage(r) }
+                },
+                onDismiss = { hatchAsk = false },
+            )
+        } else {
+            OptionConfirm(tk("QUICK HATCH"), said, tk("OK"), m, onConfirm = { hatchAsk = false }, onDismiss = { hatchAsk = false }, cancelLabel = null)
+        }
+    }
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         ItemNoticeHost(notice, m, Modifier.align(Alignment.TopCenter).padding(top = m.u * 6, start = m.u * 8, end = m.u * 8)) { notice = null }
     }
@@ -465,6 +489,15 @@ internal fun tradeEvoMessage(r: com.pokedaisy.app.companion.data.TradeEvoResult,
     com.pokedaisy.app.companion.data.TradeEvoResult.NOT_NOW -> tr("Not now: it evolves on the field, with no menu, text or battle open.")
     com.pokedaisy.app.companion.data.TradeEvoResult.NO_EVOLUTION -> tr("{0} wouldn't evolve from a trade right now.", mon)
     com.pokedaisy.app.companion.data.TradeEvoResult.MOVED -> tr("The party has changed. Try again.")
+    else -> tr("It can't be used here.")
+}
+
+/** What QUICK HATCH did, in the companion's words. */
+internal fun hatchMessage(r: com.pokedaisy.app.companion.data.HatchResult): String = when (r) {
+    com.pokedaisy.app.companion.data.HatchResult.HATCHING -> tr("Take one step and it hatches.")
+    com.pokedaisy.app.companion.data.HatchResult.NOT_NOW -> tr("Not now: close the game's menus and battles first.")
+    com.pokedaisy.app.companion.data.HatchResult.NOT_EGG -> tr("This one won't hatch.")
+    com.pokedaisy.app.companion.data.HatchResult.MOVED -> tr("The party has changed. Try again.")
     else -> tr("It can't be used here.")
 }
 
@@ -687,6 +720,9 @@ fun centerMessage(r: com.pokedaisy.app.companion.data.CenterResult, mon: String)
     com.pokedaisy.app.companion.data.CenterResult.PARTY_CHANGED -> tr("The party has changed. Try again.")
     else -> tr("It can't be used here.")
 }
+/** QUICK HATCH's HATCH button: a warm shell orange. */
+private val HatchOrange = Color(0xFFE88A48)
+private val HatchOrangeDark = Color(0xFFC0602A)
 
 /** The PC's DEPOSIT / WITHDRAW buttons: the party menu's HP green. */
 private val PcGreen = Color(0xFF58C060)

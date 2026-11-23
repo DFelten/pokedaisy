@@ -603,7 +603,7 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
  */
 private val QOL_ROWS = listOf(
     "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "QUICK HATCH", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
 )
 
 /** A QOL row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
@@ -856,6 +856,14 @@ private fun homeRows(
             subtitle = "Evolve without a trade",
         ) {
             if (s.tradeEvolutionsSupported) { s.setTradeEvolutions(!s.tradeEvolutions); changed() }
+        },
+        // An Egg's summary gets HATCH: it hatches on the next step, the game's own hatch (QuickHatch.kt).
+        SettingRow(
+            tk("QUICK HATCH"), if (s.quickHatchSupported) onOff(s.quickHatch) else tk("N/A"),
+            enabled = s.quickHatchSupported, labelBadge = NewFeatures.badge(NewFeatures.QUICK_HATCH),
+            subtitle = "Hatch an Egg on your next step",
+        ) {
+            if (s.quickHatchSupported) { s.setQuickHatch(!s.quickHatch); changed() }
         },
         // A new wild foe made shiny at these odds before its battle draws it (ShinyOdds.kt; the versions it knows by hash).
         SettingRow(

@@ -88,6 +88,8 @@ class PrefsCompanionSettings(
     override fun setRivalLook(on: Boolean) { prefs.rivalLook = on }
     override val tradeEvolutions get() = prefs.tradeEvolutions
     override fun setTradeEvolutions(on: Boolean) { prefs.tradeEvolutions = on }
+    override val quickHatch get() = prefs.quickHatch
+    override fun setQuickHatch(on: Boolean) { prefs.quickHatch = on }
     override val hmFree get() = prefs.hmFree
     override fun setHmFree(on: Boolean) { prefs.hmFree = on; changed(Change.FIELD_OPTIONS) }
     override val expShare get() = com.pokedaisy.app.companion.data.ExpShare.Mode.of(prefs.expShare)

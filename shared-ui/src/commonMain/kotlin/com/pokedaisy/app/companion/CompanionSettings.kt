@@ -120,6 +120,10 @@ interface CompanionSettings : StoredCompanionSettings {
     val tradeEvolutionsSupported: Boolean get() = false
     val tradeEvolutionsBadge: String? get() = NewFeatures.badge(NewFeatures.TRADE_EVOLUTIONS)
 
+    /** QUICK HATCH's row: this game's daycare step counter is known ([com.pokedaisy.app.companion.data.quickHatchCounterOff])
+     * and its party calls are there. */
+    val quickHatchSupported: Boolean get() = false
+
     /** DS RESOLUTION ([com.pokedaisy.app.Prefs.dsResolution]): the scale, null when the game isn't a DS one (no row);
      * [dsGpuAvailable] false = this device can't run the GPU renderer (no OpenGL ES 3.2), so the DS's own it is. */
     val dsResolution: Int? get() = null

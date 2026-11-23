@@ -617,12 +617,24 @@ class PokeDaisyActivity : Activity() {
         { Prefs(this).tradeEvolutions }, { ::engine.isInitialized && engine.onField.value }, ::closeCompanionWindow,
     )
 
+    /** QUICK HATCH's counter offset for the loaded ROM ([com.pokedaisy.app.companion.data.runningQuickHatchCounterOff]); null on a Game
+     * Boy or DS game and in every game it doesn't know. */
+    private fun quickHatchOff(): Int? {
+        if (romIsGameBoy || romIsNds || !::engine.isInitialized || !engine.running) return null
+        return com.pokedaisy.app.companion.data.runningQuickHatchCounterOff(telemetry.snapshot.value.game, romCode)
+    }
+
+    private val quickHatchUse = com.pokedaisy.app.companion.FieldQuickHatch(
+        tradeEvolutions, sharedItemUse, ::quickHatchOff, { com.pokedaisy.app.companion.data.activeNativeConfig },
+        { Prefs(this).quickHatch }, { ::engine.isInitialized && engine.onField.value }, ::closeCompanionWindow,
+    )
+
     private val sharedPc = com.pokedaisy.app.companion.GamePcAction(
         gameBoy = ::gameBoyFields, gba = sharedItemUse, handedOver = ::closeCompanionWindow,
         pcUsed = { com.pokedaisy.app.companion.FeatureTips.used(TipId.PC) },
     )
 
-    private val itemUse = object : com.pokedaisy.app.companion.ItemUse by tradeEvolutions {
+    private val itemUse = object : com.pokedaisy.app.companion.ItemUse by quickHatchUse {
         /** A DS game's Repels ([com.pokedaisy.app.companion.data.useGen4Repel], Black's [com.pokedaisy.app.companion.data.useGen5Repel]);
          * nothing else yet. */
         private fun dsRepel(itemId: Int) = dsRepelKnown() && com.pokedaisy.app.companion.data.GEN4_REPEL_KINDS.any { it.first == itemId }
@@ -1271,6 +1283,7 @@ class PokeDaisyActivity : Activity() {
         override val wildEncountersSupported get() = (fieldGame != WideScreen.OFF && currentGameOptions()?.wildFlagFound == true) ||
             gbField() != null || romIsNds && ::engine.isInitialized && engine.fieldState and MgbaCore.FIELD_KNOWN != 0
         override val tradeEvolutionsSupported get() = tradeEvoFns() != null
+        override val quickHatchSupported get() = quickHatchUse.supported()
         override val flightArea get() = Prefs(this@PokeDaisyActivity).flightArea
         override fun setFlightArea(mode: com.pokedaisy.app.companion.FlightAreaMode) {
             Prefs(this@PokeDaisyActivity).flightAreaId = mode.id

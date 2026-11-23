@@ -151,6 +151,9 @@ object NewFeatures {
     const val HM_FREE = "hm_free"
     /** SETTINGS > TRADE EVOLUTIONS: a trade evolution from the Pokémon's summary (companion.data.TradeEvolution). */
     const val TRADE_EVOLUTIONS = "trade_evolutions"
+    /** SETTINGS > QUICK HATCH: an Egg hatches on the next step, from its summary (companion.data.QuickHatch). */
+    const val QUICK_HATCH = "quick_hatch"
+
     /** SETTINGS > SHINY ODDS: a wild foe shiny at the odds picked (companion.data.ShinyOdds). */
     const val SHINY_ODDS = "shiny_odds"
 
@@ -389,7 +392,7 @@ object NewFeatures {
         QUICK_FLASH, ZOOM_SETTING, TOUCH_VIBRATION, TOUCH_MORE_BUTTONS, FREE_FLIGHT, SCENIC_FLY, FLIGHT_AREA, FLY_ON, RIDE_ON,
         DPAD_KEYS, RA_ICONS, DS_TOUCH_FILL, DS_CORE, DS_CORE_BANANADS, RA_POPUPS, HIDE_BATTLE_MENU, SPRITE_PACK, HM_FREE, POKEMON_CENTER, EXP_SHARE, LEVEL_CAP, REPEL_REFILL, SHINY_ALERT, LAST_BALL, ITEM_POPUPS, HUD_MOVE_ADVICE, BOSS_RETRY, LOW_HP_BEEP, FIELD_POISON, RUNNING_SHOES, SETTINGS_LOOK,
         QUICK_TOUCH, APP_FONT, PIXEL_SMALL, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
-        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL,
+        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, QUICK_HATCH,
     )
 
     private const val DAYS = 7
