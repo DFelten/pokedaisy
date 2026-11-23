@@ -19,7 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
+import com.pokedaisy.app.companion.data.Gen2ItemCalls
 import com.pokedaisy.app.companion.data.MonView
+import com.pokedaisy.app.companion.data.activeGame
+import com.pokedaisy.app.companion.data.isGen2
 import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.PP_BOOST_ITEMS
 import com.pokedaisy.app.companion.data.PartyTarget
@@ -89,7 +92,8 @@ fun ItemPartyPicker(
             t, party.getOrNull(t.slot), m,
             title = when {
                 pick.item.pocket == POCKET_TM_HM -> "Forget which move?"
-                pick.item.itemId in PP_BOOST_ITEMS -> "Boost PP of which move?"
+                pick.item.itemId in PP_BOOST_ITEMS && !activeGame.isGen2 -> "Boost PP of which move?"
+                pick.item.itemId == Gen2ItemCalls.PP_UP && activeGame.isGen2 -> "Boost PP of which move?"
                 else -> "Restore which move?"
             },
             onBack = { moveFor = null },

@@ -16,12 +16,19 @@ package com.pokedaisy.app.companion.data
  * - ETHER 10 / MYSTERYBERRY 5 / MAX ETHER all on one move, ELIXER / MAX ELIXER on each (RestorePP): up to the move's max
  *   PP, its base PP from the cart's Moves table plus min(base / 5, 7) for each PP Up (ComputeMaxPP), the PP Up bits kept.
  * - Repels: wRepelEffect set to 100 / 200 / 250 steps, refused while one still works (UseRepel).
+ * - The bitter herbs: ENERGYPOWDER / ENERGY ROOT as HP items, HEAL POWDER as a status cure, REVIVAL HERB as a full revive,
+ *   then the friendship they cost (ChangeHappiness: HappinessChanges' row from the cart by the friendship's band).
+ * - The vitamins (VitaminEffect): no effect once that stat's experience has reached 25600 (its high byte 100), else +2560,
+ *   the stats worked out again by the game's own UpdateStatsAfterItem (after RareCandy_StatBooster_GetParameters, from
+ *   WRAM0 like the TM routine: [vitaminRoutine]), then a vitamin's friendship. An egg can't; a fainted Pokémon can.
+ * - PP UP (RestorePPEffect): one move, not SKETCH, with fewer than three PP Ups; its PP Up count + 1 and ApplyPPUp's
+ *   ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base PP / 5, 7) to the move's PP once.
  *
  * - The BICYCLE and the rods: their own field effects ([onTheSpot]).
  *
  * Everything else the game's bag can USE goes the game's own way ([openInGame], [fieldEffect]), as SELECT runs a registered
  * item (engine/overworld/select_menu.asm's UseRegisteredItem, far-called from HandleMap with wCurItem set): the vitamins,
- * PP UP, RARE CANDY, the stones and the bitter herbs (ITEMMENU_PARTY: ReanchorMap, FadeToMenu, the item's own party screen,
+ * RARE CANDY and the stones (ITEMMENU_PARTY: ReanchorMap, FadeToMenu, the item's own party screen,
  * CloseSubmenu, CloseText), the COIN CASE and BLUE CARD (ITEMMENU_CURRENT: their text over the map), SACRED ASH, ESCAPE
  * ROPE, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE: the script their effect queues runs from the map's queue,
  * or the game's "not the time" text).
@@ -65,6 +72,11 @@ class Gen2ItemCalls(
     val useRegisteredItem: Int = 0x73C3,
     /** The functions the TM routine calls. */
     val tm: Gen2TmFns = Gen2TmFns(),
+    /** RareCandy_StatBooster_GetParameters and UpdateStatsAfterItem (bank 3): a vitamin's stats worked out again. */
+    val statBoosterParams: Int = 0x6EF5,
+    val updateStatsAfterItem: Int = 0x6E8C,
+    /** HappinessChanges (bank 1): three bytes per HAPPINESS_* change, by friendship < 100, < 200, the rest. */
+    val happinessChanges: Long = romOff(0x01, 0x7221),
 ) {
     fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
         val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
@@ -74,7 +86,7 @@ class Gen2ItemCalls(
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
         itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId) ||
-        inGame(itemId) || fieldEffect(itemId) || itemId in TM_ITEMS
+        inGame(itemId) || fieldEffect(itemId) || itemId in TM_ITEMS || itemId in BITTER || itemId in VITAMINS || itemId == PP_UP
 
     /** The items whose own screen or text the game shows ([openInGame]): the companion hands over to it. */
     fun inGame(itemId: Int) = itemId in GAME_PARTY || itemId in GAME_TEXT
@@ -87,7 +99,7 @@ class Gen2ItemCalls(
     /** The BICYCLE and the rods: the game's own field effect, which queues a script of its own. */
     fun onTheSpot(itemId: Int) = itemId == BICYCLE || itemId in RODS
     /** A one-move PP item's move, or a TM's move to forget (only offered for a Pokémon with four: [PartyTarget.moves]). */
-    fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE || itemId in TM_ITEMS
+    fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE || itemId == PP_UP || itemId in TM_ITEMS
 
     private class Party(val count: Int, val species: ByteArray, val mons: ByteArray)
 
@@ -129,6 +141,15 @@ class Gen2ItemCalls(
         }
     }
 
+    /** Which of slot [slot]'s moves PP UP can raise: not SKETCH, fewer than three PP Ups (RestorePPEffect). */
+    private fun ppUpMoves(p: Party, slot: Int): List<Boolean> {
+        val o = slot * MON_SIZE
+        return (0 until 4).map { m ->
+            val move = u8(p.mons, o + MOVES + m)
+            move != 0 && move != SKETCH && u8(p.mons, o + PP + m) < PP_UP_MASK
+        }
+    }
+
     private fun verdict(g: GameCalls, p: Party, slot: Int, itemId: Int): SlotVerdict {
         if (u8(p.species, slot) == EGG) return SlotVerdict.EGG
         val o = slot * MON_SIZE
@@ -136,11 +157,13 @@ class Gen2ItemCalls(
         val max = be16(p.mons, o + MAX_HP)
         val status = u8(p.mons, o + STATUS)
         val ok = when {
-            itemId in REVIVES -> hp == 0
+            itemId in VITAMINS -> u8(p.mons, o + STAT_EXP + VITAMINS.getValue(itemId)) < VITAMIN_CAP
+            itemId == PP_UP -> ppUpMoves(p, slot).any { it }
+            itemId in REVIVES || itemId == REVIVAL_HERB -> hp == 0
             hp == 0 -> false
             itemId == FULL_RESTORE -> hp < max || status != 0
-            itemId in HP_ITEMS -> hp < max
-            itemId in STATUS_ITEMS -> status and (statusMask(g, itemId) ?: 0) != 0
+            itemId in HP_ITEMS || itemId in BITTER_HP -> hp < max
+            itemId in STATUS_ITEMS || itemId == HEAL_POWDER -> status and (statusMask(g, itemId) ?: 0) != 0
             itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES -> ppMoves(g, p, slot).any { it }
             else -> false
         }
@@ -159,6 +182,7 @@ class Gen2ItemCalls(
                 when {
                     tm >= 0 -> forgettable(g, p, slot)
                     itemId in PP_ONE_MOVE -> ppMoves(g, p, slot)
+                    itemId == PP_UP -> ppUpMoves(p, slot)
                     else -> emptyList()
                 })
         })
@@ -299,7 +323,11 @@ class Gen2ItemCalls(
         if (slot !in 0 until p.count || gen2MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
         if (verdict(g, p, slot, itemId) != SlotVerdict.OK) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
         if (itemId in PP_ONE_MOVE && ppMoves(g, p, slot).getOrNull(moveIndex) != true) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
-        val amount = if (itemId in HP_ITEMS) hpAmount(g, itemId) ?: return ItemUseOutcome(ItemUseResult.FAILED) else 0
+        if (itemId == PP_UP && ppUpMoves(p, slot).getOrNull(moveIndex) != true) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
+        val happiness = if (itemId in VITAMINS) HAPPINESS_USEDITEM else BITTER[itemId]
+        // The friendship change read before anything is spent: a cart without the table is refused, not half done.
+        val change = happiness?.let { happinessChange(g, it, u8(p.mons, slot * MON_SIZE + HAPPINESS)) ?: return ItemUseOutcome(ItemUseResult.FAILED) }
+        val amount = if (itemId in HP_ITEMS || itemId in BITTER_HP) hpAmount(g, itemId) ?: return ItemUseOutcome(ItemUseResult.FAILED) else 0
         val before = quantity(g, cfg, itemId)
         if (before == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
         if (!toss(g, cfg, itemId, before)) return ItemUseOutcome(ItemUseResult.FAILED)
@@ -310,13 +338,23 @@ class Gen2ItemCalls(
         val max = be16(p.mons, o + MAX_HP)
         fun writeHp(v: Int) = g.write(mon + HP, byteArrayOf((v shr 8).toByte(), v.toByte()))
         when {
-            itemId in REVIVES -> writeHp(if (itemId == REVIVE) max shr 1 else max)
+            itemId in REVIVES || itemId == REVIVAL_HERB -> writeHp(if (itemId == REVIVE) max shr 1 else max)
+            itemId in VITAMINS -> {
+                val exp = STAT_EXP + VITAMINS.getValue(itemId)   // the stat experience's high byte (big-endian)
+                g.write(mon + exp, byteArrayOf((u8(p.mons, o + exp) + VITAMIN_STEP).toByte()))
+            }
+            itemId == PP_UP -> {
+                val move = u8(p.mons, o + MOVES + moveIndex)
+                val base = g.rom(moves + (move - 1).toLong() * MOVE_LENGTH + MOVE_PP, 1)?.let { u8(it, 0) } ?: 0
+                val pp = u8(p.mons, o + PP + moveIndex) + PP_UP_ONE
+                g.write(mon + PP + moveIndex, byteArrayOf((pp + minOf(base / 5, 7)).toByte()))
+            }
             itemId == FULL_RESTORE -> {
                 if (hp < max) writeHp(max)
                 g.write(mon + STATUS, byteArrayOf(0, 0))
             }
-            itemId in HP_ITEMS -> writeHp(minOf(hp + amount, max))
-            itemId in STATUS_ITEMS -> g.write(mon + STATUS, byteArrayOf(0))
+            itemId in HP_ITEMS || itemId in BITTER_HP -> writeHp(minOf(hp + amount, max))
+            itemId in STATUS_ITEMS || itemId == HEAL_POWDER -> g.write(mon + STATUS, byteArrayOf(0))
             else -> {
                 val restore = PP_ONE_MOVE[itemId] ?: PP_ALL_MOVES.getValue(itemId)
                 val which = if (itemId in PP_ONE_MOVE) listOf(moveIndex) else (0 until 4).toList()
@@ -330,7 +368,31 @@ class Gen2ItemCalls(
                 }
             }
         }
+        change?.let { g.write(mon + HAPPINESS, byteArrayOf(it.toByte())) }
+        // A vitamin's stats: the game's own sums, run from the overworld loop like the TM routine, the loop back once they're done.
+        if (itemId in VITAMINS) {
+            if (!g.gbCallAt(at, ROUTINE, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
+            g.write(ROUTINE.toLong(), vitaminRoutine())
+            g.write(curPartySpecies, byteArrayOf(p.species[slot]))
+            g.write(curPartyMon, byteArrayOf(slot.toByte()))
+            (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
+        }
         return ItemUseOutcome(ItemUseResult.USED)
+    }
+
+    /** ChangeHappiness: change [kind]'s row of HappinessChanges by the friendship's band, a byte of 100+ taken off (floor 0),
+     * else added (ceiling 255). Null without the cart's table. */
+    private fun happinessChange(g: GameCalls, kind: Int, now: Int): Int? {
+        val row = g.rom(happinessChanges + (kind - 1) * 3L, 3) ?: return null
+        val d = u8(row, if (now < 100) 0 else if (now < 200) 1 else 2)
+        return if (d >= 0x64) maxOf(now + d - 0x100, 0) else minOf(now + d, 0xFF)
+    }
+
+    /** RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem, both far-called (bank 3), then `ret`: 13 bytes. */
+    fun vitaminRoutine(): ByteArray {
+        fun far(x: Int) = listOf(0x3E, FIELD_BANK, 0x21, x and 0xFF, x shr 8 and 0xFF, 0xCF)
+        val c = far(statBoosterParams) + far(updateStatsAfterItem) + 0xC9
+        return ByteArray(c.size) { c[it].toByte() }
     }
 
     companion object {
@@ -360,6 +422,13 @@ class Gen2ItemCalls(
         private const val HM_COUNT = 7
         private const val PP_MASK = 0x3F
         private const val PP_UP_MASK = 0xC0
+        private const val PP_UP_ONE = 0x40
+        private const val SKETCH = 0xA6
+        private const val STAT_EXP = 0x0B
+        private const val HAPPINESS = 0x1B
+        private const val VITAMIN_CAP = 100
+        private const val VITAMIN_STEP = 10
+        private const val HAPPINESS_USEDITEM = 0x02
         private const val MOVE_LENGTH = 7
         private const val MOVE_PP = 5
         private const val ALL = -1
@@ -383,9 +452,16 @@ class Gen2ItemCalls(
         val REPELS = mapOf(0x14 to 100, 0x2A to 200, 0x2B to 250)
         /** TM01-TM50, HM01-HM07 in wTMsHMs' order (ITEM_C3 and ITEM_DC sit between them). */
         val TM_ITEMS: List<Int> = (0xBF..0xF9).filter { it != 0xC3 && it != 0xDC }
-        /** ITEMMENU_PARTY items with their own screen: the stones (MOON, FIRE, THUNDER, WATER, LEAF, SUN), HP UP, PROTEIN,
-         * IRON, CARBOS, CALCIUM, RARE CANDY, PP UP, ENERGYPOWDER, ENERGY ROOT, HEAL POWDER, REVIVAL HERB. */
-        val GAME_PARTY = setOf(0x08, 0x16, 0x17, 0x18, 0x22, 0xA9, 0x1A, 0x1B, 0x1C, 0x1D, 0x1F, 0x20, 0x3E, 0x79, 0x7A, 0x7B, 0x7C)
+        /** ITEMMENU_PARTY items left to their own screen: the stones (MOON, FIRE, THUNDER, WATER, LEAF, SUN), RARE CANDY. */
+        val GAME_PARTY = setOf(0x08, 0x16, 0x17, 0x18, 0x22, 0xA9, 0x20)
+        /** HP UP, PROTEIN, IRON, CARBOS, CALCIUM and their stat experience's place (StatExpItemPointerOffsets). */
+        val VITAMINS = mapOf(0x1A to 0, 0x1B to 2, 0x1C to 4, 0x1D to 6, 0x1F to 8)
+        const val PP_UP = 0x3E
+        /** The bitter herbs and the HAPPINESS_* change each costs: ENERGYPOWDER, ENERGY ROOT, HEAL POWDER, REVIVAL HERB. */
+        val BITTER = mapOf(0x79 to 0x0F, 0x7A to 0x10, 0x7B to 0x0F, 0x7C to 0x11)
+        private val BITTER_HP = setOf(0x79, 0x7A)
+        private const val HEAL_POWDER = 0x7B
+        private const val REVIVAL_HERB = 0x7C
         /** ITEMMENU_CURRENT items with a text: COIN CASE, BLUE CARD. */
         val GAME_TEXT = setOf(0x36, 0x74)
         /** ITEMMENU_CLOSE items that queue a script: ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE, CARD KEY, BASEMENT KEY. */
@@ -441,7 +517,8 @@ data class Gen2TmFns(
 /** The tables' first bytes and HandleMap, shared by every Crystal build: HealingHPAmounts (FRESH WATER 50), StatusHealingActions
  * (ANTIDOTE), Moves (POUND). */
 private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int,
-                                  useRegisteredItem: Int, getMoveName: Int, copyName1: Int, baseData: Int, tmHmMoves: Int) = listOf(
+                                  useRegisteredItem: Int, getMoveName: Int, copyName1: Int, baseData: Int, tmHmMoves: Int,
+                                  statBoosterParams: Int, updateStats: Int, happiness: Int) = listOf(
     0x25 * 0x4000L + (0x6773 - 0x4000) to handleMap,
     Gen2ItemCalls.romOff(0x03, healingHp) to "2e32002f3c0030500010c800",
     Gen2ItemCalls.romOff(0x03, statusHealing) to "09f0080af1100bf2200cf307",
@@ -454,13 +531,17 @@ private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHeali
     Gen2ItemCalls.romOff(0x14, baseData) to "012d31312d414116032d",   // BULBASAUR
     Gen2ItemCalls.romOff(0x04, tmHmMoves) to "df1daecd2e5cc0f9f4ed",  // DYNAMICPUNCH, HEADBUTT, CURSE, ...
     Gen2ItemCalls.romOff(0x04, tmHmMoves + 50) to "0f133946" + "94fa7f",  // the HMs' moves
+    Gen2ItemCalls.romOff(0x03, statBoosterParams) to "fa08d1ea60cfea65d23e1f",   // RareCandy_StatBooster_GetParameters
+    Gen2ItemCalls.romOff(0x03, updateStats) to "3e24cd",   // UpdateStatsAfterItem: ld a, MON_MAXHP; call GetPartyParamLocation
+    Gen2ItemCalls.romOff(0x01, happiness) to "050302050302010100",   // HappinessChanges: a level, a vitamin, an X item
 )
 
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */
 val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
     tossItem = 0x2F53,
     signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1", 0x2DBAL to "cdbf1ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5, 0x73C3, 0x34F8, 0x30D6, 0x5424, 0x567A) + listOf(
+        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5, 0x73C3, 0x34F8, 0x30D6, 0x5424, 0x567A,
+        0x6EF5, 0x6E8C, 0x7221) + listOf(
             0x2E08L to "cdbf1ff09df53e01d7cd", 0x2DCFL to "f0d8f53e01e0d8cde22d",
             Gen2ItemCalls.romOff(0x0B, 0x47B6) to "cda7473e0fcd832dc921", Gen2ItemCalls.romOff(0x0B, 0x4867) to "3e0ecd832dc5fa09d121",
         ),
@@ -470,7 +551,8 @@ val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
 val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     tossItem = 0x2F3D,
     signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1", 0x2DA4L to "cda91ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574, 0x73C8, 0x34E2, 0x30C0, 0x540E, 0x5671) + listOf(
+        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574, 0x73C8, 0x34E2, 0x30C0, 0x540E, 0x5671,
+        0x6EC4, 0x6E60, 0x7242) + listOf(
             0x2DF2L to "cda91ff09df53e01d7cd", 0x2DB9L to "f0d8f53e01e0d8cdcc2d",
             Gen2ItemCalls.romOff(0x0B, 0x47B9) to "cdaa473e0fcd6d2dc921", Gen2ItemCalls.romOff(0x0B, 0x486A) to "3e0ecd6d2dc5fa09d121",
         ),
@@ -482,4 +564,7 @@ val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     useRegisteredItem = 0x73C8,
     tm = Gen2TmFns(openText = 0x2DF2, getMoveName = 0x34E2, copyName1 = 0x30C0, closeText = 0x2DB9, getTmhmItemMove = 0x47B9,
         teach = 0x486A, baseData = Gen2ItemCalls.romOff(0x14, 0x540E), tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5671)),
+    statBoosterParams = 0x6EC4,
+    updateStatsAfterItem = 0x6E60,
+    happinessChanges = Gen2ItemCalls.romOff(0x01, 0x7242),
 )

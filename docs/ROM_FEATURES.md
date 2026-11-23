@@ -1093,7 +1093,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
     StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Every other item the pack can use
     goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
-    wCurItem set: vitamins, RARE CANDY, PP UP, stones and the bitter herbs open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
+    wCurItem set: RARE CANDY and the stones open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
     show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
     effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
     in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
@@ -1101,6 +1101,11 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     new move (and its PP) there without ForgetMove's menu - over the field that menu leaves the map's attributes on the text palette until
     CloseText. Then a 42-byte routine at wStackBottom (C000, `Gen2TmFns.routine`) runs TeachTMHM over the map with wCurPartyMon /
     wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, TeachTMHM (it spends a TM), CloseText.
+    The bitter herbs, the vitamins and PP UP pick the Pokémon here as well: the herbs heal like their kind, then ChangeHappiness's row of
+    HappinessChanges (bank 01, EN 0x7221 / DE 0x7242) by the friendship's band; a vitamin adds 10 to its stat experience's high byte while
+    it's under 100 (VitaminEffect), its friendship change, then RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem (bank 03, EN
+    0x6EF5 / 0x6E8C, DE 0x6EC4 / 0x6E60) far-called by a 13-byte routine at C000 (`vitaminRoutine`); PP UP one move, not SKETCH, under
+    three PP Ups, the count + 1 and ApplyPPUp's ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base / 5, 7) once.
     Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
-    cart (a TM taught into a free slot and into a forgotten one, RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
     `Gen2ItemUseTest`.

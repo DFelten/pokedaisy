@@ -33,6 +33,19 @@ class Gen2ItemUseTest {
     }
 
     @Test
+    fun `the German cart's friendship changes are the English one's`() {
+        val en = File(dir, "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
+        val de = File(dir, "Pokemon - Kristall-Edition (Germany).gbc")
+        assumeTrue("no Crystal carts", en.isFile && de.isFile)
+        val e = en.readBytes()
+        val d = de.readBytes()
+        val a = GEN2_ITEM_CALLS_CRYSTAL.happinessChanges.toInt()
+        val b = GEN2_ITEM_CALLS_CRYSTAL_DE.happinessChanges.toInt()
+        assertEquals(HAPPINESS_CHANGES, e.copyOfRange(a, a + 19 * 3).joinToString("") { "%02x".format(it) })
+        assertTrue(e.copyOfRange(a, a + 19 * 3).contentEquals(d.copyOfRange(b, b + 19 * 3)))
+    }
+
+    @Test
     fun `the German cart's tables hold the same amounts as the English one's`() {
         val en = File(dir, "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
         val de = File(dir, "Pokemon - Kristall-Edition (Germany).gbc")
@@ -65,6 +78,7 @@ class Gen2ItemUseTest {
             put(calls.healingHp, "2e32002f3c0030500010c8001132001214000fe7030ee703486400ad0a00ae1e007932007ac8007214008b1400ff")
             put(calls.statusHealing, "09f0080af1100bf2200cf3070df44026f6ff0ef6ff7bf6ff4af0084ef4404ff22050f11054f3076df6ffff")
             put(calls.moves, "01002800ff2300" + "02003201ff1900")   // POUND 35 PP, KARATE CHOP 25 PP
+            put(calls.happinessChanges, HAPPINESS_CHANGES)
         }
 
         /** WRAM0 (C000-CFFF): where the TM routine goes. */
@@ -79,6 +93,8 @@ class Gen2ItemUseTest {
         }
         /** Calls set up through UseRegisteredItem / the TM routine, and whether a field item's effect works here. */
         val gameCalls = mutableListOf<Int>()
+        /** How often a routine written at ROUTINE got to run (the loop came by again). */
+        var routineRan = 0
         var fieldWorks = true
         override fun call(fn: Long, a0: Int, a1: Int, a2: Int, a3: Int) = -1L
         override fun read(addr: Long, len: Int) = ByteArray(len) { get(addr + it).toByte() }
@@ -92,7 +108,7 @@ class Gen2ItemUseTest {
             pending = null
             if (fn == calls.tossItem) pending = { toss(hl) }
             if (fn == calls.reanchorMap) reanchored = true
-            if (fn == Gen2ItemCalls.ROUTINE) gameCalls += fn
+            if (fn == Gen2ItemCalls.ROUTINE) { gameCalls += fn; pending = { routineRan++ } }
             if (fn == 0x0008 && a == 0x04 && hl == calls.useRegisteredItem) { gameCalls += hl; pending = { fieldItem() } }
             if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
             if (fn == 0x0008 && a == 0x03 && hl in calls.oldRodEffect..calls.oldRodEffect + 8) pending = { fish(hl - calls.oldRodEffect) }
@@ -164,6 +180,8 @@ class Gen2ItemUseTest {
         fun hp(slot: Int) = (this[cfg.partyMons + slot * 0x30 + 0x22] shl 8) or this[cfg.partyMons + slot * 0x30 + 0x23]
         fun status(slot: Int) = this[cfg.partyMons + slot * 0x30 + 0x20]
         fun pp(slot: Int, m: Int) = this[cfg.partyMons + slot * 0x30 + 0x17 + m]
+        fun happiness(slot: Int) = this[cfg.partyMons + slot * 0x30 + 0x1B]
+        fun statExpHigh(slot: Int, stat: Int) = this[cfg.partyMons + slot * 0x30 + 0x0B + 2 * stat]
     }
 
     private fun game() = Game(cfg, calls)
@@ -180,6 +198,81 @@ class Gen2ItemUseTest {
     private val MAX_ETHER = 0x40
     private val ELIXER = 0x41
     private val REPEL = 0x14
+
+    private val HP_UP = 0x1A
+    private val CALCIUM = 0x1F
+    private val PP_UP = 0x3E
+    private val ENERGYPOWDER = 0x79
+    private val ENERGY_ROOT = 0x7A
+    private val HEAL_POWDER = 0x7B
+    private val REVIVAL_HERB = 0x7C
+
+    @Test
+    fun `a vitamin adds 2560 stat experience below 25600, the game works the stats out, and friendship rises`() {
+        val g = game()
+        g.bag(HP_UP to 2, CALCIUM to 1)
+        g.mon(0, hp = 0); g.mon(1); g.mon(2, species = 0xFD)
+        g[cfg.partyMons + 0x30 + 0x0B] = 100      // slot 1: HP stat experience at 25600 already
+        g[cfg.partyMons + 0x1B] = 99               // slot 0: friendship 99, under the first band's end
+        val t = calls.targets(g, cfg, HP_UP).targets
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.NO_EFFECT, SlotVerdict.EGG), t.map { it.verdict })   // fainted is fine
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, HP_UP, t[0], 0).result)
+        assertEquals(10, g.statExpHigh(0, 0))
+        assertEquals(104, g.happiness(0))
+        assertEquals(1, g.qty(HP_UP))
+        assertEquals(1, g.routineRan)
+        assertEquals(calls.vitaminRoutine().toList(), (0 until 13).map { g[Gen2ItemCalls.ROUTINE + it.toLong()].toByte() })
+        assertEquals(0, g[calls.curPartyMon]); assertEquals(0x9B, g[calls.curPartySpecies])
+        assertEquals(ItemUseResult.NO_EFFECT, calls.useOn(g, cfg, HP_UP, t[1], 0).result)
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, CALCIUM, g.target(1), 0).result)
+        assertEquals(10, g.statExpHigh(1, 4))     // CALCIUM: Special
+        assertEquals(100, g.statExpHigh(1, 0))
+    }
+
+    @Test
+    fun `the vitamin routine far-calls the stat booster's set-up, then UpdateStatsAfterItem`() {
+        assertEquals("3e0321f56ecf3e03218c6ecfc9", calls.vitaminRoutine().joinToString("") { "%02x".format(it) })
+        assertEquals("3e0321c46ecf3e0321606ecfc9", GEN2_ITEM_CALLS_CRYSTAL_DE.vitaminRoutine().joinToString("") { "%02x".format(it) })
+    }
+
+    @Test
+    fun `PP UP raises one move's PP Ups and adds a fifth of its base PP once, not on SKETCH or past three`() {
+        val g = game()
+        g.bag(PP_UP to 3)
+        g.mon(0, pp = intArrayOf(20, 0xC0 or 40)); g.mon(1, hp = 0, pp = intArrayOf(0x40 or 42, 25))
+        g[cfg.partyMons + 0x30 + 0x03] = 0xA6      // slot 1's second move: SKETCH
+        val t = calls.targets(g, cfg, PP_UP).targets
+        assertEquals(listOf(true, false, false, false), t[0].moves)
+        assertEquals(listOf(true, false, false, false), t[1].moves)
+        assertTrue(calls.picksMove(PP_UP))
+        assertEquals(ItemUseResult.NO_EFFECT, calls.useOn(g, cfg, PP_UP, t[0], 1).result)
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, PP_UP, t[0], 0).result)
+        assertEquals(0x40 or 27, g.pp(0, 0))       // POUND, 35 base: + 7
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, PP_UP, g.target(1), 0).result)
+        assertEquals(0x80 or 49, g.pp(1, 0))
+        assertEquals(1, g.qty(PP_UP))
+    }
+
+    @Test
+    fun `the bitter herbs heal like their kind and cost friendship by its band`() {
+        val g = game()
+        g.bag(ENERGYPOWDER to 1, ENERGY_ROOT to 1, HEAL_POWDER to 1, REVIVAL_HERB to 1)
+        g.mon(0, hp = 10, max = 300); g.mon(1, hp = 10, max = 300); g.mon(2, status = 0x08); g.mon(3, hp = 0, max = 77)
+        g[cfg.partyMons + 0x1B] = 3                  // 3 - 5: no lower than 0
+        g[cfg.partyMons + 0x30 + 0x1B] = 150         // 150 - 10
+        g[cfg.partyMons + 0x60 + 0x1B] = 250         // 250 - 10
+        g[cfg.partyMons + 0x90 + 0x1B] = 50          // 50 - 15
+        assertEquals(SlotVerdict.NO_EFFECT, calls.targets(g, cfg, REVIVAL_HERB).targets[0].verdict)
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, ENERGYPOWDER, g.target(0), 0).result)
+        assertEquals(60 to 0, g.hp(0) to g.happiness(0))
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, ENERGY_ROOT, g.target(1), 0).result)
+        assertEquals(210 to 140, g.hp(1) to g.happiness(1))
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, HEAL_POWDER, g.target(2), 0).result)
+        assertEquals(0 to 240, g.status(2) to g.happiness(2))
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, REVIVAL_HERB, g.target(3), 0).result)
+        assertEquals(77 to 35, g.hp(3) to g.happiness(3))
+        assertEquals(0, g.routineRan)
+    }
 
     @Test
     fun `a Potion heals 20 up to the max HP, and the game takes it out of the bag`() {
@@ -417,5 +510,11 @@ class Gen2ItemUseTest {
         g.gameCalls.clear()
         assertEquals(null, calls.fieldEffect(g, cfg, ESCAPE_ROPE))
         assertTrue(g.gameCalls.isEmpty())
+    }
+
+    private companion object {
+        /** pokecrystal's HappinessChanges, the 19 HAPPINESS_* rows. */
+        const val HAPPINESS_CHANGES = "050302050302010100030201010100fffffffbfbf6fbfbf6010101030301050502010101030301" +
+            "0a0a04fbfbf6f6f6f1f1f1ec0303010a0604"
     }
 }
