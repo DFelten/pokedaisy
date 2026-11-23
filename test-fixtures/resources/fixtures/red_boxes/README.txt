@@ -11,3 +11,4 @@ what was done, all by the game's own functions (gbcallat from the overworld loop
     text pointer put back after;
   - one more party Pokemon deposited into BOX 8.
 after it: party 3 (slots 0, 4, 5 of before), BOX 1 (bank 2) 2 Pokemon, BOX 8 (WRAM) 1. Saving in game and rebooting kept all of it.
+sram.bin's bank 0 A000-A597 (the game's decompressed-picture buffers) zeroed after the capture: no game art in fixtures.

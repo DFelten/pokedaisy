@@ -101,7 +101,7 @@ class Gen1BoxesTest {
             GEN1_BOX_CALLS_RED to listOf("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", "Pokemon - Blue Version (USA, Europe) (SGB Enhanced).gb"),
             GEN1_BOX_CALLS_RED_DE to listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb"),
             GEN1_BOX_CALLS_YELLOW to listOf("Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb"),
-            GEN1_BOX_CALLS_YELLOW_DE to listOf("Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (CGB+SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_YELLOW_DE to listOf("Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb"),
         )
         var seen = 0
         for ((calls, names) in carts) for (name in names) {
