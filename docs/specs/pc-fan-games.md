@@ -468,9 +468,14 @@ probe, from boot to its overworld and into wild battles.
   distances between parts of the library first: a state from another build of the core is refused instead of followed.
   And a bitmap past the GPU's texture size is drawn through a child its setter spawns, which a state can't point to: a
   sprite came back visible with no bitmap and the core crashed drawing it. Sprites, planes and windows spawn the child
-  again on load.
+  again on load. Such a bitmap drawn on (or made in code) crashed the load itself: mkxp-z wrote its pixels from the
+  SDL_Surface struct's address instead of its `pixels`, and cleared an emptied tile through a framebuffer it hasn't got.
+  Checked with GS Vitro's Hall of Fame picture (9727 px, past the emulator's 8192) as a plane, a sprite and a window's
+  contents, and with 40,000 px bitmaps made in code, each loaded in a fresh core. Such a child shows nothing until its
+  owner first moves (mkxp-z's own way, the same before a save); the game's Hall of Fame scrolls them every frame.
 - Also checked: a trainer battle (the foe's team read, levels as the game scaled them; FIGHT through its menu), the
-  game's party, bag, trainer card, Pokégear and PC box screens opened and closed with no error, a save from its own Save
+  game's party, bag, trainer card, Pokégear, Pokédex (list, entry, area map, forms) and PC box screens opened and closed
+  with no error, a save from its own Save
   screen (`Game.rxdata` in `/Save`) and its autosave loaded back from the title; the app's companion pages and the Linux
   `pc-companion-shot` drawn from its real snapshots over its folder (icons, the Town Map with its head on Route 29).
 - Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
