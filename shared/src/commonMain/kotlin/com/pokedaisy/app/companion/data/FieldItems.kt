@@ -959,6 +959,8 @@ enum class ItemUseResult {
     MAILBOX_FULL,
     /** A TM / HM: the game's own TM screen is opening (TmTeach.kt); the rest happens there. */
     IN_GAME,
+    /** A TM / HM on the picked Pokémon: the game teaches it on its own screen (Crystal's TeachTMHM over the map). */
+    TEACHING,
 }
 
 /** What using [itemId] did and, for a Repel, how many steps it lasts; a GIVE's item held before ([swapped]). */

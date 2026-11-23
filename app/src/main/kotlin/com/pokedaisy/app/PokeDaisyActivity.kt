@@ -589,6 +589,33 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
+    @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
+
+    /** The Game Boy game's bag USE (Crystal's, Gen2ItemUse.kt), its code checked in the cart once per game. */
+    private fun gbItemField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? {
+        val field = gbField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine ?: return null
+        val calls = field.itemCalls ?: return null
+        gbItemCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
+        if (!::engine.isInitialized || !engine.running) return null
+        val ok = runCatching { calls.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        Log.i("pokedaisy", "Game Boy bag USE (${field.javaClass.simpleName}): ${if (ok) "code found" else "code not found"}")
+        gbItemCache = field to ok
+        return field.takeIf { ok }
+    }
+
+    /** Runs [job] on the emu thread with the Game Boy bag USE's field, a battle's NOT_NOW as IN_BATTLE. */
+    private fun <T> gbItemJob(failed: T, done: (T) -> Unit, job: (com.pokedaisy.app.companion.data.GbField.CrystalEngine, com.pokedaisy.app.companion.data.GameCalls) -> T) {
+        val field = gbItemField()
+        if (field == null || !::engine.isInitialized || !engine.running) return done(failed)
+        val inBattle = telemetry.snapshot.value.inBattle
+        engine.requestFieldItemJob(inBattle) { calls, busy ->
+            val out = if (busy) failed else runCatching { job(field, calls) }
+                .getOrElse { Log.e("pokedaisy", "Game Boy bag USE failed", it); failed }
+            Log.i("pokedaisy", "Game Boy bag USE: $out")
+            runOnUiThread { done(if (inBattle) com.pokedaisy.app.companion.fieldActionBattleResult(out) else out) }
+        }
+    }
+
     /** The save file backed up (whatever SAVE BACKUPS says): before a Game Boy box change or this session's first move. */
     private fun backUpSaveNow(r: File): Boolean {
         val save = SavesLocation.saveFor(this, Prefs(this), r)
@@ -653,12 +680,16 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             else com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game)?.itemPockets?.get(itemId),
             dsBagGen5,
         )
-        override fun canUse(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || sharedItemUse.canUse(itemId)
+        /** Crystal's bag USE ([gbItemField]) takes [itemId]. */
+        private fun gbUse(itemId: Int) = romIsGameBoy && gbItemField()?.itemCalls?.usable(itemId) == true
+        override fun canUse(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || dsUse(itemId) || sharedItemUse.canUse(itemId)
         override fun canGive(itemId: Int) = dsGive(itemId) || sharedItemUse.canGive(itemId)
-        override fun marked(itemId: Int) = dsRepel(itemId) || dsUse(itemId) || dsGive(itemId) || sharedItemUse.marked(itemId)
-        override fun picksMon(itemId: Int) = dsUse(itemId) || sharedItemUse.picksMon(itemId)
-        override fun picksMove(itemId: Int) = (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId, dsBagGen5)) ||
-            sharedItemUse.picksMove(itemId)
+        override fun marked(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || dsUse(itemId) || dsGive(itemId) || sharedItemUse.marked(itemId)
+        override fun picksMon(itemId: Int) =
+            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMon(itemId) == true else dsUse(itemId) || sharedItemUse.picksMon(itemId)
+        override fun picksMove(itemId: Int) =
+            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMove(itemId) == true
+            else (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId, dsBagGen5)) || sharedItemUse.picksMove(itemId)
 
         /** A DS bag job ([com.pokedaisy.app.companion.data.DsBag]): its answer (result PK_NDS_ITEM_RESULT, the held item
          * after it) made into [map]'s; NOT_NOW when the field isn't free, as the PC's. */
@@ -695,6 +726,17 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         private val failed = com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.FAILED)
 
         override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
+            if (gbUse(itemId)) {
+                // A TM, a party screen or a text of the game's own: the companion window gets out of its way.
+                val handsOver = gbItemField()?.itemCalls?.inGame(itemId) == true
+                return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
+                    if (handsOver && (out.result == com.pokedaisy.app.companion.data.ItemUseResult.IN_GAME ||
+                            out.result == com.pokedaisy.app.companion.data.ItemUseResult.USED)) closeCompanionWindow()
+                    done(out)
+                }) { f, calls ->
+                    f.useItem(calls, itemId, null, 0)
+                }
+            }
             if (dsRepel(itemId)) {
                 // Plain RAM writes on the emu thread, with the field free by its own read (MgbaCore.FIELD_SCREEN, not locked).
                 if (!::engine.isInitialized || !engine.running) return done(failed)
@@ -718,11 +760,28 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             sharedItemUse.use(itemId, done)
         }
 
-        override fun targets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) =
+        override fun targets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) {
+            if (romIsGameBoy) {
+                if (give) return done(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED))
+                return gbItemJob(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+                    f.itemTargets(calls, itemId)
+                }
+            }
             if (if (give) dsGive(itemId) else dsUse(itemId)) dsTargets(itemId, give, done) else sharedItemUse.targets(itemId, give, done)
+        }
 
-        override fun useOn(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
+        override fun useOn(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
+            if (romIsGameBoy) {
+                return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
+                    // A TM: the game teaches it over the map, so the companion window gets out of its way.
+                    if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING) closeCompanionWindow()
+                    done(out)
+                }) { f, calls ->
+                    f.useItem(calls, itemId, target, moveIndex)
+                }
+            }
             if (dsUse(itemId)) dsOnMon(com.pokedaisy.app.companion.data.DsBag.USE, itemId, target, moveIndex, done) else sharedItemUse.useOn(itemId, target, moveIndex, done)
+        }
 
         override fun give(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
             if (dsGive(itemId)) dsOnMon(com.pokedaisy.app.companion.data.DsBag.GIVE, itemId, target, 0, done) else sharedItemUse.give(itemId, target, done)

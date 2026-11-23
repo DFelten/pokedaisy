@@ -21,6 +21,7 @@ import com.pokedaisy.app.companion.data.MoveView
 import com.pokedaisy.app.companion.data.POCKET_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_KEY_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_POKE_BALLS
+import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.SlotVerdict
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.TypeMatchup
@@ -2427,6 +2428,19 @@ open class CompanionScreenshotTest {
         AppTheme {
             GameBackdrop(GameKind.FIRERED)
             ItemPartyPicker(pick, pickParty, rememberGbaTextMetrics(), itemName = "Ether", picksMove = true, onCancel = {}, onPick = { _, _ -> }, initialMoveSlot = 4)
+        }
+    }
+
+    /** A TM on SQUIRTLE, its four moves full: the move to forget is asked once more. */
+    @Test fun itemsTmForgetConfirm() = snapshot {
+        pickParty.forEach { DecompIconSource.get(it.species) }
+        val pick = ItemPick(
+            ItemView(289, "TM01", 1, spriteAsset("items", 289), POCKET_TM_HM), give = false,
+            pickTargets(SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.NO_EFFECT, SlotVerdict.OK, SlotVerdict.NO_EFFECT),
+        )
+        AppTheme {
+            GameBackdrop(GameKind.FIRERED)
+            ItemPartyPicker(pick, pickParty, rememberGbaTextMetrics(), itemName = "TM01", picksMove = true, onCancel = {}, onPick = { _, _ -> }, initialMoveSlot = 4, initialForget = 1)
         }
     }
 

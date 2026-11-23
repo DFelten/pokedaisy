@@ -277,6 +277,8 @@ sealed class GbField {
         private val KANTO_LANDMARK: Int = 47,
         /** The PC's moves on the current box (Gen2BoxSwap.kt), where they're mapped. */
         val boxCalls: Gen2BoxCalls? = null,
+        /** USE on the ITEMS tab (Gen2ItemUse.kt), where it's mapped. */
+        val itemCalls: Gen2ItemCalls? = null,
         /**
          * wStatusFlags2 (bit 2: the Bug-Catching Contest's timer; the contest hides all but the lead, ContestDropOffMons,
          * and its START menu has no SAVE) and wLinkMode: no PC there. Null = not mapped.
@@ -320,6 +322,27 @@ sealed class GbField {
         fun changeBox(g: GameCalls, to: Int): BoxChangeResult {
             val calls = boxCalls ?: return BoxChangeResult.FAILED
             return if (!free(g)) BoxChangeResult.NOT_NOW else calls.changeBox(g, to)
+        }
+
+        /** USE's party pick ([itemCalls]) where the bag's PC could open: NOT_NOW otherwise. */
+        fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
+            val calls = itemCalls ?: return PartyTargets(ItemUseResult.FAILED)
+            return if (!free(g)) PartyTargets(ItemUseResult.NOT_NOW) else calls.targets(g, cfg, itemId)
+        }
+
+        /** USE of [itemId]: a Repel, the BICYCLE, a rod or a field item on the spot, a TM or an item with its own screen in the
+         * game ([target] null), anything else on [target]. NOT_NOW off the free field. */
+        fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
+            val calls = itemCalls ?: return ItemUseOutcome(ItemUseResult.FAILED)
+            if (!free(g)) return ItemUseOutcome(ItemUseResult.NOT_NOW)
+            if (calls.onTheSpot(itemId) || calls.fieldEffect(itemId)) {
+                val (bank, addr) = (if (calls.onTheSpot(itemId)) calls.onTheSpot(g, itemId) else calls.fieldEffect(g, cfg, itemId))
+                    ?: return ItemUseOutcome(ItemUseResult.FAILED)
+                queue(g, bank, addr)
+                return ItemUseOutcome(ItemUseResult.USED)
+            }
+            if (calls.inGame(itemId)) return calls.openInGame(g, cfg, itemId)
+            return if (target == null) calls.useRepel(g, cfg, itemId) else calls.useOn(g, cfg, itemId, target, moveIndex)
         }
 
         override fun taken(g: GameCalls): Boolean {
@@ -392,6 +415,7 @@ sealed class GbField {
             0x24 * 0x4000L + (0x5C5E - 0x4000) to "010e030f",                         // Flypoints: NEW BARK, CHERRYGROVE
         ),
         boxCalls = GEN2_BOX_CALLS_CRYSTAL,
+        itemCalls = GEN2_ITEM_CALLS_CRYSTAL,
         STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
     )
 
@@ -410,6 +434,7 @@ sealed class GbField {
             0x24 * 0x4000L + (0x5C7C - 0x4000) to "010e030f",                         // Flypoints: NEUBORKIA, ROSALIA CITY
         ),
         boxCalls = GEN2_BOX_CALLS_CRYSTAL_DE,
+        itemCalls = GEN2_ITEM_CALLS_CRYSTAL_DE,
         STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
     )
 

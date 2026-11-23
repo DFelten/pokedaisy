@@ -19,11 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
+import com.pokedaisy.app.companion.data.Gen2ItemCalls
 import com.pokedaisy.app.companion.data.MonView
+import com.pokedaisy.app.companion.data.activeGame
+import com.pokedaisy.app.companion.data.isGen2
+import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.PP_BOOST_ITEMS
 import com.pokedaisy.app.companion.data.PartyTarget
 import com.pokedaisy.app.companion.data.SlotVerdict
 import com.pokedaisy.app.companion.data.spriteAsset
+import com.pokedaisy.app.companion.i18n.tk
 import com.pokedaisy.app.companion.i18n.tr
 
 /** A USE ([give] false) or GIVE of [item] waiting for its Pokémon: [targets] are the game's answers, slot by slot. */
@@ -32,7 +37,8 @@ data class ItemPick(val item: com.pokedaisy.app.companion.data.ItemView, val giv
 /**
  * Who gets the item: the PARTY tab's own slots, the ones it won't help (or that can't hold it - an egg,
  * a Mail holder, one holding it already) greyed out, each slot's held item in its corner. Below, the
- * game's prompt beside the item and CANCEL. A one-move PP item ([picksMove]) then asks for the move.
+ * game's prompt beside the item and CANCEL. A one-move PP item ([picksMove]) then asks for the move, and a TM which move
+ * a Pokémon with four forgets (its targets carry moves only then).
  * [onPick] gets the slot and the move (0 where there's none to pick).
  */
 @Composable
@@ -47,8 +53,12 @@ fun ItemPartyPicker(
     onPick: (PartyTarget, Int) -> Unit,
     /** The move pick open first, for this slot - for screenshot tests, which can't tap. */
     initialMoveSlot: Int? = null,
+    /** With [initialMoveSlot]: a TM's forget question open for this move, for screenshot tests. */
+    initialForget: Int? = null,
 ) {
     var moveFor by remember(pick) { mutableStateOf(initialMoveSlot?.let { pick.targets.getOrNull(it) }) }
+    // A TM's move to forget, asked once more before it's gone for good.
+    var forget by remember(pick) { mutableStateOf(initialForget?.let { f -> moveFor?.let { it to f } }) }
     CompanionBackHandler(onBack = onCancel)
     // A slot is only what the pick saw: the same Pokémon (by personality, where the party read has it).
     fun targetOf(index: Int, mon: MonView): PartyTarget? =
@@ -59,7 +69,7 @@ fun ItemPartyPicker(
             onSlotClick = { mon ->
                 val t = targetOf(party.indexOf(mon), mon)
                 if (t != null && t.verdict == SlotVerdict.OK) {
-                    if (picksMove) moveFor = t else onPick(t, 0)
+                    if (picksMove && t.moves.isNotEmpty()) moveFor = t else onPick(t, 0)
                 }
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -80,9 +90,28 @@ fun ItemPartyPicker(
     moveFor?.let { t ->
         MovePicker(
             t, party.getOrNull(t.slot), m,
-            title = if (pick.item.itemId in PP_BOOST_ITEMS) "Boost PP of which move?" else "Restore which move?",
+            title = when {
+                pick.item.pocket == POCKET_TM_HM -> "Forget which move?"
+                pick.item.itemId in PP_BOOST_ITEMS && !activeGame.isGen2 -> "Boost PP of which move?"
+                pick.item.itemId == Gen2ItemCalls.PP_UP && activeGame.isGen2 -> "Boost PP of which move?"
+                else -> "Restore which move?"
+            },
             onBack = { moveFor = null },
-            onPick = { move -> moveFor = null; onPick(t, move) },
+            onPick = { move ->
+                if (pick.item.pocket == POCKET_TM_HM) forget = t to move else { moveFor = null; onPick(t, move) }
+            },
+        )
+    }
+    forget?.let { (t, move) ->
+        val mon = party.getOrNull(t.slot)
+        val moveName = mon?.moves?.getOrNull(move)?.name ?: "-"
+        OptionConfirm(
+            title = tr("FORGET {0}", moveName),
+            message = tr("{0} will forget {1} for good to learn {2}.", mon?.name ?: "", moveName, itemName),
+            confirmLabel = tk("FORGET"),
+            m = m,
+            onConfirm = { forget = null; moveFor = null; onPick(t, move) },
+            onDismiss = { forget = null },
         )
     }
 }

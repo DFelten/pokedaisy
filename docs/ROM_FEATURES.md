@@ -19,8 +19,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
@@ -1123,3 +1123,27 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Black 2 save, then White 2's / Black's / White's by Black 2's code with calls masked and by shape (Black / White's bag
     calls take a heap: HEAPID 1, which the field always has). Each proved like Gen 4 (every case, an in-game save through
     the X menu, a cold reboot), Black and White on the player's Black save, Black 2 and White 2 on the Black 2 one.
+62. Bag USE on Crystal (2026-11-23, `Gen2ItemCalls` in `Gen2ItemUse.kt`, `GbField.CrystalEngine.useItem`; rev 0 / rev 1 / AU and the
+    German cart, each by its code): healing items, status cures, REVIVE / MAX REVIVE, FULL RESTORE, ETHER / ELIXER kinds and the
+    three Repels, the BICYCLE and the three rods, on the field only (the engine's `free`). The BICYCLE and the rods run ReanchorMap first, as SELECT's item
+    use does (without it the get-off script's CloseText left EXPAND's margins wrong until the next map), then far-calls the game's BikeFunction with
+    wUsingItemWithSelect set (its checks, the music) and moves the script it queues into wMapReentryScriptQueue, which the overworld runs; a rod far-calls its own item effect (OldRodEffect + 4 * rod: FishFunction) the same way. The item leaves the bag through the game's own TossItem (called from the
+    overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
+    StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Every other item the pack can use
+    goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
+    wCurItem set: RARE CANDY and the stones open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
+    show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
+    effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
+    in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
+    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule), asked once more (FORGET / CANCEL). That move slot is zeroed, so LearnMove puts the
+    new move (and its PP) there without ForgetMove's menu - over the field that menu leaves the map's attributes on the text palette until
+    CloseText. Then a 42-byte routine at wStackBottom (C000, `Gen2TmFns.routine`) runs TeachTMHM over the map with wCurPartyMon /
+    wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, TeachTMHM (it spends a TM), CloseText.
+    The bitter herbs, the vitamins and PP UP pick the Pokémon here as well: the herbs heal like their kind, then ChangeHappiness's row of
+    HappinessChanges (bank 01, EN 0x7221 / DE 0x7242) by the friendship's band; a vitamin adds 10 to its stat experience's high byte while
+    it's under 100 (VitaminEffect), its friendship change, then RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem (bank 03, EN
+    0x6EF5 / 0x6E8C, DE 0x6EC4 / 0x6E60) far-called by a 13-byte routine at C000 (`vitaminRoutine`); PP UP one move, not SKETCH, under
+    three PP Ups, the count + 1 and ApplyPPUp's ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base / 5, 7) once.
+    Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
+    cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    `Gen2ItemUseTest`.
