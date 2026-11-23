@@ -489,7 +489,10 @@ probe, from boot to its overworld and into wild battles.
   Played after: a catch (the companion's BAG pick opening the game's own battle bag, its Poké Ball pocket, the throw,
   "¡Sentret ha sido capturado!", the nickname grid, the Pokémon in the party and in the companion's snapshot), a shop
   (`pbPokemonMart`: money and bag changed), a battle won with FIGHT picks to a level-up with a fifth move to learn, and its
-  forget-a-move screen.
+  forget-a-move screen, an evolution (its own `pbCheckAndEvolvePokemon`: the scene, the companion's species and icon
+  after), the game's transfers to Cherrygrove, Violet, Dark Cave (its darkness) and Goldenrod (each map's name, Town Map
+  spot and HERE lists in the snapshot), and FLY through its own map screen (`pbBetterRegionMap`, Goldenrod to Cherrygrove,
+  landed by the move's handler). The game's error log stayed empty through all of it.
 - Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
   A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
   on the letter grid. Its own A / B and menus work as on a PC.
