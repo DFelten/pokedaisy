@@ -1,5 +1,6 @@
 package com.pokedaisy.app.companion.ui
 
+import com.pokedaisy.app.companion.Spoilers
 import com.pokedaisy.app.companion.data.pad
 import androidx.compose.ui.graphics.ImageBitmap
 import com.pokedaisy.app.companion.i18n.stripAccents
@@ -120,7 +121,9 @@ class DexUiState(val list: LazyListState) {
             }
             val id = species?.getOrElse(n) { 0 } ?: 0
             // An entry's type is only known once it's been seen, as in the games' own dex search.
-            status && (type == null || (n in dex.seen && type in dexTypes(id))) && (letter == null || dexInitial(id) == letter)
+            // SPOILERS on HIDE: a name's letter is only known once it's been seen too.
+            status && (type == null || (n in dex.seen && type in dexTypes(id))) &&
+                (letter == null || (dexInitial(id) == letter && (!Spoilers.hiding || Spoilers.seenNational(n, id, dex))))
         }
     }
 }
@@ -250,8 +253,11 @@ fun PokedexScreen(
                 val top = entries.getOrNull(ui.list.firstVisibleItemIndex)
                 LazyColumn(Modifier.fillMaxSize(), state = ui.list) {
                     items(entries, key = { it }) { n ->
+                        val id = species?.getOrNull(n) ?: 0
+                        // SPOILERS on HIDE: an entry the game hasn't shown is "-----" with no picture, as in the game's own dex.
+                        val hidden = Spoilers.hiding && !Spoilers.seenNational(n, id, dex)
                         DexRow(
-                            order.number(n), species?.getOrNull(n) ?: 0, n in dex.caught, n in dex.seen, m, small,
+                            order.number(n), if (hidden) 0 else id, n in dex.caught, n in dex.seen, m, small,
                             start = n == (back ?: top),
                             holding = holdingLabel(species?.getOrNull(n) ?: 0, n in dex.caught, holdings),
                         ) { ui.lastOpened = n; ui.open = n }
@@ -269,7 +275,11 @@ fun PokedexScreen(
         )
     }
     if (pickingLetter && species != null) {
-        val letters = remember(order, species) { order.nationals.mapNotNull { dexInitial(species.getOrElse(it) { 0 }) }.distinct().sorted() }
+        val hiding = Spoilers.hiding
+        val letters = remember(order, species, hiding, dex.seen) {
+            order.nationals.filter { !hiding || Spoilers.seenNational(it, species.getOrElse(it) { 0 }, dex) }
+                .mapNotNull { dexInitial(species.getOrElse(it) { 0 }) }.distinct().sorted()
+        }
         OptionSelector(
             tr("NAME"), listOf<Char?>(null) + letters, ui.letter, { it?.toString() ?: tr("ALL") }, m,
             onPick = { ui.letter = it; pickingLetter = false },
@@ -386,7 +396,8 @@ fun PokedexEntryScreen(
     val m = rememberGbaTextMetrics()
     val small = rememberGbaTextMetrics(1f)
     val order = rememberDexOrder(dex, ui.showsNational(dex))
-    val entries = ui.entries(dex, order, rememberSpeciesMap(dex.tables))
+    val speciesMap = rememberSpeciesMap(dex.tables)
+    val entries = ui.entries(dex, order, speciesMap)
     val index = entries.indexOf(current)
     val step = { d: Int ->
         if (entries.isNotEmpty()) {
@@ -421,15 +432,38 @@ fun PokedexEntryScreen(
             val entry by produceKeyedState(PokedexSource.cachedEntry(dex.tables, n), dex.tables, n) {
                 if (value == null) value = withContext(Dispatchers.IO) { PokedexSource.entry(dex.tables, n) }
             }
-            EntryPage(n, order.number(n), entry, dex.tables, guide, n in dex.caught, n in dex.seen, m, small, ui)
+            val id = entry?.species ?: speciesMap?.getOrNull(n) ?: 0
+            // SPOILERS on HIDE: an entry the game hasn't shown keeps its page shut until SHOW IT.
+            if (Spoilers.hiding && !Spoilers.seenNational(n, id, dex)) HiddenEntryPage(order.number(n), id, m, small)
+            else EntryPage(n, order.number(n), entry, dex.tables, guide, n in dex.caught, n in dex.seen, m, small, ui, dex)
         }
+    }
+}
+
+/** SPOILERS on HIDE: the page of an entry the game hasn't shown - its number, "-----" and SHOW IT, which opens this one. */
+@Composable
+private fun HiddenEntryPage(shownNo: Int, species: Int, m: GbaTextMetrics, small: GbaTextMetrics) {
+    val u = m.u
+    Column(
+        Modifier.fillMaxSize().padding(u * 6), verticalArrangement = Arrangement.spacedBy(u * 6, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GbaText(dexNo(shownNo), OptionColors.value, OptionColors.valueShadow, small)
+            Spacer(Modifier.width(u * 6))
+            GbaText("-----", OptionColors.label, OptionColors.labelShadow, m)
+        }
+        GbaText(
+            tr("You haven't seen this POKéMON yet."), OptionColors.muted, OptionColors.mutedShadow, small, maxLines = 2,
+        )
+        if (species > 0) OptionButton(tk("SHOW IT"), small, onClick = { Spoilers.reveal(Spoilers.monKey(species)) })
     }
 }
 
 @Composable
 private fun EntryPage(
     n: Int, shownNo: Int, e: DexEntry?, t: PokedexTables, guide: GuideTables?, caught: Boolean, seen: Boolean,
-    m: GbaTextMetrics, small: GbaTextMetrics, ui: DexUiState,
+    m: GbaTextMetrics, small: GbaTextMetrics, ui: DexUiState, dex: PokedexState,
 ) {
     val u = m.u
     val gap = u * 3
@@ -502,9 +536,9 @@ private fun EntryPage(
             }
             val body = Modifier.fillMaxWidth().weight(1f)
             when {
-                section == DexSection.EVOLVE -> Box(body) { DexEvolveSection(t, species, m, small) { no -> ui.open = no } }
+                section == DexSection.EVOLVE -> Box(body) { DexEvolveSection(t, species, m, small, known = { no, id -> Spoilers.seenNational(no, id, dex) }) { no -> ui.open = no } }
                 section == DexSection.AREA && guide != null -> Box(body) { DexAreaSection(guide, species, m, small) }
-                section == DexSection.MOVES -> Box(body) { DexMovesSection(t, guide, species, m, small) }
+                section == DexSection.MOVES -> Box(body) { DexMovesSection(t, guide, species, m, small, knownLevel = Spoilers.knownLevel(species)) }
                 else -> DexInfoSection(e, small, m, body)
             }
         } }

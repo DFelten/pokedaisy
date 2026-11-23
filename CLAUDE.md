@@ -460,6 +460,15 @@ before 1.7.0). Flipping them on for 1.7.0: the build defaults (app/build.gradle.
 (`PokeDaisyActivity : GameSettingsScope`, so every `Prefs(this)` there is scoped); the library and top-screen Settings never show or change
 them (the user's call). A setting a game may keep its own value of goes in `PerGameSettings.KEYS` (its `SharedSetting` id and every pref
 key it writes; its row needs that id); game volume stays global. Reset / a scope flip re-applies through `reapplyGameSettings`.
+**SHINY HUNT** (the HUNT tab, behind a third flag `FlaggedFeatures.shinyHunt` / `FeatureFlags.shinyHunt`, marker `shiny-hunt`, for 1.7.0;
+NEW tag `SHINY_HUNT`; `docs/plans/shiny-hunt.md`): a game's hunts in Prefs `hunts_<crc>` (`HuntLog`), counted by `HuntCounter` from the samples
+(`ShinyHunts.onSample` via `GameRuntime`) and state loads (`stateLoaded`: a RESETS try is the first Pokémon read after one); `loadHeld()` holds
+LOAD STATE / RESTART GAME over a shiny (EmulatorEngine's pending load, `restartGame`). The HUD's count is `FieldHudPart.HUNT` (`HudStatus`).
+**SPOILERS** (companion SETTINGS > COMPANION, per ROM `Prefs.spoilersFor`, behind a fourth flag `FlaggedFeatures.spoilerFree` / marker
+`spoiler-free`, for 1.7.0; NEW tag `SPOILER_FREE`; `docs/plans/spoiler-free.md`, manual `spoilers.md`): `Spoilers` (companion/Spoilers.kt) is the one
+check every screen asks - `seen` / `seenNational` (the Pokédex's mark, the species the companion read, what was tapped open: `reveal`), `moveAhead`,
+`hiding`. A screen that names a Pokémon, a move to come or a foe's hidden facts goes through it. Asked by `SpoilerAskHost` (FeatureTip.kt) on an early
+save's first moments in game, else on the first DEX / GUIDE open (`pageOpened`); unanswered = SHOW.
 **SETTINGS FILE** (Settings > APP, setup's first step; `SettingsBackup.kt` / `SettingsFile.kt`): every pref and the controls / hotkeys /
 cheat files in one JSON; sign-ins and keys never (`SECRET_KEYS`). **SAVE STATES folder** (FOLDERS > SAVE STATES, `Prefs.statesDirOverride`):
 every states path goes through `SaveStates.root` / `SaveStates.of`, never `File(filesDir, "states")`.

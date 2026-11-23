@@ -228,7 +228,7 @@ fun GuideScreen(source: GuideSource, ui: GuideUiState, snapshot: SnapshotView, m
         if (source.text?.pages.orEmpty().none { it.title == WHERE_IS }) source.id?.let { id ->
             generatedWhereIs(id, { activeMapSecData[it]?.name?.uppercase() ?: tr("AREA {0}", it) }) { areaDone(it, snapshot, ctx, dex) }?.let(::add)
         }
-        table?.let { add(evolutionsPage(it, snapshot.party)) }
+        table?.let { add(evolutionsPage(it, snapshot.party, dex)) }
     }
     val page = pages.firstOrNull { it.title == ui.page } ?: pages.firstOrNull()
     LaunchedEffect(page?.title) { ui.list.scrollToItem(0) }
@@ -435,7 +435,8 @@ private fun herePage(
     fun national(species: Int) = dex?.let { PokedexSource.nationalOf(it.tables, guideDexSpecies(species)) } ?: 0
     fun rows(slots: List<EncounterSlot>) = slots.map { s ->
         val n = national(s.species)
-        val seen = dex == null || n in dex.seen
+        // The Pokédex's seen mark, and while SPOILERS hides, what the companion read too (Spoilers.seenNational).
+        val seen = com.pokedaisy.app.companion.Spoilers.seenNational(n, s.species, dex)
         val lv = tr("LV {0}", if (s.minLevel == s.maxLevel) "${s.minLevel}" else "${s.minLevel}-${s.maxLevel}")
         GuideEntry(
             title = if (seen) speciesName(s.species) else "???",
@@ -473,8 +474,16 @@ private fun herePage(
     // Place names (and the hint's map names) are game data: only the sentences around them are translated.
     val placeShown = tr(place)
     fun at(t: AreaThing) = if (t.where.isEmpty()) tr("around {0}", placeShown) else tr("in the {0}", trGuide(t.where))
+    val hiding = com.pokedaisy.app.companion.Spoilers.hiding
+    fun unseen(species: Int) = hiding && !com.pokedaisy.app.companion.Spoilers.seen(species, dex)
     val people = things.filter { it.kind in PEOPLE_KINDS }.map { t ->
-        when (t.kind) {
+        when {
+            // SPOILERS on HIDE: a gift or trade of a Pokémon the game hasn't shown names it only when tapped.
+            t.kind == AreaKind.MON && unseen(t.id) && !done(t) ->
+                GuideEntry(tr("A GIFT POKéMON"), tr("Someone {0} gives you {1}.", at(t), speciesName(t.id)), icon = t.id)
+            t.kind == AreaKind.TRADE && (unseen(t.id) || unseen(t.wants)) && !done(t) ->
+                GuideEntry(tr("A TRADE"), tr("Someone {0} trades {1} for your {2}.", at(t), speciesName(t.id), speciesName(t.wants)), icon = t.id)
+            else -> when (t.kind) {
             AreaKind.MON -> GuideEntry(speciesName(t.id), tr("Someone {0} gives you this POKéMON.", at(t)), icon = t.id, owned = done(t))
             AreaKind.EGG -> GuideEntry(tr("AN EGG"), tr("Someone {0} gives you an EGG. It hatches into {1}.", at(t), speciesName(t.id)), owned = done(t))
             AreaKind.TRADE -> GuideEntry(
@@ -482,6 +491,7 @@ private fun herePage(
                 icon = t.id, owned = done(t),
             )
             else -> GuideEntry(itemName(t.id) + qty(t), tr("Someone {0} gives it to you.", at(t)), owned = done(t))
+            }
         }
     }.sortedBy { it.owned }
     val items = things.filter { it.kind == AreaKind.ITEM || it.kind == AreaKind.HIDDEN }.map { t ->
@@ -554,7 +564,9 @@ private fun bossPage(
     parties: Map<Int, List<TrainerMon>>,
     party: List<MonView>,
 ): GuidePage {
-    val ahead = bosses.filter { !it.isDone(progress) }
+    val allAhead = bosses.filter { !it.isDone(progress) }
+    // SPOILERS on HIDE: the next boss only; who comes after is the game's to show.
+    val ahead = if (com.pokedaisy.app.companion.Spoilers.hiding) allAhead.take(1) else allAhead
     val best = party.filter { !it.isEgg }.maxOfOrNull { it.level }
     // A boss with variants (a team per difficulty, or a run of battles) gets a section per team.
     val shown = ahead.withIndex().flatMap { (i, boss) ->
@@ -589,7 +601,9 @@ private fun bossPage(
             note = note,
         )
     }
-    return GuidePage(NEXT_BOSS, sections.ifEmpty { listOf(GuideSection(tk("ALL DONE"), emptyList(), note = tr("Every boss is beaten."))) })
+    val later = allAhead.size - ahead.size
+    val more = if (later > 0) listOf(GuideSection(tk("STILL AHEAD"), emptyList(), note = tr("{0} more bosses after this one.", later))) else emptyList()
+    return GuidePage(NEXT_BOSS, (sections + more).ifEmpty { listOf(GuideSection(tk("ALL DONE"), emptyList(), note = tr("Every boss is beaten."))) })
 }
 
 /**
@@ -598,12 +612,17 @@ private fun bossPage(
  * levelling. The hint is only the kind (LEVEL UP, USE AN ITEM, TRADE…); the
  * answer names what it becomes.
  */
-private fun evolutionsPage(table: List<List<Evolution>>, party: List<MonView>): GuidePage {
-    fun entryFor(species: Int, evos: List<Evolution>) = GuideEntry(
-        title = speciesName(species),
-        answer = if (evos.isEmpty()) tr("Doesn't evolve.") else evos.joinToString("\n") { evolutionText(it) },
-        hint = evos.takeIf { it.isNotEmpty() }?.map { evolutionKind(it) }?.distinct()?.joinToString(" / "),
-    )
+private fun evolutionsPage(table: List<List<Evolution>>, party: List<MonView>, dex: PokedexState?): GuidePage {
+    fun entryFor(species: Int, evos: List<Evolution>): GuideEntry {
+        val how = if (evos.isEmpty()) tr("Doesn't evolve.") else evos.joinToString("\n") { evolutionText(it) }
+        // SPOILERS on HIDE: a Pokémon the game hasn't shown is ???, named with the answer.
+        val hidden = com.pokedaisy.app.companion.Spoilers.hiding && !com.pokedaisy.app.companion.Spoilers.seen(species, dex)
+        return GuideEntry(
+            title = if (hidden) "???" else speciesName(species),
+            answer = if (hidden) speciesName(species) + "\n" + how else how,
+            hint = evos.takeIf { it.isNotEmpty() }?.map { evolutionKind(it) }?.distinct()?.joinToString(" / "),
+        )
+    }
     val partySpecies = party.filter { !it.isEgg && it.species in table.indices }.map { it.species }.distinct()
     val special = table.indices.filter { s -> table[s].any { !it.isPlainLevel() } }
     return GuidePage(

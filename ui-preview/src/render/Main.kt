@@ -1118,10 +1118,12 @@ fun previewThemeDay(t: com.pokedaisy.app.companion.ui.theme.ThemeSpec): kotlinx.
 
 /** What PokeDaisyApp.onCreate hands the shared screens on Android: art files and theme storage over the shim Context. */
 fun installPreviewHosts() {
-    // Every screen as the next release has it: both batches on (-PflagsOff=true: as players have it now).
+    // Every screen as the next release has it: every batch on (-PflagsOff=true: as players have it now).
     (System.getProperty("flagsOff") != "true").let {
         com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus = it
         com.pokedaisy.app.companion.FlaggedFeatures.modernLook = it
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = it
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = it
     }
     val context = android.content.Context()
     com.pokedaisy.app.companion.data.RomArt.filesDir = okio.Path.Companion.run { context.filesDir.toOkioPath() }
@@ -2216,6 +2218,14 @@ fun main(args: Array<String>) {
             }
             seeded
         }),
+        // SHINY HUNT (behind its flag): no hunt yet, then one under way with a phase and earlier hunts.
+        Shot("$g-hunt-none", bw, bh, bd, companion("HUNT")),
+        Shot("$g-hunt", bw, bh, bd, { huntPreview(companion("HUNT")()) }),
+        Shot("$g-hunt-resets", bw, bh, bd, { huntPreview(companion("HUNT")(), resets = true) }),
+        Shot("$g-hunt-options", bw, bh, bd, { huntPreview(companion("HUNT")()) }) {
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("OPTIONS")).performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+        },
         Shot("$g-more-full", bw, bh, bd, companion("MORE", barTabs = listOf("PARTY", "MAP"))),
         // Every app icon at once (a game can't have all of them off the bar with a ROM-less preview).
         Shot("$g-more-icons", bw, bh, bd, {
@@ -4045,4 +4055,23 @@ internal fun previewStates() {
             scene(java.io.File(dir, f.name + ".png"), listOf(0x88C8F8, 0xF8C070, 0x6080C0, 0xA0E0A0)[i % 4], listOf(0x58A848, 0xC09050, 0x406030)[(i + g) % 3], i + g * 7)
         }
     }
+}
+
+/** SHINY HUNT's preview log: a hunt under way (4,321 encounters, a phase) and two earlier ones; stored nowhere. */
+fun huntPreview(content: @Composable () -> Unit, resets: Boolean = false): @Composable () -> Unit = {
+    DisposableEffect(Unit) {
+        val d = com.pokedaisy.app.companion.data.HuntLog(listOf(
+            com.pokedaisy.app.companion.data.Hunt(id = 3, target = if (resets) 4 else 16, targetName = if (resets) "EMBERPUP" else "SKYLARK",
+                method = if (resets) com.pokedaisy.app.companion.data.HuntMethod.RESETS else com.pokedaisy.app.companion.data.HuntMethod.ENCOUNTERS,
+                count = 4321, playMillis = 3 * 3_600_000L + 17 * 60_000L,
+                phases = listOf(com.pokedaisy.app.companion.data.HuntShiny(19, "NIBBLER", 2875, 2))),
+            com.pokedaisy.app.companion.data.Hunt(id = 2, method = com.pokedaisy.app.companion.data.HuntMethod.RESETS, target = 4, targetName = "EMBERPUP",
+                count = 612, status = com.pokedaisy.app.companion.data.HuntStatus.ON_HOLD),
+            com.pokedaisy.app.companion.data.Hunt(id = 1, count = 9120, status = com.pokedaisy.app.companion.data.HuntStatus.FOUND,
+                found = com.pokedaisy.app.companion.data.HuntShiny(10, "BUGSY", 9120, 1)),
+        ))
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(d)
+        onDispose { com.pokedaisy.app.companion.ShinyHunts.close(game) }
+    }
+    content()
 }

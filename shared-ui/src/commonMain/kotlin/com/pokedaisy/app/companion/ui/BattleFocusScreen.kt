@@ -122,6 +122,8 @@ private fun FocusPage(
     m: GbaTextMetrics, small: GbaTextMetrics,
 ) {
     val u = m.u
+    // SPOILERS on HIDE: a foe's ability, item, stats and moves are the game's to show (they show as "???").
+    val hidden = isFoe && com.pokedaisy.app.companion.Spoilers.hiding
     // Room for the corner button, so nothing ends up under it.
     val buttonRoom = m.rowHeight + u * 4
     val groups = if (!showHints) emptyList() else listOf(
@@ -137,13 +139,14 @@ private fun FocusPage(
         val wide = Constraints(minWidth = c.maxWidth, maxWidth = c.maxWidth)
         val top = subcompose("top") {
             Column(verticalArrangement = Arrangement.spacedBy(u * 3)) {
-                FocusHeader(mon, pill, dexTables, m, small)
-                FoeFacts(mon, dexTables, m, small, wide = true, abilityAndItem = false)
+                FocusHeader(mon, pill, dexTables, m, small, hidden)
+                if (!hidden) FoeFacts(mon, dexTables, m, small, wide = true, abilityAndItem = false)
             }
         }.single().measure(wide)
         val moves = subcompose("moves") {
             Column(Modifier.fillMaxSize().padding(bottom = if (groups.isEmpty()) buttonRoom else 0.dp)) {
-                if (mon.moves.isEmpty()) GbaText(tr("NO MOVE DATA"), OptionColors.muted, OptionColors.mutedShadow, small)
+                if (hidden) GbaText("???", OptionColors.muted, OptionColors.mutedShadow, small)
+                else if (mon.moves.isEmpty()) GbaText(tr("NO MOVE DATA"), OptionColors.muted, OptionColors.mutedShadow, small)
                 else for (pair in 0 until 2) Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(u * 6)) {
                     for (j in 0 until 2) BattleMoveRow(
                         mon.moves.getOrNull(pair * 2 + j), showHints, foeCount, m, small,
@@ -211,10 +214,10 @@ private fun MatchupFlow(groups: List<Pair<String, List<TypeMatchup>>>, small: Gb
 
 /** Sprite, then name / types on the left and ability / held item on the right. No HP or level. */
 @Composable
-private fun FocusHeader(mon: MonView, pill: String, dexTables: PokedexTables?, m: GbaTextMetrics, small: GbaTextMetrics) {
+private fun FocusHeader(mon: MonView, pill: String, dexTables: PokedexTables?, m: GbaTextMetrics, small: GbaTextMetrics, hidden: Boolean = false) {
     val u = m.u
-    val ability = rememberFoeAbility(mon, dexTables)
-    val item = mon.heldItem?.ifEmpty { tr("NONE") }
+    val ability = if (hidden) "???" else rememberFoeAbility(mon, dexTables)
+    val item = if (hidden) "???" else mon.heldItem?.ifEmpty { tr("NONE") }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(u * 36).clip(PixelRoundedShape(u * 4)).background(OptionColors.listFill),

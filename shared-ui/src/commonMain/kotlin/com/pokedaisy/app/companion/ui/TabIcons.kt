@@ -282,6 +282,29 @@ internal object TabIcons {
         mapOf('k' to OUTLINE, 'w' to Color(0xFFD8D8E0), 'y' to Color(0xFFF8C830), 'b' to Color(0xFF8A5A2A)),
     )
 
+    /** Three sparkles, the big one gold: the HUNT tab (a shiny's shine). */
+    val sparkles = TabIcon(
+        listOf(
+            "................",
+            "......k.........",
+            ".....kyk........",
+            ".....kyk........",
+            "....kyWyk.....k.",
+            "..kkyWWWykk..kpk",
+            ".kyyWWWWWyyk.kpk",
+            "..kkyWWWykk.kpWpk",
+            "....kyWyk....kpk",
+            ".....kyk.....kpk",
+            ".....kyk......k.",
+            "......k...k.....",
+            ".........kbk....",
+            "........kbWbk...",
+            ".........kbk....",
+            "..........k.....",
+        ),
+        mapOf('k' to OUTLINE, 'y' to Color(0xFFF8C830), 'W' to Color(0xFFFFF4C0), 'p' to Color(0xFFF070A8), 'b' to Color(0xFF58A8F0)),
+    )
+
     /** A tab id's icon; null for a tab without one (BATTLE and SETTINGS never sit on the MORE grid). */
     fun forTab(id: String): TabIcon? = when (id) {
         "PARTY" -> party
@@ -291,6 +314,7 @@ internal object TabIcons {
         "BOXES" -> boxes
         "GUIDE" -> guide
         "NUZLOCKE" -> grave
+        "HUNT" -> sparkles
         "CARD" -> card
         "STATES" -> states
         "ACHIEVEMENTS" -> achievements

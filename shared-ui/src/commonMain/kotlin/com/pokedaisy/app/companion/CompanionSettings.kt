@@ -543,8 +543,10 @@ interface CompanionSettings : StoredCompanionSettings {
 /** Every tab the player can show or hide, in tab-bar order. BATTLE (while a
  * battle runs) and SETTINGS (the way to the hidden ones) are always there.
  * CARD (the TRAINER CARD) and ACHIEVEMENTS (RetroAchievements) start off the
- * bar, under the MORE tab. */
-val COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "CARD", "STATES", "ACHIEVEMENTS")
+ * bar, under the MORE tab. HUNT (SHINY HUNT) only with its flag ([FlaggedFeatures.shinyHunt]). */
+val COMPANION_TABS: List<String> get() = listOfNotNull(
+    "PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "HUNT".takeIf { FlaggedFeatures.shinyHunt }, "CARD", "STATES", "ACHIEVEMENTS",
+)
 val DEFAULT_COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE")
 
 /** Tabs next to SETTINGS: six chips in all is as many as fit. During a

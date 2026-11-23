@@ -57,6 +57,8 @@ enum class FieldHudPart(val label: String) {
     WILD(tk("WILD POKéMON")),
     /** The card over the game while its summary asks which move to forget (MoveLearningHudCard). */
     MOVE_ADVICE(tk("MOVE ADVICE")),
+    /** SHINY HUNT's count while a hunt goes, beside the REPEL's steps ([com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt]). */
+    HUNT(tk("SHINY HUNT")),
 }
 
 /** The HUD's pieces EDIT LAYOUT moves, each as one block. */

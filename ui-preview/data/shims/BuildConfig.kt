@@ -13,6 +13,8 @@ object BuildConfig {
     @JvmField var FEATURE_COOP = true
     @JvmField var FEATURE_SETTINGS_PLUS = System.getProperty("flagsOff") != "true"
     @JvmField var FEATURE_MODERN_LOOK = System.getProperty("flagsOff") != "true"
+    @JvmField var FEATURE_SHINY_HUNT = System.getProperty("flagsOff") != "true"
+    @JvmField var FEATURE_SPOILER_FREE = System.getProperty("flagsOff") != "true"
     /** Off as in a release: the blocked-game shots show the notice. */
     @JvmField var FEATURE_ALLOW_BLOCKED = false
     @JvmField var FEATURE_KEEP_BLOCKED = false

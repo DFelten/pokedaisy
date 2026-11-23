@@ -56,7 +56,8 @@ class GameFlight(
     fun setStyle(style: FlyStyle) { if (!closed.value) prefs.flyStyleId = style.id }
     fun setArea(mode: FlightAreaMode) { if (!closed.value) { prefs.flightAreaId = mode.id; sync() } }
     fun setVehicle(vehicle: FlightVehicle) { if (!closed.value) { prefs.flightVehicleId = vehicle.id; sync() } }
-    private val seen get() = prefs.flightArea == FlightAreaMode.SEEN
+    /** Only the maps seen: FLIGHT AREA's VISITED, and always while SPOILERS hides (ANYWHERE would show what's ahead). */
+    private val seen get() = prefs.flightArea == FlightAreaMode.SEEN || Spoilers.hiding
 
     fun support(): FieldItemSupport? = if (closed.value) null else readSupport()?.takeIf {
         it.canFlight && it.fns.flight != null && flightAllowed(kind(), retail(), it.fns.flight)

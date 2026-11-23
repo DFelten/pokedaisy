@@ -288,6 +288,8 @@ object NewFeatures {
     const val GAME_SETTINGS = "game_settings"
     /** Settings > SETTINGS FILE (and setup's first step): every setting exported to a file and imported back. */
     const val SETTINGS_FILE = "settings_file"
+    const val SHINY_HUNT = "shiny_hunt"
+    const val SPOILER_FREE = "spoiler_free"
     /** Settings > FOLDERS > SAVE STATES: a folder of the player's own, the states listed by game with their pictures. */
     const val STATES_FOLDER = "states_folder"
     /** Settings > SUPPORTED ONLY: the library without the games the companion can't read. */
@@ -423,7 +425,7 @@ object NewFeatures {
         QUICK_TOUCH, APP_FONT, PIXEL_SMALL, FONT_SIZE, APP_VIEW, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
-        TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS,
+        TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS, SHINY_HUNT, SPOILER_FREE,
     )
 
     private const val DAYS = 7

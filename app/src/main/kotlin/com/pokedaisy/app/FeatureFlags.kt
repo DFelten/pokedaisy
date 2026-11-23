@@ -29,11 +29,19 @@ object FeatureFlags {
      * it; marker `modern-look`. */
     fun modernLook(context: Context): Boolean = BuildConfig.FEATURE_MODERN_LOOK || marker(context, "modern-look")
 
+    /** The third ([com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt]): the HUNT tab; marker `shiny-hunt`. */
+    fun shinyHunt(context: Context): Boolean = BuildConfig.FEATURE_SHINY_HUNT || marker(context, "shiny-hunt")
+
+    /** The fourth ([com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree]): SPOILERS; marker `spoiler-free`. */
+    fun spoilerFree(context: Context): Boolean = BuildConfig.FEATURE_SPOILER_FREE || marker(context, "spoiler-free")
+
     /** Both batches into [com.pokedaisy.app.companion.FlaggedFeatures]: at the process's start, before anything reads the
      * settings they change, and again as the library, Settings and a game start (a marker added meanwhile). */
     fun applyBatches(context: Context) {
         com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus = settingsPlus(context)
         com.pokedaisy.app.companion.FlaggedFeatures.modernLook = modernLook(context)
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = shinyHunt(context)
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = spoilerFree(context)
     }
 
     /** CO-OP: the link to a paired partner, its Settings group and invite links. Off until it ships; marker `coop`. */

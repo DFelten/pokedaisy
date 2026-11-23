@@ -251,6 +251,7 @@ fun CompanionSettingsScreen(
                             companionTabLabel(id), if (shown) tk("SHOWN") else tk("HIDDEN"),
                             labelBadge = when (id) {
                                 "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB)
+                                "HUNT" -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
                                 "STATES" -> settings.statesBadge
                                 "CARD" -> if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL) NewFeatures.badge(NewFeatures.CRYSTAL_CARD) else null
                                 else -> null
@@ -854,6 +855,7 @@ private fun homeRows(
         SettingRow(
             tk("FLIGHT AREA"), if (s.flyStyleSupported) s.flightArea.label else tk("N/A"), setting = SharedSetting.FLIGHT_AREA,
             enabled = s.flyStyleSupported, labelBadge = s.flightBadge ?: NewFeatures.badge(NewFeatures.FLIGHT_AREA),
+            subtitle = if (com.pokedaisy.app.companion.Spoilers.hiding && s.flightArea == FlightAreaMode.ANYWHERE) "Only where you've been while SPOILERS hides" else null,
         ) {
             if (s.flyStyleSupported) {
                 s.setFlightArea(if (s.flightArea == FlightAreaMode.SEEN) FlightAreaMode.ANYWHERE else FlightAreaMode.SEEN)
@@ -1271,6 +1273,12 @@ private fun homeRows(
             tk("BATTLE FOCUS"), onOff(s.battleFocus), setting = SharedSetting.BATTLE_FOCUS, subtitle = "Battle info on one page, no scrolling",
             labelBadge = NewFeatures.badge(NewFeatures.BATTLE_FOCUS),
         ) { s.setBattleFocus(!s.battleFocus); changed() },
+        // SPOILERS (docs/plans/spoiler-free.md): this game's, HIDE = only what the game has shown so far.
+        SettingRow(
+            tk("SPOILERS"), if (com.pokedaisy.app.companion.Spoilers.hiding) tk("HIDE") else tk("SHOW"),
+            subtitle = "Hide what the game hasn't shown you yet", labelBadge = NewFeatures.badge(NewFeatures.SPOILER_FREE),
+        ) { com.pokedaisy.app.companion.Spoilers.set(!com.pokedaisy.app.companion.Spoilers.hiding); changed() }
+            .takeIf { com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree },
         SettingRow(tk("TAB BAR"), tr("{0} TABS", barTabs), setting = SharedSetting.TAB_BAR, labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS) ?: NewFeatures.badge(NewFeatures.MORE_TAB) ?: NewFeatures.badge(NewFeatures.BOXES_TAB), opensPage = true, subtitle = "Which tabs sit next to the gear") { navigate(Page.TABS) },
         // The game's menu click on every companion button.
         SettingRow(tk("CLICK SOUND"), onOff(s.clickSound), setting = SharedSetting.CLICK_SOUND, labelBadge = s.clickSoundBadge) { s.setClickSound(!s.clickSound); changed() },

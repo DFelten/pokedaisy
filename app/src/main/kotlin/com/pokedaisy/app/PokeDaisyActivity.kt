@@ -2182,7 +2182,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     Hotkeys.Action.SAVE_STATE -> if (ok) tr("Saved slot {0}", slot) else tr("Slot {0}: save failed", slot)
                     // BOSS RETRY's state (slot -1): the battle's start.
                     Hotkeys.Action.LOAD_STATE -> if (slot < 0) { if (ok) tr("Back to the battle's start") else tr("Can't go back to that battle") }
-                        else if (ok) tr("Loaded slot {0}", slot) else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Slot {0}: nothing to load", slot)
+                        else if (ok) tr("Loaded slot {0}", slot) else if (playback.loadHeldForShiny()) tr("A shiny is out: LOAD STATE waits a moment") else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Slot {0}: nothing to load", slot)
                     Hotkeys.Action.UNDO_SAVE -> if (ok) tr("Undid save (slot {0})", slot) else tr("Nothing to undo")
                     Hotkeys.Action.UNDO_LOAD -> if (ok) tr("Undid load") else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Nothing to undo")
                     else -> ""
@@ -2242,6 +2242,17 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                         input.releaseAll()
                         unlockSound?.play()
                         showHud(alert.message(), com.pokedaisy.app.companion.GameShinyAlert.NOTICE_MILLIS)
+                    }
+                }, onHuntShiny = { found ->
+                    val current = this
+                    runOnUiThread {
+                        if (!::engine.isInitialized || engine !== current || !current.running) return@runOnUiThread
+                        if (found.shiny) {
+                            gameActions.stopFastForward()
+                            input.releaseAll()
+                            unlockSound?.play()
+                        }
+                        showHud(found.message(), com.pokedaisy.app.companion.ShinyHunts.NOTICE_MILLIS)
                     }
                 }, onNuzlockeNotices = { notices ->
                     val current = this
@@ -4220,6 +4231,12 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
                     maxWidth = maxWidth, onAnswer = ::answerBattleRetry,
                 )
+                com.pokedaisy.app.companion.ui.SpoilerAskHost(
+                    active = !tipsOnCompanion.value, roomy = false, onCompanion = false,
+                    modifier = androidx.compose.ui.Modifier.padding(top = clearTop + 8.dp),
+                    cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
+                    maxWidth = maxWidth,
+                )
                 // RetroAchievements' popups and challenge / tracker indicators, while no companion is on screen (a DS
                 // game's touch screen in its place, one screen's closed window): GitHub #500.
                 com.pokedaisy.app.companion.ui.AchievementPopupHost(
@@ -5329,6 +5346,11 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     /** RESTART GAME (SETTINGS, and its hotkey): the game booted again from its save, the resume state dropped. */
     private fun restartGame() {
         if (coopRefuses()) return
+        // SHINY HUNT: not while a shiny is on screen (a slip would lose it).
+        if (::engine.isInitialized && engine.playback.loadHeldForShiny()) {
+            showHud(com.pokedaisy.app.companion.i18n.tr("A shiny is out: RESTART waits a moment"))
+            return
+        }
         val r = rom ?: return
         if (romIs3ds) { endN3ds(); load3ds(r); startGame(); return }
         if (!::engine.isInitialized || !recoverSaveTrade()) return

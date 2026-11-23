@@ -52,7 +52,7 @@ Tap `LAYOUT`, `LOOK` or `SIZE` to step to the next choice. The HUD changes right
 | `DELETE LAYOUT` | | Forgets the layout of yours in use and goes back to `CORNERS`. Only there while one of yours is in use. |
 | `LOOK` | **`GAME`**, `GLASS`, `WHITE GLASS`, `WINDOW` | `GAME` draws the HUD in the style of the game you're playing: HeartGold's green menu window, Black's navy panels and so on (see [In game: the game's colors](screen.md#in-game-the-games-colors)); a game without a look of its own gets `GLASS`. `GLASS` is a dark see-through panel that lets the game show through, with light text. `WHITE GLASS` is the same in white, with dark text. `WINDOW` uses the white windows the rest of the app has. In every look the windows are shaped like the games' battle HP boxes, with a shadow below and to the right, and whatever is picked (a pocket, an item, `KEEP OPEN`) gets an orange edge, like the chosen slot on the games' party screen. |
 | `SIZE` | `SMALL`, **`NORMAL`**, `LARGE` | How big it is, from small to large. |
-| `PARTY`, `MINIMAP`, `POKé BALLS`, the steps left, `PC`, `BAG`, `WILD POKéMON`, `MOVE ADVICE` | **`ON`**, `OFF` | Show or hide each part. Each row carries the part's icon. |
+| `PARTY`, `MINIMAP`, `POKé BALLS`, the steps left, `PC`, `BAG`, `WILD POKéMON`, `MOVE ADVICE`, `SHINY HUNT` | **`ON`**, `OFF` | Show or hide each part. Each row carries the part's icon. `SHINY HUNT` is the count of a [shiny hunt](shiny-hunt.md) while one is going. |
 
 ## Your own layout
 

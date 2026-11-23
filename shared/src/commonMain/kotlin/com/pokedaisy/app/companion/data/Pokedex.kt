@@ -1603,19 +1603,31 @@ data class DexEntry(
  * offline [com.pokedaisy.app.companion.data.save.RomMonSprites] (reads a ROM
  * file). Null when the table's pointers don't hold - the caller keeps its icon.
  */
-internal fun decodeFrontSprite(t: PokedexTables, species: Int, read: (Long, Int) -> ByteArray): RomArt.Image? {
+internal fun decodeFrontSprite(t: PokedexTables, species: Int, shinyPalettes: Long = 0L, read: (Long, Int) -> ByteArray): RomArt.Image? {
     if (species <= 0) return null
     return runCatching {
         val x = t.expansion
         val tilesPtr: Long
-        val palPtr: Long
+        var palPtr: Long
         if (x != null) {
             val info = read(t.speciesInfo + species.toLong() * x.stride, x.stride)
             tilesPtr = Gfx.u32(info, x.frontPicOff)
             palPtr = Gfx.u32(info, x.paletteOff)
+            // Expansion's SpeciesInfo: shinyPalette right after palette, in the same form (compressed or not).
+            if (shinyPalettes != 0L) {
+                val shiny = Gfx.u32(info, x.paletteOff + 4)
+                if (!Gfx.inRom(shiny) || shiny == palPtr || read(shiny, 1)[0] != read(palPtr, 1)[0]) return null
+                palPtr = shiny
+            }
         } else {
             tilesPtr = Gfx.u32(read(t.frontPics + species * 8L, 8), 0)
             palPtr = Gfx.u32(read(t.palettes + species * 8L, 8), 0)
+            // gMonShinyPaletteTable: {palette, tag = species + 500} per species.
+            if (shinyPalettes != 0L) {
+                val entry = read(shinyPalettes + species * 8L, 8)
+                if (shinyTag16(entry, 4) != species + SHINY_PALETTE_TAG) return null
+                palPtr = Gfx.u32(entry, 0)
+            }
         }
         if (!Gfx.inRom(tilesPtr) || !Gfx.inRom(palPtr)) return null
         // Emerald's front pics hold two animation frames (4 KiB); the first is the still.
@@ -1627,6 +1639,23 @@ internal fun decodeFrontSprite(t: PokedexTables, species: Int, read: (Long, Int)
         Gfx.decode4bpp(tiles, 0, colors, 0, 8, 8)
     }.getOrNull()
 }
+
+/** gMonShinyPaletteTable's tags: the species + 500 (SPECIES_SHINY_TAG). */
+private const val SHINY_PALETTE_TAG = 500
+
+private fun shinyTag16(b: ByteArray, o: Int) = (b[o].toInt() and 0xFF) or ((b[o + 1].toInt() and 0xFF) shl 8)
+
+/**
+ * Where gMonShinyPaletteTable starts: right after gMonPaletteTable, so the first entry past [palettes] tagged 500 (its
+ * SPECIES_NONE) with 501 after it; 0 when it isn't found in the next 3000 entries.
+ */
+internal fun findShinyPalettes(palettes: Long, read: (Long, Int) -> ByteArray): Long = runCatching {
+    val chunk = read(palettes, 3002 * 8)
+    for (i in 1 until 3000) {
+        if (shinyTag16(chunk, i * 8 + 4) == SHINY_PALETTE_TAG && shinyTag16(chunk, i * 8 + 12) == SHINY_PALETTE_TAG + 1) return@runCatching palettes + i * 8L
+    }
+    0L
+}.getOrDefault(0L)
 
 /**
  * Reads [DexEntry]s and sprites out of the ROM on demand and caches them -
@@ -1654,7 +1683,7 @@ object PokedexSource {
         if (cachedFor == t) return
         synchronized(lock) {
             if (cachedFor == t) return
-            entries.clear(); sprites.clear(); shinySprites.clear(); footprints.clear(); baseStats.clear(); growthRates.clear(); nationalToSpecies = null; speciesToNational = null; regional = null
+            entries.clear(); sprites.clear(); shinySprites.clear(); huntSprites.clear(); shinyPalettesFor = null; footprints.clear(); baseStats.clear(); growthRates.clear(); nationalToSpecies = null; speciesToNational = null; regional = null
             cachedFor = t
         }
     }
@@ -1717,6 +1746,31 @@ object PokedexSource {
         return runCatching { Gen2Dex.frontPixels(g, species, shiny = true)?.let { RomArt.Image(56, 56, it) } }
             .getOrNull()?.also { shinySprites[species] = it }
     }
+    private val huntSprites = LockedMap<Int, RomArt.Image>()
+    @Volatile private var shinyPalettesFor: Pair<PokedexTables, Long>? = null
+
+    fun cachedHuntSprite(t: PokedexTables, species: Int): RomArt.Image? = if (cachedFor == t) huntSprites[species] else null
+
+    /**
+     * SHINY HUNT's target picture: the front picture in its shiny colours, Gen 2's and the GBA games' (gMonShinyPaletteTable,
+     * expansion's shinyPalette); else its usual colours. Its own cache, apart from the PARTY tab's pictures (behind the flag).
+     */
+    fun huntSprite(t: PokedexTables, species: Int): RomArt.Image? {
+        sync(t)
+        if (species <= 0) return null
+        huntSprites[species]?.let { return it }
+        val shiny = when {
+            t.gen2 != null -> shinyFrontSprite(t, species)
+            t.gen1 != null || t.gen4 != null -> null
+            else -> {
+                val base = if (t.expansion != null) 1L else shinyPalettesFor?.takeIf { it.first == t }?.second
+                    ?: findShinyPalettes(t.palettes, ::rd).also { shinyPalettesFor = t to it }
+                if (base == 0L) null else decodeFrontSprite(t, species, shinyPalettes = base, read = ::rd)
+            }
+        }
+        return (shiny ?: frontSprite(t, species))?.also { huntSprites[species] = it }
+    }
+
     fun cachedFootprint(t: PokedexTables, species: Int): RomArt.Image? = if (cachedFor == t) footprints[species] else null
     fun cachedSpeciesMap(t: PokedexTables): IntArray? = when {
         // Gen 1's and 2's tables are by Dex number - but Prism's, by its own species ids in its own dex order.
@@ -1829,7 +1883,7 @@ object PokedexSource {
                 .getOrNull()?.also { sprites[species] = it }
         }
         t.gen4?.let { g -> return Gen4Dex.front(g, species)?.also { sprites[species] = it } }
-        return decodeFrontSprite(t, species, ::rd)?.also { sprites[species] = it }
+        return decodeFrontSprite(t, species, read = ::rd)?.also { sprites[species] = it }
     }
 
     /** The 16x16 footprint (black on transparent). */

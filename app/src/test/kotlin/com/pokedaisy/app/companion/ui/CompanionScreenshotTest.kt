@@ -101,6 +101,7 @@ import com.pokedaisy.app.companion.data.resetNativeBagCache
 import com.pokedaisy.app.companion.ui.theme.AppTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
@@ -254,6 +255,29 @@ open class CompanionScreenshotTest {
 
     /** NUZLOCKE on a full tab bar: the chip's label narrows to fit. */
     @Test fun nuzlockeOnBar() = nuzlockeShot("NUZLOCKE", listOf("PARTY", "DEX", "MAP", "ITEMS", "NUZLOCKE"))
+
+    /** SHINY HUNT (its flag on): a RESETS hunt for EMBERPUP's species (4), drawn in its shiny colours from the ROM. */
+    @Test fun hunt() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, method = com.pokedaisy.app.companion.data.HuntMethod.RESETS,
+        target = 4, targetName = "EMBERPUP", count = 4321, playMillis = 11_820_000))
+
+    /** An ENCOUNTERS hunt with a phase on the way (no reset buttons, a PHASES cell). */
+    @Test fun huntEncounters() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, target = 16, targetName = "SKYLARK", count = 12_480,
+        playMillis = 30_120_000, phases = listOf(com.pokedaisy.app.companion.data.HuntShiny(19, "NIBBLER", 2875, 2))))
+
+    private fun huntShot(h: com.pokedaisy.app.companion.data.Hunt) {
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = true
+        // Loaded before the shot (the tab loads it off the main thread).
+        PokedexSource.reader?.let { PokedexSource.huntSprite(modernDex.tables, h.target) }
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog(listOf(h)))
+        try {
+            snapshot {
+                CompanionScreen(SampleCompanion.snapshot.copy(pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "HUNT")
+            }
+        } finally {
+            com.pokedaisy.app.companion.ShinyHunts.close(game)
+            com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = false
+        }
+    }
 
     private fun nuzlockeShot(tab: String, barTabs: List<String> = com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS) {
         val party = SampleCompanion.snapshot.party.mapIndexed { i, m -> m.copy(personality = i + 1L, heldItemId = if (i == 1) 200 else 0) }
@@ -1056,6 +1080,94 @@ open class CompanionScreenshotTest {
             GuideScreen(rememberGuide(snap.game, snap.pokedex, snap.guideTables)!!, ui, snap)
         }
     }
+
+    /** SPOILERS on HIDE (Spoilers.preview): the party's CHARIZARD at Lv 36 is what the companion has read. */
+    private fun hidingSpoilers(levels: Map<Int, Int> = mapOf(6 to 36), body: () -> Unit) {
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = true
+        val g = com.pokedaisy.app.companion.Spoilers.preview(com.pokedaisy.app.companion.Spoilers.HIDE, levels = levels)
+        try { body() } finally {
+            com.pokedaisy.app.companion.Spoilers.close(g)
+            com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = false
+        }
+    }
+
+    /** The DEX while hiding: unseen entries are "-----" with no picture. */
+    @Test fun dexSpoilers() = hidingSpoilers {
+        snapshot {
+            AppTheme {
+                val dex = SampleCompanion.snapshot.pokedex!!
+                PokedexScreen(dex, DexUiState(androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = 140)))
+            }
+        }
+    }
+
+    /** An unseen entry's page: shut, SHOW IT. */
+    @Test fun dexEntrySpoilers() = hidingSpoilers {
+        snapshot {
+            AppTheme {
+                val dex = SampleCompanion.snapshot.pokedex!!
+                val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+                val unseen = (1..151).first { it !in dex.seen }
+                ui.open = unseen
+                PokedexEntryScreen(dex, ui, unseen)
+            }
+        }
+    }
+
+    /** CHARMANDER's EVOLVE and MOVES while hiding: the family seen, the moves past Lv 36 still ???. */
+    @Test fun dexEvolveSpoilers() = hidingSpoilers { dexSection(4, DexSection.EVOLVE) }
+    /** MUDKIP's MOVES (the retail Emerald ROM's) while hiding, the player's at Lv 16: the moves after are ???. */
+    @Test fun dexMovesSpoilers() {
+        val shot = emeraldDex() ?: return
+        val mudkip = PokedexSource.speciesFor(POKEDEX_EMERALD, 258)
+        val g = com.pokedaisy.app.companion.data.GUIDE_TABLES_EMERALD
+        com.pokedaisy.app.companion.data.DexDetails.levelUp(POKEDEX_EMERALD, g, mudkip)
+        com.pokedaisy.app.companion.data.DexDetails.teachable(POKEDEX_EMERALD, g, mudkip)
+        hidingSpoilers(mapOf(mudkip to 16)) {
+            snapshot {
+                AppTheme {
+                    val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+                    ui.open = 258
+                    ui.section = DexSection.MOVES
+                    PokedexEntryScreen(shot.pokedex!!, ui, 258, guide = g)
+                }
+            }
+        }
+    }
+
+    private fun dexSection(entry: Int, section: DexSection) = snapshot {
+        AppTheme {
+            val dex = SampleCompanion.snapshot.pokedex!!
+            val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+            ui.open = entry
+            ui.section = section
+            PokedexEntryScreen(dex, ui, entry, guide = SampleCompanion.snapshot.guideTables)
+        }
+    }
+
+    /** Heart and Soul's NEXT BOSS while hiding: FALKNER only, the rest a count. */
+    @Test fun hnsGuideNextBossSpoilers() = hidingSpoilers { hnsGuideNextBoss() }
+
+    /** EVOLUTIONS while hiding: the special ones not seen are ???. */
+    @Test fun guideEvolutionsSpoilers() = hidingSpoilers { guideShot("EVOLUTIONS", "EVOLUTIONS/YOUR PARTY/PIDGEY/null" to 2) }
+
+    /** The question on the companion's screen. */
+    @Test fun spoilerAsk() = snapshot {
+        AppTheme {
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF6C8CB0)).padding(16.dp),
+                contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+            ) {
+                FeatureTipCard(
+                    spoilerAskText(), androidx.compose.ui.Modifier.fillMaxWidth(), left = 0.7f, roomy = true, maxWidth = 1200.dp,
+                    badge = "NEW", noLabel = "SHOW EVERYTHING",
+                )
+            }
+        }
+    }
+
+    /** FOE DETAILS while hiding: the foe's matchups, none of its ability, item, stats or moves. */
+    @Test fun battleInfoFoeDetailsSpoilers() = hidingSpoilers { battleInfoFoeDetails() }
 
     /** The trainer's party for the FOE TEAM shots: GEODUDE fainted, ONIX out, two more unseen. */
     private val foes = listOf(

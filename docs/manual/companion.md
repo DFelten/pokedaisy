@@ -22,7 +22,7 @@ Along the bottom of the companion is a row of tabs, with `MORE` (a grid of nine 
 | `BAG` | Every pocket of your bag. See [Bag](bag.md). |
 | `GUIDE` | Hints, the next boss and what's around you. See [Guide](guide.md). |
 
-A few more are off the bar to begin with and wait under `MORE`: `BOXES` (your [PC boxes](boxes.md), FireRed for now), `CARD` (your [trainer card](trainer-card.md)), `STATES` (save states) and `CHEEVOS` ([RetroAchievements](achievements.md)). So does `NUZLOCKE`, where you can turn on [Nuzlocke](nuzlocke.md) tracking for a game.
+A few more are off the bar to begin with and wait under `MORE`: `BOXES` (your [PC boxes](boxes.md), FireRed for now), `CARD` (your [trainer card](trainer-card.md)), `STATES` (save states) and `CHEEVOS` ([RetroAchievements](achievements.md)). So does `NUZLOCKE`, where you can turn on [Nuzlocke](nuzlocke.md) tracking for a game, and `HUNT`, which counts a [shiny hunt](shiny-hunt.md).
 
 Some tabs only appear when the game has what they need. `DEX` needs the game's Pokédex data and `GUIDE` needs a guide for that game, so a game without them has fewer tabs. The bag tab also takes the game's own word for it: `PACK` in Gold, Silver, Crystal, Crystal Clear and Prism, `CUBE` in Unbound, `INVENTORY` in R.O.W.E., `POCKETS` in Super Mariomon, `BAG` everywhere else.
 
@@ -86,7 +86,7 @@ The options come in groups, the ones you change while playing first. With `GROUP
 - **SCREENS**: depending on your device, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS`, `SINGLE SCREEN`, `FOLD LAYOUT` and `TABLETOP CONTROLS`. See [Devices](devices.md).
 - **DS**: while a DS game runs, `DS LAYOUT` or `DS TOUCH SCREEN`, `DS RESOLUTION`, `DS CPU BOOST` and `DS CORE`. See [Devices](devices.md) and [Screen and display](screen.md).
 - **LOOK**: `VIEW`, `THEME`, `IN GAME`, `DARK MODE`, `FONT TYPE`, `FONT SIZE` and, once you've added a picture under the top screen's `MY LOOK`, `COMPANION BACKGROUND`. See [Screen and display](screen.md).
-- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
+- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `SPOILERS` (see [Playing without spoilers](spoilers.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
 - **ACHIEVEMENTS**: `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS` and `PROGRESS POPUPS`. See [Achievements](achievements.md).
 - **CONTROLS**: `GAME BUTTONS`, `HOTKEYS`, `QUICK MENU` and `TOUCH CONTROLS`. See [Controls](controls.md).
 - **APP**: `TIPS`, `LANGUAGE` and `HELP` (this manual).

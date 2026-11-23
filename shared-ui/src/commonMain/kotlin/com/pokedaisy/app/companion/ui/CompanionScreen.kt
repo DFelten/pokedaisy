@@ -330,6 +330,8 @@ fun CompanionScreen(
                 "ACHIEVEMENTS" -> achievements != null
                 // Always there for a game the tracker follows (under MORE); while it's off the tab says so and turns it on.
                 "NUZLOCKE" -> com.pokedaisy.app.companion.Nuzlocke.supports(game)
+                // SHINY HUNT: under MORE in every game with shinies, on the bar by itself while a hunt goes.
+                "HUNT" -> com.pokedaisy.app.companion.ShinyHunts.supports(game)
                 else -> true
             }
         }
@@ -342,7 +344,9 @@ fun CompanionScreen(
         // The chosen tabs this game has, then - while there's room - its others: a game without a DEX or GUIDE still
         // fills the bar. In the tabs' own order.
         // NUZLOCKE switched off isn't a filler: it waits under MORE unless the player put it on the bar.
-        val fillers = available.filter { it != "NUZLOCKE" || com.pokedaisy.app.companion.Nuzlocke.on }
+        val fillers = available.filter {
+            (it != "NUZLOCKE" || com.pokedaisy.app.companion.Nuzlocke.on) && (it != "HUNT" || com.pokedaisy.app.companion.ShinyHunts.active != null)
+        }
         val picked = available.filter { it in chosenTabs }.take(room).let { c -> c + fillers.filter { it !in c }.take(room - c.size) }
         val bar = available.filter { it in picked }
         // The rest open from MORE, left of the gear (still tabs, just without a chip); no MORE chip with none.
@@ -413,6 +417,8 @@ fun CompanionScreen(
         // FOE DETAILS: the button's last state, for every battle after.
         var foeDetails by remember { mutableStateOf(settings?.foeDetails ?: false) }
         val current = if (selectedLabel in tabs || selectedLabel in hiddenTabs) selectedLabel else tabs[0]
+        // SPOILERS' question, for a save that never answered, over the first page that can spoil (Spoilers.pageOpened).
+        LaunchedEffect(current) { com.pokedaisy.app.companion.Spoilers.pageOpened(current) }
         // A tab opened from MORE: MORE stays lit.
         val selectedIdx = barIndex(current)
         // BACK from a tab opened from MORE returns there. Registered before
@@ -866,6 +872,8 @@ fun CompanionScreen(
                                 onConfigure = { settingsUi.page = Page.TABS; openTab("SETTINGS") },
                                 usable = { !snapshot.unsupported || snapshot.blocked != null || it == "ACHIEVEMENTS" },
                             )
+                        } else if (tab == "HUNT") {
+                            HuntScreen(snapshot, slots, restart = settings?.let { s -> { s.restartGame() } })
                         } else if (tab == "NUZLOCKE") {
                             NuzlockeScreen(snapshot.regionMapSectionId, snapshot.location.mapSecName)
                         } else if (tab == "ACHIEVEMENTS") {
@@ -943,7 +951,7 @@ fun CompanionScreen(
                                         foeTeam = snapshot.enemyParty,
                                         seenFoes = seenFoes.toSet(),
                                         shownFoe = shownFoe,
-                                        onSelectFoe = { selectedFoe = if (it == shownFoe && selectedFoe != null) null else it },
+                                        onSelectFoe = { if (foeOpens(it, seenFoes)) selectedFoe = if (it == shownFoe && selectedFoe != null) null else it },
                                     )
                                     "STATS" -> BattleStatsScreen(
                                         infoPlayer, infoFoes, foeHeading,
@@ -961,7 +969,7 @@ fun CompanionScreen(
                                         seenFoes = focusSeen.toSet(),
                                         shownFoe = focusShown,
                                         foeHeading = focusHeading,
-                                        onSelectFoe = { selectedFoe = if (it == focusShown && selectedFoe != null) null else it },
+                                        onSelectFoe = { if (foeOpens(it, focusSeen)) selectedFoe = if (it == focusShown && selectedFoe != null) null else it },
                                         dexTables = snapshot.pokedex?.tables,
                                     )
                                     // Back only while there are controls to go back to.
@@ -979,7 +987,7 @@ fun CompanionScreen(
                                         },
                                         foeHeading = foeHeading,
                                         // Tapping the one shown goes back to following the battle.
-                                        onSelectFoe = { selectedFoe = if (it == shownFoe && selectedFoe != null) null else it },
+                                        onSelectFoe = { if (foeOpens(it, seenFoes)) selectedFoe = if (it == shownFoe && selectedFoe != null) null else it },
                                         foeDetails = foeDetails,
                                         onToggleFoeDetails = { foeDetails = !foeDetails; settings?.setFoeDetails(foeDetails) },
                                         dexTables = snapshot.pokedex?.tables,
@@ -1033,6 +1041,11 @@ fun CompanionScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), cardModifier = Modifier.fillMaxWidth(),
                     maxWidth = 1200.dp, onAnswer = settings::answerBattleRetry,
                 )
+                SpoilerAskHost(
+                    active = settings.showsTips, roomy = true, onCompanion = true,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), cardModifier = Modifier.fillMaxWidth(),
+                    maxWidth = 1200.dp,
+                )
             }
 
             // PLAY TOGETHER ONLY: the partner's proposal over whatever tab is open, on the touchable screen when the game screen isn't
@@ -1083,6 +1096,10 @@ object GameStart {
     var waiting by androidx.compose.runtime.mutableStateOf(false)
 }
 
+/** Whether a tap on the foe team's [slot] opens it: always, but with SPOILERS on HIDE only a foe that's been out ([seen]),
+ * as the game shows a trainer's others only as balls. */
+private fun foeOpens(slot: Int, seen: List<Int>): Boolean = !com.pokedaisy.app.companion.Spoilers.hiding || slot in seen
+
 /** The tabs that wait for the game ([GameStart]): what they show is the save's. */
 private val WAITING_TABS = setOf("PARTY", "ITEMS", "MAP", "CARD")
 
@@ -1099,6 +1116,7 @@ internal fun companionTabLabel(id: String): String = when (id) {
     "MAP" -> tr("MAP")
     "GUIDE" -> tr("GUIDE")
     "NUZLOCKE" -> tr("NUZLOCKE")
+    "HUNT" -> tr("HUNT")
     "CARD" -> tr("CARD")
     "BOXES" -> tr("BOXES")
     "STATES" -> tr("STATES")

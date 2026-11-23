@@ -19,7 +19,19 @@ class FlaggedFeaturesTest {
         }
     }
 
-    @AfterTest fun off() { FlaggedFeatures.modernLook = false; FlaggedFeatures.settingsPlus = false }
+    @AfterTest fun off() { FlaggedFeatures.modernLook = false; FlaggedFeatures.settingsPlus = false; FlaggedFeatures.shinyHunt = false
+        FlaggedFeatures.spoilerFree = false
+        ShinyHunts.close(ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog())) }
+
+    @Test fun offTheHuntTabAndItsGuardAreNotThere() {
+        FlaggedFeatures.shinyHunt = false
+        assertFalse("HUNT" in COMPANION_TABS)
+        ShinyHunts.shinyShown(inBattle = true)
+        assertFalse(ShinyHunts.loadHeld())
+        FlaggedFeatures.shinyHunt = true
+        assertTrue("HUNT" in COMPANION_TABS)
+        assertTrue(ShinyHunts.loadHeld())
+    }
 
     @Test fun offTheLookSettingsReadAsBeforeAndOnAsSaved() {
         val store = Store(mutableMapOf("app_view" to 1, "font_size" to 3, "side_bars" to 2, "tab_icons" to true,

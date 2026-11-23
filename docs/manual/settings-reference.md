@@ -324,6 +324,7 @@ The `DISPLAY OPTIONS` page:
 
 | Setting | Choices | What it does | More |
 | --- | --- | --- | --- |
+| `SPOILERS` | **`SHOW`**, `HIDE` | `HIDE` keeps this game's companion to what the game has shown you: unseen Pokémon, moves still to come and the bosses after the next one are "???". Asked on a new save. | [Playing without spoilers](spoilers.md) |
 | `TAB BAR` | **5 tabs** (a page) | `POSITION` (**`BOTTOM`**, `TOP`, `LEFT`, `RIGHT`), `SIZE` (**`NORMAL`**, `COMPACT`), `SHOW AS` (**`NAMES`**, `ICONS`: each tab its picture), then which tabs sit next to the gear: up to 5, `SHOWN` or `HIDDEN`. By default `PARTY`, `DEX`, `MAP`, `BAG` and `GUIDE`. A tab the game doesn't have gives its place to another of the game's tabs. The rest open from `MORE`, left of the gear. | [The companion](companion.md) |
 | `CLICK SOUND` | **`ON`**, `OFF` | The game's own menu click on every companion button. | [The companion](companion.md) |
 | `POKéMON PICTURES` | **`GAME`**, `DETAILED` | Pokémon Red, Blue, Yellow, Gold, Silver and Crystal only: `DETAILED` shows each Pokémon's own picture instead of the game's shared icons, on the `PARTY` tab and everywhere else the companion and the HUD draw one. | [Party](party.md) |
