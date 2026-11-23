@@ -469,6 +469,10 @@ probe, from boot to its overworld and into wild battles.
   And a bitmap past the GPU's texture size is drawn through a child its setter spawns, which a state can't point to: a
   sprite came back visible with no bitmap and the core crashed drawing it. Sprites, planes and windows spawn the child
   again on load.
+- Also checked: a trainer battle (the foe's team read, levels as the game scaled them; FIGHT through its menu), the
+  game's party, bag, trainer card, Pokégear and PC box screens opened and closed with no error, a save from its own Save
+  screen (`Game.rxdata` in `/Save`) and its autosave loaded back from the title; the app's companion pages and the Linux
+  `pc-companion-shot` drawn from its real snapshots over its folder (icons, the Town Map with its head on Route 29).
 - Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
   A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
   on the letter grid. Its own A / B and menus work as on a PC.
