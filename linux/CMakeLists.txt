@@ -43,6 +43,41 @@ endif()
 target_include_directories(pokedaisy-linux PRIVATE ../third_party/mgba/src/platform/libretro ${SDL2_INCLUDE_DIR})
 target_compile_options(pokedaisy-linux PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(pokedaisy-linux PRIVATE pd_host_ui pd_puff ${SDL2_LIBRARY} m ${CMAKE_DL_LIBS})
+# PC fan games (Pokemon Essentials) on the mkxp-z libretro core, which draws with OpenGL: an offscreen EGL context
+# (hw_gl.c). Off by default while it's a spike (docs/specs/pc-fan-games.md).
+option(POCKET_PC_GAMES "PC fan games on the mkxp-z core (needs EGL)" OFF)
+if(POCKET_PC_GAMES)
+  find_library(EGL_LIBRARY NAMES EGL REQUIRED)
+  find_package(ZLIB REQUIRED) # pc_png.c: the games' icons
+  add_library(pd_pc_companion STATIC pc_companion.c pc_json.c pc_png.c)
+  target_link_libraries(pd_pc_companion PUBLIC pd_host_ui ZLIB::ZLIB m)
+  target_compile_options(pd_pc_companion PRIVATE -Wall -Wextra)
+  target_sources(pokedaisy-linux PRIVATE hw_gl.c pc_mailbox.c pc_state.c)
+  target_compile_definitions(pokedaisy-linux PRIVATE POCKET_PC_GAMES)
+  # States (512 MB each) go zstd-compressed where libzstd is found, else as they are (pc_state.c).
+  find_path(ZSTD_INCLUDE_DIR zstd.h)
+  find_library(ZSTD_LIBRARY NAMES zstd)
+  if(ZSTD_INCLUDE_DIR AND ZSTD_LIBRARY)
+    target_compile_definitions(pokedaisy-linux PRIVATE POCKET_ZSTD)
+    target_include_directories(pokedaisy-linux PRIVATE ${ZSTD_INCLUDE_DIR})
+    target_link_libraries(pokedaisy-linux PRIVATE ${ZSTD_LIBRARY})
+  else()
+    message(STATUS "libzstd not found: PC game states are written uncompressed")
+  endif()
+  target_link_libraries(pokedaisy-linux PRIVATE ${EGL_LIBRARY} pd_pc_companion)
+  # Draws the companion's pages from a saved snapshot to PNGs (pc_companion_shot.c).
+  add_executable(pc-companion-shot pc_companion_shot.c ../3ds/desktop/pd_png.c)
+  target_link_libraries(pc-companion-shot PRIVATE pd_pc_companion)
+  # The companion's Ruby preload scripts, built into the binary and installed into the core's Scripts/Preload.
+  file(GLOB PC_PRELOADS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/*.rb)
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h
+    COMMAND ${CMAKE_COMMAND} -DOUT=${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h -DDIR=${CMAKE_CURRENT_SOURCE_DIR}/pc_games
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/embed.cmake
+    VERBATIM
+    DEPENDS ${PC_PRELOADS} ${CMAKE_CURRENT_SOURCE_DIR}/pc_games/embed.cmake)
+  target_sources(pokedaisy-linux PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/pc_preloads.h)
+  target_include_directories(pokedaisy-linux PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 include(CTest)
 option(POCKET_DSPERATE "Optional DSperate Linux backend" OFF)
 if(POCKET_DSPERATE)

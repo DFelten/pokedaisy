@@ -77,6 +77,7 @@ import com.pokedaisy.app.companion.data.guideDexSpecies
 import com.pokedaisy.app.companion.data.gameGuide
 import com.pokedaisy.app.companion.data.guideId
 import com.pokedaisy.app.companion.data.isPlainLevel
+import com.pokedaisy.app.companion.data.isPcGame
 import com.pokedaisy.app.companion.data.itemName
 import com.pokedaisy.app.companion.data.lookupMove
 import com.pokedaisy.app.companion.data.monTypes
@@ -98,6 +99,11 @@ class GuideSource(val text: GameGuide?, val evolutions: PokedexTables?, val live
 /** The GUIDE tab's source for [game], or null when there's nothing to show (no tab). */
 @Composable
 fun rememberGuide(game: GameKind?, dex: PokedexState?, live: GuideTables?): GuideSource? {
+    // A PC fan game: its own HERE, from the game's encounter tables (PcGuide).
+    if (game.isPcGame) {
+        val version = com.pokedaisy.app.companion.data.PcGuide.version
+        return remember(version) { com.pokedaisy.app.companion.data.PcGuide.guide?.let { GuideSource(it, null, null, null) } }
+    }
     val tables = dex?.tables?.takeIf { it.evolutions != 0L }
     return remember(game, tables, live) {
         val id = guideId(game, live)
@@ -391,7 +397,10 @@ private fun EntryRow(e: GuideEntry, level: Int, owned: Boolean, m: GbaTextMetric
                 Spacer(Modifier.width(u * 4))
             }
             // An unseen Pokémon's icon stays hidden with its name.
-            if (e.icon != 0 && (e.steps == 0 || showAnswer)) {
+            if (e.iconAsset != null && (e.steps == 0 || showAnswer)) {
+                SpeciesIcon(e.iconAsset, size = u * 24)
+                Spacer(Modifier.width(u * 4))
+            } else if (e.icon != 0 && (e.steps == 0 || showAnswer)) {
                 SpeciesPicture(e.icon, spriteAsset("pokemon", e.icon), size = u * 24, fit = true)
                 Spacer(Modifier.width(u * 4))
             }

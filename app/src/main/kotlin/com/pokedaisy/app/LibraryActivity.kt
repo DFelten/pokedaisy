@@ -530,7 +530,17 @@ class LibraryActivity : ComponentActivity() {
             com.pokedaisy.app.companion.ui.LibraryTool("SPRITES", "SPRITE PACK", "Load other games' looks for MAKEOVER", nf.badge(nf.SPRITE_PACK)) {
                 pickSpritePack.launch(arrayOf("*/*"))
             },
-        )
+        ) + pcGameTools()
+    }
+
+    /** PC fan games (FeatureFlags.pcGames, a prototype): a card per game in `pc/games` ([PcGames]). */
+    private fun pcGameTools(): List<com.pokedaisy.app.companion.ui.LibraryTool> {
+        if (!FeatureFlags.pcGames(this)) return emptyList()
+        return PcGames.list(this).map { game ->
+            com.pokedaisy.app.companion.ui.LibraryTool("PC", game.title.uppercase(), "A PC fan game", null) {
+                startActivity(Intent(this, PcGameActivity::class.java).putExtra(PcGameActivity.EXTRA_GAME, game.ini.path))
+            }
+        }
     }
 
     /** Main thread: host metadata is cached once per game for the common projection. */

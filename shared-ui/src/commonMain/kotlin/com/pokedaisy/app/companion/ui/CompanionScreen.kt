@@ -77,6 +77,7 @@ import com.pokedaisy.app.companion.data.BATTLE_INPUT_PARTY_OPEN
 import com.pokedaisy.app.companion.data.BATTLE_INPUT_TARGET_SELECT
 import com.pokedaisy.app.companion.data.GameKind
 import com.pokedaisy.app.companion.data.isN3ds
+import com.pokedaisy.app.companion.data.isPcGame
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.showsBattle
 import com.pokedaisy.app.companion.data.hasData
@@ -317,7 +318,8 @@ fun CompanionScreen(
         val guideUi = remember { GuideUiState() }
         val guide = rememberGuide(game, dex, snapshot.guideTables)
         // The GUIDE's AI notice, once per game; GO BACK returns to [backTab].
-        var noticeAccepted by remember { mutableStateOf(game == null || settings?.guideNoticeAccepted(game.name) != false) }
+        // (A PC fan game's GUIDE is the game's own data, nothing written by us: no notice.)
+        var noticeAccepted by remember { mutableStateOf(game == null || game.isPcGame || settings?.guideNoticeAccepted(game.name) != false) }
 
         // The player's pick of tabs (SETTINGS > TAB BAR). Settings aren't
         // Compose state, so the SETTINGS tab reports changes back here.
@@ -331,6 +333,11 @@ fun CompanionScreen(
         val available = COMPANION_TABS.filter { id ->
             // A 3DS game: what its reader has so far (docs/3DS_GAMES_PLAN.md).
             if (game.isN3ds) return@filter id in N3DS_TABS
+            // A PC fan game: what its own data sends (linux/pc_games/pokedaisy_companion.rb).
+            // Its MAP once the game's Town Map has the player's region (PcTownMap).
+            // Its GUIDE once the map's wild Pokémon have come (PcGuide).
+            if (game.isPcGame) return@filter id in PC_GAME_TABS || id == "MAP" && com.pokedaisy.app.companion.data.PcTownMap.model != null ||
+                id == "GUIDE" && guide != null
             when (id) {
                 "DEX" -> dex != null || id in cachedTabs
                 "GUIDE" -> guide != null || id in cachedTabs
@@ -365,8 +372,8 @@ fun CompanionScreen(
             if (battle) add("BATTLE")
             addAll(bar)
             if (hiddenTabs.isNotEmpty()) add("MORE")
-            // The gear always ends the bar.
-            add("SETTINGS")
+            // The gear always ends the bar - but for a screen that has no settings to show (a PC fan game's).
+            if (settings != null || !game.isPcGame) add("SETTINGS")
         }
         // A tab's place along the bar: a MORE one sits where MORE does (the slide's direction, L / R).
         val barIndex = { id: String -> tabs.indexOf(if (id in hiddenTabs) "MORE" else id) }
@@ -1477,6 +1484,9 @@ private fun BlockedView(
 
 /** The tabs a 3DS game has so far: its party, its bag and Azahar's states. */
 private val N3DS_TABS = setOf("PARTY", "ITEMS", "STATES")
+
+/** A PC fan game's tabs (PcGameActivity): the party with its summaries, and the bag. */
+private val PC_GAME_TABS = setOf("PARTY", "ITEMS")
 
 /** The data tabs until the first telemetry arrives: a rocking Poké Ball and
  * "LOADING...". [status] (the reader's own message) only shows up if it

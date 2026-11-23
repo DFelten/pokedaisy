@@ -138,6 +138,8 @@ class RegionMapModel(
 
 /** The Map tab's maps for the running game - the same source [lookupLocation] names places from. */
 fun activeRegionMap(): RegionMapModel? {
+    // A PC fan game: its own Town Map, from the game's data.
+    if (activeGame == GameKind.ESSENTIALS) return PcTownMap.model
     if (activeGame == GameKind.BLACK) return blackTownMap
     if (activeGame == GameKind.WHITE) return whiteTownMap
     if (activeGame == GameKind.BLACK2) return black2TownMap

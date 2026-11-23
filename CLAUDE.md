@@ -226,6 +226,38 @@ companion (`companion.cpp`, Gen4Reader.kt's rules), the shared quick menu and pa
 from the Kotlin (Gen4Reader / Gen4TablesPlatinum / Gen4TownMapPlatinum / NdsArt / Gen4Dex ...) by `gen_data.py`: after
 changing those, run it (`--check` fails in `.github/workflows/linux-ds-experiment.yml`). DSperate states carry the save;
 loading one keeps the battery save in memory (`load_state_keeping_save`), like the GBA host.
+**PC fan games on Linux** (spike, opt-in `-DPOCKET_PC_GAMES=ON`, 2026-11-17; `docs/specs/pc-fan-games.md`): Pokemon Essentials games
+(Infinite Fusion first; Reborn / Rejuvenation on their own engine through the preload's `PokeDaisyReborn`) on the mkxp-z libretro core (white-axe's `libretro` branch + `third_party/patches/mkxp-z-libretro-pokedaisy.patch`,
+built per `native-capture/pc_probe/README.md`; never in the repo). The core draws with OpenGL: `hw_gl.c` (offscreen EGL + FBO, read back
+into the host's frame texture, every core call bracketed so SDL's context comes back). The companion's data comes from our Ruby preloads
+(`linux/pc_games/*.rb`, built into the binary and installed into the core's `Scripts/Preload`): a JSON mailbox in the Ruby heap that
+`pc_mailbox.c` finds by its magic, never by address. Run a frame before loading a state; call `retro_unload_game` before `retro_deinit`. Essentials v16 / v17 games written for Ruby 1.8
+(GS Vitro) run through `pokedaisy_ruby18_compat.rb` (only for a game with a `when x:` line: each script read the 1.8 way as it loads)
+and the companion's `PokeDaisyClassic`; hooks on game methods are alias chains (`PokeDaisyCompanion.wrap`: a game's own alias of a
+method we `prepend` over loops forever). Our core patch keeps the run-time function table, mega bitmaps (their children, their drawn pixels) and the draw order of what a game makes after a load across states, passes `Marshal.load`'s proc on and reads the `Input.*ex?` methods' numbers as Windows key codes (desktop mkxp-z's way; Pokemon Insurgence needs both). Insurgence's H-Mode7 maps (a native library) are drawn flat (`PokeDaisyFlatMode7`).
+`native-capture/pc_probe` drives the core headless (frames, states, mailbox, `cheat` = Ruby run in the game). The companion over it
+(`pc_companion.c`: PARTY / summary / BAG / TRAINER, a lone SELECT tap) is the shared `3ds/core` views fed from the snapshot through their
+sources (`pd_party_source` / `pd_summary_view` / `pd_bag_source`, as `linux/dsperate/party_view.cpp`), names and type table the game's own,
+icons from its folder (`pc_png.c`); `pc-companion-shot` draws its pages from a saved snapshot. Test hooks: `POCKET_PC_CHEAT="FRAME:ruby"`,
+`POCKET_PC_COMPANION=1`, `POCKET_PC_LOG` (with `POCKET_KEYS`; `save` / `load` press the state keys). A PC game's state is the 512 MB heap:
+`pc_state.c` writes it zstd-compressed (libzstd optional; ~100 MB), reads up to 1 GB, and REWIND is off for it; before it opens,
+`<saves>/mkxp-z/Saves/<game>/` is backed up into `pokedaisy-backups/mkxp-z/` (newest 10 distinct; a failed copy keeps it closed).
+**PC fan games in the app** (prototype, `FeatureFlags.pcGames` off: `-Ppokedaisy.pcGames=true` / marker `pc-games`; 2026-11-17):
+`PcGameActivity` (its own screen, like LINK PLAY: no EmulatorEngine or HUD yet) runs the core on its GLSurfaceView's
+thread through `cpp/pk_pc.c` (libretro host, GLES 3.2 into our FBO, blitted to the view sharp: whole-number hard pixels, then smoothed the last step, `pk_pc_fit.h`; the mailbox read under the core lock) and `PcCore`.
+`PcGames`: the core from `<external files>/pc/cores/` copied into private files before `dlopen` (never bundled), games in `pc/games/`
+(a TOOLS card each), saves in `pc/saves/` backed up before each start; our preloads ride along as `assets/pc_preload/*.rb` (a Sync task
+from `linux/pc_games`). Resume states (`pcSaveState` / `pcLoadState`, gzip, `pc/states/`) load only while the save folders'
+fingerprint beside them holds (`PcGames.savesFingerprint`), like `pkStateMatchesSave`. Its second screen is the real `CompanionScreen` (PARTY + BAG, + MAP from the game's Town Map: `PcTownMap`, the picture copied into
+`rom-art/regionmap/pc/`; + GUIDE's HERE from the map's encounter tables: `PcGuide`; `GameKind.ESSENTIALS` / `isPcGame`); on one
+screen it's the GBA games' window over the game (`PcCompanionWindow`: BACK or the edge tab, BACK held / CLOSE GAME closes the game)
+over `PcCompanion`'s `SnapshotView` from the mailbox: the game's own strings, its types / chart through `PcGameTypes` (what
+`activeTypeNames` / `activeTypeEffectiveness` read while it runs), the bag's names through `OwnItemNames`, icons rebuilt from its PNGs
+into `rom-art/pc/`. In a battle the BATTLE tab (INFO / SUGGESTIONS, read-only) is fed by the preload's wrapper round
+`pbStartBattle`, which keeps the battle object while it runs; its buttons pick through `PcBattleInput` (one line of Ruby, `pcRuby`, run
+by the core's cheat call) and the preload's battle-scene hooks, which steer the game's own menus. The app's `TouchControls` sit over
+the game (RetroPad bits). Texts in `TrPcGames.kt`; manual draft
+`docs/manual-drafts/pc-games.md` (into `docs/manual/` with a NEW tag when the flag goes).
 
 ## Testing: quick by default, full runs only with the user's OK
 

@@ -161,6 +161,14 @@
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode"
             android:theme="@style/Theme.PokeDaisy" />
 
+        <!-- PC fan games (FeatureFlags.pcGames, a prototype): one Pokemon Essentials game on the mkxp-z core. -->
+        <activity
+            android:name=".PcGameActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode"
+            android:theme="@style/Theme.PokeDaisy" />
+
         <!-- No screenOrientation: PokeDaisyActivity locks landscape itself with a second
              screen and follows the device's rotation without one (a phone upright puts the
              companion under the game, PortraitPanel). configChanges keeps the game running

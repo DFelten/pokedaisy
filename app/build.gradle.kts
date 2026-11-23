@@ -94,6 +94,8 @@ android {
         buildConfigField("boolean", "FEATURE_SPOILER_FREE", featureFlag("spoilerFree").toString())
         // CO-OP (the connection to a paired partner): off until the feature ships (FeatureFlags.coop).
         buildConfigField("boolean", "FEATURE_COOP", featureFlag("coop").toString())
+        // PC fan games (the mkxp-z core, PcGameActivity): a prototype, off (FeatureFlags.pcGames).
+        buildConfigField("boolean", "FEATURE_PC_GAMES", featureFlag("pcGames").toString())
         // 3DS games (Azahar, the n3ds module): only built in with the flag (settings.gradle.kts), off until they ship
         // (FeatureFlags.n3ds).
         buildConfigField("boolean", "FEATURE_N3DS", featureFlag("n3ds").toString())
@@ -188,6 +190,7 @@ android {
     sourceSets["dev"].res.srcDirs("src/debug/res", "src/dev/res")
     sourceSets["main"].java.srcDirs("src/main/kotlin")
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/licenses"))
+    sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/pcPreloads"))
     sourceSets["test"].java.srcDirs("src/test/kotlin", "../server/coop-relay/src/main/kotlin", "../test-fixtures/kotlin")
     sourceSets["test"].resources.srcDir("../test-fixtures/resources")
 
@@ -249,6 +252,14 @@ val licensesAsset by tasks.registering {
     }
 }
 tasks.named("preBuild") { dependsOn(licensesAsset) }
+
+// PC fan games: our Ruby preloads for the mkxp-z core (the companion's mailbox, Ruby 3.2 shims), shared with the Linux
+// host, as assets/pc_preload/*.rb (PcGames.installPreloads puts them where the core reads them).
+val pcPreloadsAsset by tasks.registering(Sync::class) {
+    from(rootProject.file("linux/pc_games")) { include("*.rb") }
+    into(layout.buildDirectory.dir("generated/pcPreloads/pc_preload"))
+}
+tasks.named("preBuild") { dependsOn(pcPreloadsAsset) }
 
 tasks.withType<Test> {
     // readNativeTelemetry's bag-read throttle (NativeReader.kt) caches its

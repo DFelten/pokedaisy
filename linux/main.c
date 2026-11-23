@@ -12,6 +12,13 @@
 #include "pd_style.h"
 #include "pd_settings.h"
 #include "pd_tr.h"
+#ifdef POCKET_PC_GAMES
+#include "hw_gl.h"
+#include "pc_companion.h"
+#include "pc_mailbox.h"
+#include "pc_state.h"
+#include "pc_preloads.h"
+#endif
 #include <SDL.h>
 #include <dirent.h>
 #ifdef _WIN32
@@ -673,7 +680,8 @@ static const struct {
                 {"r1", R},      {"l2", L2},       {"r2", R2},       {"up", UP},         {"down", DOWN},
                 {"left", LEFT}, {"right", RIGHT}, {"menu", MENU},   {"select", SELECT}, {"start", START}, {"l3", L3},
                 {"sup", SUP},   {"sdown", SDOWN}, {"sleft", SLEFT}, {"sright", SRIGHT}, {"r3", R3},
-                {"p1", P1},     {"p2", P2},       {"p3", P3},       {"p4", P4}};
+                {"p1", P1},     {"p2", P2},       {"p3", P3},       {"p4", P4},
+                {"save", SAVEKEY}, {"load", LOADKEY}};
 static int key_named(const char *s) {
   for (size_t i = 0; i < sizeof keyNames / sizeof keyNames[0]; i++)
     if (!strcmp(s, keyNames[i].name))
@@ -1130,6 +1138,117 @@ static bool core_open(const char *path) {
 #undef SYM
   return true;
 }
+#ifdef POCKET_PC_GAMES
+/* A hardware-rendered core (mkxp-z) runs in its own GL context (hw_gl.c): every call into it is bracketed so the
+ * SDL renderer's context is current again afterwards, and the frame it read back goes into the frame texture. */
+static void frame_upload(const void *data, unsigned w, unsigned h, size_t pitch);
+static struct {
+  void (*run)(void);
+  bool (*serialize)(void *, size_t);
+  bool (*unserialize)(const void *, size_t);
+  size_t (*serialize_size)(void);
+  void (*unload_game)(void);
+  void (*deinit)(void);
+} glReal;
+static void pc_companion_poll(void);
+static void gl_run(void) {
+  hwgl_begin();
+  glReal.run();
+  hwgl_end();
+  unsigned w, h;
+  size_t pitch;
+  const uint32_t *px = hwgl_frame(&w, &h, &pitch);
+  if (px)
+    frame_upload(px, w, h, pitch);
+  pc_companion_poll();
+}
+/* The companion's snapshot from the game (pc_mailbox.c), handed to the companion (pc_companion.c) whenever it
+ * changes; with POCKET_PC_LOG also written to DATA/pc-companion.json, at most once a second. */
+static void pc_companion_poll(void) {
+  static uint64_t lastWrite;
+  const uint8_t *mem = core.get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+  size_t size = core.get_memory_size(RETRO_MEMORY_SYSTEM_RAM), len = 0;
+  uint32_t seq = 0;
+  const char *json = pc_mailbox_read(mem, size, &len, &seq);
+  if (!json)
+    return;
+  pc_companion_update(json, len);
+  uint64_t now = SDL_GetTicks64();
+  if (!getenv("POCKET_PC_LOG") || now - lastWrite < 1000)
+    return;
+  lastWrite = now;
+  char path[PATH_MAX * 2], tmp[PATH_MAX * 2 + 8];
+  snprintf(path, sizeof path, "%s/pc-companion.json", root);
+  snprintf(tmp, sizeof tmp, "%s.tmp", path);
+  FILE *f = fopen(tmp, "wb");
+  if (!f)
+    return;
+  bool ok = fwrite(json, 1, len, f) == len;
+  if (fclose(f) == 0 && ok)
+    rename(tmp, path);
+  fprintf(stderr, "pc companion: snapshot %u, %zu bytes\n", seq, len);
+}
+// The companion over a PC game: a lone tap of the MODIFIER (SELECT) opens and closes it; while it's up the game runs
+// on without input and the buttons are the companion's.
+static bool pcGame, pcOpen;
+/* POCKET_PC_CHEAT="FRAME:ruby": for tests, a line of Ruby run in the game at that frame through the core's cheats
+ * (retro_cheat_set: mkxp-z runs a cheat as Ruby), e.g. giving a party to look at. */
+static void pc_test_cheat(int frame) {
+  const char *spec = getenv("POCKET_PC_CHEAT"), *colon = spec ? strchr(spec, ':') : NULL;
+  if (!colon || atoi(spec) != frame)
+    return;
+  void (*cheat_set)(unsigned, bool, const char *) = NULL;
+  *(void **)&cheat_set = dlsym(core.dl, "retro_cheat_set");
+  if (cheat_set) {
+    cheat_set(0, true, colon + 1);
+    fprintf(stderr, "pc companion: test cheat at frame %d\n", frame);
+  }
+}
+static bool gl_serialize(void *d, size_t n) {
+  hwgl_begin();
+  bool ok = glReal.serialize(d, n);
+  hwgl_end();
+  return ok;
+}
+static bool gl_unserialize(const void *d, size_t n) {
+  hwgl_begin();
+  bool ok = glReal.unserialize(d, n);
+  hwgl_end();
+  return ok;
+}
+static size_t gl_serialize_size(void) {
+  hwgl_begin();
+  size_t n = glReal.serialize_size();
+  hwgl_end();
+  return n;
+}
+static void gl_unload_game(void) {
+  hwgl_context_destroy();
+  hwgl_begin();
+  glReal.unload_game();
+  hwgl_end();
+}
+static void gl_deinit(void) {
+  hwgl_begin();
+  glReal.deinit();
+  hwgl_end();
+  hwgl_stop();
+}
+static void core_wrap_gl(void) {
+  glReal.run = core.run;
+  glReal.serialize = core.serialize;
+  glReal.unserialize = core.unserialize;
+  glReal.serialize_size = core.serialize_size;
+  glReal.unload_game = core.unload_game;
+  glReal.deinit = core.deinit;
+  core.run = gl_run;
+  core.serialize = gl_serialize;
+  core.unserialize = gl_unserialize;
+  core.serialize_size = gl_serialize_size;
+  core.unload_game = gl_unload_game;
+  core.deinit = gl_deinit;
+}
+#endif
 
 /* The core's options: their defaults as it declares them, and the panel this host has. */
 static struct {
@@ -1223,6 +1342,16 @@ static bool environment(unsigned cmd, void *data) {
     // ASPECT is the companion's own (the app's SETTINGS > SCREEN): auto leaves its file's setting be.
     if (!strcmp(v->key, "pokedaisy_aspect"))
       v->value = "auto";
+#ifdef POCKET_PC_GAMES
+    // mkxp-z: our preload scripts on (their option is "mkxp-z_preload-" + the file name in hex; "pokedaisy_" is
+    // 706f6b6564616973795f), threaded audio off (save states and rewind need it off), states up to 512 MB.
+    if (!strncmp(v->key, "mkxp-z_preload-706f6b6564616973795f", 35))
+      v->value = "enabled";
+    if (!strcmp(v->key, "mkxp-z_threadedAudio"))
+      v->value = "disabled";
+    if (!strcmp(v->key, "mkxp-z_saveStateSize"))
+      v->value = "512";
+#endif
     for (int i = 0; i < optionN && !v->value; i++)
       if (!strcmp(options[i].key, v->key))
         v->value = options[i].value;
@@ -1284,6 +1413,10 @@ static bool environment(unsigned cmd, void *data) {
   case RETRO_ENVIRONMENT_GET_CAN_DUPE:
     *(bool *)data = true;
     return true;
+#ifdef POCKET_PC_GAMES
+  case RETRO_ENVIRONMENT_SET_HW_RENDER:
+    return hwgl_set_hw_render(data);
+#endif
   case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
     return true;
   case RETRO_ENVIRONMENT_GET_LOG_INTERFACE:
@@ -1391,6 +1524,12 @@ static void video_refresh(const void *data, unsigned w, unsigned h, size_t pitch
   if (hudHave) // a frame the core only repeats keeps the HUD where it was
     hudActive = hudPending;
   hudPending = hudHave = false;
+#ifdef POCKET_PC_GAMES
+  if (data == RETRO_HW_FRAME_BUFFER_VALID) { // read back now (our context is current); uploaded after the run
+    hwgl_capture(w, h);
+    return;
+  }
+#endif
   if (!data || !frameTexture) // a dupe: the last frame stays
     return;
   SDL_Rect r = {0, 0, (int)w, (int)h};
@@ -1400,6 +1539,9 @@ static void video_refresh(const void *data, unsigned w, unsigned h, size_t pitch
   frameW = (int)w;
   frameH = (int)h;
 }
+#ifdef POCKET_PC_GAMES
+static void frame_upload(const void *data, unsigned w, unsigned h, size_t pitch) { video_refresh(data, w, h, pitch); }
+#endif
 /* The frame centred, at the largest scale the screen holds. The core sizes its canvas to the panel, so this is a whole
  * scale normally; where a whole one would leave the picture short of the screen (a canvas whose aspect isn't the
  * window's, or an odd panel) it fits instead, so the picture fills the screen rather than sitting in bars. */
@@ -1613,6 +1755,17 @@ static void present_game(const struct pd_menu *menu) {
   }
   bool any = false;
   overlay_begin();
+#ifdef POCKET_PC_GAMES
+  if (pcOpen && !menu) {
+    pc_companion_draw(&overlay);
+    overlay_notice();
+    overlay_draw(true);
+    uint64_t t0 = SDL_GetPerformanceCounter();
+    SDL_RenderPresent(renderer);
+    presentMs += (double)(SDL_GetPerformanceCounter() - t0) * 1000.0 / SDL_GetPerformanceFrequency();
+    return;
+  }
+#endif
   if (menu) {
     pd_menu_draw((struct pd_menu *)menu, &overlay);
     any = true;
@@ -1943,17 +2096,51 @@ static void panel_follow(void) {
   }
 }
 static bool state_file(const char *ss, bool save) {
+#ifdef POCKET_PC_GAMES
+  // A PC game's state is the whole Ruby heap (512 MB): compressed, and taken that big (pc_state.c).
+  const bool big = pcGame;
+#else
+  const bool big = false;
+#endif
   if (save) {
     size_t n = core.serialize_size();
     void *d = n ? malloc(n) : NULL;
-    bool ok = d && core.serialize(d, n) && write_file(ss, d, n, false);
+    Uint64 t0 = SDL_GetPerformanceCounter();
+    bool ok = d && core.serialize(d, n);
+    Uint64 t1 = SDL_GetPerformanceCounter();
+#ifdef POCKET_PC_GAMES
+    if (big)
+      ok = ok && pc_state_write(ss, d, n);
+    else
+#endif
+      ok = ok && write_file(ss, d, n, false);
     free(d);
+    if (big) {
+      double f = (double)SDL_GetPerformanceFrequency() / 1000.0;
+      struct stat st;
+      fprintf(stderr, "state: saved %zu MB in %.0f ms (core %.0f ms), file %lld MB\n", n >> 20,
+              (double)(SDL_GetPerformanceCounter() - t0) / f, (double)(t1 - t0) / f,
+              stat(ss, &st) == 0 ? (long long)st.st_size >> 20 : -1LL);
+    }
     return ok;
   }
+  Uint64 t0 = SDL_GetPerformanceCounter();
   size_t n;
-  unsigned char *d = read_file(ss, &n, 64u << 20);
+  unsigned char *d;
+#ifdef POCKET_PC_GAMES
+  if (big)
+    d = pc_state_read(ss, &n, (size_t)1 << 30);
+  else
+#endif
+    d = read_file(ss, &n, 64u << 20);
+  Uint64 t1 = SDL_GetPerformanceCounter();
   bool ok = d && core.unserialize(d, n);
   free(d);
+  if (big) {
+    double f = (double)SDL_GetPerformanceFrequency() / 1000.0;
+    fprintf(stderr, "state: loaded %zu MB in %.0f ms (read %.0f ms)%s\n", n >> 20,
+            (double)(SDL_GetPerformanceCounter() - t0) / f, (double)(t1 - t0) / f, ok ? "" : ", failed");
+  }
   if (ok)
     rewind_clear(); // its differences lead back from another history
   return ok;
@@ -2034,6 +2221,13 @@ static const char *core_for(const char *path) {
     return "pokedaisy_gbc_libretro" PD_CORE_EXT;
   if (ext && !strcasecmp(ext, ".nds"))
     return "pokedaisy_ds_libretro" PD_CORE_EXT;
+#ifdef POCKET_PC_GAMES
+  // A PC fan game (Pokemon Essentials on RPG Maker XP): its Game.ini / mkxp.json, or the game folder zipped as .mkxpz.
+  const char *base = strrchr(path, '/');
+  base = base ? base + 1 : path;
+  if (!strcasecmp(base, "Game.ini") || !strcasecmp(base, "mkxp.json") || (ext && !strcasecmp(ext, ".mkxpz")))
+    return "mkxp-z_libretro" PD_CORE_EXT;
+#endif
   return NULL;
 }
 /* The game list shows the main Pokemon games only (the firmware's folders hold every other game too), told by the cart's
@@ -2132,6 +2326,17 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     name = back;
 #endif
   name = name ? name + 1 : path;
+#ifdef POCKET_PC_GAMES
+  // Every PC game is a Game.ini: its states and saves are named after its folder instead.
+  char folderName[256];
+  if (!strcasecmp(name, "Game.ini") || !strcasecmp(name, "mkxp.json")) {
+    const char *end = name > path ? name - 1 : path, *start = end; // end: the '/' before the file name
+    while (start > path && start[-1] != '/')
+      start--;
+    snprintf(folderName, sizeof folderName, "%.*s", (int)(end - start), start);
+    name = *folderName ? folderName : "pc-game";
+  }
+#endif
   char sav[PATH_MAX * 2], ss[PATH_MAX * 2], backups[PATH_MAX * 2];
   if (saveFile) {
     snprintf(sav, sizeof sav, "%s", saveFile);
@@ -2152,6 +2357,16 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     if (exists(old) && !exists(ss))
       notice("Your older save state doesn't load in this version");
   }
+#ifdef POCKET_PC_GAMES
+  // A PC game keeps its saves in the core's folder under the saves folder, not in a .sav.
+  if (!strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT) && !pc_saves_backup(savesDir, backups)) {
+    free(rom);
+    dlclose(core.dl);
+    appError = 1;
+    notice("Save backup failed; game not opened");
+    return;
+  }
+#endif
   if (!save_backup(sav, backups)) {
     free(rom);
     dlclose(core.dl);
@@ -2171,9 +2386,28 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   core.set_audio_sample_batch(audio_batch);
   core.set_input_poll(input_poll);
   core.set_input_state(input_state);
+#ifdef POCKET_PC_GAMES
+  if (!strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT)) {
+    // The core reads preload scripts from <system dir>/mkxp-z/Scripts/Preload: put ours there (rewritten each launch).
+    char dir[PATH_MAX * 2], file[PATH_MAX * 3];
+    snprintf(dir, sizeof dir, "%s/mkxp-z", root);
+    mkdir(dir, 0755);
+    snprintf(dir, sizeof dir, "%s/mkxp-z/Scripts", root);
+    mkdir(dir, 0755);
+    snprintf(dir, sizeof dir, "%s/mkxp-z/Scripts/Preload", root);
+    mkdir(dir, 0755);
+    for (size_t i = 0; i < sizeof pcPreloads / sizeof pcPreloads[0]; i++) {
+      snprintf(file, sizeof file, "%s/%s", dir, pcPreloads[i].name);
+      write_file(file, pcPreloads[i].data, pcPreloads[i].size, false);
+    }
+  }
+#endif
   struct retro_game_info info = {path, rom, romSize, NULL};
   if (!core.load_game(&info)) {
     core.deinit();
+#ifdef POCKET_PC_GAMES
+    hwgl_stop();
+#endif
     dlclose(core.dl);
     free(rom);
     appError = 1;
@@ -2181,6 +2415,33 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     return;
   }
   core.get_system_av_info(&av);
+#ifdef POCKET_PC_GAMES
+  if (hwgl_active()) {
+    if (!hwgl_start(av.geometry.max_width, av.geometry.max_height)) {
+      core.unload_game();
+      core.deinit();
+      hwgl_stop();
+      dlclose(core.dl);
+      free(rom);
+      appError = 1;
+      notice("OpenGL setup failed");
+      return;
+    }
+    core_wrap_gl();
+    pc_mailbox_reset();
+  }
+  pcGame = !strcmp(coreName, "mkxp-z_libretro" PD_CORE_EXT);
+  pcOpen = false;
+  if (pcGame) {
+    // Icons are read from the game's folder: a Game.ini's (a zipped .mkxpz game has none to read).
+    char dir[PATH_MAX];
+    const char *slash = strrchr(path, '/');
+    snprintf(dir, sizeof dir, "%.*s", slash ? (int)(slash - path) : 1, slash ? path : ".");
+    pc_companion_start(strstr(path, ".mkxpz") ? "" : dir);
+    // POCKET_PC_COMPANION=1 opens it from the start (headless shots: --frames N --shot).
+    pcOpen = getenv("POCKET_PC_COMPANION") != NULL;
+  }
+#endif
   srcRate = av.timing.sample_rate > 0 ? av.timing.sample_rate : 32768;
   double hz = av.timing.fps > 0 ? av.timing.fps : 59.7275;
   frameW = frameH = 0;
@@ -2200,6 +2461,12 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   int rewindMB = getenv("POCKET_REWIND_MB") ? atoi(getenv("POCKET_REWIND_MB")) : 32;
   rewindBudget = (size_t)(rewindMB > 0 ? rewindMB : 32) << 20; // a bad value (negative, 0) is the default
   rewindTick = 0;
+  // A PC game's state is 512 MB: a step back every other frame can't be kept.
+#ifdef POCKET_PC_GAMES
+  const bool noRewind = pcGame;
+#else
+  const bool noRewind = false;
+#endif
   bool menuOpen = false, leave = false;
   struct pd_menu menu, hkMenu;
   static char rows[M_COUNT][40], hkRows[HK_ACTIONS + 1][40];
@@ -2304,8 +2571,14 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
                       && (held & stylus & ~latched & ~menuConsumed) && !(latched & hotkeyMask);
       modifierUsed |= !!(latched & hotkeyMask) || dsStylus;
       if (!(held & modifier)) {
-        if (modifierPending && !modifierUsed)
-          pulseLeft = MODIFIER_TAP_FRAMES;
+        if (modifierPending && !modifierUsed) {
+#ifdef POCKET_PC_GAMES
+          if (pcGame)
+            pcOpen = !pcOpen; // the tap is the companion's, not the game's (Essentials maps nothing to SELECT)
+          else
+#endif
+            pulseLeft = MODIFIER_TAP_FRAMES;
+        }
         modifierPending = modifierUsed = false;
       } else
         pulseLeft = 0; // held again: it's the modifier now, not a tap
@@ -2322,6 +2595,8 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       notice(!exists(ss) ? "No state saved yet" : state_file(ss, false) ? "State loaded" : "State load failed");
     if ((hkFired & (1u << HK_REWIND)) && !hostSet.rewind)
       notice("REWIND is off: turn it on in the menu");
+    else if ((hkFired & (1u << HK_REWIND)) && noRewind)
+      notice("REWIND isn't available for this game");
     const bool menuFrame = menuOpen; // the frame that closes the menu is still the menu's
     if (menuOpen && capturing >= 0) {
       // The next assignable button is the hotkey (taken from any other action that had it); B cancels, SELECT = OFF.
@@ -2518,7 +2793,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
       continue;
     }
     muted = false;
-    bool rewinding = (hkOn & (1u << HK_REWIND)) && hostSet.rewind;
+    bool rewinding = (hkOn & (1u << HK_REWIND)) && hostSet.rewind && !noRewind;
     bool ff = !rewinding && ((hkOn & (1u << HK_FF)) || ffQuick);
     int runs = 1;
     if (ff) {
@@ -2534,7 +2809,24 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     pointerDown = pointerHeld || pointerPulse > 0;
     if (pointerPulse > 0)
       pointerPulse--;
-    gameKeys = joypad((held & ~hotkeyMask & ~((1u << MENU) | (1u << FFKEY) | (1u << RWKEY))) | modifierPulse);
+#ifdef POCKET_PC_GAMES
+    if (pcOpen) {
+      static const struct {
+        int key;
+        enum pc_key pc;
+      } pcKeys[] = {{UP, PC_KEY_UP},       {DOWN, PC_KEY_DOWN}, {LEFT, PC_KEY_LEFT}, {RIGHT, PC_KEY_RIGHT}, {A, PC_KEY_A},
+                    {B, PC_KEY_B},         {X, PC_KEY_X},       {L, PC_KEY_L},       {R, PC_KEY_R}};
+      for (size_t i = 0; i < sizeof pcKeys / sizeof pcKeys[0] && pcOpen; i++)
+        if (down(pcKeys[i].key) && !(hotkeyMask & (1u << pcKeys[i].key)) && !pc_companion_key(pcKeys[i].pc))
+          pcOpen = false;
+      if (down(START))
+        pcOpen = false;
+      if (!pcOpen)
+        menuConsumed |= held; // the button that closed it stays away from the game until let go
+      gameKeys = 0;
+    } else
+#endif
+      gameKeys = joypad((held & ~hotkeyMask & ~((1u << MENU) | (1u << FFKEY) | (1u << RWKEY))) | modifierPulse);
     uint64_t t = SDL_GetPerformanceCounter();
     if (rewinding) {
       muted = true;
@@ -2550,7 +2842,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
           gameKeys &= ~joypad(modifierPulse);
           modifierPulse = 0;
         }
-        if (hostSet.rewind && !(++rewindTick & 1))
+        if (hostSet.rewind && !noRewind && !(++rewindTick & 1))
           rewind_push();
       }
     }
@@ -2599,6 +2891,10 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     }
     if (++frames % 120 == 0)
       sram_write(sav, &sramCopy, true);
+#ifdef POCKET_PC_GAMES
+    if (pcGame)
+      pc_test_cheat(frames);
+#endif
     present_game(NULL);
     if (maxFrames && frames >= maxFrames) {
       if (shot && !capture(shot))

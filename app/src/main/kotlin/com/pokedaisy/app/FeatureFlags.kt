@@ -48,6 +48,12 @@ object FeatureFlags {
     fun coop(context: Context): Boolean = BuildConfig.FEATURE_COOP || marker(context, "coop")
 
     /**
+     * PC fan games (Pokemon Essentials on the mkxp-z core, docs/specs/pc-fan-games.md): the library's TOOLS card and
+     * [PcGameActivity]. Off while it's a prototype; marker `pc-games`.
+     */
+    fun pcGames(context: Context): Boolean = BuildConfig.FEATURE_PC_GAMES || marker(context, "pc-games")
+
+    /**
      * 3DS games (Azahar, the n3ds module): built in only with `-Ppokedaisy.n3ds=true` / local.properties, since the
      * library itself is left out of other builds, so there's no marker file for it. Android 10+ only (Azahar's floor).
      */

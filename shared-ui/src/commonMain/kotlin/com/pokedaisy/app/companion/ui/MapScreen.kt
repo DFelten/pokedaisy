@@ -82,6 +82,7 @@ import com.pokedaisy.app.companion.data.gameCase
 import com.pokedaisy.app.companion.data.isDsGame
 import com.pokedaisy.app.companion.data.isGen5
 import com.pokedaisy.app.companion.data.isHgss
+import com.pokedaisy.app.companion.data.isPcGame
 import kotlin.math.floor
 
 /**
@@ -107,7 +108,8 @@ fun MapScreen(
 ) {
     val gen = rememberArtGeneration()
     // RomRegionMap lands a hack's own map in the background and announces it as new art.
-    val model = remember(snapshot.game, gen) { activeRegionMap() }
+    // A PC fan game's map follows the region its player is in (PcTownMap.version).
+    val model = remember(snapshot.game, gen, com.pokedaisy.app.companion.data.PcTownMap.version) { activeRegionMap() }
     // A cave or building with a map of its own (AreaMap.kt): its AREA map first, the region map a button away.
     val area = rememberPlayerArea(snapshot)
     if (area != null && AreaMapChoice.showsArea(area, com.pokedaisy.app.companion.data.AreaMap.MapId(snapshot.mapGroup, snapshot.mapNum))) {
@@ -231,7 +233,8 @@ fun MapScreen(
                         bitmap = bitmap,
                         style = style,
                         head = regionMapBitmap(
-                            if (snapshot.game.isGen5) NdsArt.gen5Player(snapshot.game)
+                            if (snapshot.game.isPcGame) com.pokedaisy.app.companion.data.PcTownMap.head
+                            else if (snapshot.game.isGen5) NdsArt.gen5Player(snapshot.game)
                             else if (snapshot.game.isHgss) (if (snapshot.playerGender == 1) com.pokedaisy.app.companion.data.PokegearMap.HEAD_F else com.pokedaisy.app.companion.data.PokegearMap.HEAD_M)
                             else if (snapshot.game.isDsGame) (if (snapshot.playerGender == 1) NdsArt.PLATINUM_HEAD_F else NdsArt.PLATINUM_HEAD_M)
                             else style.headAsset(snapshot.playerGender, snapshot.game),
