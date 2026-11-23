@@ -1,3 +1,79 @@
+diff --git a/binding-sandbox/sandbox-serial-core.h b/binding-sandbox/sandbox-serial-core.h
+index 31da7364..fb85997d 100644
+--- a/binding-sandbox/sandbox-serial-core.h
++++ b/binding-sandbox/sandbox-serial-core.h
+@@ -121,6 +121,29 @@ extern "C" RETRO_API bool retro_serialize(void *data, size_t len) {
+         ADVANCE(memory_size);
+     }
+ 
++    // Write the function table's entries pushed at run time (wasm-rt.cpp): each pointer as a tag (0 none, 1 an offset
++    // into this library, 2 the module instance) and the offset, so another process of the same library rebuilds them
++    {
++        const wasm_rt_funcref_table_t &table = sb()->instance().w2c_T0;
++        uint32_t first = mkxp_wasm_rt_funcref_initial_size;
++        uint32_t size = table.size;
++        if (first > size) SER_FAIL;
++        if (!sandbox_serialize(first, data, max_size)) SER_FAIL;
++        if (!sandbox_serialize(size, data, max_size)) SER_FAIL;
++        const uintptr_t base = reinterpret_cast<uintptr_t>(&wasm_rt_push_funcref);
++        const uintptr_t inst = reinterpret_cast<uintptr_t>(&sb()->instance());
++        for (uint32_t i = first; i < size; ++i) {
++            const wasm_rt_funcref_t &f = table.data[i];
++            const uintptr_t ptrs[4] = {reinterpret_cast<uintptr_t>(f.func_type), reinterpret_cast<uintptr_t>(f.func), reinterpret_cast<uintptr_t>(f.func_tailcallee.fn), reinterpret_cast<uintptr_t>(f.module_instance)};
++            for (uintptr_t p : ptrs) {
++                uint8_t tag = p == 0 ? 0 : p == inst ? 2 : 1;
++                int64_t offset = tag == 1 ? (int64_t)(p - base) : 0;
++                if (!sandbox_serialize(tag, data, max_size)) SER_FAIL;
++                if (!sandbox_serialize(offset, data, max_size)) SER_FAIL;
++            }
++        }
++    }
++
+     // Write the number of sandbox fibers
+     if (!sandbox_serialize((wasm_size_t)sb()->fiber_list.size(), data, max_size)) SER_FAIL;
+ 
+@@ -326,6 +349,33 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
+         const void *memory = data;
+         ADVANCE(memory_size);
+ 
++        // Read the function table's run-time entries (see above), put in with the memory
++        uint32_t table_first;
++        uint32_t table_size;
++        if (!sandbox_deserialize(table_first, data, max_size)) return false;
++        if (!sandbox_deserialize(table_size, data, max_size)) return false;
++        if (table_first != mkxp_wasm_rt_funcref_initial_size || table_size < table_first || table_size - table_first > 0x1000000U) return false;
++        std::vector<wasm_rt_funcref_t> table_entries(table_size - table_first);
++        {
++            const uintptr_t base = reinterpret_cast<uintptr_t>(&wasm_rt_push_funcref);
++            const uintptr_t inst = reinterpret_cast<uintptr_t>(&sb()->instance());
++            for (wasm_rt_funcref_t &f : table_entries) {
++                uintptr_t ptrs[4];
++                for (uintptr_t &p : ptrs) {
++                    uint8_t tag;
++                    int64_t offset;
++                    if (!sandbox_deserialize(tag, data, max_size)) return false;
++                    if (!sandbox_deserialize(offset, data, max_size)) return false;
++                    if (tag > 2) return false;
++                    p = tag == 0 ? 0 : tag == 2 ? inst : (uintptr_t)(base + offset);
++                }
++                f.func_type = reinterpret_cast<wasm_rt_func_type_t>(ptrs[0]);
++                f.func = reinterpret_cast<wasm_rt_function_ptr_t>(ptrs[1]);
++                f.func_tailcallee.fn = reinterpret_cast<void *>(ptrs[2]);
++                f.module_instance = reinterpret_cast<void *>(ptrs[3]);
++            }
++        }
++
+         // Read sandbox fibers
+         wasm_size_t num_fibers;
+         if (!sandbox_deserialize(num_fibers, data, max_size)) DESER_FAIL;
+@@ -372,6 +422,7 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
+ 
+         // Read the VM memory
+         sb()->copy_memory_from(memory, memory_size, memory_capacity, deser_swap_bytes);
++        mkxp_wasm_rt_set_funcrefs(&sb()->instance().w2c_T0, table_first, table_entries.data(), (uint32_t)table_entries.size());
+     }
+ 
+     // Read the sandbox state
 diff --git a/binding-sandbox/sandbox-serial-wasi.h b/binding-sandbox/sandbox-serial-wasi.h
 index 020ede4e..c4fcdecf 100644
 --- a/binding-sandbox/sandbox-serial-wasi.h
@@ -59,3 +135,47 @@ index 020ede4e..c4fcdecf 100644
      std::vector<uint32_t> new_vacant_fds;
      for (uint32_t j = 0; j < fdtable.size(); ++j) {
          if (fdtable[j].type == wasi_fd_type::VACANT) {
+diff --git a/binding-sandbox/wasm-rt.cpp b/binding-sandbox/wasm-rt.cpp
+index 4ea2f88e..238e2835 100644
+--- a/binding-sandbox/wasm-rt.cpp
++++ b/binding-sandbox/wasm-rt.cpp
+@@ -180,10 +180,25 @@ extern "C" void wasm_rt_free_memory(wasm_rt_memory_t *memory) {
+     std::free(memory->private_data);
+ }
+ 
++// The function table's size as the module made it (PokeDaisy): every entry past it was pushed by a binding at run time
++// (a host function handed to Ruby), so save states carry those entries (sandbox-serial-core.h) - the game's memory holds
++// their indices, and a new process pushes them in another order, or not yet.
++extern "C" uint32_t mkxp_wasm_rt_funcref_initial_size = 0;
++
+ extern "C" void wasm_rt_allocate_funcref_table(wasm_rt_funcref_table_t *table, uint32_t elements, uint32_t max_elements) {
+     table->private_data = new std::vector<wasm_rt_funcref_t>(elements);
+     table->data = ((std::vector<wasm_rt_funcref_t> *)table->private_data)->data();
+     table->size = elements;
++    mkxp_wasm_rt_funcref_initial_size = elements;
++}
++
++// Replaces the table's entries from [first] on with [count] [entries] (a save state's).
++extern "C" void mkxp_wasm_rt_set_funcrefs(wasm_rt_funcref_table_t *table, uint32_t first, const wasm_rt_funcref_t *entries, uint32_t count) {
++    auto &vec = *(std::vector<wasm_rt_funcref_t> *)table->private_data;
++    vec.resize(first);
++    vec.insert(vec.end(), entries, entries + count);
++    table->data = vec.data();
++    table->size = (uint32_t)vec.size();
+ }
+ 
+ extern "C" void wasm_rt_free_funcref_table(wasm_rt_funcref_table_t *table) {
+diff --git a/binding-sandbox/wasm-rt.h b/binding-sandbox/wasm-rt.h
+index aeb7006e..ea382160 100644
+--- a/binding-sandbox/wasm-rt.h
++++ b/binding-sandbox/wasm-rt.h
+@@ -154,6 +154,9 @@ void wasm_rt_free_funcref_table(wasm_rt_funcref_table_t *table);
+ #define wasm_rt_push_funcref mkxp_wasm_rt_push_funcref
+ uint32_t wasm_rt_push_funcref(wasm_rt_funcref_table_t *table, wasm_rt_funcref_t funcref);
+ 
++extern uint32_t mkxp_wasm_rt_funcref_initial_size;
++void mkxp_wasm_rt_set_funcrefs(wasm_rt_funcref_table_t *table, uint32_t first, const wasm_rt_funcref_t *entries, uint32_t count);
++
+ #ifdef __cplusplus
+ }
+ #endif
