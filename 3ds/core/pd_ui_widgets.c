@@ -168,10 +168,17 @@ int ui_type_badge_for(struct pd_canvas* c, int x, int y, const struct pd_game* g
 void ui_button(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int w, int h, const char* label, int id) {
     bool pressed = ui->pressedId == id;
     label = pd_tr(label);
-    // OptionButton: the title window's frame round a two-tone face.
-    pd_layered_two_tone(c, x, y, w, h, 3, pd_cur->title, pd_cur->titleCount, pressed ? PD_LIST_FILL : PD_TITLE_FILL, 0);
     int tw = pd_text_width(label);
-    pd_text(c, x + (w - tw) / 2, pd_text_y(y, h), label, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    if (pd_style) { // the style's key (OptionButton over KeyColors): sits down on its edge while pressed
+        struct pd_key k = pd_style->button;
+        k.pressed = pressed;
+        pd_key(c, x, y, w, h, &k);
+        pd_text(c, x + (w - tw) / 2, pd_text_y(y, h - (pressed ? 1 : 2)), label, k.text, k.shadow);
+    } else {
+        // OptionButton: the title window's frame round a two-tone face.
+        pd_layered_two_tone(c, x, y, w, h, 3, pd_cur->title, pd_cur->titleCount, pressed ? PD_LIST_FILL : PD_TITLE_FILL, 0);
+        pd_text(c, x + (w - tw) / 2, pd_text_y(y, h), label, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    }
     ui_add_hit(ui, x, y, w, h, id);
 }
 

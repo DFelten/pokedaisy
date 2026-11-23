@@ -87,6 +87,25 @@ it, else a timer does; the sound is resampled a little faster or slower to keep 
 and leaves silent gameplay available; the device is reopened when it comes back. `POCKET_PERF=1` logs frame timings
 every 5 s. `POCKET_KEYS="TICK:KEY[:HOLD],..."` presses keys by loop tick, for tests (`test_host.py`).
 
+## Looking at the companion
+
+`python3 3ds/tools/desktop_preview.py` (after `make -C 3ds build/pd_preview`) draws the companion from RAM fixtures at the
+size the host gives it on twelve screens, from a 640x480 handheld through the Steam Deck to 4K and an ultrawide, both
+fonts: `3ds/build/desktop-shots/index.html`. `docs/plans/linux-ui-parity.md` is the plan for matching the Android app.
+
+On a Mac the host and the GB core build as above (cmake needs `-DCMAKE_POLICY_VERSION_MINIMUM=3.5`; on macOS the core
+links without the ELF version script). The armGBA core doesn't load a ROM on Apple silicon, but the GB core is mGBA and
+plays GBA games too: link `build/gbc/pokedaisy_gbc_libretro.dylib` into a folder as both `pokedaisy_gbc_libretro.so` and
+`pokedaisy_gba_libretro.so`, then run the real game headless with a copy of a save and scripted keys (lower-case names):
+
+```
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy SDL_RENDER_DRIVER=software POCKET_WINDOW=1280x800 POCKET_CORE_DIR=<that folder> \
+  POCKET_KEYS="700:start:6,900:start:6,1100:a:6,1300:a:6,1500:b:6,1900:b:6,2100:x:6" \
+  linux/build/pokedaisy-linux --data <a scratch folder> --frames 2300 --shot shot.png <rom>
+```
+
+`POCKET_MOUSE="TICK:X:Y:c"` clicks in window pixels (`:r` a right click). Never point `--data` at your real saves.
+
 ## PortMaster (ROCKNIX, Knulli, muOS ...)
 
 `python3 linux/package.py --portmaster <aarch64 binary> <out>` lays the build

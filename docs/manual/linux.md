@@ -139,8 +139,8 @@ row of a Game Boy shelf.
 In this form the quick menu (L3) keeps PC, FLY, the keep-away spray, BIKE, WILD ENCOUNTERS and COMPANION (with TAKE
 OFF in the English FireRed and Emerald), adds a HUD tile that puts the cursor on the HUD, and the game pauses while it
 is open. X opens the companion. SETTINGS lists only what the core does itself: ASPECT (with ZOOM and AUTO ZOOM IN while it's on), HUD, QUICK MENU, FLY STYLE,
-FLIGHT AREA and FLY ON (where there's TAKE OFF), three button rows, AUTO-RUN (where the game's field is read), DARK
-MODE, TAB BAR and RESET SETTINGS, which puts every companion setting back after you confirm. QUICK MENU BUTTON,
+FLIGHT AREA and FLY ON (where there's TAKE OFF), three button rows, WILD ENCOUNTERS (where the quick menu has it),
+AUTO-RUN and RUN INDOORS (where the game's field is read), DARK MODE, THEME, FONT TYPE, TAB BAR and RESET SETTINGS, which puts every companion setting back after you confirm. QUICK MENU BUTTON,
 COMPANION BUTTON and HUD CURSOR BUTTON step through X, Y, L2, R2 and L3 (and NONE for the cursor) when you press A on
 them, and a button another action already uses swaps over to it. L2 and R2 reach the core on every shelf (for other
 Game Boy Advance cores the launcher still keeps them back).
@@ -202,6 +202,17 @@ gets the wide view rather than the bars the old window would have, and so does a
 screens (16:3), its overworld drawn out to both sides. The picture is shown at a whole scale where one fits, so its
 pixels stay sharp, and fills the window when one doesn't.
 
+On a Windows PC or a Linux desktop (and the Steam Deck's Desktop Mode), press `F11` or `Alt` + `Enter` to go fullscreen
+and back, or use `FULLSCREEN` in the `SCREEN` group of the companion's `SETTINGS` or the game list's. The window opens as
+big as your screen comfortably allows the first time, and after that at the size and place you left it, maximised if it
+was. In Game Mode and on handhelds the program always fills the screen, so the row isn't there.
+
+### LOOK and FONT TYPE
+
+The companion's `SETTINGS` has a `LOOK` group, as in the app: `DARK MODE`, `THEME` (the same ones as the game list's)
+and `FONT TYPE`, which picks the companion's letters: `PIXEL SMALL`, the app's smaller pixel font, to start with, or
+`PIXEL` for the larger one the desktop version used before. The HUD and the quick menu keep their own.
+
 ## Adding games
 
 The program's game list shows the `.gb`, `.gbc`, `.gba` and `.nds` files in the `roms` folder of its data folder (and, on
@@ -217,13 +228,21 @@ and `HACKS`.
 | --- | --- |
 | D-pad | Moves through the games. Up from the top row reaches the views and the header's buttons, left reaches the rail. |
 | A | Plays the game. |
-| B | The game's menu: `PLAY`, `FAVORITE` or `UNFAVORITE`. |
+| B | The game's menu: `PLAY`, `FAVORITE` or `UNFAVORITE`, `INFO` (the file, its folder and size, the console, its SHA-1 and where its save is) and `HIDE`, which takes it off the list until `SETTINGS` > `HIDDEN GAMES` puts every hidden game back. |
 | Y | `SETTINGS`. |
 | X | Switches between covers and a list. |
 | L, R | The previous or next view. |
 | START, or START and SELECT together, or Menu / Guide | Closes PokeDaisy (it asks first). |
 
-The header's first button sorts the games by name or by when you last played them; favorites always come first.
+With a mouse, a click plays a game, a right click opens its menu, and the wheel scrolls the list.
+
+The header's magnifier (or A on it) opens `SEARCH`: type and the list keeps only the games whose name has those
+letters. Enter or a click elsewhere leaves the field with the list still filtered, Escape clears it. On a Steam Deck in
+Game Mode, Steam's keyboard comes up to type with, and B closes the field.
+The game list speaks the language you pick in the companion's `SETTINGS` > `LANGUAGE`, as the companion does.
+
+The header's first button opens `SORT BY`: `NAME`, `LAST PLAYED` or `DATE ADDED`; favorites always come first. A game
+that turned up in the last day carries a green `NEW` tag (the games already there the first time aren't tagged).
 `SETTINGS` holds `DARK MODE`, `THEME` and `ASPECT` (shared with the companion in your games) and the program's own
 `LCD FILTER`, `FF SPEED`, `REWIND` and `A/B BUTTONS`. `BUTTON COLORS` paints the button legend like your device's
 buttons: `RED A` (the app's colours) or `GREEN A` (green A, red B, blue X, yellow Y). `TOOLS` lists the save tools that

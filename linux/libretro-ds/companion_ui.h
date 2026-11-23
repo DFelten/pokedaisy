@@ -8,7 +8,7 @@ extern "C" {
 #include "pd_settings.h"
 }
 struct DsCompanionUi {
-  enum Row { Layout, Battles, Hud, CompanionButton, ScreenButton, PenSpeed, QuickStyle, Reset, BattleStrip, HudMinimal, HudBalls, HudRepel, HudMap, DarkMode, AutoRun, TabBar, MoreTabs, HudButton, HudSize, Aspect, Zoom, AutoZoom, Rows };
+  enum Row { Layout, Battles, Hud, CompanionButton, ScreenButton, PenSpeed, QuickStyle, Reset, BattleStrip, HudMinimal, HudBalls, HudRepel, HudMap, DarkMode, AutoRun, TabBar, MoreTabs, HudButton, HudSize, Aspect, Zoom, AutoZoom, FontType, Rows };
   pd_settings settings{};
   // A host whose picture can EXPAND (the Windows core): its SETTINGS gain ASPECT, ZOOM and AUTO ZOOM IN, and it lays the
   // game out for settings.aspect / settings.zoom (the app's SETTINGS > SCREEN). Off: the DS layouts alone.

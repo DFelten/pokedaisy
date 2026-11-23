@@ -1306,8 +1306,12 @@ void pd_ui_summary_page(struct pd_canvas* c, const struct pd_summary_view* v, en
     const int cellX = rx0 + f, cellW = rw0 - 2 * f, cellsH = SUMMARY_TOP + H - f - rtop, cell = cellsH / PD_NUM_MOVES;
     for (int i = 0; i < PD_NUM_MOVES; i++) {
         const int top = rtop + i * cell, h = i == PD_NUM_MOVES - 1 ? cellsH - i * cell : cell;
-        if (i & 1) pd_fill(c, cellX, top, cellW, h, pd_mix(PD_TITLE_FILL, PD_LABEL, 20));
-        if (i) pd_fill(c, cellX, top, cellW, 1, PD_DIVIDER);
+        if (pd_style) {
+            pd_cell(c, cellX, top - (i ? 1 : 0), cellW, h + (i ? 1 : 0), pd_style->cells.line, (i & 1) ? pd_style->cells.b : pd_style->cells.a);
+        } else {
+            if (i & 1) pd_fill(c, cellX, top, cellW, h, pd_mix(PD_TITLE_FILL, PD_LABEL, 20));
+            if (i) pd_fill(c, cellX, top, cellW, 1, PD_DIVIDER);
+        }
         const struct pd_summary_move* move = &v->moves[i];
         if (!move->name) continue;
         const int ty = top + (h - 31) / 2;
@@ -1501,7 +1505,9 @@ static void summary_moves(const struct pd_ui* ui, struct pd_canvas* c, const str
     int rowH = h / 4;
     for (int i = 0; i < PD_NUM_MOVES; i++) {
         int ry = y + i * rowH, move = m->moves[i];
-        if (i) pd_fill(c, x, ry - 1, w, 1, PD_DIVIDER);
+        // The style's moves: a cell each, sharing their edges, rows by turn (the app's MoveCell); else a rule between.
+        if (pd_style) pd_cell(c, x - 3, ry - 2, w + 6, rowH + 1, pd_style->cells.line, (i & 1) ? pd_style->cells.b : pd_style->cells.a);
+        else if (i) pd_fill(c, x, ry - 1, w, 1, PD_DIVIDER);
         if (!move) continue;
         int type = src && src->moveType ? src->moveType(src->ctx, move) : pd_move_type(g, move);
         pd_fill(c, x, ry + 2, 2, rowH - 5, ui_type_color(type));

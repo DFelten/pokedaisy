@@ -84,6 +84,7 @@ int ui_settings_follow(int scroll, int y, int height) {
 #define ROW_ARROW 8   // the labels' indent: the cursor's arrow sits in it
 static int rowParity;
 static const char* pendingGroup; // a group whose heading waits for its first row (an empty group draws none)
+static int sectionW;             // the rows' width, for a section's band (pd_section_title)
 static void group(struct pd_canvas* c, int x, int* y, const char* title);
 static void flush_group(struct pd_canvas* c, int x, int* y) {
     if (!pendingGroup) return;
@@ -93,7 +94,7 @@ static void flush_group(struct pd_canvas* c, int x, int* y) {
 }
 void ui_list_row_back(struct pd_canvas* c, int x, int y, int w, int index, bool cursor) {
     if (cursor) pd_fill(c, x - 4, y, w + 8, ROW_H, PD_ROW_SELECTED);
-    else if (index & 1) pd_fill(c, x - 4, y, w + 8, ROW_H, pd_mix(PD_LIST_FILL, PD_LABEL, 20));
+    else if (index & 1) pd_fill(c, x - 4, y, w + 8, ROW_H, pd_style ? pd_style->stripe : pd_mix(PD_LIST_FILL, PD_LABEL, 20));
     if (cursor) pd_triangle(c, x - 1, y + ROW_H / 2 - 4, 4, PD_RIGHT, PD_VALUE);
 }
 
@@ -144,6 +145,10 @@ void ui_settings_group(struct pd_ui* ui, int i) {
 }
 
 // FLIGHT AREA (the app's GAMEPLAY row): where TAKE OFF may fly. Two values, so it flips in place.
+// FONT TYPE: the companion's letters, PIXEL SMALL (the app's default since 2026-11-18) or PIXEL (Pixel Operator).
+static void font_type_row(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, const struct pd_settings* st) {
+    setting(ui, c, x, y, w, SETTING_FONT_TYPE, "FONT TYPE", st->fontPixel ? "PIXEL" : "PIXEL SMALL");
+}
 static void flight_area_row(struct pd_ui* ui, struct pd_canvas* c, int x, int* y, int w, const struct pd_settings* st) {
     setting(ui, c, x, y, w, SETTING_FLIGHT_AREA, "FLIGHT AREA", st->flightAnywhere ? "ANYWHERE" : "VISITED");
 }
@@ -156,9 +161,7 @@ static void group(struct pd_canvas* c, int x, int* y, const char* title) {
     }
     rowParity = 0;
     *y += 3;
-    // Gen 1's value colour is the rows' black: its titles are a black band (groupTitleFill).
-    if (pd_cur->groupTitleFill != PD_NO_SHADOW) pd_fill(c, x - 4, *y + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
-    pd_text(c, x, pd_text_y(*y, ROW_H), title, pd_cur->groupTitleText, pd_cur->groupTitleShadow);
+    pd_section_title(c, x - 4, *y, sectionW + 8, ROW_H, title);
     *y += ROW_H;
 }
 
@@ -180,9 +183,10 @@ static void group_rail(struct pd_ui* ui, struct pd_canvas* c, int x, int y, int 
     for (int i = 0, ty = y; i < groupCount; i++) {
         int th = th0 + (i < room - th0 * n ? 1 : 0);
         bool on = i == selected || ui->pressedId == HIT_SETTINGS_GROUP + i;
-        pd_layered_two_tone(c, x, ty, w, th, 3, pd_cur->chip, pd_cur->chipCount, on ? pd_cur->tabSelectedFill : pd_cur->tabIdleFill, 0);
+        pd_chip_face(c, x, ty, w, th, on);
         pd_text_fit(c, x + 4 + (w - 8 - pd_text_width(groupName[i]) > 0 ? (w - 8 - pd_text_width(groupName[i])) / 2 : 0),
-                    pd_text_y(ty, th), w - 8, groupName[i], on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
+                    pd_text_y(ty, th), w - 8, groupName[i], pd_style ? pd_chip_text(on) : on ? PD_VALUE : PD_LABEL,
+                    pd_style ? pd_chip_shadow(on) : on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
         ui_add_hit(ui, x, ty, w, th, HIT_SETTINGS_GROUP + i);
         ty += th + gap;
     }
@@ -234,8 +238,14 @@ static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp,
             setting(ui, c, ix, yp, iw, SETTING_FLY_STYLE, "FLY STYLE", st->flyClassic ? "CLASSIC" : "SCENIC");
         flight_area_row(ui, c, ix, yp, iw, st);
     }
+    // The app's GAMEPLAY rows the desktop cores have (the quick menu's WILD, the field read's RUN INDOORS), where the
+    // host has FONT TYPE (the desktop cores: a handheld's short list keeps its rows as before).
+    if (host && host->hasFontType && host->wildSupported)
+        setting(ui, c, ix, yp, iw, SETTING_WILD, "WILD ENCOUNTERS", st->wildOff ? "OFF" : "ON");
     if (host && host->hasCoreRows && host->fieldSupported)
         setting(ui, c, ix, yp, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
+    if (host && host->hasFontType && host->fieldSupported)
+        setting(ui, c, ix, yp, iw, SETTING_RUN_INDOORS, "RUN INDOORS", st->runIndoors ? "ON" : "OFF");
     front_rows(ui, c, ix, yp, iw, host, "GAMEPLAY");
     pendingGroup = "SCREEN";
     if (!host || !host->hideScreenMode)
@@ -266,8 +276,21 @@ static void compact_rows(struct pd_ui* ui, struct pd_canvas* c, int ix, int* yp,
     static const char* const NAMES[PD_BUTTONS] = {"X", "Y", "L2", "R2", "NONE", "L3"};
     if (host && host->hasButtonRows)
         setting(ui, c, ix, yp, iw, SETTING_COMPANION_BTN, "COMPANION BUTTON", NAMES[st->companionBtn]);
-    if (host && host->hasCoreRows) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+    // The app's LOOK group (DARK MODE, THEME, FONT TYPE) where the host has FONT TYPE (the desktop cores); else DARK MODE
+    // stays in SCREEN.
+    const bool lookGroup = host && host->hasFontType && host->hasCoreRows;
+    if (host && host->hasCoreRows && !lookGroup) setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
     if (host && host->hasPerf) setting(ui, c, ix, yp, iw, SETTING_PERF, "FPS / CPU", st->showPerf ? "ON" : "OFF");
+    if (lookGroup) {
+        pendingGroup = "LOOK";
+        setting(ui, c, ix, yp, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+        const char* themeName = pd_themes[0].label;
+        for (int i = 0; i < pd_theme_count; i++)
+            if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
+        setting(ui, c, ix, yp, iw, SETTING_THEME, "THEME", themeName);
+        font_type_row(ui, c, ix, yp, iw, st);
+    } else if (host && host->hasFontType)
+        font_type_row(ui, c, ix, yp, iw, st);
     pendingGroup = "COMPANION";
     snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
     setting(ui, c, ix, yp, iw, SETTING_TAB_BAR, "TAB BAR", buf);
@@ -302,18 +325,19 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     ui->settingsNavCount = 0;
     int x = MARGIN, w = c->w - 2 * MARGIN;
     // The full companion's long list gets its group tabs down the left, on the backdrop beside the list's window.
-    railed = host && host->fullSettings && !ui->optionSource;
+    // The desktop cores' grouped list (hasCoreRows) gets them too in the app's RETRO look, as the app's SETTINGS has.
+    railed = host && (host->fullSettings || (host->hasCoreRows && pd_style)) && !ui->optionSource;
     valuePct = railed ? 58 : 42;
     groupCount = 0;
     int railX = x, railW = 0;
     if (railed) {
-        static const char* const LABELS[] = { "GAME", "FF / SPEED", "SOUND", "GAMEPLAY", "SCREEN", "COMPANION" };
+        static const char* const LABELS[] = { "GAME", "FF / SPEED", "SOUND", "GAMEPLAY", "SCREEN", "LOOK", "COMPANION", "CONTROLS" };
         for (unsigned i = 0; i < sizeof(LABELS) / sizeof(*LABELS); i++)
             if (pd_text_width(LABELS[i]) + 12 > railW) railW = pd_text_width(LABELS[i]) + 12;
     }
-    int f = pd_title_box(c, x, CONTENT_Y, w, TITLE_H, PD_TITLE_FILL);
+    int f = pd_header_box(c, x, CONTENT_Y, w, TITLE_H);
     int ty = pd_text_y(CONTENT_Y, TITLE_H);
-    pd_text(c, x + f + 6, ty, ui->optionSource ? ui->optionSource->title : pd_tr("SETTINGS"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    pd_text(c, x + f + 6, ty, ui->optionSource ? ui->optionSource->title : pd_tr("SETTINGS"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     int right = x + w - f - 6;
     // The 3DS's battery at the title window's right.
     if (host && host->batteryPct >= 0 && host->fullSettings) {
@@ -325,7 +349,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         int tx = x + f + 6 + pd_text_width(pd_tr("SETTINGS")) + 12;
         int tw = pd_text_width(g->title);
         if (tw > right - tx) tw = right - tx;
-        pd_text_fit(c, right - tw, ty, tw, g->title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+        pd_text_fit(c, right - tw, ty, tw, g->title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
     }
 
     int lh = c->h - LIST_Y - MARGIN;
@@ -364,10 +388,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
                 continue;
             }
             if (row->heading) { // a group's title, as group() draws it
-                const char* title = pd_tr(row->label);
-                if (pd_cur->groupTitleFill != PD_NO_SHADOW)
-                    pd_fill(c, ix - 4, ry + 1, pd_text_width(title) + 8, ROW_H - 2, pd_cur->groupTitleFill);
-                pd_text(c, ix, pd_text_y(ry, ROW_H), title, pd_cur->groupTitleText, pd_cur->groupTitleShadow);
+                pd_section_title(c, ix - 4, ry, iw + 8, ROW_H, pd_tr(row->label));
                 continue;
             }
             ui_list_row_back(c, ix, ry, iw, parity++, i == selected);
@@ -381,6 +402,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         return;
     }
     pd_clip(c, x + lf, listTop, w - 2 * lf, listBottom - listTop);
+    sectionW = iw;
     if (lastTotal >= 0) ui->settingsScroll = ui_clamp_scroll(ui->settingsScroll, lastTotal, listBottom - listTop);
     int y = listTop - ui->settingsScroll;
     char buf[40];
@@ -528,6 +550,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
             for (int i = 0; i < pd_theme_count; i++)
                 if (pd_themes[i].id == st->theme) themeName = pd_themes[i].label;
             setting(ui, c, ix, &y, iw, SETTING_THEME, "THEME", themeName);
+            if (host->hasFontType) font_type_row(ui, c, ix, &y, iw, st);
             group(c, ix, &y, "COMPANION");
             setting(ui, c, ix, &y, iw, SETTING_BATTLE_INFO, "BATTLE INFO", st->noBattleInfo ? "OFF" : "ON");
             if (!st->noBattleInfo) {
@@ -542,6 +565,7 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
         if (!full && host && host->hasCoreRows) {
             if (host->fieldSupported) setting(ui, c, ix, &y, iw, SETTING_AUTO_RUN, "AUTO-RUN", st->autoRun ? "ON" : "OFF");
             setting(ui, c, ix, &y, iw, SETTING_DARK, "DARK MODE", st->darkMode ? "ON" : "OFF");
+            if (host->hasFontType) font_type_row(ui, c, ix, &y, iw, st);
         }
         snprintf(buf, sizeof(buf), pd_tr("%d TABS"), ui_bar_count(ui));
         setting(ui, c, ix, &y, iw, SETTING_TAB_BAR, "TAB BAR", buf);
@@ -601,8 +625,8 @@ void ui_settings_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
 
 static void title_window(struct pd_canvas* c, int y, const char* title) {
     int x = MARGIN, w = c->w - 2 * MARGIN;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr(title), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr(title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
 }
 
 static void pick_list(struct pd_ui* ui, struct pd_canvas* c, const char* title, const char* const* options, int n,
@@ -732,8 +756,8 @@ void ui_more_page(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
         int tx = ix + (i % cols) * (tile + gap), ty = iy + (i / cols) * (tileH + gap);
         bool pressed = ui->pressedId == HIT_OPTION + i;
         uint32_t fill = pressed ? pd_cur->tabSelectedFill : idle;
-        pd_layered_two_tone(c, tx, ty, tile, tileH, 3, pd_cur->chip, pd_cur->chipCount, fill,
-                            pd_mix(fill, pd_two_tone_low(fill), 128));
+        if (pd_style) pd_key(c, tx, ty, tile, tileH, pressed ? &pd_style->tabOpen : &pd_style->button); // MORE's tiles as keys
+        else pd_layered_two_tone(c, tx, ty, tile, tileH, 3, pd_cur->chip, pd_cur->chipCount, fill, pd_mix(fill, pd_two_tone_low(fill), 128));
         const struct pd_art* art = ui_tab_art(more[i]);
         int icon = tileH - capH - 18;
         if (icon > 28) icon = 28; // Scale2x's 32 averaged down: the smoothing shows
@@ -750,7 +774,8 @@ void ui_more_page(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g
         const char* label = ui_tab_label(more[i]);
         int ly = smallText ? top + (art ? icon + 5 : 0) - capTop : ty + tile - 17;
         pd_text_fit(c, tx + 2 + (tile - 4 - pd_text_width(label) > 0 ? (tile - 4 - pd_text_width(label)) / 2 : 0), ly,
-                    tile - 4, label, pressed ? PD_VALUE : PD_TITLE_TEXT, pressed ? PD_VALUE_SHADOW : PD_TITLE_SHADOW);
+                    tile - 4, label, pd_style ? (pressed ? pd_style->tabOpen.text : pd_style->button.text) : pressed ? PD_VALUE : PD_TITLE_TEXT,
+                    pd_style ? (pressed ? pd_style->tabOpen.shadow : pd_style->button.shadow) : pressed ? PD_VALUE_SHADOW : PD_TITLE_SHADOW);
         ui_add_hit(ui, tx, ty, tile, tileH, HIT_OPTION + i);
     }
     // The rule: the window's own inner frame, dark over light (Separator).
