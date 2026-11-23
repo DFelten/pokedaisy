@@ -579,6 +579,33 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
+    @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
+
+    /** The Game Boy game's bag USE (Crystal's, Gen2ItemUse.kt), its code checked in the cart once per game. */
+    private fun gbItemField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? {
+        val field = gbField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine ?: return null
+        val calls = field.itemCalls ?: return null
+        gbItemCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
+        if (!::engine.isInitialized || !engine.running) return null
+        val ok = runCatching { calls.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        Log.i("pokedaisy", "Game Boy bag USE (${field.javaClass.simpleName}): ${if (ok) "code found" else "code not found"}")
+        gbItemCache = field to ok
+        return field.takeIf { ok }
+    }
+
+    /** Runs [job] on the emu thread with the Game Boy bag USE's field, a battle's NOT_NOW as IN_BATTLE. */
+    private fun <T> gbItemJob(failed: T, done: (T) -> Unit, job: (com.pokedaisy.app.companion.data.GbField.CrystalEngine, com.pokedaisy.app.companion.data.GameCalls) -> T) {
+        val field = gbItemField()
+        if (field == null || !::engine.isInitialized || !engine.running) return done(failed)
+        val inBattle = telemetry.snapshot.value.inBattle
+        engine.requestFieldItemJob(inBattle) { calls, busy ->
+            val out = if (busy) failed else runCatching { job(field, calls) }
+                .getOrElse { Log.e("pokedaisy", "Game Boy bag USE failed", it); failed }
+            Log.i("pokedaisy", "Game Boy bag USE: $out")
+            runOnUiThread { done(if (inBattle) com.pokedaisy.app.companion.fieldActionBattleResult(out) else out) }
+        }
+    }
+
     /** The save file backed up (whatever SAVE BACKUPS says): before a Game Boy box change or this session's first move. */
     private fun backUpSaveNow(r: File): Boolean {
         val save = SavesLocation.saveFor(this, Prefs(this), r)
@@ -633,12 +660,42 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         /** A DS game's Repels ([com.pokedaisy.app.companion.data.useGen4Repel], Black's [com.pokedaisy.app.companion.data.useGen5Repel]);
          * nothing else yet. */
         private fun dsRepel(itemId: Int) = dsRepelKnown() && com.pokedaisy.app.companion.data.GEN4_REPEL_KINDS.any { it.first == itemId }
-        override fun canUse(itemId: Int) = dsRepel(itemId) || sharedItemUse.canUse(itemId)
-        override fun marked(itemId: Int) = dsRepel(itemId) || sharedItemUse.marked(itemId)
+        override fun canUse(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || sharedItemUse.canUse(itemId)
+        override fun marked(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || sharedItemUse.marked(itemId)
+
+        /** Crystal's bag USE ([gbItemField]) takes [itemId]. */
+        private fun gbUse(itemId: Int) = romIsGameBoy && gbItemField()?.itemCalls?.usable(itemId) == true
+        override fun picksMon(itemId: Int) =
+            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMon(itemId) == true else tradeEvolutions.picksMon(itemId)
+        override fun picksMove(itemId: Int) =
+            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMove(itemId) == true else tradeEvolutions.picksMove(itemId)
+
+        override fun targets(itemId: Int, give: Boolean, done: (com.pokedaisy.app.companion.data.PartyTargets) -> Unit) {
+            if (!romIsGameBoy) return tradeEvolutions.targets(itemId, give, done)
+            if (give) return done(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.FAILED))
+            gbItemJob(com.pokedaisy.app.companion.data.PartyTargets(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+                f.itemTargets(calls, itemId)
+            }
+        }
+
+        override fun useOn(
+            itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int,
+            done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit,
+        ) {
+            if (!romIsGameBoy) return tradeEvolutions.useOn(itemId, target, moveIndex, done)
+            gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+                f.useItem(calls, itemId, target, moveIndex)
+            }
+        }
 
         private val failed = com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.FAILED)
 
         override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
+            if (gbUse(itemId)) {
+                return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+                    f.useItem(calls, itemId, null, 0)
+                }
+            }
             if (dsRepel(itemId)) {
                 // Plain RAM writes on the emu thread, with the field free by its own read (MgbaCore.FIELD_SCREEN, not locked).
                 if (!::engine.isInitialized || !engine.running) return done(failed)

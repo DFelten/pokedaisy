@@ -19,8 +19,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶⁰ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶⁰ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
@@ -1085,3 +1085,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
     Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
     Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+60. Bag USE on Crystal (2026-11-23, `Gen2ItemCalls` in `Gen2ItemUse.kt`, `GbField.CrystalEngine.useItem`; rev 0 / rev 1 / AU and the
+    German cart, each by its code): healing items, status cures, REVIVE / MAX REVIVE, FULL RESTORE, ETHER / ELIXER kinds and the
+    three Repels, on the field only (the engine's `free`). The item leaves the bag through the game's own TossItem (called from the
+    overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
+    StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Left out: vitamins, RARE CANDY,
+    PP UP, stones, the bitter herbs (friendship) and SACRED ASH, and GIVE. `Gen2ItemUseTest`. Not yet played on a device.
