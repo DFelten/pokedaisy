@@ -239,4 +239,59 @@ if PokeDaisyRuby18.old_game?
 
   Fixnum = Integer unless defined?(Fixnum)
   Bignum = Integer unless defined?(Bignum)
+
+  # A lone % at a format's end: 1.8 wrote it as it is (sprintf("%d%", 95) = "95%": GS Vitro's move accuracy on the
+  # summary's move pages), later Rubies raise "incomplete format specifier" - which closed the move-forget screen and
+  # ended the battle. sprintf / format / String#% try the format as given, then with that % doubled.
+  module PokeDaisyRuby18
+    def self.lone_percent(fmt)
+      return nil unless fmt.is_a?(String) && fmt.end_with?("%")
+      fmt[/%+\z/].length.odd? ? fmt + "%" : nil
+    end
+  end
+
+  module Kernel
+    alias_method :__pokedaisy_sprintf, :sprintf
+    alias_method :__pokedaisy_format, :format
+
+    def sprintf(fmt, *args)
+      __pokedaisy_sprintf(fmt, *args)
+    rescue ArgumentError
+      (f = PokeDaisyRuby18.lone_percent(fmt)) ? __pokedaisy_sprintf(f, *args) : raise
+    end
+
+    def format(fmt, *args)
+      __pokedaisy_format(fmt, *args)
+    rescue ArgumentError
+      (f = PokeDaisyRuby18.lone_percent(fmt)) ? __pokedaisy_format(f, *args) : raise
+    end
+    private :sprintf, :format
+  end
+
+  class << Kernel
+    alias_method :__pokedaisy_sprintf, :sprintf
+    alias_method :__pokedaisy_format, :format
+
+    def sprintf(fmt, *args)
+      __pokedaisy_sprintf(fmt, *args)
+    rescue ArgumentError
+      (f = PokeDaisyRuby18.lone_percent(fmt)) ? __pokedaisy_sprintf(f, *args) : raise
+    end
+
+    def format(fmt, *args)
+      __pokedaisy_format(fmt, *args)
+    rescue ArgumentError
+      (f = PokeDaisyRuby18.lone_percent(fmt)) ? __pokedaisy_format(f, *args) : raise
+    end
+  end
+
+  class String
+    alias_method :__pokedaisy_percent, :%
+
+    def %(args)
+      __pokedaisy_percent(args)
+    rescue ArgumentError
+      (f = PokeDaisyRuby18.lone_percent(self)) ? f.__pokedaisy_percent(args) : raise
+    end
+  end
 end

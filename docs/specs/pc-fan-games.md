@@ -446,8 +446,11 @@ probe, from boot to its overworld and into wild battles.
   `TEMP` set, a folder opened as a file refused with Windows' `EACCES` (the core opened it, then asserted on reading:
   Spanish has no messages file, so it loads `Data/`), the screen resized to `DEFAULTSCREENWIDTH` / `HEIGHT` (512 x 384;
   the core opens RPG Maker XP at 640 x 480), `RTP.getSaveFolder` = `System.data_directory`, `StringInput#getc` a byte
-  (every `dexdata.dat` read), `Thread.critical`, `Array#nitems`, `Hash#index`, `Fixnum` / `Bignum`. The game redefines
-  core methods (`Array#first(n)` = "is n 0?"), so our preloads index arrays instead of calling `first(n)`.
+  (every `dexdata.dat` read), `Thread.critical`, `Array#nitems`, `Hash#index`, `Fixnum` / `Bignum`, and a lone `%` at a
+  format's end written as it is (`sprintf("%d%", acc)`: the summary's and the forget-a-move screen's accuracy raised, and
+  the battle closed on it after a level-up, the move not learned). The game redefines core methods (`Array#first(n)` =
+  "is n 0?"), so our preloads index arrays instead of calling `first(n)`. A scan of its 399 scripts for 1.8-only calls
+  (`Object#type`, `instance_variables` as strings, `String#each`, `Symbol#to_i`, ...) found nothing else that runs.
 - **The companion** (`PokeDaisyClassic`): names from `PBSpecies.getName` & co. in the game's language, types by number with
   the chart from `PBTypes.getEffectiveness`, stats reordered from PBStats' HP / Atk / Def / Spe / SpA / SpD, statuses
   by number, icons from `pbPokemonIconFile` (one file per form / gender / shiny), the bag by `pbPocketNames` (GS Vitro
@@ -461,7 +464,7 @@ probe, from boot to its overworld and into wild battles.
   itself, and a method aliased before a module is prepended over it called the prepended one again, forever ("stack level
   too deep"). The battle hook (every engine) and the Reborn / v16 / v17 scene hooks wrap by alias now; the v19+ path is
   unchanged.
-- **States** (our core patch, two more fixes for every game): the sandbox gives each host function it passes to Ruby a
+- **States** (our core patch, more fixes for every game): the sandbox gives each host function it passes to Ruby a
   new slot in the WASM function table as it's first used, and states didn't keep the table: a state taken after the game
   added slots (5,750 at boot, 6,156 past GS Vitro's intro) trapped (CALL_INDIRECT) in a fresh core and was refused after a
   few loads in one run. The slots past the module's own are saved now, each pointer an offset into the library, with two
@@ -473,11 +476,20 @@ probe, from boot to its overworld and into wild battles.
   Checked with GS Vitro's Hall of Fame picture (9727 px, past the emulator's 8192) as a plane, a sprite and a window's
   contents, and with 40,000 px bitmaps made in code, each loaded in a fresh core. Such a child shows nothing until its
   owner first moves (mkxp-z's own way, the same before a save); the game's Hall of Fame scrolls them every frame.
+  And the draw order at one z: mkxp-z orders such elements by a creation stamp, which a state brings back, but not the
+  counter that hands them out (`SharedState::stampCounter`), so after a load a new fade or screen got a stamp below the
+  restored ones and was drawn under them: GS Vitro's nickname screen after a catch stayed behind the battle (both at
+  99999), the game waiting on a screen nobody saw. A restored stamp now moves the counter past it
+  (`SharedState::stampAtLeast`, the patch's one change outside `binding-sandbox/`).
 - Also checked: a trainer battle (the foe's team read, levels as the game scaled them; FIGHT through its menu), the
   game's party, bag, trainer card, Pokégear, Pokédex (list, entry, area map, forms) and PC box screens opened and closed
   with no error, a save from its own Save
   screen (`Game.rxdata` in `/Save`) and its autosave loaded back from the title; the app's companion pages and the Linux
   `pc-companion-shot` drawn from its real snapshots over its folder (icons, the Town Map with its head on Route 29).
+  Played after: a catch (the companion's BAG pick opening the game's own battle bag, its Poké Ball pocket, the throw,
+  "¡Sentret ha sido capturado!", the nickname grid, the Pokémon in the party and in the companion's snapshot), a shop
+  (`pbPokemonMart`: money and bag changed), a battle won with FIGHT picks to a level-up with a fifth move to learn, and its
+  forget-a-move screen.
 - Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
   A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
   on the letter grid. Its own A / B and menus work as on a PC.

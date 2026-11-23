@@ -185,6 +185,20 @@ index 6f19f637..da55611e 100644
  			p->bitmapDisposal();
  		}
  	}
+diff --git a/binding-sandbox/sandbox-serial-scene.h b/binding-sandbox/sandbox-serial-scene.h
+index 33f871f5..b43d7891 100644
+--- a/binding-sandbox/sandbox-serial-scene.h
++++ b/binding-sandbox/sandbox-serial-scene.h
+@@ -41,6 +41,9 @@ bool SceneElement::sandbox_deserialize_scene_element(const void *&data, mkxp_san
+ 		if (creationStamp != value) {
+ 			unlink();
+ 		}
++		// PokeDaisy: the stamp orders elements of one z by creation. The counter isn't in the state, so after a load
++		// a new element (a fade, a window) got a stamp below the restored ones and was drawn under them at its z.
++		shState->stampAtLeast(creationStamp + 1);
+ 	}
+ 	{
+ 		int32_t value = (int32_t)z;
 diff --git a/binding-sandbox/sandbox-serial-sprite.h b/binding-sandbox/sandbox-serial-sprite.h
 index 7bdb2611..2cb24439 100644
 --- a/binding-sandbox/sandbox-serial-sprite.h
@@ -362,3 +376,35 @@ index aeb7006e..ea382160 100644
  #ifdef __cplusplus
  }
  #endif
+diff --git a/src/sharedstate.cpp b/src/sharedstate.cpp
+index 342cdc2c..e5b7839d 100644
+--- a/src/sharedstate.cpp
++++ b/src/sharedstate.cpp
+@@ -451,6 +451,12 @@ uint64_t SharedState::genTimeStamp()
+ 	return p->stampCounter++;
+ }
+ 
++void SharedState::stampAtLeast(uint64_t next)
++{
++	if (p->stampCounter < next)
++		p->stampCounter = next;
++}
++
+ SharedState::SharedState(Exception &exception, RGSSThreadData *threadData)
+ {
+ 	p = new SharedStatePrivate(exception, threadData);
+diff --git a/src/sharedstate.h b/src/sharedstate.h
+index 1877cedd..5e78ccab 100644
+--- a/src/sharedstate.h
++++ b/src/sharedstate.h
+@@ -85,7 +85,9 @@ struct SharedState
+ 	sigslot::signal<> prepareDraw;
+ 
+ 	uint64_t genTimeStamp();
+-    
++	/* PokeDaisy: the next stamp handed out is at least [next] (a state's scene elements bring their stamps back). */
++	void stampAtLeast(uint64_t next);
++
+     // Returns time since SharedState was constructed in microseconds
+     double runTime();
+ 
