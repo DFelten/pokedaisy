@@ -114,8 +114,23 @@ module PokeDaisyCompanion
 
   # Input.trigger?'s answer for [button] once ([press]): what a pick presses in the game's menu loop.
   def self.press(button)
+    hook_input
     @press = button
     @press_frame = @frame
+  end
+
+  # The trigger? that answers a press is set up at the end of this file, before the game's scripts; a game that defines
+  # its own Input.trigger? (Pokemon Insurgence's key rebinding: `def self.trigger?`) replaces it, and picks pressed
+  # nothing. Before a press, ours goes back on top of whatever trigger? the game has now (another alias, the game's kept).
+  def self.hook_input
+    loc = try { ::Input.method(:trigger?).source_location }
+    return if loc && loc[0].to_s.include?("pokedaisy_companion")
+    @input_hooks = (@input_hooks || 0) + 1
+    name = :"__pokedaisy_trigger#{@input_hooks}"
+    ::Input.singleton_class.send(:alias_method, name, :trigger?)
+    ::Input.singleton_class.send(:define_method, :trigger?) do |button|
+      PokeDaisyCompanion.take_press(button) || send(name, button)
+    end
   end
 
   # Only within a few frames of [press]: a menu that closed first must not leave a press for the next text box.
@@ -1107,13 +1122,17 @@ module PokeDaisyClassic
     }
   end
 
-  # The player's head on it: Essentials' pbPlayerHeadFile (mapPlayer000 ...), else the one picture the map screens of
-  # the forks draw (GS Vitro's: Graphics/Pictures/mapPlayer).
+  # The player's head on it: Essentials' pbPlayerHeadFile, else what the older map screens draw - mapPlayer<type, 3
+  # digits> (v15 / v16's own, Pokemon Insurgence) or one picture for everyone (GS Vitro's Graphics/Pictures/mapPlayer).
+  # Remembered only once found (a miss is asked again: the game's file lookups may not be ready on the first snapshot).
   def head
-    PokeDaisyCompanion.cached([:clhead, try { $Trainer.trainertype }]) do
-      f = try { pbPlayerHeadFile($Trainer.trainertype) }
-      f && try { pbResolveBitmap(f) } ? f : (try { pbResolveBitmap("Graphics/Pictures/mapPlayer") } && "Graphics/Pictures/mapPlayer")
-    end
+    type = try { $Trainer.trainertype }
+    @heads ||= {}
+    return @heads[type] if @heads[type]
+    files = [try { pbPlayerHeadFile(type) }]
+    files << format("Graphics/Pictures/mapPlayer%03d", type) if type.is_a?(Integer)
+    files << "Graphics/Pictures/mapPlayer"
+    @heads[type] = files.compact.find { |f| try { pbResolveBitmap(f) } }
   end
 
   def town_map_region(region)

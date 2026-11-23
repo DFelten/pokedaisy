@@ -1,3 +1,141 @@
+diff --git a/binding-sandbox/binding-sandbox.cpp b/binding-sandbox/binding-sandbox.cpp
+index 720ea7e3..a60a69c5 100644
+--- a/binding-sandbox/binding-sandbox.cpp
++++ b/binding-sandbox/binding-sandbox.cpp
+@@ -738,7 +738,9 @@ void sandbox_binding_init::operator()() {
+                     BOOST_ASIO_CORO_REENTER (this) {
+                         SANDBOX_AWAIT(check_arity, argc, 1, 2);
+                         if (argc > 1) {
+-                            SANDBOX_AWAIT_S(0, rb_proc_new, string_force_utf8, sb()->ref<VALUE>(argv, 0));
++                            // PokeDaisy: the caller's proc is the second argument (this passed the source, so
++                            // Marshal.load(data, proc) handed the data back unread: Pokemon Insurgence's load_data).
++                            SANDBOX_AWAIT_S(0, rb_proc_new, string_force_utf8, sb()->ref<VALUE>(argv, 1));
+                         } else {
+                             SANDBOX_AWAIT_S(0, rb_proc_new, string_force_utf8, SANDBOX_UNDEF);
+                         }
+diff --git a/binding-sandbox/input-binding.cpp b/binding-sandbox/input-binding.cpp
+index 6b7f3e5d..1fd24591 100644
+--- a/binding-sandbox/input-binding.cpp
++++ b/binding-sandbox/input-binding.cpp
+@@ -88,6 +88,22 @@ struct get_button_arg : boost::asio::coroutine {
+     }
+ };
+ 
++// PokeDaisy: a number given to the *ex methods is a Windows virtual-key code, as desktop mkxp-z reads it
++// (binding/input-binding.cpp: a Symbol names an SDL scancode, anything else is NUM2INT with useVKey). Passed on as a raw
++// scancode, VK_DOWN (0x28) read SDL_SCANCODE_RETURN (40): an Essentials v16 game that reads its keys by VK code saw A as
++// Enter and Down at once (Pokemon Insurgence's menus stepped down and confirmed on one press).
++struct is_vkey_arg : boost::asio::coroutine {
++    typedef decl_slots<VALUE> slots;
++
++    int32_t operator()(VALUE arg) {
++        BOOST_ASIO_CORO_REENTER (this) {
++            SANDBOX_AWAIT_S(0, rb_obj_is_kind_of, arg, sb()->rb_cInteger());
++        }
++
++        return SANDBOX_VALUE_TO_BOOL(SANDBOX_SLOT(0)) ? 1 : 0;
++    }
++};
++
+ static VALUE delta(VALUE self) {
+     struct coro : boost::asio::coroutine {
+         typedef decl_slots<double, VALUE> slots;
+@@ -216,12 +232,13 @@ static VALUE time_(VALUE self, VALUE code) {
+ 
+ static VALUE pressex(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<int32_t> slots;
++        typedef decl_slots<int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(1, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(0, get_button_arg, code);
+-                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isPressedEx(SANDBOX_SLOT(0), false));
++                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isPressedEx(SANDBOX_SLOT(0), SANDBOX_SLOT(1) != 0));
+             }
+ 
+             return SANDBOX_UNDEF;
+@@ -233,12 +250,13 @@ static VALUE pressex(VALUE self, VALUE code) {
+ 
+ static VALUE triggerex(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<int32_t> slots;
++        typedef decl_slots<int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(1, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(0, get_button_arg, code);
+-                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isTriggeredEx(SANDBOX_SLOT(0), false));
++                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isTriggeredEx(SANDBOX_SLOT(0), SANDBOX_SLOT(1) != 0));
+             }
+ 
+             return SANDBOX_UNDEF;
+@@ -250,12 +268,13 @@ static VALUE triggerex(VALUE self, VALUE code) {
+ 
+ static VALUE repeatex(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<int32_t> slots;
++        typedef decl_slots<int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(1, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(0, get_button_arg, code);
+-                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isRepeatedEx(SANDBOX_SLOT(0), false));
++                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isRepeatedEx(SANDBOX_SLOT(0), SANDBOX_SLOT(1) != 0));
+             }
+ 
+             return SANDBOX_UNDEF;
+@@ -267,12 +286,13 @@ static VALUE repeatex(VALUE self, VALUE code) {
+ 
+ static VALUE releaseex(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<int32_t> slots;
++        typedef decl_slots<int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(1, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(0, get_button_arg, code);
+-                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isReleasedEx(SANDBOX_SLOT(0), false));
++                return SANDBOX_BOOL_TO_VALUE(mkxp_retro::input->isReleasedEx(SANDBOX_SLOT(0), SANDBOX_SLOT(1) != 0));
+             }
+ 
+             return SANDBOX_UNDEF;
+@@ -284,12 +304,13 @@ static VALUE releaseex(VALUE self, VALUE code) {
+ 
+ static VALUE repeatcount(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<VALUE, int32_t, int32_t> slots;
++        typedef decl_slots<VALUE, int32_t, int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(3, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(1, get_button_arg, code);
+-                SANDBOX_SLOT(2) = mkxp_retro::input->repeatcount(SANDBOX_SLOT(1), false);
++                SANDBOX_SLOT(2) = mkxp_retro::input->repeatcount(SANDBOX_SLOT(1), SANDBOX_SLOT(3) != 0);
+                 SANDBOX_AWAIT_S(0, rb_ll2inum, SANDBOX_SLOT(2));
+             }
+ 
+@@ -302,12 +323,13 @@ static VALUE repeatcount(VALUE self, VALUE code) {
+ 
+ static VALUE timeex(VALUE self, VALUE code) {
+     struct coro : boost::asio::coroutine {
+-        typedef decl_slots<double, VALUE, int32_t> slots;
++        typedef decl_slots<double, VALUE, int32_t, int32_t> slots;
+ 
+         VALUE operator()(VALUE self, VALUE code) {
+             BOOST_ASIO_CORO_REENTER (this) {
++                SANDBOX_AWAIT_S(3, is_vkey_arg, code);
+                 SANDBOX_AWAIT_S(2, get_button_arg, code);
+-                SANDBOX_SLOT(0) = mkxp_retro::input->repeatTimeEx(SANDBOX_SLOT(2), false);
++                SANDBOX_SLOT(0) = mkxp_retro::input->repeatTimeEx(SANDBOX_SLOT(2), SANDBOX_SLOT(3) != 0);
+                 SANDBOX_AWAIT_S(1, rb_float_new, SANDBOX_SLOT(0));
+             }
+ 
 diff --git a/binding-sandbox/sandbox-serial-bitmap.h b/binding-sandbox/sandbox-serial-bitmap.h
 index 59948d2d..88168e94 100644
 --- a/binding-sandbox/sandbox-serial-bitmap.h

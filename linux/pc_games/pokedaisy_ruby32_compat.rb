@@ -63,6 +63,25 @@ end
 module PokeDaisyNoKeyboard
   def useKeyboard? = false
 end
+# MGC's H-Mode7 (the tilted 3D view of a map whose name has [HM7]), which Pokemon Insurgence's mkxp-z port renders in a
+# native library of its own (libhmode7: HM7.available? asks it). The core's sandboxed Ruby loads no native library, so
+# such a map raised HM7::Error and closed the game (its intro opens on one). With the library missing, those maps are
+# drawn the way every other map is, flat: Game_Map#setup decides $game_system.hm7 from the name, then this clears it.
+module PokeDaisyFlatMode7
+  def self.install
+    return if @installed || !defined?(::HM7) || !::HM7.respond_to?(:available?) || !defined?(::Game_Map)
+    @installed = true
+    return if (::HM7.available? rescue false)
+    ::Game_Map.class_eval do
+      alias_method :__pokedaisy_hm7_setup, :setup
+      def setup(*args)
+        r = __pokedaisy_hm7_setup(*args)
+        $game_system.hm7 = false if $game_system.respond_to?(:hm7=)
+        r
+      end
+    end
+  end
+end
 module Graphics
   class << self
     unless method_defined?(:__pokedaisy_text_entry_update)
@@ -72,6 +91,7 @@ module Graphics
           @__pokedaisy_text_entry = true
           PokemonSystem.prepend(PokeDaisyCursorTextEntry) if defined?(PokemonSystem)
           PokemonOptions.prepend(PokeDaisyNoKeyboard) if defined?(PokemonOptions) && PokemonOptions.method_defined?(:useKeyboard?)
+          PokeDaisyFlatMode7.install
         end
         __pokedaisy_text_entry_update(*args)
       end

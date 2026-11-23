@@ -234,7 +234,7 @@ into the host's frame texture, every core call bracketed so SDL's context comes 
 `pc_mailbox.c` finds by its magic, never by address. Run a frame before loading a state; call `retro_unload_game` before `retro_deinit`. Essentials v16 / v17 games written for Ruby 1.8
 (GS Vitro) run through `pokedaisy_ruby18_compat.rb` (only for a game with a `when x:` line: each script read the 1.8 way as it loads)
 and the companion's `PokeDaisyClassic`; hooks on game methods are alias chains (`PokeDaisyCompanion.wrap`: a game's own alias of a
-method we `prepend` over loops forever). Our core patch keeps the run-time function table, mega bitmaps (their children, their drawn pixels) and the draw order of what a game makes after a load across states.
+method we `prepend` over loops forever). Our core patch keeps the run-time function table, mega bitmaps (their children, their drawn pixels) and the draw order of what a game makes after a load across states, passes `Marshal.load`'s proc on and reads the `Input.*ex?` methods' numbers as Windows key codes (desktop mkxp-z's way; Pokemon Insurgence needs both). Insurgence's H-Mode7 maps (a native library) are drawn flat (`PokeDaisyFlatMode7`).
 `native-capture/pc_probe` drives the core headless (frames, states, mailbox, `cheat` = Ruby run in the game). The companion over it
 (`pc_companion.c`: PARTY / summary / BAG / TRAINER, a lone SELECT tap) is the shared `3ds/core` views fed from the snapshot through their
 sources (`pd_party_source` / `pd_summary_view` / `pd_bag_source`, as `linux/dsperate/party_view.cpp`), names and type table the game's own,

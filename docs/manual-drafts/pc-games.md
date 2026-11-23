@@ -15,7 +15,7 @@ keywords: [pc games, fan games, essentials, rpg maker, mkxp, mkxp-z, joiplay, ga
 
 Some fan games are made for computers rather than for a console. Most of them are built with Pokémon Essentials, a kit
 for making these games. PokeDaisy can play the ones made with Essentials version 19 or newer, Pokémon Reborn and Pokémon Rejuvenation,
-and ones made with versions 16 and 17, such as Pokémon GS Vitro.
+and ones made with versions 16 and 17, such as Pokémon GS Vitro and Pokémon Insurgence.
 
 ## What you need
 
@@ -38,6 +38,8 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 - The game fills the screen in its own shape, its pixels kept sharp.
 - The buttons and the stick work as in the game itself: A to pick, B to go back. In Pokémon Reborn and Pokémon
   Rejuvenation, START turns their speed-up on and off.
+- Pokémon Insurgence shows a few of its places tilted in 3D, such as the flights over its regions. Here they show flat,
+  seen from above like the rest of the game.
 - On a screen with no controller, the on-screen controls show, the same ones (and the same `TOUCH CONTROLS` settings)
   as in your other games, with X and Y too.
 - With two screens, the companion is on the other one. Press BACK twice to close the game.

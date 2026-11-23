@@ -501,6 +501,38 @@ probe, from boot to its overworld and into wild battles.
   A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
   on the letter grid. Its own A / B and menus work as on a PC.
 
+## Pokémon Insurgence 2.0.2 (2026-11-24)
+
+The official download (p-insurgence.com, `PokemonInsurgence-2.0.2-windows-x86_64.zip`, 758 MB, built 2026-11-21): an
+Essentials v16-era game its makers ported to mkxp-z themselves (`mkxp.json`, a `Platform` layer for what the Windows player
+did), so its 218 scripts are Ruby 3 already and the 1.8 preload stays off. Scripts and data are in `Game.rgssad` (RGSSAD
+v1), which the core reads; the classic reader (`PokeDaisyClassic`) is the companion's. Run in the arm64 emulator through
+the probe from boot through its prologue (a new game: the flight over the sea, the cult base) to free movement, then
+warped to its towns and routes.
+
+- **Core: `Marshal.load(data, proc)`** returned the data unread: the core's own `Marshal.load` (which tags strings UTF-8)
+  wrapped `argv[0]`, the source, as the callback instead of the caller's proc. Insurgence's `load_data` passes a proc for
+  its own re-tagging, so `Data/Constants.rxdata` came back a String and the boot died in `pbSetUpSystem` (Zlib::BufError
+  on a line of it).
+- **Core: key codes.** `Input.pressex?` / `triggerex?` / `repeatex?` / `releaseex?` / `repeatcount` / `timeex?` read a
+  number as a Windows virtual-key code on desktop mkxp-z (`binding/input-binding.cpp`, a Symbol is an SDL scancode name);
+  the core passed it on as a scancode. Insurgence reads its keys by VK code (its controls can be rebound), and the core
+  answers RetroPad A with the scancodes of Z, Return and Space (29, 40, 44): VK 0x28 is Down, so A was Down and Enter at
+  once (the load screen stepped to "Save Files" and confirmed it, nesting load screens). Numbers are VK codes now.
+- **H-Mode7** (MGC's tilted 3D view, 7 of its 832 maps: the region flights, the Throne of the Hegemon): the port renders it
+  in a native library of its own (`libhmode7`), which the sandbox can't load, so the intro's first map raised `HM7::Error`.
+  `pokedaisy_ruby32_compat.rb`'s `PokeDaisyFlatMode7`: with `HM7.available?` false, `Game_Map#setup` clears
+  `$game_system.hm7`, and those maps are drawn like the rest, flat.
+- **Picks:** it defines its own `Input.trigger?` after the preloads, which replaced the companion's (a pick's press went
+  nowhere). `PokeDaisyCompanion.hook_input` puts ours back on top before each press.
+- **Companion:** trainer, party (the prologue's Mew, its moves, ability, nature, icon), its eight bag pockets (Clothes
+  among them), its 20 types (Shadow, Crystal, Fairy), map names, the Town Map spot (`MetadataMapPosition`) and HERE on the
+  real Route 1 (map 48: grass, water, three rods; maps 5 and 7 are unused copies with neither). The head is
+  `mapPlayer%03d` by trainer type, Essentials v15 / v16's own name (the prologue's type 2 has none in the game either), and
+  a miss is asked again rather than kept. A wild battle read (both sides, the menu) and won by a FIGHT pick.
+- Not done: its PC-only extras (online trades, Wonder Trade, the GTS: offline here as on a PC without a connection), the
+  rest of the story.
+
 ## Next steps
 
 1. Time Infinite Fusion on the other handhelds: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built
