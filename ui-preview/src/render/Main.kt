@@ -302,7 +302,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override val shinyOddsSupported get() = com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.FIRERED ||
         com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.EMERALD
     override val autoRunBuiltIn get() = com.pokedaisy.app.companion.data.activeGame in com.pokedaisy.app.companion.data.GAMES_WITH_OWN_AUTO_RUN
-    override val reusableTmsBuiltIn get() = com.pokedaisy.app.companion.data.activeGame in com.pokedaisy.app.companion.data.ReusableTms.BUILT_IN
+    override val reusableTmsBuiltIn get() = com.pokedaisy.app.companion.data.ReusableTms.builtIn
     // PLAYER LOOK: the other games' heroes kept, the player in their own.
     private var lookWorn: String? = null
     override val playerLookSupported get() = true

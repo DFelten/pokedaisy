@@ -196,7 +196,8 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         if (host != null) {
             val dsText = dsInstantTextWorks(host)
             host.dsInstantText = dsText && companionSettings.instantText
-            host.dsReusableTms = dsText && companionSettings.reusableTms
+            // Origin HeartGold's TMs never run out by themselves: no patch where the row reads ON, greyed.
+            host.dsReusableTms = dsText && companionSettings.reusableTms && !com.pokedaisy.app.companion.data.ReusableTms.builtIn
         }
         syncExpShareAchievements(options.expShareActive)
     }

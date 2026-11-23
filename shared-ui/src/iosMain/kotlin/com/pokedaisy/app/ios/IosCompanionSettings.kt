@@ -202,7 +202,7 @@ internal class IosCompanionSettings(
     override val levelCapLevel get() = options()?.levelCapNow?.level
     override val instantTextSupported get() = options()?.instantTextSupported == true
     override val reusableTmsSupported get() = options()?.reusableTmsSupported == true
-    override val reusableTmsBuiltIn get() = hasRunningGame && activeGame in com.pokedaisy.app.companion.data.ReusableTms.BUILT_IN
+    override val reusableTmsBuiltIn get() = hasRunningGame && com.pokedaisy.app.companion.data.ReusableTms.builtIn
     override val tradeEvolutionsSupported get() = tradeSupported()
     override val tradeEvolutionsBadge get() = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.IOS_TRADE_EVOLUTION)
     override val gameOptionsBadge get() = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.IOS_GAME_OPTIONS)
