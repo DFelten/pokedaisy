@@ -1095,9 +1095,12 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
     wCurItem set: vitamins, RARE CANDY, PP UP, stones and the bitter herbs open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
     show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
-    effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs: an 82-byte
-    routine written to wStackBottom (C000) and called there (`Gen2TmFns.routine`): the pack's TMHM path (GetTMHMItemMove, the move's name,
-    ChooseMonToLearnTMHM, TeachTMHM - it spends the TM - looping on a Pokémon that can't learn it) between ReanchorMap and CloseSubmenu
-    + CloseText (without those EXPAND's margins went wrong after walking), wOptions' NO_TEXT_SCROLL restored. Each function found by its
-    code in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German cart (a TM taught, cancelled and refused,
-    RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor. `Gen2ItemUseTest`.
+    effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
+    in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
+    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule). That move slot is zeroed, so LearnMove puts the
+    new move (and its PP) there without ForgetMove's menu - over the field that menu leaves the map's attributes on the text palette until
+    CloseText. Then a 42-byte routine at wStackBottom (C000, `Gen2TmFns.routine`) runs TeachTMHM over the map with wCurPartyMon /
+    wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, TeachTMHM (it spends a TM), CloseText.
+    Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
+    cart (a TM taught into a free slot and into a forgotten one, RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    `Gen2ItemUseTest`.

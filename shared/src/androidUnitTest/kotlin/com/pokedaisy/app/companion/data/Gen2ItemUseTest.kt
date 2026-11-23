@@ -331,26 +331,63 @@ class Gen2ItemUseTest {
 
     @Test
     fun `the TM routine is the one checked in the German cart`() {
-        val de = "cda42dcd132bcddd31cddb0fcd5a04061 4cd2a333e0b21b947cffa65d2ea62d2cde234cdc03021cccf7ef5cba63e0b21fe47cf381218083e0b210d48cf38083e0b216a48cf30f0f1eacccfcd262bcdb92dc9".replace(" ", "")
+        val de = "cdf22d3e0b21b947cffa65d2ea62d2cde234cdc03021cccf7ef5cba63e0b216a48cff1eacccfcdb92dc9"
         assertEquals(de, GEN2_ITEM_CALLS_CRYSTAL_DE.tm.routine().joinToString("") { "%02x".format(it) })
-        assertEquals(82, GEN2_ITEM_CALLS_CRYSTAL.tm.routine().size)
+        assertEquals(42, GEN2_ITEM_CALLS_CRYSTAL.tm.routine().size)
+    }
+
+    /** TM01 (DYNAMICPUNCH) for species 0x9B only, HM01 (CUT) for both; TMHMMoves' TM01 and HMs. */
+    private fun Game.tmTables() {
+        cart[calls.tm.tmHmMoves] = 0xDF.toByte()
+        listOf(0x0F, 0x13, 0x39, 0x46, 0x94, 0xFA, 0x7F).forEachIndexed { i, m -> cart[calls.tm.tmHmMoves + 50 + i] = m.toByte() }
+        cart[calls.tm.baseData + 0x9A * 0x20 + 0x18] = 0x01
+        cart[calls.tm.baseData + 0x9A * 0x20 + 0x18 + 6] = 0x04   // bit 50
+        cart[calls.tm.baseData + 0x0F * 0x20 + 0x18 + 6] = 0x04
     }
 
     @Test
-    fun `a TM or HM runs the TM routine on the game's own screen, none left = nothing`() {
+    fun `a TM's pick shows who can learn it, not one that knows it, and with four moves which may go`() {
         val g = game()
-        g.bag()
-        assertTrue(calls.usable(TM01) && calls.inGame(TM01) && !calls.picksMon(TM01) && calls.inGame(HM01))
-        assertFalse(calls.inGame(0xC3) || calls.inGame(0xDC))
-        assertEquals(ItemUseResult.NONE_LEFT, calls.openInGame(g, cfg, TM01).result)
-        assertTrue(g.gameCalls.isEmpty())
+        g.bag(); g.tmTables()
+        assertTrue(calls.usable(TM01) && calls.picksMon(TM01) && calls.picksMove(TM01) && !calls.inGame(TM01))
+        assertFalse(calls.usable(0xC3) || calls.usable(0xDC))
+        g.mon(0); g.mon(1, species = 0x10); g.mon(2, species = 0xFD); g.mon(3)
+        g[cfg.partyMons + 3 * 0x30 + 3] = 0xDF   // slot 3 knows DYNAMICPUNCH
+        assertEquals(ItemUseResult.NONE_LEFT, calls.targets(g, cfg, TM01).result)
         g[cfg.tmsHms] = 1
-        assertEquals(ItemUseResult.IN_GAME, calls.openInGame(g, cfg, TM01).result)
+        val t = calls.targets(g, cfg, TM01).targets
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.NO_EFFECT), t.map { it.verdict })
+        assertTrue(t[0].moves.isEmpty())
+        // Four moves, one of them an HM's: that one can't go.
+        (0 until 4).forEach { g[cfg.partyMons + 2 + it] = listOf(0x01, 0x0F, 0x02, 0x03)[it] }
+        assertEquals(listOf(true, false, true, true), calls.targets(g, cfg, TM01).targets[0].moves)
+        g[cfg.tmsHms + 50] = 1
+        assertEquals(SlotVerdict.OK, calls.targets(g, cfg, HM01).targets[1].verdict)
+    }
+
+    @Test
+    fun `a TM is taught by the game's TeachTMHM to the picked Pokemon, the forgotten move's slot emptied first`() {
+        val g = game()
+        g.bag(); g.tmTables()
+        g.mon(0); g.mon(1)
+        g[cfg.tmsHms] = 1
+        val two = calls.targets(g, cfg, TM01).targets[1]
+        assertEquals(ItemUseResult.TEACHING, calls.useOn(g, cfg, TM01, two, 0).result)
         assertEquals(listOf(Gen2ItemCalls.ROUTINE), g.gameCalls)
-        assertEquals(TM01, g[calls.curItem])
+        assertEquals(listOf(TM01, 0x9B, 1), listOf(g[calls.curItem], g[calls.curPartySpecies], g[calls.curPartyMon]))
         val routine = calls.tm.routine()
         assertTrue(routine.indices.all { g[Gen2ItemCalls.ROUTINE.toLong() + it] == routine[it].toInt() and 0xFF })
+        assertEquals(listOf(1, 2), (0 until 2).map { g[cfg.partyMons + 0x30 + 2 + it] })   // under four: nothing emptied
         assertEquals(1, g[cfg.tmsHms])   // TeachTMHM spends it, not us
+
+        (0 until 4).forEach { g[cfg.partyMons + 2 + it] = listOf(0x01, 0x0F, 0x02, 0x03)[it] }
+        val one = calls.targets(g, cfg, TM01).targets[0]
+        assertEquals(ItemUseResult.NO_EFFECT, calls.useOn(g, cfg, TM01, one, 1).result)   // CUT stays
+        assertEquals(ItemUseResult.TEACHING, calls.useOn(g, cfg, TM01, one, 2).result)
+        assertEquals(listOf(0x01, 0x0F, 0x00, 0x03), (0 until 4).map { g[cfg.partyMons + 2 + it] })
+        assertEquals(ItemUseResult.PARTY_CHANGED, calls.useOn(g, cfg, TM01, one.copy(personality = 7), 2).result)
+        g[cfg.tmsHms] = 0
+        assertEquals(ItemUseResult.NONE_LEFT, calls.useOn(g, cfg, TM01, two, 0).result)
     }
 
     @Test

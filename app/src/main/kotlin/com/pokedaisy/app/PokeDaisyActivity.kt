@@ -683,7 +683,11 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit,
         ) {
             if (!romIsGameBoy) return tradeEvolutions.useOn(itemId, target, moveIndex, done)
-            gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+            gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
+                // A TM: the game teaches it over the map, so the companion window gets out of its way.
+                if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING) closeCompanionWindow()
+                done(out)
+            }) { f, calls ->
                 f.useItem(calls, itemId, target, moveIndex)
             }
         }

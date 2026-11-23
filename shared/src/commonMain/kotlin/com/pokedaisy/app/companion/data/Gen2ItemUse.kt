@@ -24,8 +24,12 @@ package com.pokedaisy.app.companion.data
  * PP UP, RARE CANDY, the stones and the bitter herbs (ITEMMENU_PARTY: ReanchorMap, FadeToMenu, the item's own party screen,
  * CloseSubmenu, CloseText), the COIN CASE and BLUE CARD (ITEMMENU_CURRENT: their text over the map), SACRED ASH, ESCAPE
  * ROPE, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE: the script their effect queues runs from the map's queue,
- * or the game's "not the time" text). TMs and HMs aren't SELECT items: [Gen2TmFns.routine] is what the bag's TM USE does
- * (AskTeachTMHM's move name, ChooseMonToLearnTMHM, TeachTMHM) inside SELECT's ITEMMENU_PARTY frame, run from WRAM0.
+ * or the game's "not the time" text).
+ *
+ * TMs and HMs ([teach]): the Pokémon is picked here - who can learn it by the cart's base data (CanLearnTMHMMove), not one
+ * that knows it (KnowsMove) - and, with four moves, the move it forgets (never an HM's, as ForgetMove refuses). That slot is
+ * emptied, so LearnMove puts the new move in its place without its forget menu (which leaves the map's colours wrong over the
+ * field), and the game's own TeachTMHM runs from WRAM0 over the map ([Gen2TmFns.routine]): its text, the TM spent.
  *
  * Left out: NORMAL BOX and GORGEOUS BOX (Mystery Gift's, their text needs the bag's window).
  */
@@ -40,6 +44,8 @@ class Gen2ItemCalls(
     val statusHealing: Long = romOff(0x03, 0x7071),
     val moves: Long = romOff(0x10, 0x5AFB),
     val curItem: Long = wramx(1, 0xD106),
+    val curPartySpecies: Long = wramx(1, 0xD108),
+    val curPartyMon: Long = wramx(1, 0xD109),
     val quantityChange: Long = wramx(1, 0xD10C),
     val repelEffect: Long = wramx(1, 0xDCA1),
     /** BikeFunction (bank 3): the BICYCLE's field effect, the same in every Crystal build. */
@@ -68,10 +74,10 @@ class Gen2ItemCalls(
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
         itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId) ||
-        inGame(itemId) || fieldEffect(itemId)
+        inGame(itemId) || fieldEffect(itemId) || itemId in TM_ITEMS
 
-    /** TMs / HMs and the items whose own screen or text the game shows ([openInGame]): the companion hands over to it. */
-    fun inGame(itemId: Int) = itemId in TM_ITEMS || itemId in GAME_PARTY || itemId in GAME_TEXT
+    /** The items whose own screen or text the game shows ([openInGame]): the companion hands over to it. */
+    fun inGame(itemId: Int) = itemId in GAME_PARTY || itemId in GAME_TEXT
 
     /** The items whose effect queues a script ([fieldEffect]). */
     fun fieldEffect(itemId: Int) = itemId in GAME_FIELD
@@ -80,7 +86,8 @@ class Gen2ItemCalls(
 
     /** The BICYCLE and the rods: the game's own field effect, which queues a script of its own. */
     fun onTheSpot(itemId: Int) = itemId == BICYCLE || itemId in RODS
-    fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE
+    /** A one-move PP item's move, or a TM's move to forget (only offered for a Pokémon with four: [PartyTarget.moves]). */
+    fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE || itemId in TM_ITEMS
 
     private class Party(val count: Int, val species: ByteArray, val mons: ByteArray)
 
@@ -143,12 +150,66 @@ class Gen2ItemCalls(
     /** USE's party pick for [itemId]. */
     fun targets(g: GameCalls, cfg: Gen2Config, itemId: Int): PartyTargets {
         if (!picksMon(itemId)) return PartyTargets(ItemUseResult.FAILED)
-        if (quantity(g, cfg, itemId) == 0) return PartyTargets(ItemUseResult.NONE_LEFT)
+        val tm = TM_ITEMS.indexOf(itemId)
+        if ((if (tm >= 0) tmCount(g, cfg, tm) else quantity(g, cfg, itemId)) == 0) return PartyTargets(ItemUseResult.NONE_LEFT)
         val p = party(g, cfg)
         return PartyTargets(ItemUseResult.USED, (0 until p.count).map { slot ->
             PartyTarget(slot, gen2MonKey(p.mons, slot * MON_SIZE), u8(p.mons, slot * MON_SIZE + HELD_ITEM),
-                verdict(g, p, slot, itemId), if (itemId in PP_ONE_MOVE) ppMoves(g, p, slot) else emptyList())
+                if (tm >= 0) tmVerdict(g, p, slot, tm) else verdict(g, p, slot, itemId),
+                when {
+                    tm >= 0 -> forgettable(g, p, slot)
+                    itemId in PP_ONE_MOVE -> ppMoves(g, p, slot)
+                    else -> emptyList()
+                })
         })
+    }
+
+    private fun tmCount(g: GameCalls, cfg: Gen2Config, tm: Int) = u8(g.read(cfg.tmsHms + tm, 1), 0)
+
+    /** The move TM / HM [tm] (wTMsHMs' index) teaches: TMHMMoves in the cart. */
+    private fun tmMove(g: GameCalls, tm: Int) = g.rom(this.tm.tmHmMoves + tm, 1)?.let { u8(it, 0) } ?: 0
+
+    /** CanLearnTMHMMove: [tm]'s bit in the species' base data; an egg can't, nor a Pokémon that knows it (KnowsMove). */
+    private fun tmVerdict(g: GameCalls, p: Party, slot: Int, tm: Int): SlotVerdict {
+        val species = u8(p.species, slot)
+        if (species == EGG) return SlotVerdict.EGG
+        if (species == 0 || species > LAST_SPECIES) return SlotVerdict.NO_EFFECT
+        val bits = g.rom(this.tm.baseData + (species - 1) * BASE_DATA_SIZE + BASE_TMHM + tm / 8, 1)?.let { u8(it, 0) } ?: 0
+        val move = tmMove(g, tm)
+        val knows = (0 until 4).any { u8(p.mons, slot * MON_SIZE + MOVES + it) == move }
+        return if ((bits shr (tm % 8)) and 1 == 1 && move != 0 && !knows) SlotVerdict.OK else SlotVerdict.NO_EFFECT
+    }
+
+    /** With four moves, the ones it may forget for a TM (not an HM's: ForgetMove's "HM moves can't be forgotten"); else none. */
+    private fun forgettable(g: GameCalls, p: Party, slot: Int): List<Boolean> {
+        val moves = (0 until 4).map { u8(p.mons, slot * MON_SIZE + MOVES + it) }
+        if (moves.any { it == 0 }) return emptyList()
+        val hms = (TM_ITEMS.size - HM_COUNT until TM_ITEMS.size).map { tmMove(g, it) }.toSet()
+        return moves.map { it !in hms }
+    }
+
+    /**
+     * TM / HM [itemId] taught to [target], forgetting move [moveIndex] when it has four: the game's TeachTMHM over the map
+     * (its text, the TM spent; an HM stays), with wCurPartyMon / wCurPartySpecies the picked Pokémon. The rest is the game's,
+     * so this says it started: TEACHING.
+     */
+    fun teach(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget, moveIndex: Int): ItemUseOutcome {
+        val tm = TM_ITEMS.indexOf(itemId).takeIf { it >= 0 } ?: return ItemUseOutcome(ItemUseResult.FAILED)
+        val p = party(g, cfg)
+        val slot = target.slot
+        if (slot !in 0 until p.count || gen2MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
+        if (tmVerdict(g, p, slot, tm) != SlotVerdict.OK) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
+        val forget = forgettable(g, p, slot)
+        if (forget.isNotEmpty() && forget.getOrNull(moveIndex) != true) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
+        if (tmCount(g, cfg, tm) == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        if (!g.gbCallAt(at, ROUTINE, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
+        g.write(ROUTINE.toLong(), this.tm.routine())
+        g.write(curItem, byteArrayOf(itemId.toByte()))
+        g.write(curPartySpecies, byteArrayOf(p.species[slot]))
+        g.write(curPartyMon, byteArrayOf(slot.toByte()))
+        // LearnMove takes the first empty slot: the forgotten move's, as its forget menu would have replaced it.
+        if (forget.isNotEmpty()) g.write(cfg.partyMons + slot * MON_SIZE + MOVES + moveIndex, byteArrayOf(0))
+        return ItemUseOutcome(ItemUseResult.TEACHING)
     }
 
     /** How many [itemId] the ITEMS pocket holds. */
@@ -201,21 +262,14 @@ class Gen2ItemCalls(
     }
 
     /**
-     * USE of a TM / HM or an item with its own screen or text ([inGame]): the game's own flow started from the overworld loop
-     * (a TM's routine written to [ROUTINE] first), wCurItem set once the call is set up. The rest is the game's - the
-     * party pick, the item spent - so this only says it opened: IN_GAME for a screen, USED for a text.
+     * USE of an item with its own screen or text ([inGame]): the game's own flow started from the overworld loop, wCurItem
+     * set once the call is set up. The rest is the game's - the party pick, the item spent - so this only says it opened:
+     * IN_GAME for a screen, USED for a text.
      */
     fun openInGame(g: GameCalls, cfg: Gen2Config, itemId: Int): ItemUseOutcome {
-        val tm = TM_ITEMS.indexOf(itemId)
-        val left = when {
-            tm >= 0 -> u8(g.read(cfg.tmsHms + tm, 1), 0)
-            itemId in GAME_TEXT -> 1
-            else -> quantity(g, cfg, itemId)
-        }
-        if (left == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
-        val set = if (tm >= 0) g.gbCallAt(at, ROUTINE, 0, 0, 0) else g.gbCallAt(at, FARCALL, USE_ITEM_BANK, 0, useRegisteredItem)
-        if (!set) return ItemUseOutcome(ItemUseResult.FAILED)
-        if (tm >= 0) g.write(ROUTINE.toLong(), this.tm.routine())
+        if (!inGame(itemId)) return ItemUseOutcome(ItemUseResult.FAILED)
+        if (itemId !in GAME_TEXT && quantity(g, cfg, itemId) == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        if (!g.gbCallAt(at, FARCALL, USE_ITEM_BANK, 0, useRegisteredItem)) return ItemUseOutcome(ItemUseResult.FAILED)
         g.write(curItem, byteArrayOf(itemId.toByte()))
         return ItemUseOutcome(if (itemId in GAME_TEXT) ItemUseResult.USED else ItemUseResult.IN_GAME)
     }
@@ -239,6 +293,7 @@ class Gen2ItemCalls(
     /** USE of [itemId] on [target] ([moveIndex] for a one-move PP item). */
     fun useOn(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget, moveIndex: Int): ItemUseOutcome {
         if (!picksMon(itemId)) return ItemUseOutcome(ItemUseResult.FAILED)
+        if (itemId in TM_ITEMS) return teach(g, cfg, itemId, target, moveIndex)
         val p = party(g, cfg)
         val slot = target.slot
         if (slot !in 0 until p.count || gen2MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
@@ -299,6 +354,10 @@ class Gen2ItemCalls(
         private const val HP = 0x22
         private const val MAX_HP = 0x24
         private const val EGG = 0xFD
+        private const val LAST_SPECIES = 0xFB
+        private const val BASE_DATA_SIZE = 0x20
+        private const val BASE_TMHM = 0x18
+        private const val HM_COUNT = 7
         private const val PP_MASK = 0x3F
         private const val PP_UP_MASK = 0xC0
         private const val MOVE_LENGTH = 7
@@ -339,54 +398,40 @@ class Gen2ItemCalls(
 }
 
 /**
- * The bag's TM USE (engine/items/pack.asm's TMHMSubmenu .UseItem: AskTeachTMHM's move name, ChooseMonToLearnTMHM,
- * TeachTMHM) in SELECT's ITEMMENU_PARTY frame (ReanchorMap, FadeToMenu, ..., CloseSubmenu, CloseText), with the party menu
- * coming back after a Pokémon that can't learn it, as the Move Tutor's does. Addresses in bank 0, the TM screens' in
- * bank 0x0B; wCurItem names the TM (TeachTMHM spends a TM, never an HM).
+ * The TM routine's functions (bank 0; GetTMHMItemMove and TeachTMHM in bank 0x0B) and the tables the pick reads: BaseData
+ * (a species' TM / HM bits at +0x18) and TMHMMoves (the move each teaches), as cart offsets. The routine is TMHMSubmenu's
+ * move name (GetTMHMItemMove, GetMoveName, CopyName1) and TeachTMHM between OpenText and CloseText, as SELECT's
+ * ITEMMENU_CURRENT runs an item over the map; wOptions' NO_TEXT_SCROLL off meanwhile, as the bag has it.
  */
 data class Gen2TmFns(
-    val reanchorMap: Int = 0x2DBA,
-    val fadeToMenu: Int = 0x2B29,
-    val clearBgPalettes: Int = 0x31F3,
-    val clearScreen: Int = 0x0FDB,
-    val delayFrame: Int = 0x045A,
-    val getSgbLayout: Int = 0x3340,
+    val openText: Int = 0x2E08,
     val getMoveName: Int = 0x34F8,
     val copyName1: Int = 0x30D6,
-    val closeSubmenu: Int = 0x2B3C,
     val closeText: Int = 0x2DCF,
     val getTmhmItemMove: Int = 0x47B6,
-    val chooseMon: Int = 0x47FB,
-    val chooseMonNoRefresh: Int = 0x480A,
     val teach: Int = 0x4867,
+    val baseData: Long = Gen2ItemCalls.romOff(0x14, 0x5424),
+    val tmHmMoves: Long = Gen2ItemCalls.romOff(0x04, 0x567A),
 ) {
-    /** The routine (SM83, 82 bytes), its far calls through FarCall_hl (rst $08). */
+    /** The routine (SM83, 42 bytes), its far calls through FarCall_hl (rst $08). */
     fun routine(): ByteArray {
         val c = ArrayList<Int>()
-        val fix = ArrayList<Pair<Int, String>>()
-        val at = HashMap<String, Int>()
         fun le(x: Int) = listOf(x and 0xFF, x shr 8 and 0xFF)
         fun call(x: Int) { c += 0xCD; c += le(x) }
         fun far(x: Int) { c += listOf(0x3E, TM_BANK, 0x21) + le(x) + 0xCF }
-        fun jr(op: Int, label: String) { c += listOf(op, 0); fix += c.size - 1 to label }
-        call(reanchorMap); call(fadeToMenu); call(clearBgPalettes); call(clearScreen); call(delayFrame)
-        c += listOf(0x06, SCGB_PACKPALS); call(getSgbLayout)
+        call(openText)
         far(getTmhmItemMove)
         c += listOf(0xFA) + le(TEMP_TMHM) + 0xEA + le(PUTATIVE_TMHM_MOVE)   // ld a, [wTempTMHM]; ld [wPutativeTMHMMove], a
         call(getMoveName); call(copyName1)
         c += listOf(0x21) + le(OPTIONS) + listOf(0x7E, 0xF5, 0xCB, 0xA6)     // ld hl, wOptions; ld a, [hl]; push af; res NO_TEXT_SCROLL, [hl]
-        far(chooseMon); jr(0x38, "cancel"); jr(0x18, "teach")
-        at["loop"] = c.size; far(chooseMonNoRefresh); jr(0x38, "cancel")
-        at["teach"] = c.size; far(teach); jr(0x30, "loop")                   // carry: learned
-        at["cancel"] = c.size; c += listOf(0xF1, 0xEA) + le(OPTIONS)          // pop af; ld [wOptions], a
-        call(closeSubmenu); call(closeText); c += 0xC9
-        for ((p, label) in fix) c[p] = (at.getValue(label) - (p + 1)) and 0xFF
+        far(teach)
+        c += listOf(0xF1, 0xEA) + le(OPTIONS)                                 // pop af; ld [wOptions], a
+        call(closeText); c += 0xC9
         return ByteArray(c.size) { c[it].toByte() }
     }
 
     private companion object {
         const val TM_BANK = 0x0B
-        const val SCGB_PACKPALS = 0x14
         const val TEMP_TMHM = 0xD265
         const val PUTATIVE_TMHM_MOVE = 0xD262
         const val OPTIONS = 0xCFCC
@@ -396,30 +441,28 @@ data class Gen2TmFns(
 /** The tables' first bytes and HandleMap, shared by every Crystal build: HealingHPAmounts (FRESH WATER 50), StatusHealingActions
  * (ANTIDOTE), Moves (POUND). */
 private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int,
-                                  useRegisteredItem: Int, chooseMon: Int, getSgbLayout: Int, getMoveName: Int, copyName1: Int) = listOf(
+                                  useRegisteredItem: Int, getMoveName: Int, copyName1: Int, baseData: Int, tmHmMoves: Int) = listOf(
     0x25 * 0x4000L + (0x6773 - 0x4000) to handleMap,
     Gen2ItemCalls.romOff(0x03, healingHp) to "2e32002f3c0030500010c800",
     Gen2ItemCalls.romOff(0x03, statusHealing) to "09f0080af1100bf2200cf307",
     Gen2ItemCalls.romOff(0x10, moves) to "01002800ff2300",
     Gen2ItemCalls.romOff(0x03, 0x50B3) to "cdbc50e67feaecd0c9cd2151",   // BikeFunction
     Gen2ItemCalls.romOff(0x03, oldRod) to "1e0018081e0118041e0218003e03218e4fcf",   // the rods' effects, farcall FishFunction
-    0x045AL to "3e01eab3cf7600fab3cf",   // DelayFrame; GetSGBLayout, GetMoveName, CopyName1 by build below
     Gen2ItemCalls.romOff(0x04, useRegisteredItem) to "3e03215354cffa42d1",   // farcall CheckItemMenu, ld a, [wItemAttributeValue]
-    Gen2ItemCalls.romOff(0x0B, chooseMon) to "2186d01166d0010c00cd",
-    getSgbLayout.toLong() to "f0e6a72004f0e7a7c83e",
     getMoveName.toLong() to "e53e02ea61cffa65d2ea",
     copyName1.toLong() to "2186d01a1322fe5020f9",
+    Gen2ItemCalls.romOff(0x14, baseData) to "012d31312d414116032d",   // BULBASAUR
+    Gen2ItemCalls.romOff(0x04, tmHmMoves) to "df1daecd2e5cc0f9f4ed",  // DYNAMICPUNCH, HEADBUTT, CURSE, ...
+    Gen2ItemCalls.romOff(0x04, tmHmMoves + 50) to "0f133946" + "94fa7f",  // the HMs' moves
 )
 
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */
 val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
     tossItem = 0x2F53,
     signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1", 0x2DBAL to "cdbf1ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5, 0x73C3, 0x47FB, 0x3340, 0x34F8, 0x30D6) + listOf(
-            0x2B29L to "afe0d4cd6e1d3e232184", 0x31F3L to "cd17333e01e0d40e04cd", 0x0FDBL to "3e0721d9cd016801cd41",
-            0x2B3CL to "cdf331cdae2bcdd21acd", 0x2DCFL to "f0d8f53e01e0d8cde22d",
-            Gen2ItemCalls.romOff(0x0B, 0x47B6) to "cda7473e0fcd832dc921", Gen2ItemCalls.romOff(0x0B, 0x480A) to "3e14214f40cf3e142105",
-            Gen2ItemCalls.romOff(0x0B, 0x4867) to "3e0ecd832dc5fa09d121",
+        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5, 0x73C3, 0x34F8, 0x30D6, 0x5424, 0x567A) + listOf(
+            0x2E08L to "cdbf1ff09df53e01d7cd", 0x2DCFL to "f0d8f53e01e0d8cde22d",
+            Gen2ItemCalls.romOff(0x0B, 0x47B6) to "cda7473e0fcd832dc921", Gen2ItemCalls.romOff(0x0B, 0x4867) to "3e0ecd832dc5fa09d121",
         ),
 )
 
@@ -427,11 +470,9 @@ val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
 val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     tossItem = 0x2F3D,
     signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1", 0x2DA4L to "cda91ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574, 0x73C8, 0x47FE, 0x332A, 0x34E2, 0x30C0) + listOf(
-            0x2B13L to "afe0d4cd571d3e232184", 0x31DDL to "cd01333e01e0d40e04cd", 0x0FDBL to "3e0721d9cd016801cd2b",
-            0x2B26L to "cddd31cd982bcdbb1acd", 0x2DB9L to "f0d8f53e01e0d8cdcc2d",
-            Gen2ItemCalls.romOff(0x0B, 0x47B9) to "cdaa473e0fcd6d2dc921", Gen2ItemCalls.romOff(0x0B, 0x480D) to "3e14214f40cf3e1421fb",
-            Gen2ItemCalls.romOff(0x0B, 0x486A) to "3e0ecd6d2dc5fa09d121",
+        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574, 0x73C8, 0x34E2, 0x30C0, 0x540E, 0x5671) + listOf(
+            0x2DF2L to "cda91ff09df53e01d7cd", 0x2DB9L to "f0d8f53e01e0d8cdcc2d",
+            Gen2ItemCalls.romOff(0x0B, 0x47B9) to "cdaa473e0fcd6d2dc921", Gen2ItemCalls.romOff(0x0B, 0x486A) to "3e0ecd6d2dc5fa09d121",
         ),
     healingHp = Gen2ItemCalls.romOff(0x03, 0x737E),
     statusHealing = Gen2ItemCalls.romOff(0x03, 0x7040),
@@ -439,7 +480,6 @@ val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     reanchorMap = 0x2DA4,
     oldRodEffect = 0x7574,
     useRegisteredItem = 0x73C8,
-    tm = Gen2TmFns(reanchorMap = 0x2DA4, fadeToMenu = 0x2B13, clearBgPalettes = 0x31DD, getSgbLayout = 0x332A, getMoveName = 0x34E2,
-        copyName1 = 0x30C0, closeSubmenu = 0x2B26, closeText = 0x2DB9, getTmhmItemMove = 0x47B9, chooseMon = 0x47FE,
-        chooseMonNoRefresh = 0x480D, teach = 0x486A),
+    tm = Gen2TmFns(openText = 0x2DF2, getMoveName = 0x34E2, copyName1 = 0x30C0, closeText = 0x2DB9, getTmhmItemMove = 0x47B9,
+        teach = 0x486A, baseData = Gen2ItemCalls.romOff(0x14, 0x540E), tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5671)),
 )

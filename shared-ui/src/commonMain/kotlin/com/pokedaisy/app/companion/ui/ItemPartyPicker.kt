@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.unit.dp
 import com.pokedaisy.app.companion.data.MonView
+import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.PP_BOOST_ITEMS
 import com.pokedaisy.app.companion.data.PartyTarget
 import com.pokedaisy.app.companion.data.SlotVerdict
@@ -32,7 +33,8 @@ data class ItemPick(val item: com.pokedaisy.app.companion.data.ItemView, val giv
 /**
  * Who gets the item: the PARTY tab's own slots, the ones it won't help (or that can't hold it - an egg,
  * a Mail holder, one holding it already) greyed out, each slot's held item in its corner. Below, the
- * game's prompt beside the item and CANCEL. A one-move PP item ([picksMove]) then asks for the move.
+ * game's prompt beside the item and CANCEL. A one-move PP item ([picksMove]) then asks for the move, and a TM which move
+ * a Pokémon with four forgets (its targets carry moves only then).
  * [onPick] gets the slot and the move (0 where there's none to pick).
  */
 @Composable
@@ -59,7 +61,7 @@ fun ItemPartyPicker(
             onSlotClick = { mon ->
                 val t = targetOf(party.indexOf(mon), mon)
                 if (t != null && t.verdict == SlotVerdict.OK) {
-                    if (picksMove) moveFor = t else onPick(t, 0)
+                    if (picksMove && t.moves.isNotEmpty()) moveFor = t else onPick(t, 0)
                 }
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -80,7 +82,11 @@ fun ItemPartyPicker(
     moveFor?.let { t ->
         MovePicker(
             t, party.getOrNull(t.slot), m,
-            title = if (pick.item.itemId in PP_BOOST_ITEMS) "Boost PP of which move?" else "Restore which move?",
+            title = when {
+                pick.item.pocket == POCKET_TM_HM -> "Forget which move?"
+                pick.item.itemId in PP_BOOST_ITEMS -> "Boost PP of which move?"
+                else -> "Restore which move?"
+            },
             onBack = { moveFor = null },
             onPick = { move -> moveFor = null; onPick(t, move) },
         )
