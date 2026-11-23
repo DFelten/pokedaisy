@@ -83,6 +83,7 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 | Pokémon Glazed | 9.2.0 |
 | Emerald Imperium | 1.3.1 |
 | Pokémon Emerald Kaizo | 2.0 |
+| Pokémon Emerald, MWisBest's RTC + RNG fix (its 32-bit RTC and Timer RNG Fix) | 1.0 (plays like the original Emerald) |
 | Pokémon Emerald Legacy | 1.1.4 |
 | Pokémon Quetzal | English and Spanish Alpha 9 v1, English Alpha 9 v0, Spanish Alpha 9 v0, English and Spanish Alpha 0.8.4 |
 | Moemon Quetzal | English and Spanish Alpha 0.8.4 Hotfix |

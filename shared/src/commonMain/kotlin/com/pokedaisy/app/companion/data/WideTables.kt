@@ -22,6 +22,8 @@ class WideTables(
     ): String {
         val value = crc.toLongOrNull(16)?.toInt() ?: return crc
         if (runCatching { knowsWide(value) || knowsField(value) }.getOrDefault(false)) return crc
+        // Retail with a patch that leaves what those tables describe alone (MWisBest's RTC / RNG fix of Emerald).
+        TelemetrySampler.retailTablesCrc(value)?.let { return it.hex(8) }
         val hit = runCatching {
             RandomizedRetail.matchStream(identity.gameCode(), identity.revision(), size, open)
         }.getOrNull()

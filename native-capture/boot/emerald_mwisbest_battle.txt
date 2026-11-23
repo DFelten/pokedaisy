@@ -1,0 +1,57 @@
+# MWisBest's RTC / RNG fix of retail Emerald: the user's own save (Route 101, MUDKIP Lv7). default.txt, B x3, then a
+# scripted wild PIKACHU Lv5 (setwildbattle; dowildbattle; end) through retail's ScriptContext_SetupScript 0x08098EF9;
+# A at the intro text, then the action menu.
+wait 120
+press START
+wait 30
+press A
+wait 60
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 60
+wait 120
+press B
+wait 20
+press B
+wait 20
+press B
+wait 20
+poke32 0x0203FF00 0x050019B6
+poke32 0x0203FF04 0x02B70000
+call 0x08098EF9 0x0203FF00
+wait 560
+press A
+wait 300
