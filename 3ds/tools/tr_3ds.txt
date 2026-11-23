@@ -231,7 +231,7 @@
 "The bag shows once the game" to Tr(fr = "Le sac s'affiche quand le jeu", de = "Der Beutel erscheint, sobald das Spiel", it = "La borsa appare quando il gioco", es = "La mochila aparece cuando el juego", br = "A mochila aparece quando o jogo", pt = "A mochila aparece quando o jogo"),
 "has loaded a save." to Tr(fr = "a chargé une sauvegarde.", de = "einen Spielstand geladen hat.", it = "ha caricato un salvataggio.", es = "ha cargado una partida.", br = "carregou um save.", pt = "carregou um jogo guardado."),
 "The bag is empty." to Tr(fr = "Le sac est vide.", de = "Der Beutel ist leer.", it = "La borsa è vuota.", es = "La mochila está vacía.", br = "A mochila está vazia.", pt = "A mochila está vazia."),
-"COUNT" to Tr(fr = "QUANTITÉ", de = "ANZAHL", it = "QUANTITÀ", es = "CANTIDAD", br = "QUANTIDADE", pt = "QUANTIDADE"),
+"QUANTITY" to Tr(fr = "QUANTITÉ", de = "ANZAHL", it = "QUANTITÀ", es = "CANTIDAD", br = "QUANTIDADE", pt = "QUANTIDADE"),
 "UNKNOWN ITEM" to Tr(fr = "OBJET INCONNU", de = "UNBEKANNTES ITEM", it = "STRUMENTO IGNOTO", es = "OBJETO DESCONOCIDO", br = "ITEM DESCONHECIDO", pt = "ITEM DESCONHECIDO"),
 "Use %s on which POKéMON?" to Tr(fr = "Utiliser %s sur quel POKéMON ?", de = "%s bei welchem POKéMON einsetzen?", it = "Usare %s su quale POKéMON?", es = "¿Usar %s en qué POKéMON?", br = "Usar %s em qual POKéMON?", pt = "Usar %s em qual POKéMON?"),
 "Give %s to which POKéMON?" to Tr(fr = "Donner %s à quel POKéMON ?", de = "%s welchem POKéMON geben?", it = "Dare %s a quale POKéMON?", es = "¿Dar %s a qué POKéMON?", br = "Dar %s para qual POKéMON?", pt = "Dar %s a qual POKéMON?"),

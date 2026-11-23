@@ -382,7 +382,7 @@ void ui_bag_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game* g, 
     tabs(ui, c, p, &v, MARGIN, tabW - 4, sort ? sortY - 3 : bottom, panelX);
     if (sort) {
         // SORT: under the tabs, like the description bar's corner.
-        static const char* const SORTS[3] = { "DEFAULT", "NAME", "COUNT" };
+        static const char* const SORTS[3] = { "DEFAULT", "NAME", "QUANTITY" }; // QUANTITY: the app's COUNT is a tally
         int sy = sortY, sw = tabW - 4;
         pd_layered_two_tone(c, MARGIN, sy, sw, 22, 3, p->desc, p->descLayers, p->descFill, 0);
         const char* sortLabel = pd_tr(SORTS[ui->bagSort]);
