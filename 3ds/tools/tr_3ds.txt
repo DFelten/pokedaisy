@@ -180,7 +180,6 @@
 "GIVE IT" to Tr(fr = "LE DONNER", de = "GEBEN", it = "DALLO", es = "DARLO", br = "DAR", pt = "DAR"),
 "IN THE BAG" to Tr(fr = "DANS LE SAC", de = "IM BEUTEL", it = "NELLA BORSA", es = "EN LA MOCHILA", br = "NA MOCHILA", pt = "NA MOCHILA"),
 "REGISTER" to Tr(fr = "ENREGISTRER", de = "EINTRAGEN", it = "REGISTRA", es = "REGISTRAR", br = "REGISTRAR", pt = "REGISTAR"),
-"PARTY + PC" to Tr(fr = "ÉQUIPE + PC", de = "TEAM + PC", it = "SQUADRA + PC", es = "EQUIPO + PC", br = "EQUIPE + PC", pt = "EQUIPA + PC"),
 "Mark every Pokémon in the party and the PC" to Tr(fr = "Marquer chaque Pokémon de l'équipe et du PC", de = "Jedes Pokémon im Team und im PC", it = "Segnare ogni Pokémon di squadra e PC", es = "¿Marcar cada Pokémon del equipo y del PC", br = "Marcar cada Pokémon da equipe e do PC", pt = "Marcar cada Pokémon da equipa e do PC"),
 "as caught?" to Tr(fr = "comme capturé ?", de = "als gefangen eintragen?", it = "come catturato?", es = "como capturado?", br = "como capturado?", pt = "como capturado?"),
 "Mark all of the %s Pokédex as %s?" to Tr(fr = "Marquer tout le Pokédex %s comme %s ?", de = "Den ganzen %s-Pokédex als %s markieren?", it = "Segnare tutto il Pokédex %s come %s?", es = "¿Marcar toda la Pokédex %s como %s?", br = "Marcar toda a Pokédex %s como %s?", pt = "Marcar toda a Pokédex %s como %s?"),

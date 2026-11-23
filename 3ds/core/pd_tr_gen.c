@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[786] = {
+const struct pd_tr_entry pd_tr_table[787] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -279,6 +279,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "How loud the game plays.", { "How loud the game plays.", "Le volume du jeu.", "Wie laut das Spiel ist.", "Il volume del gioco.", "El volumen del juego.", "O volume do jogo.", "O volume do jogo." } },
     { "How the game is drawn on the top screen: its own picture at a size, or EXPAND's map past its edges.", { "How the game is drawn on the top screen: its own picture at a size, or EXPAND's map past its edges.", "Comment le jeu s'affiche en haut : son image à une taille, ou la carte d'EXPAND au delà des bords.", "Wie das Spiel oben gezeigt wird: sein Bild in einer Größe oder die Karte von EXPAND über die Ränder hinaus.", "Come appare il gioco in alto: la sua immagine a una misura, o la mappa di EXPAND oltre i bordi.", "Cómo se ve el juego arriba: su imagen a un tamaño, o el mapa de EXPAND más allá de los bordes.", "Como o jogo aparece em cima: a imagem num tamanho, ou o mapa do EXPAND além das bordas.", "Como o jogo aparece em cima: a imagem num tamanho, ou o mapa do EXPAND além das margens." } },
     { "I UNDERSTAND", { "I UNDERSTAND", "COMPRIS", "VERSTANDEN", "HO CAPITO", "ENTENDIDO", "ENTENDI", "ENTENDI" } },
+    { "ID No.", { "ID No.", "N° ID", "ID-Nr.", "N. ID", "N.º ID", "N. ID", "N. ID" } },
     { "IMMUNE", { "IMMUNE", "IMMUNISÉ", "IMMUN", NULL, "INMUNE", "IMUNE", "IMUNE" } },
     { "IMMUNE TO", { "IMMUNE TO", "IMMUNISÉ CONTRE", "IMMUN GEGEN", "IMMUNE A", "INMUNE A", "IMUNE A", "IMUNE A" } },
     { "IN THE BAG", { "IN THE BAG", "DANS LE SAC", "IM BEUTEL", "NELLA BORSA", "EN LA MOCHILA", "NA MOCHILA", "NA MOCHILA" } },
@@ -478,7 +479,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "Or trade it as it is?", { "Or trade it as it is?", "Ou l'échanger tel quel ?", "Oder so tauschen, wie es ist?", "O scambiarlo così com'è?", "¿O cambiarlo tal cual?", "Ou trocar como está?", "Ou trocar como está?" } },
     { "PARTY", { "PARTY", "ÉQUIPE", "TEAM", "SQUADRA", "EQUIPO", "EQUIPE", "EQUIPE" } },
     { "PARTY  %d/6", { "PARTY  %d/6", "ÉQUIPE  %d/6", "TEAM  %d/6", "SQUADRA  %d/6", "EQUIPO  %d/6", "EQUIPE  %d/6", "EQUIPA  %d/6" } },
-    { "PARTY + PC", { "PARTY + PC", "ÉQUIPE + PC", "TEAM + PC", "SQUADRA + PC", "EQUIPO + PC", "EQUIPE + PC", "EQUIPA + PC" } },
+    { "PARTY + PC", { "PARTY + PC", "ÉQUIPE + PC", "TEAM + PC", "SQUADRA+PC", "EQUIPO + PC", "EQUIPE + PC", "EQUIPA + PC" } },
     { "PC", { "PC", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "PEOPLE", { "PEOPLE", "GENS", "LEUTE", "PERSONE", "GENTE", "PESSOAS", "PESSOAS" } },
     { "PICK A GAME", { "PICK A GAME", "CHOISIR UN JEU", "SPIEL WÄHLEN", "SCEGLI UN GIOCO", "ELEGIR JUEGO", "ESCOLHER JOGO", "ESCOLHER JOGO" } },
@@ -790,4 +791,4 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 786;
+const int pd_tr_table_count = 787;
