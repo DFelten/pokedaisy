@@ -111,6 +111,7 @@ internal val trCompanion: Map<String, Tr> = mapOf(
     "TMs IN THE BAG" to Tr(ja = "バッグの わざマシン", fr = "CT DANS LE SAC", de = "TMs IM BEUTEL", it = "MT NELLA BORSA", es = "MT EN LA MOCHILA", br = "MTs NA MOCHILA", pt = "MTs NA MOCHILA", ko = "가방 속 기술머신"),
     "ACC" to Tr(ja = "めいちゅう", fr = "PRÉC.", de = "GENAU.", it = "PREC.", es = "PREC.", br = "PREC.", pt = "PREC.", ko = "명중"),
     "FORGET {0}" to Tr(ja = "{0}を わすれる", fr = "OUBLIER {0}", de = "{0} VERGESSEN", it = "DIMENTICA {0}", es = "OLVIDAR {0}", br = "ESQUECER {0}", pt = "ESQUECER {0}", ko = "{0} 잊기"),
+    "{0} will forget {1} for good to learn {2}." to Tr(ja = "{0}は {1}を わすれて {2}を おぼえます。 もとには もどせません。", fr = "{0} oubliera {1} pour toujours pour apprendre {2}.", de = "{0} vergisst {1} für immer, um {2} zu lernen.", it = "{0} dimenticherà {1} per sempre per imparare {2}.", es = "{0} olvidará {1} para siempre para aprender {2}.", br = "{0} vai esquecer {1} para sempre para aprender {2}.", pt = "{0} vai esquecer {1} para sempre para aprender {2}.", ko = "{0}: {1} 기술을 영원히 잊고 {2} 기술을 배워요."),
     "FORGET" to Tr(ja = "わすれる", fr = "OUBLIER", de = "VERGESSEN", it = "DIMENTICA", es = "OLVIDAR", br = "ESQUECER", pt = "ESQUECER", ko = "잊기"),
     "ABLE" to Tr(ja = "おぼえられる", fr = "APTE", de = "GEEIGNET", it = "IDONEO", es = "APTO", br = "APTO", pt = "APTO", ko = "배울 수 있음"),
     "NOT ABLE" to Tr(ja = "おぼえられない", fr = "PAS APTE", de = "UNGEEIGNET", it = "NON IDONEO", es = "NO APTO", br = "NÃO APTO", pt = "NÃO APTO", ko = "배울 수 없음"),

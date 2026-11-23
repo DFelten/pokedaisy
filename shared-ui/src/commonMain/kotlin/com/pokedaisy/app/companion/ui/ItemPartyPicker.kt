@@ -25,6 +25,7 @@ import com.pokedaisy.app.companion.data.PP_BOOST_ITEMS
 import com.pokedaisy.app.companion.data.PartyTarget
 import com.pokedaisy.app.companion.data.SlotVerdict
 import com.pokedaisy.app.companion.data.spriteAsset
+import com.pokedaisy.app.companion.i18n.tk
 import com.pokedaisy.app.companion.i18n.tr
 
 /** A USE ([give] false) or GIVE of [item] waiting for its Pokémon: [targets] are the game's answers, slot by slot. */
@@ -49,8 +50,12 @@ fun ItemPartyPicker(
     onPick: (PartyTarget, Int) -> Unit,
     /** The move pick open first, for this slot - for screenshot tests, which can't tap. */
     initialMoveSlot: Int? = null,
+    /** With [initialMoveSlot]: a TM's forget question open for this move, for screenshot tests. */
+    initialForget: Int? = null,
 ) {
     var moveFor by remember(pick) { mutableStateOf(initialMoveSlot?.let { pick.targets.getOrNull(it) }) }
+    // A TM's move to forget, asked once more before it's gone for good.
+    var forget by remember(pick) { mutableStateOf(initialForget?.let { f -> moveFor?.let { it to f } }) }
     CompanionBackHandler(onBack = onCancel)
     // A slot is only what the pick saw: the same Pokémon (by personality, where the party read has it).
     fun targetOf(index: Int, mon: MonView): PartyTarget? =
@@ -88,7 +93,21 @@ fun ItemPartyPicker(
                 else -> "Restore which move?"
             },
             onBack = { moveFor = null },
-            onPick = { move -> moveFor = null; onPick(t, move) },
+            onPick = { move ->
+                if (pick.item.pocket == POCKET_TM_HM) forget = t to move else { moveFor = null; onPick(t, move) }
+            },
+        )
+    }
+    forget?.let { (t, move) ->
+        val mon = party.getOrNull(t.slot)
+        val moveName = mon?.moves?.getOrNull(move)?.name ?: "-"
+        OptionConfirm(
+            title = tr("FORGET {0}", moveName),
+            message = tr("{0} will forget {1} for good to learn {2}.", mon?.name ?: "", moveName, itemName),
+            confirmLabel = tk("FORGET"),
+            m = m,
+            onConfirm = { forget = null; moveFor = null; onPick(t, move) },
+            onDismiss = { forget = null },
         )
     }
 }

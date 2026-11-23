@@ -1097,7 +1097,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
     effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
     in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
-    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule). That move slot is zeroed, so LearnMove puts the
+    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule), asked once more (FORGET / CANCEL). That move slot is zeroed, so LearnMove puts the
     new move (and its PP) there without ForgetMove's menu - over the field that menu leaves the map's attributes on the text palette until
     CloseText. Then a 42-byte routine at wStackBottom (C000, `Gen2TmFns.routine`) runs TeachTMHM over the map with wCurPartyMon /
     wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, TeachTMHM (it spends a TM), CloseText.
