@@ -173,7 +173,7 @@ sealed class GbField {
             val n = u8(g, partyCount).coerceAtMost(6)
             return (0 until n).firstOrNull { i ->
                 g.read(partyMoves + i * PARTY_MON_SIZE, 4).any { (it.toInt() and 0xFF) == FLY_MOVE_ID }
-            } ?: -1
+            } ?: if (HmFree.active && n > 0) 0 else -1   // NO HMS NEEDED: the lead (Gen 1 has no eggs)
         }
 
         override fun flyTargets(g: GameCalls): FlyTargets {
@@ -334,7 +334,7 @@ sealed class GbField {
             return (0 until n).firstOrNull { i ->
                 (species[i].toInt() and 0xFF) != EGG &&
                     g.read(PARTY_MON1_MOVES + i * PARTY_MON_SIZE, 4).any { (it.toInt() and 0xFF) == FLY_MOVE_ID }
-            } ?: -1
+            } ?: if (HmFree.active) (0 until n).firstOrNull { (species[it].toInt() and 0xFF) != EGG } ?: -1 else -1   // NO HMS NEEDED
         }
 
         private fun visited(g: GameCalls, spawn: Int) = u8(g, VISITED_SPAWNS + spawn / 8) shr (spawn % 8) and 1 != 0

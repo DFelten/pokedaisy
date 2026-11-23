@@ -336,7 +336,12 @@ Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF 
 
 The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in the [quick menu](#the-quick-menu)) follow it too: with the badge, they no longer need someone who knows the move. The badges stay: a move the game would refuse without its badge is still refused.
 
-It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
+It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. On the Game Boy it works in the English Red, Blue, Yellow, Gold, Silver and Crystal:
+
+- In Red, Blue and Yellow you only ever use these moves from the party menu. With the badge, they show in every Pokémon's menu there, after its own (four at most), and work as if it knew them.
+- In Gold, Silver and Crystal, press A at the tree, the boulder, the water, the whirlpool or the waterfall as above. The party menu also gets the moves for flying and for lighting up a cave, when there's room for them. Headbutting trees and smashing rocks come from TMs in these games, so they still need a Pokémon that knows them.
+
+Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
 
 ## External controllers
 
