@@ -271,6 +271,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override val expShare get() = expShareMode
     override fun setExpShare(mode: com.pokedaisy.app.companion.data.ExpShare.Mode) { expShareMode = mode }
     override val expShareSupported get() = true
+    override val expShareModernSupported get() = true
     private var levelCapOn = false
     override val levelCap get() = levelCapOn
     override fun setLevelCap(on: Boolean) { levelCapOn = on }

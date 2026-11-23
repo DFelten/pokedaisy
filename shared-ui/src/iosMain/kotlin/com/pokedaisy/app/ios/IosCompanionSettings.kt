@@ -198,6 +198,7 @@ internal class IosCompanionSettings(
     override val gameplayModifiersBadge get() = com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.IOS_GAMEPLAY_MODIFIERS)
     override val hmFreeSupported get() = options()?.hmFreeSupported == true
     override val expShareSupported get() = options()?.expShareSupported == true
+    override val expShareModernSupported get() = options()?.expShareSupported == true && options()?.discovery?.exp?.modern != null
     override val levelCapSupported get() = options()?.levelCapSupported == true
     override val levelCapLevel get() = options()?.levelCapNow?.level
     override val instantTextSupported get() = options()?.instantTextSupported == true

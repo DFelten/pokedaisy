@@ -893,14 +893,15 @@ private fun homeRows(
         // The whole party gains EXP from a win (ExpShare.kt: getexp's sent-out bits set, FULL also its division skipped).
         // Three values: a pick-list.
         SettingRow(
-            tk("EXP SHARE"), if (s.expShareSupported) s.expShare.label else tk("N/A"), setting = SharedSetting.EXP_SHARE,
+            tk("EXP SHARE"), if (s.expShareSupported) s.expShare.effective(s.expShareModernSupported).label else tk("N/A"), setting = SharedSetting.EXP_SHARE,
             enabled = s.expShareSupported, labelBadge = s.gameplayModifiersBadge ?: NewFeatures.badge(NewFeatures.EXP_SHARE),
             subtitle = "The whole party gains EXP from a win",
         ) {
             if (s.expShareSupported) {
-                val modes = com.pokedaisy.app.companion.data.ExpShare.Mode.entries
+                val modern = s.expShareModernSupported
+                val modes = com.pokedaisy.app.companion.data.ExpShare.Mode.entries.filter { modern || it != com.pokedaisy.app.companion.data.ExpShare.Mode.MODERN }
                 select(
-                    Selector(tk("EXP SHARE"), modes.map { it.label }, s.expShare.label, note = EXP_SHARE_NOTE) { l ->
+                    Selector(tk("EXP SHARE"), modes.map { it.label }, s.expShare.effective(modern).label, note = if (modern) EXP_SHARE_NOTE_MODERN else EXP_SHARE_NOTE) { l ->
                         modes.firstOrNull { it.label == l }?.let(s::setExpShare)
                     },
                 )
@@ -1587,3 +1588,4 @@ private const val SHINY_ODDS_CHECKER_NOTE = "Save checkers may flag these shinie
 
 /** EXP SHARE's pick-list: what the two ways do. */
 private const val EXP_SHARE_NOTE = "SPLIT shares a win's EXP across the party. FULL EXP gives each one all of it. Achievements pause."
+private const val EXP_SHARE_NOTE_MODERN = "SPLIT shares a win's EXP across the party. FULL EXP gives each one all of it. MODERN: all of it to those that fought, half to the rest, in one line. Achievements pause."

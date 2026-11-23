@@ -28,7 +28,13 @@ object ExpShare {
     enum class Mode(val id: Int, val label: String) {
         OFF(0, tk("OFF")),
         SPLIT(1, tk("SPLIT")),
-        FULL(2, tk("FULL EXP"));
+        FULL(2, tk("FULL EXP")),
+        /** Gen 6's way (Gen 2 carts only so far, [Found.modern]): the ones that fought get all of a win's EXP, the rest half,
+         * shown as one line for the rest of the party instead of one box each. */
+        MODERN(3, tk("MODERN"));
+
+        /** What this mode runs as in a game without MODERN ([Found.modern] null): FULL EXP, the nearest. */
+        fun effective(modernSupported: Boolean) = if (this == MODERN && !modernSupported) FULL else this
 
         companion object {
             fun of(id: Int) = entries.firstOrNull { it.id == id } ?: OFF
@@ -40,9 +46,14 @@ object ExpShare {
      * byte ([width] 1), FULL's `ret`, and the battle byte ([battle]: Gen 1's wIsInBattle, read here; 0 = Gen 2's, which
      * [mark] is given) that says when that byte is the battle's: the same RAM is the field's and the PC's buffer outside
      * one. A DS game ([ds]) has none of them here: its native side (pk_nds.cpp's expShareTick) writes the battle's masks
-     * and patches the battle overlay itself.
+     * and patches the battle overlay itself. [modern]: MODERN's writes where the game has them (a Gen 2 cart's,
+     * [GbGamePatches]), FULL's `ret` among them; null = no MODERN.
      */
-    class Found(val sentPokes: Long, val full: List<InstantText.Write>, val width: Int = 2, val ds: Boolean = false, val battle: Long = 0)
+    class Found(val sentPokes: Long, val full: List<InstantText.Write>, val width: Int = 2, val ds: Boolean = false, val battle: Long = 0,
+                val modern: List<InstantText.Write>? = null) {
+        /** The same places with MODERN's writes as the ones the patch set puts in (GameOptions' FULL slot). */
+        fun asModern(): Found = Found(sentPokes, modern ?: full, width, ds, battle, modern)
+    }
 
     /**
      * The DS games EXP SHARE knows: Gen 4's US carts (Platinum rev 1, HeartGold, SoulSilver: pret's BtlCmd_CalcExpGain)
