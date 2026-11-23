@@ -41,7 +41,8 @@ Without a ROM argument, choose a `.gb`, `.gbc`, `.gba` or `.nds`, or a `.zip` wi
 DATA/states. Before a game opens its battery save is backed up into DATA/saves/pokedaisy-backups (a new copy only
 when it changed, the newest 10 kept; with `--save FILE`, DATA/backups); a save that can't be backed up keeps the game
 closed. The save is DATA/saves/COMPLETE-ROM-FILENAME.sav, or, when there is none, a save named after the ROM
-without its extension, the way other emulators make them (`pokeblack2.nds` reads `pokeblack2.sav`), the raw battery
+without its extension, the way other emulators make them (`pokeblack2.nds` reads `pokeblack2.sav`), or with SHARED SAVES
+the firmware's emulators' (`shared_save.h`), the raw battery
 save, read into the core when the game
 opens and written back (to a temporary file, then renamed) within two seconds of the game changing it and on quit.
 States are DATA/states/ROM.ss on the GB/GBC and DS cores and ROM.armgba.ss on the armGBA core: the two can't read each

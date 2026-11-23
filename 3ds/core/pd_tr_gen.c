@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[786] = {
+const struct pd_tr_entry pd_tr_table[789] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -562,6 +562,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "SAVE STATE", { "SAVE STATE", "SAUVER ÉTAT", "SAVESTATE SICHERN", "SALVA STATO", "GUARDAR ESTADO", "SALVAR ESTADO", "GUARDAR ESTADO" } },
     { "SAVE STATES", { "SAVE STATES", "ÉTATS SAUVEGARDÉS", "SAVESTATES", "STATI SALVATI", "ESTADOS GUARDADOS", "ESTADOS SALVOS", "ESTADOS GUARDADOS" } },
     { "SAVED", { "SAVED", "SAUVÉ", "GESICHERT", "SALVATO", "GUARDADO", "SALVO", "GUARDADO" } },
+    { "SAVES", { "SAVES", "SAUVEGARDES", "SPIELSTÄNDE", "SALVATAGGI", "PARTIDAS GUARDADAS", NULL, "JOGOS GUARDADOS" } },
     { "SCENIC", { "SCENIC", "PANORAMIQUE", "PANORAMA", "PANORAMICO", "PANORÁMICO", "PANORÂMICO", "PANORÂMICO" } },
     { "SCENIC flies over the map, CLASSIC is the game's.", { "SCENIC flies over the map, CLASSIC is the game's.", "PANORAMIQUE survole la carte, CLASSIQUE est celui du jeu.", "PANORAMA fliegt über die Karte, KLASSISCH ist der des Spiels.", "PANORAMICO sorvola la mappa, CLASSICO è quello del gioco.", "PANORÁMICO sobrevuela el mapa, CLÁSICO es el del juego.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo." } },
     { "SCREEN", { "SCREEN", "ÉCRAN", "BILDSCHIRM", "SCHERMO", "PANTALLA", "TELA", "ECRÃ" } },
@@ -581,6 +582,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "SELECT  TAB   A  JUMP", { "SELECT  TAB   A  JUMP", "SELECT  ONGLET   A  ALLER", "SELECT  REITER   A  SPRUNG", "SELECT  SCHEDA   A  VAI", "SELECT  PESTAÑA   A  IR", "SELECT  ABA   A  IR", "SELECT  SEPARADOR   A  IR" } },
     { "SETTINGS", { "SETTINGS", "OPTIONS", "EINSTELLUNGEN", "OPZIONI", "AJUSTES", "CONFIGURAÇÕES", "DEFINIÇÕES" } },
     { "SETTINGS has what was detected.", { "SETTINGS has what was detected.", "PARAMÈTRES montre ce qui a été détecté.", "EINSTELLUNGEN zeigt, was erkannt wurde.", "IMPOSTAZIONI mostra cosa è stato rilevato.", "AJUSTES muestra lo detectado.", "AJUSTES mostra o que foi detectado.", "DEFINIÇÕES mostra o que foi detetado." } },
+    { "SHARED SAVES", { "SHARED SAVES", "SAUVEGARDES PARTAGÉES", "GETEILTE SPIELSTÄNDE", "SALVATAGGI CONDIVISI", "PARTIDAS COMPARTIDAS", "SAVES COMPARTILHADOS", "JOGOS GUARDADOS PARTILHADOS" } },
     { "SHINY", { "SHINY", "CHROMA", "SCHILLERND", "CROMATICO", "VARIOCOLOR", NULL, NULL } },
     { "SIZE", { "SIZE", "TAILLE", "GRÖSSE", "DIMENSIONE", "TAMAÑO", "TAMANHO", "TAMANHO" } },
     { "SLOT %d", { "SLOT %d", "EMPLACEMENT %d", "PLATZ %d", NULL, "RANURA %d", "ESPAÇO %d", "ESPAÇO %d" } },
@@ -619,6 +621,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "Save backup failed; game not opened", { "Save backup failed; game not opened", "Copie de la sauvegarde impossible, jeu non ouvert", "Sicherung des Spielstands fehlgeschlagen, Spiel nicht geöffnet", "Copia del salvataggio non riuscita, gioco non aperto", "No se ha podido copiar la partida, juego no abierto", "Falha ao copiar o save, jogo não aberto", "Falha ao copiar o jogo guardado, jogo não aberto" } },
     { "Save once in the game first.", { "Save once in the game first.", "Sauvegardez d'abord dans le jeu.", "Speichere zuerst einmal im Spiel.", "Salva prima una volta nel gioco.", "Guarda antes una vez en el juego.", "Salve uma vez no jogo primeiro.", "Guarda primeiro uma vez no jogo." } },
     { "Save write failed", { "Save write failed", "Échec de l'écriture de la sauvegarde", "Spielstand konnte nicht geschrieben werden", "Scrittura del salvataggio non riuscita", "No se ha podido escribir la partida", "Falha ao gravar o save", "Falha ao gravar o jogo guardado" } },
+    { "Shared save can't be used; game not opened", { "Shared save can't be used; game not opened", "Sauvegarde partagée inutilisable, jeu non ouvert", "Geteilter Spielstand nicht nutzbar, Spiel nicht geöffnet", "Salvataggio condiviso inutilizzabile, gioco non aperto", "No se puede usar la partida compartida, juego no abierto", "O save compartilhado não pode ser usado, jogo não aberto", "O jogo guardado partilhado não pode ser usado, jogo não aberto" } },
     { "Show it at the port after the Hall of Fame", { "Show it at the port after the Hall of Fame", "Montrez-le au port après le Panthéon", "Zeig es nach der Ruhmeshalle am Hafen", "Mostralo al porto dopo la Sala d'Onore", "Enséñalo en el puerto tras el Hall de la Fama", "Mostre no porto depois do Hall da Fama", "Mostre no porto depois do Hall da Fama" } },
     { "Show it at the port once you have the Rainbow Pass", { "Show it at the port once you have the Rainbow Pass", "Montrez-le au port une fois le Passe Arc-en-ciel obtenu", "Zeig es am Hafen, sobald du den Bunt-Pass hast", "Mostralo al porto quando avrai il Pass Arcobaleno", "Enséñalo en el puerto cuando tengas el Pase Arcoíris", "Mostre no porto depois de ganhar o Rainbow Pass", "Mostre no porto depois de receber o Rainbow Pass" } },
     { "Shown over the overworld, off in menus and battles.", { "Shown over the overworld, off in menus and battles.", "Sur le monde, caché en menu et en combat.", "Über der Spielwelt, aus in Menüs und Kämpfen.", "Sul mondo, nascosto in menu e lotte.", "Sobre el mundo, oculto en menús y combates.", "Sobre o mundo, oculto em menus e batalhas.", "Sobre o mundo, oculto em menus e combates." } },
@@ -790,4 +793,4 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 786;
+const int pd_tr_table_count = 789;

@@ -1,6 +1,7 @@
 /* The library (library.h): the app's LibraryActivity drawn with the companion's pieces (3ds/core). */
 #include "library.h"
 #include "rom_zip.h"
+#include "shared_save.h"
 
 // Names and paths are cut to their buffers on purpose.
 #pragma GCC diagnostic ignored "-Wformat-truncation"
@@ -1034,11 +1035,23 @@ static void look_save(void) {
   pd_look_apply(NULL, &settings);
 }
 
+// The save a game plays with, PokeDaisy's own or a shared one. false = none yet.
+static bool save_path(const struct game *g, char *out, size_t size) {
+  struct stat st;
+  pd_save_path_named(savesDir, g->path, g->rom, out, size);
+  if (stat(out, &st) && (shared_save_path(g->path, g->rom, out, size) < 1 || stat(out, &st)))
+    return false;
+  return st.st_size > 0;
+}
+
 static void check_saves(struct game *g) {
   char sav[PATH_MAX * 2];
-  pd_save_path_named(savesDir, g->path, g->rom, sav, sizeof sav);
-  struct stat st;
-  g->hasSave = !stat(sav, &st) && st.st_size > 0;
+  g->hasSave = save_path(g, sav, sizeof sav);
+}
+
+void library_saves(void) {
+  for (int i = 0; i < gameCount; i++)
+    check_saves(&games[i]);
 }
 
 void library_open(char *const *paths, int count, const char *data, const char *saves, const struct lib_host *h) {
@@ -1297,6 +1310,13 @@ static void sort_choose(int v) {
   state_save();
 }
 
+static char infoSave[PATH_MAX * 2];
+static void info_open(const struct game *g) {
+  if (!save_path(g, infoSave, sizeof infoSave))
+    infoSave[0] = 0;
+  infoOpen = true;
+}
+
 static void menu_choose(void) {
   if (selected < 0 || selected >= shownCount) {
     menuOpen = false;
@@ -1306,7 +1326,7 @@ static void menu_choose(void) {
   if (menuCursor == 0)
     play();
   else if (menuCursor == 2)
-    infoOpen = true;
+    info_open(g);
   else if (menuCursor == 3) {
     g->hidden = true; // the app's HIDE: SETTINGS > HIDDEN GAMES brings it back
     state_save();
@@ -2074,7 +2094,7 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
 
 /* A game's INFO (the app's GameInfo, the parts the desktop knows): its file, folder, size, console, SHA-1 and save. */
 static void draw_info(struct pd_canvas *c, const struct game *g) {
-  char size[32], folder[PATH_MAX], sav[PATH_MAX * 2];
+  char size[32], folder[PATH_MAX];
   if (g->size >= 1024 * 1024)
     snprintf(size, sizeof size, "%.1f MB", g->size / (1024.0 * 1024.0));
   else
@@ -2083,11 +2103,10 @@ static void draw_info(struct pd_canvas *c, const struct game *g) {
   char *slash = strrchr(folder, '/');
   if (slash)
     *slash = 0;
-  pd_save_path_named(savesDir, g->path, g->rom, sav, sizeof sav);
   static const char *const CONSOLES[] = {"GB", "GBC", "GBA", "DS"};
   const char *labels[6] = {"FILE", "FOLDER", "SIZE", "CONSOLE", "SHA-1", "SAVE"};
   const char *values[6] = {g->file, folder, size, CONSOLES[g->console], g->sha1Known ? g->sha1 : "...",
-                           g->hasSave ? sav : pd_tr("none yet")};
+                           infoSave[0] ? infoSave : pd_tr("none yet")};
   int w = c->w - 80 > 520 ? 520 : c->w - 80, rowH = 22, h = 27 + 8 + 6 * rowH + 8;
   int x = (c->w - w) / 2, y = (c->h - h) / 2;
   int hf = pd_header_box(c, x, y, w, 26);
