@@ -17,7 +17,7 @@ import okio.Path.Companion.toOkioPath
  * skip where the ROMs aren't on this machine.
  */
 class MWisBestDecodeTest {
-    private val romName = "Pokemon - Emerald Version (USA, Europe) (32-bit RTC+TIMER RNG Fix) (v1.0) (MWisBest).gba"
+    private val romName = "Pokemon Emerald 32-bit RTC + Timer RNG Fix (v1.0).gba"
     private val retailName = "Pokemon - Emerald Version (USA, Europe).gba"
 
     @Before fun emerald() {
