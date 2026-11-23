@@ -492,7 +492,11 @@ probe, from boot to its overworld and into wild battles.
   forget-a-move screen, an evolution (its own `pbCheckAndEvolvePokemon`: the scene, the companion's species and icon
   after), the game's transfers to Cherrygrove, Violet, Dark Cave (its darkness) and Goldenrod (each map's name, Town Map
   spot and HERE lists in the snapshot), and FLY through its own map screen (`pbBetterRegionMap`, Goldenrod to Cherrygrove,
-  landed by the move's handler). The game's error log stayed empty through all of it.
+  landed by the move's handler), a move learnt in battle through the forget screen (FLAME WHEEL over LEER), surfing from
+  Cherrygrove's shore (its `pbSurf` wants a party member that can learn Waterfall; the player rides that Pokémon's own
+  `<dex>_surf` sheet) and a Potion used on the field (`pbUseItem`, its party screen). The game's error log stayed empty
+  through all of it. Testing note: `$game_player.moveto` across a map leaves an event's sprite where it was (the game's
+  anti-lag stops updating sprites out of range); its own transfers don't.
 - Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
   A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
   on the letter grid. Its own A / B and menus work as on a PC.
