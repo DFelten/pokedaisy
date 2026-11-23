@@ -654,7 +654,7 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
 private fun withQolPageOnly(rows: List<SettingRow>, open: () -> Unit): List<SettingRow> {
     val members = settingsPageRows(rows, QOL_PAGE).toSet()
     if (members.isEmpty()) return rows
-    val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+    val on = members.count(::qolInUse)
     val opener = SettingRow(
         tk(QOL_PAGE), tr("{0} ON", on), opensPage = true, subtitle = "Helpers that save you time",
         labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },

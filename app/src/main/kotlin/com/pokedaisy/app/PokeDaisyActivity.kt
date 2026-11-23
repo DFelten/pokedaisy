@@ -190,7 +190,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         val snap = telemetry.snapshot.value
         val t = snap.guideTables ?: return
         if (!com.pokedaisy.app.companion.data.WildPin.offered(t) || !::engine.isInitialized) return
-        if (com.pokedaisy.app.companion.data.WildPin.blocked(com.pokedaisy.app.companion.Nuzlocke.on, snap.inBattle) != null) return
+        if (com.pokedaisy.app.companion.data.WildPin.blocked(com.pokedaisy.app.companion.Nuzlocke.on, snap.inBattle, coop = currentCoopPair != null) != null) return
         val group = snap.mapGroup
         val num = snap.mapNum
         val set = t.wildSetOf(group, num, snap.progress)
@@ -2242,7 +2242,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             com.pokedaisy.app.companion.FavoriteItems.load(prefs.favoriteItemsFor(crc)) { prefs.setFavoriteItemsFor(crc, it) }
             com.pokedaisy.app.companion.WildPins.load(prefs.wildPin) { prefs.wildPin = it }
             com.pokedaisy.app.companion.WildPins.setPinned(null)
-            com.pokedaisy.app.companion.WildPins.host = com.pokedaisy.app.companion.WildPins.Host(::pinWild, ::unpinWild)
+            com.pokedaisy.app.companion.WildPins.host = com.pokedaisy.app.companion.WildPins.Host(::pinWild, ::unpinWild) { currentCoopPair != null }
         }
         // RetroAchievements unlocks play the game's level-up fanfare, rendered the same way.
         unlockSound?.release()
@@ -2966,6 +2966,8 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             val pair = decision.pair
             if (pair != null && lock != null) {
                 currentCoopPair = pair
+                // A WILD PIN changes the ROM, which co-op refuses (like cheats): any pin goes, and PIN stays greyed.
+                com.pokedaisy.app.companion.WildPins.unpin()
                 coopLock = lock
                 coopLockPartner.value = pair.partner.name
                 coopLockState.value = lock

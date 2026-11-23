@@ -60,7 +60,10 @@ class GamePlayerLook(
             lookIn = true
             pinIn = pin != null
         } else if (pin != null) {
+            // Together refused (all or none): one of the two doesn't match. The look alone first; if that's the one
+            // refused, the pin may still fit on its own.
             lookIn = replace(look) >= 0
+            if (!lookIn) pinIn = replace(listOf(pin.block)) >= 0
         }
         installed = patch.takeIf { lookIn }
         if (!lookIn) Logs.i("player look: the ROM didn't match, left as it is")

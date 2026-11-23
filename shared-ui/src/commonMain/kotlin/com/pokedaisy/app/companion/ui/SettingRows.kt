@@ -319,8 +319,18 @@ val SETTINGS_TABS: Map<String, String> = mapOf(
 
 /** A QUALITY OF LIFE row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
 val QOL_UNUSED = mapOf(
-    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "WILD PIN" to "ON", "SHINY ODDS" to "NORMAL",
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
 )
+
+/** QUALITY OF LIFE rows never counted as on: WILD PIN's switch only shows or hides the PINs (ON or OFF, the game plays its
+ * own way); the game changes only while a pin is in, for one encounter, which isn't a helper left on. */
+val QOL_UNCOUNTED = setOf("WILD PIN")
+
+/** Whether [row] counts in QUALITY OF LIFE's "N ON": a helper in use, anything but its game's-own value ([QOL_UNUSED];
+ * OFF for the rest), N/A and [QOL_UNCOUNTED] not counted. */
+fun qolInUse(row: SettingRow): Boolean =
+    row.enabled && row.value != null && row.value != tk("N/A") && row.label !in QOL_UNCOUNTED &&
+        row.value != tk(QOL_UNUSED[row.label] ?: "OFF")
 
 /** [rows]' rows on [page] ([SETTINGS_PAGES]), in the page's order. */
 fun settingsPageRows(rows: List<SettingRow>, page: String): List<SettingRow> {
@@ -344,8 +354,7 @@ fun regroupSettings(rows: List<SettingRow>, openPage: ((String) -> Unit)? = null
     val paged = if (openPage == null) emptyMap() else SETTINGS_PAGES.mapValues { (page, _) -> settingsPageRows(rows, page) }
     val inPages = paged.values.flatten().toSet()
     val openers = paged.filterValues { it.isNotEmpty() }.map { (page, members) ->
-        // A helper in use: anything but its game's-own value ([QOL_UNUSED]; OFF for the rest), N/A not counted.
-        val on = members.count { it.enabled && it.value != null && it.value != tk("N/A") && it.value != tk(QOL_UNUSED[it.label] ?: "OFF") }
+        val on = members.count(::qolInUse)
         SettingRow(
             tk(page), if (page == QOL_PAGE) tr("{0} ON", on) else null, opensPage = true,
             labelBadge = members.firstNotNullOfOrNull { it.labelBadge?.takeIf { b -> b == tk("NEW") } },

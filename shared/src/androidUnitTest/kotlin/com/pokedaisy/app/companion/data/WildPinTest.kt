@@ -121,6 +121,10 @@ class WildPinTest {
         assertEquals(WildPin.NUZLOCKE_REASON, WildPin.blocked(nuzlocke = true, inBattle = true))
         assertEquals(WildPin.BATTLE_REASON, WildPin.blocked(nuzlocke = false, inBattle = true))
         assertNull(WildPin.blocked(nuzlocke = false, inBattle = false))
+        // Co-op on for this game (it refuses ROM changes like cheats): greyed, field or battle.
+        assertEquals(WildPin.COOP_REASON, WildPin.blocked(nuzlocke = false, inBattle = false, coop = true))
+        assertEquals(WildPin.COOP_REASON, WildPin.blocked(nuzlocke = false, inBattle = true, coop = true))
+        assertEquals(WildPin.NUZLOCKE_REASON, WildPin.blocked(nuzlocke = true, inBattle = false, coop = true))
     }
 
     @Test

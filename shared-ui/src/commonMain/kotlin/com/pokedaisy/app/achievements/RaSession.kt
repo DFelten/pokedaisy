@@ -408,6 +408,9 @@ class RaSession(
 
     /** After the core is gone: answers go back to being delivered from the HTTP thread. */
     fun onCoreStopped() {
+        // A WILD PIN ends with its game (only a GBA game services one, so the next GB / DS game would keep the pause).
+        wildPinActive = false
+        _state.update { it.copy(wildPinPaused = false) }
         if (!ready) return
         coreAttached = false
         romHash = null

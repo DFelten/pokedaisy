@@ -97,7 +97,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Lazarus | 2.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
 | Modern Emerald | 3.6 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ | — |
 | Epsilon Emerald | 1.0.0 | ✅ ³⁹ | ✅ | ✅ | ✅ | — | ✅ ³⁹ | — | ✅ ³⁹ | — | ✅ ³⁹ | ✅ ³⁹ | — | — | — | — | — | — | — |
-| Monomyth | 1.0, 1.1, 1.2 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ | ✅ ⁶³ |
+| Monomyth | 1.0, 1.1 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ | ✅ ⁶³ |
+| Monomyth | 1.2 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ | — ⁶³ |
 | Odyssey | 4.1.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
 | Orange Islands | Beta 5.7, an older beta | ◐ ³ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | — | ✅ ¹⁹ ²⁰ | ✅ | ✅ ³³ | ✅ | — |
 | Quetzal | English / Spanish Alpha 9 v0 | ◐ ³ | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | ◐ ⁶ | — | — | ✅ | — | — | — | — | — | — ³⁶ | — |
@@ -1155,7 +1156,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     FISHING 10 - all three rods' slots, so any rod catches it) are one ROM block beside PLAYER LOOK's (one `pkRomBlocks`
     call: each replaces every block), every slot the pinned species at its own level range over that method's slots,
     guarded by the file's bytes' CRC32. One pin at a time. It goes out on the frame a battle starts with
-    gBattleTypeFlags' TRAINER clear, on another map and on UNPIN. Offered by the running GUIDE tables
+    gBattleTypeFlags' TRAINER clear, on another map, on UNPIN, when NUZLOCKE goes on or co-op starts for the game (PIN is
+    greyed in both), and with its core; RetroAchievements stay paused until that wild battle ends. Offered by the running GUIDE tables
     (`WildPin.offered`): retail English FireRed rev 1, LeafGreen rev 0 / 1 and Emerald, so their randomized builds too
     (the ROM's own species), and Monomyth v1.0 / v1.1 (vanilla's wild headers; every v1.1 water / rock smash / fishing
     table checked: 93 / 39 / 87, all valid 5 / 5 / 10 slots, like retail Emerald's 55 / 6 / 53; not v1.2 yet). Headless:

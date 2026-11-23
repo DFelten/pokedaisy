@@ -181,7 +181,8 @@ class EmulatorEngine(
             override fun refreshLook(palette: ByteArray?) = MgbaCore.pkLookRefresh(palette)
         },
         onPinResult = { pin, installed ->
-            runCatching { RetroAchievements.setWildPinActive(installed) }
+            pinInstalled = installed
+            syncWildPinAchievements()
             if (pin != null && !installed) runCatching { onWildPinEnded?.invoke(pin) }
         },
     )
@@ -198,6 +199,16 @@ class EmulatorEngine(
     fun setWildPin(pin: com.pokedaisy.app.companion.data.WildPin.Pin?) = playerLook.selectPin(pin)
     /** Whether a battle was up last frame (a pin ends on the frame one starts). */
     private var pinWasBattling = false
+    /** The pin's block is in the ROM (emu thread, from [playerLook]'s result). */
+    private var pinInstalled = false
+    /** The pinned Pokémon's battle is on (emu thread): its block came out as the battle started, but catching it is
+     * still the pick's doing, so achievements stay paused until that battle ends (or the core stops). */
+    private var pinBattleHold = false
+
+    /** RetroAchievements idle while a pin is in or its battle is on. */
+    private fun syncWildPinAchievements() {
+        runCatching { RetroAchievements.setWildPinActive(pinInstalled || pinBattleHold) }
+    }
     /** Fired (emu thread) when the pin goes out by itself: its wild battle started, or its bytes didn't match the ROM. */
     var onWildPinEnded: ((com.pokedaisy.app.companion.data.WildPin.Pin) -> Unit)? = null
 
@@ -1046,6 +1057,7 @@ class EmulatorEngine(
         // A pin never outlives the core it was put into (a restart, another ROM, a resume): the player pins again.
         playerLook.pin?.let(::endPin)
         pinWasBattling = false
+        pinBattleHold = false
         if (gba) playerLook.service(force = true)
 
         val sampleRate = MgbaCore.pkSampleRate()
@@ -1101,6 +1113,10 @@ class EmulatorEngine(
             runCatching { finishSave() }
             MgbaCore.pkDeinit()
             runCatching { RetroAchievements.onCoreStopped() }
+            // A pin and its pause end with the core: the next game (a GB / DS one never services the pin) starts unpaused.
+            playerLook.pin?.let(::endPin)
+            pinInstalled = false
+            pinBattleHold = false
         }
     }
 
@@ -1557,7 +1573,13 @@ class EmulatorEngine(
                             ?.let { InProcessReader.readCoreMemory(it, 4) }?.takeIf { it.size >= 4 }?.let { b -> (b[0].toInt() and 0xFF) or (b[1].toInt() and 0xFF shl 8) or (b[2].toInt() and 0xFF shl 16) or (b[3].toInt() shl 24) }
                     }) {
                     Log.i("pokedaisy", "wild pin: its battle started, the map's slots go back")
+                    // Set first: the next service() reports the pin out, and achievements must stay paused through the catch.
+                    pinBattleHold = true
                     endPin(pin)
+                }
+                if (pinBattleHold && pinWasBattling && !battling) {
+                    pinBattleHold = false
+                    syncWildPinAchievements()
                 }
                 pinWasBattling = battling
             }

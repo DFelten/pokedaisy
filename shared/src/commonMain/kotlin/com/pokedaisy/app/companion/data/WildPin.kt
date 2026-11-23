@@ -15,7 +15,7 @@ import com.pokedaisy.app.companion.i18n.tk
  *
  * One pin at a time, one encounter: the pin ends when a wild battle starts (any method's) (gMain.inBattle rising with gBattleTypeFlags' TRAINER clear -
  * the foe is made by then), when the player is on another map, or on UNPIN; then the blocks go back in without it.
- * RetroAchievements idle while one is on.
+ * RetroAchievements idle while one is on and through the wild battle it ended at (EmulatorEngine's pinBattleHold).
  *
  * First slice: retail English FireRed rev 1, LeafGreen rev 0 / 1 and Emerald ([offered], by their GUIDE tables, which the
  * Poller keeps only where the ROM matches). A headless check puts [Pin.toText]'s line in a `romblocks`
@@ -50,6 +50,8 @@ object WildPin {
     val NUZLOCKE_REASON = tk("OFF IN A NUZLOCKE RUN")
     /** The reason PIN is greyed in a battle (it waits for the field). */
     val BATTLE_REASON = tk("NOT IN A BATTLE")
+    /** The reason PIN is greyed while co-op is on for this game (it changes the ROM, which co-op refuses like cheats). */
+    val COOP_REASON = tk("OFF IN CO-OP")
 
     /** A map's slot array for [method] as the file has it: [addr] (0x08xxxxxx) and its [Method.blockBytes] bytes. */
     class Slots(val addr: Long, bytes: ByteArray, val method: Method = Method.LAND) {
@@ -119,9 +121,10 @@ object WildPin {
             t === GUIDE_TABLES_EMERALD || t === GUIDE_TABLES_MONOMYTH || t === GUIDE_TABLES_MONOMYTH_V1_1
         )
 
-    /** Why PIN can't be tapped now, or null: the NUZLOCKE tracker on, or a battle up. An English key (tr() draws it). */
-    fun blocked(nuzlocke: Boolean, inBattle: Boolean): String? = when {
+    /** Why PIN can't be tapped now, or null: the NUZLOCKE tracker on, co-op on, or a battle up. An English key (tr() draws it). */
+    fun blocked(nuzlocke: Boolean, inBattle: Boolean, coop: Boolean = false): String? = when {
         nuzlocke -> NUZLOCKE_REASON
+        coop -> COOP_REASON
         inBattle -> BATTLE_REASON
         else -> null
     }

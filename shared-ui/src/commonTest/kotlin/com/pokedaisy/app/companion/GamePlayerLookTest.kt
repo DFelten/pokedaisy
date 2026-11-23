@@ -101,10 +101,30 @@ class GamePlayerLookTest {
         assertNull(look.pin)
     }
 
+    @Test fun aRejectedLookStillLetsThePinGoInAlone() {
+        val core = Core()
+        val results = mutableListOf<Pair<WildPin.Pin?, Boolean>>()
+        val look = GamePlayerLook(core) { pin, installed -> results += pin to installed }
+        val slots = ByteArray(48).also { b -> for (i in 0 until 12) { b[i * 4] = 2; b[i * 4 + 1] = 4; b[i * 4 + 2] = 10 } }
+        val pin = WildPin.pin(10, 3, 19, 0, WildPin.Slots(0x083C9CB8L, slots))!!
+        val hero = PlayerLook.Patch(listOf(PlayerLook.Block(0x20, -1, byteArrayOf(1, 2))), emptyList(), null)
+
+        // The look's bytes don't match this ROM: together refused, the look alone refused, the pin alone goes in.
+        core.rejectAddress = 0x08000020
+        look.select(hero)
+        look.selectPin(pin)
+        assertTrue(look.service())
+        assertContentEquals(intArrayOf(0x083C9CB8), core.addresses)
+        assertEquals(pin to true, results.last())
+        assertEquals(pin, look.pin)
+    }
+
     private class Core : PlayerLookCore {
         var reject = false
         /** Reject any call with more blocks than this. */
         var rejectOver = Int.MAX_VALUE
+        /** Reject any call holding a block at this address (its bytes don't match). */
+        var rejectAddress: Int? = null
         var addresses = intArrayOf()
         var bytes = byteArrayOf()
         var swaps = 0
@@ -113,7 +133,7 @@ class GamePlayerLookTest {
         override fun replaceLookBlocks(addresses: IntArray, lengths: IntArray, crcs: IntArray, data: ByteArray): Int {
             this.addresses = addresses
             bytes = data
-            return if (reject || addresses.size > rejectOver) -1 else addresses.size
+            return if (reject || addresses.size > rejectOver || rejectAddress?.let { it in addresses } == true) -1 else addresses.size
         }
 
         override fun repaletteLook(from: ByteArray, to: ByteArray): Int {

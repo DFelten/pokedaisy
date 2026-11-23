@@ -70,6 +70,17 @@ class RegroupSettingsTest {
     }
 
     @Test
+    fun wildPinNeverCountsAsAHelperOn() {
+        // Its switch only shows or hides the PINs: neither ON nor OFF changes the game.
+        fun on(label: String, v: String) = SettingRow(label, v) {}
+        assertEquals(false, qolInUse(on("WILD PIN", "ON")))
+        assertEquals(false, qolInUse(on("WILD PIN", "OFF")))
+        assertEquals(true, qolInUse(on("INSTANT TEXT", "ON")))
+        val out = regroupSettings(listOf(groupTitle("GAMEPLAY"), on("WILD PIN", "OFF"), on("AUTO-RUN", "ON"))) {}
+        assertEquals(com.pokedaisy.app.companion.i18n.tr("{0} ON", 1), out.first { it.label == QOL_PAGE }.value)
+    }
+
+    @Test
     fun aFeaturedGroupKeepsItsTitleRowAndComesFirst() {
         val makeover = featuredGroupTitle("MAKEOVER", "A fresh look")
         val out = regroupSettings(listOf(groupTitle("SOUND"), row("MUTE GAME"), makeover, row("PLAYER LOOK")))

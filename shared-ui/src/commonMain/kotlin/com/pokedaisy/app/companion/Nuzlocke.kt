@@ -70,9 +70,13 @@ object Nuzlocke {
         onState.value = on
     }
 
-    fun setOn(v: Boolean) = synchronized(lock) {
-        onState.value = v
-        saveOn(v)
+    fun setOn(v: Boolean) {
+        synchronized(lock) {
+            onState.value = v
+            saveOn(v)
+        }
+        // A pinned encounter isn't a NUZLOCKE catch: turning the tracker on takes a pin out (PIN is greyed meanwhile).
+        if (v) WildPins.unpin()
     }
 
     /**

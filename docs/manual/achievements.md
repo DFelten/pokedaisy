@@ -97,7 +97,7 @@ While any cheat is loaded, achievements are paused: nothing can unlock, and the 
 
 Raising `SHINY ODDS` pauses them the same way, and the tab shows `PAUSED: SHINY ODDS` until you set it back to `NORMAL`. See [SHINY ODDS](controls.md#shiny-odds). So does `EXP SHARE` while it's on (`PAUSED: EXP SHARE`): see [EXP SHARE](controls.md#exp-share).
 
-A wild Pokémon pinned from the GUIDE pauses them too, until its battle starts: the tab shows `PAUSED: WILD PIN`. See [Pin your next wild encounter](guide.md#pin-your-next-wild-encounter).
+A wild Pokémon pinned from the GUIDE pauses them too, until the battle with it is over: the tab shows `PAUSED: WILD PIN`. See [Pin your next wild encounter](guide.md#pin-your-next-wild-encounter).
 
 ## When the site can't be reached
 

@@ -3,6 +3,7 @@ package com.pokedaisy.app.companion
 import androidx.compose.runtime.mutableStateOf
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.WildPin
+import kotlin.concurrent.Volatile
 
 /**
  * WILD PIN for the running game, as the companion and the HUD see it ([WildPin] is the contract): whether GAMEPLAY > WILD
@@ -11,8 +12,9 @@ import com.pokedaisy.app.companion.data.WildPin
  * activity ends it on another map. Previews set [preview] instead of a host.
  */
 object WildPins {
-    /** The activity: [pin] reads the map's slots for the method off the UI thread and puts the pin in; [unpin] takes it out. */
-    class Host(val pin: (method: WildPin.Method, species: Int) -> Unit, val unpin: () -> Unit)
+    /** The activity: [pin] reads the map's slots for the method off the UI thread and puts the pin in; [unpin] takes it out;
+     * [coop] says co-op is on for this game (PIN greyed, as cheats are refused then). */
+    class Host(val pin: (method: WildPin.Method, species: Int) -> Unit, val unpin: () -> Unit, val coop: () -> Boolean = { false })
 
     private val onState = mutableStateOf(true)
     private val pinState = mutableStateOf<WildPin.Pin?>(null)
@@ -33,7 +35,12 @@ object WildPins {
     fun setOn(on: Boolean) {
         onState.value = on
         saveOn(on)
-        if (!on && pinned != null) host?.unpin?.invoke()
+        if (!on) unpin()
+    }
+
+    /** Takes the pin out, if one is in (WILD PIN turned off, the NUZLOCKE tracker turned on, a co-op link up). */
+    fun unpin() {
+        if (pinned != null) host?.unpin?.invoke()
     }
 
     /** The pin that's in now (the activity, any thread). */
@@ -48,11 +55,12 @@ object WildPins {
         previewState.value?.let { p ->
             return PinControl(method, species, pinned = species == p.pinned && method == p.method, blocked = WildPin.blocked(p.nuzlocke, inBattle = false))
         }
-        if (!on || species <= 0 || host == null || snapshot.unsupported || !WildPin.offered(snapshot.guideTables)) return null
+        val h = host
+        if (!on || species <= 0 || h == null || snapshot.unsupported || !WildPin.offered(snapshot.guideTables)) return null
         val p = pinned
         return PinControl(
             method, species, pinned = p != null && p.species == species && p.method == method && p.onMap(snapshot.mapGroup, snapshot.mapNum),
-            blocked = WildPin.blocked(Nuzlocke.on, snapshot.inBattle),
+            blocked = WildPin.blocked(Nuzlocke.on, snapshot.inBattle, coop = h.coop()),
         )
     }
 
