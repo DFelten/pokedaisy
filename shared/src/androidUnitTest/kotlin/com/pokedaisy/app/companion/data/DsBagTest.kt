@@ -32,8 +32,9 @@ class DsBagTest {
         assertEquals(DsBag.Effect(revive = 2), DsBag.effect(28))
         assertEquals(DsBag.Effect(heal = 1, healDiv = 4), DsBag.effect(158))   // Sitrus: a quarter
         assertEquals(intArrayOf(0, 0, 0, 0, 10, 1).toList(), DsBag.effect(40)!!.words().toList())   // Elixir
-        // herbs (friendship), vitamins, PP Up, Rare Candy: the game's bag
-        listOf(34, 35, 36, 37, 45, 50, 51, 169).forEach { assertFalse("$it", DsBag.canUse(it, gen5 = true)) }
+        assertEquals(DsBag.Effect(heal = 20), DsBag.effect(504))   // RageCandyBar (Black's item data: 20 HP, like a Potion)
+        // herbs and the Sweet Heart (friendship), vitamins, PP Up, Rare Candy, a Poké Ball (494): the game's bag
+        listOf(34, 35, 36, 37, 45, 50, 51, 134, 169, 494).forEach { assertFalse("$it", DsBag.canUse(it, gen5 = true)) }
         assertTrue(DsBag.picksMove(38, gen5 = true))
         assertFalse(DsBag.picksMove(40, gen5 = true))
         assertFalse(DsBag.picksMove(51, gen5 = true))

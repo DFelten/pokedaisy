@@ -624,7 +624,11 @@ static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo) <= PK_NDS_SCRIPT_ADDR, "the evo
 
 // The helpers' code ends before their arguments, and the arguments before the ITCM does.
 static_assert(sizeof(PK_NDS_ITEM_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM_ADDR, "Gen 4's bag helper runs into its arguments");
-static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into its arguments");
+static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_INSTANT_TEXT_ADDR - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into INSTANT TEXT's routine");
+// The rest of the code against pk_nds_call_abi.h's map (its ranges are checked there).
+static_assert(sizeof(PK_NDS_HOOK_CODE) <= PK_NDS_JOB - PK_NDS_HOOK_ADDR, "the hook runs into the job block");
+static_assert(sizeof(PK_NDS_SKILL_CODE) <= PK_NDS_SKILL_ADDR - PK_NDS_HELPER_ADDR, "Gen 5's field-skill helper runs into its arguments");
+static_assert(sizeof(PK_NDS_PLATINUM_PC) <= PK_NDS_SCRIPT_MAX && sizeof(PK_NDS_HEARTGOLD_PC) <= PK_NDS_SCRIPT_MAX, "a script runs into the scratch");
 static_assert(PK_NDS_ITEM_ARGS + sizeof(PkNdsItem5) <= PK_NDS_HM_ADDR && PK_NDS_ITEM_ARGS + sizeof(PkNdsItem) <= PK_NDS_HM_ADDR,
               "the bag helpers' arguments run into NO HMS NEEDED's helper");
 
@@ -1211,7 +1215,7 @@ static int gen5Action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, co
 }
 
 // Scratch for structs a job hands the game (a FieldMoveContext): past the script, in the same unused ITCM.
-constexpr u32 SCRATCH = PK_NDS_SCRIPT_ADDR + PK_NDS_SCRIPT_MAX;
+constexpr u32 SCRATCH = PK_NDS_SCRATCH_ADDR;
 
 int pk_nds_call_action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, int action, const uint32_t args[4])
 {

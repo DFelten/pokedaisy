@@ -183,9 +183,9 @@ class EmulatorEngine(
     )
 
     /** NO HMS NEEDED on a DS game ([com.pokedaisy.app.companion.data.DsHmFree], melonDS): our hooks of the party move checks, not
-     * a ROM patch, so beside [gameOptions]; sent to the core from the emu thread when it changes ([dsHmFreeTick]). */
+     * a ROM patch, so beside [gameOptions]; sent to the core every frame from the emu thread (a flag write), since every
+     * pkInit (a start after HOME, RESTART GAME) makes a new core with it off. */
     @Volatile var dsHmFree = false
-    private var dsHmFreeSent: Boolean? = null
 
     fun setPlayerLook(patch: com.pokedaisy.app.companion.data.PlayerLook.Patch?) = playerLook.select(patch)
 
@@ -274,7 +274,6 @@ class EmulatorEngine(
         set(v) {
             field = v; ndsTaps.layout = NdsBattleTaps.layoutFor(v)
             dsText = null; dsTextTries = 0; dsTextFrames = 0; dsTms = null; dsTmsTries = 0
-            dsHmFreeSent = null
         }
 
     /** INSTANT TEXT on a Gen 4 DS game ([com.pokedaisy.app.companion.data.DsInstantText]); the activity sets it where it works. */
@@ -290,7 +289,6 @@ class EmulatorEngine(
     /** Every 30 frames: the printer task found (once the game has run 5 s and decompressed its ARM9; 20 tries at most, only
      * while wanted), then its call set to the setting. Emu thread, between frames. */
     private fun dsTextTick() {
-        dsHmFreeTick()
         if (++dsTextFrames % 30 != 0) return
         val read = com.pokedaisy.app.companion.data.InProcessReader::readCoreMemory
         val tms = dsTms ?: run {
@@ -306,14 +304,6 @@ class EmulatorEngine(
             com.pokedaisy.app.companion.data.DsInstantText.find(read)?.also { dsText = it } ?: return
         }
         runCatching { com.pokedaisy.app.companion.data.DsInstantText.sync(f, dsInstantText, read, MgbaCore::pkNdsCodeWrite) }
-    }
-
-    /** NO HMS NEEDED's DS hooks in or out ([dsHmFree]) when they change: pk_nds_call_hm_free_frame keeps them in each frame. */
-    private fun dsHmFreeTick() {
-        val on = dsHmFree
-        if (dsHmFreeSent == on) return
-        MgbaCore.pkNdsHmFree(on)
-        dsHmFreeSent = on
     }
 
     /** True while a queued battle-menu button sequence hasn't fully drained —
@@ -1527,6 +1517,8 @@ class EmulatorEngine(
                 MgbaCore.pkNdsCpuBoost(ndsCpuBoost)
                 // EXP SHARE (Gen 4 / 5): the native side marks the battle's party and patches FULL EXP's division.
                 MgbaCore.pkNdsExpShare(gameOptions.dsExpShareMode, gameOptions.expSharePartyMask)
+                // NO HMS NEEDED's hooks: pk_nds_call_hm_free_frame puts them in or takes them out after each frame.
+                MgbaCore.pkNdsHmFree(dsHmFree)
             }
             fieldState = when {
                 nds -> MgbaCore.pkFieldState(false, wildKeep)

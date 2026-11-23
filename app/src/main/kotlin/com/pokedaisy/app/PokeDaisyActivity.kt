@@ -2162,20 +2162,13 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         val ndsCode = if (nds) RomIdentity.ndsGameCode(r).orEmpty() else ""
         romOrigin = nds && ndsCode == com.pokedaisy.app.companion.data.OriginHeartGold.CODE &&
             com.pokedaisy.app.companion.data.OriginHeartGold.matches(r.toOkioPath())
-        // Retail only: Renegade Platinum keeps retail's header (and code), but the jobs weren't tried on it.
-        dsBagCart = nds && com.pokedaisy.app.companion.data.DsBag.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
-            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
-            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
-                com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
+        // Retail only: the hacks that keep a retail header (and code) weren't tried with the jobs or the hooks.
+        val ndsRev = RomIdentity.ndsRevision(r)
+        val dsRetail = nds && !dsRetailHeaderHack(ndsCode, r.toOkioPath())
+        dsBagCart = dsRetail && com.pokedaisy.app.companion.data.DsBag.proved(ndsCode, ndsRev)
         dsBagGen5 = dsBagCart && com.pokedaisy.app.companion.data.DsBag.gen5(ndsCode)
-        dsHmCart = nds && com.pokedaisy.app.companion.data.DsHmFree.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
-            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
-            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
-                com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
-        dsEvoCart = nds && com.pokedaisy.app.companion.data.DsTradeEvo.proved(ndsCode, RomIdentity.ndsRevision(r)) &&
-            !(ndsCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(r.toOkioPath())) &&
-            !((ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || ndsCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
-                com.pokedaisy.app.companion.data.Black2Redux.matches(r.toOkioPath()))
+        dsHmCart = dsRetail && com.pokedaisy.app.companion.data.DsHmFree.proved(ndsCode, ndsRev)
+        dsEvoCart = dsRetail && com.pokedaisy.app.companion.data.DsTradeEvo.proved(ndsCode, ndsRev)
         dsWildRates = if (!nds) null else if (romOrigin) {
             // Its tables are read in the background (NdsArt.prefetch); the core may start first, so read them here then.
             { (com.pokedaisy.app.companion.data.OriginHeartGold.data ?: com.pokedaisy.app.companion.data.NdsArt.readOrigin(r.toOkioPath()))?.wildRates ?: IntArray(0) }
@@ -5464,23 +5457,30 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         if (::engine.isInitialized) engine.ndsCore = dsCoreId
     }
 
+    /**
+     * A DS hack that keeps a retail cart's header (code and revision), so anything proved on retail by header must turn it
+     * away by its layout: Renegade Platinum (US Platinum rev 1), Blaze Black 2 / Volt White 2 Redux (US Black 2 / White 2),
+     * Heartfelt Gold (US HeartGold) and Sacred Gold / Storm Silver (US HeartGold / SoulSilver). Origin HeartGold has the
+     * Japanese header, which nothing proved here shares. Reads the cart's header (and a word or two): not on the UI thread.
+     */
+    private fun dsRetailHeaderHack(code: String, rom: okio.Path): Boolean = when (code) {
+        com.pokedaisy.app.companion.data.RenegadePlatinum.CODE -> com.pokedaisy.app.companion.data.RenegadePlatinum.matches(rom)
+        com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2, com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2 ->
+            com.pokedaisy.app.companion.data.Black2Redux.matches(rom)
+        // IPKE: Heartfelt Gold or Sacred Gold; IPGE: Storm Silver.
+        com.pokedaisy.app.companion.data.HeartfeltGold.CODE, com.pokedaisy.app.companion.data.SacredGold.CODE_STORM_SILVER ->
+            com.pokedaisy.app.companion.data.HeartfeltGold.matches(rom) || com.pokedaisy.app.companion.data.SacredGold.matches(rom)
+        else -> false
+    }
+
     /** EXP SHARE on the DS: Gen 4's and Gen 5's US carts on melonDS (ExpShare.dsFind; none = N/A), into this game's
      * options; again when DS CORE changes. */
     private fun syncDsExpShare() {
         val options = currentGameOptions() ?: return
         if (!romIsNds || romBlocked != null) return
-        // Hacks that keep retail's header: their battle code isn't checked.
-        val hack = runCatching {
-            val path = romData!!.toOkioPath()
-            romCode == com.pokedaisy.app.companion.data.RenegadePlatinum.CODE && com.pokedaisy.app.companion.data.RenegadePlatinum.matches(path) ||
-                (romCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_BLACK2 || romCode == com.pokedaisy.app.companion.data.Black2Redux.CODE_WHITE2) &&
-                com.pokedaisy.app.companion.data.Black2Redux.matches(path) ||
-                // hg-engine's Heartfelt Gold and Sacred Gold / Storm Silver keep the US HeartGold / SoulSilver header (rev 0):
-                // a battle engine of their own, where SPLIT would write HeartGold's BattleContext.
-                romCode == com.pokedaisy.app.companion.data.HeartfeltGold.CODE && com.pokedaisy.app.companion.data.HeartfeltGold.matches(path) ||
-                (romCode == com.pokedaisy.app.companion.data.SacredGold.CODE_SACRED_GOLD || romCode == com.pokedaisy.app.companion.data.SacredGold.CODE_STORM_SILVER) &&
-                com.pokedaisy.app.companion.data.SacredGold.matches(path)
-        }.getOrDefault(true)
+        // Hacks that keep retail's header: their battle code isn't checked (Heartfelt Gold's hg-engine and Sacred Gold /
+        // Storm Silver have a battle engine of their own, where SPLIT would write HeartGold's BattleContext).
+        val hack = runCatching { dsRetailHeaderHack(romCode, romData!!.toOkioPath()) }.getOrDefault(true)
         val found = com.pokedaisy.app.companion.data.ExpShare.dsFind(romCode, romRev, dsperate, hack)
         options.setExpFound(found)
         Log.i("pokedaisy", "exp share: ${if (found != null) "found (DS)" else "not found"}")

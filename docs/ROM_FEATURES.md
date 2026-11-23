@@ -1111,8 +1111,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     to the game's menus. Proved headless on each cart (a new game, two Pokémon and items given by its own script commands,
     HP / PP / status set with `Pokemon_SetValue`, every case through nds_dump's `action 4`, then an in-game save and a cold
     reboot with every change kept); SoulSilver on the HeartGold save. The German / French carts share callSet 2 but aren't
-    tried, so `DsBag.CARTS` leaves them out, as it does Renegade Platinum, Blaze Black 2 / Volt White 2 Redux and the
-    language ports.
+    tried, so `DsBag.CARTS` leaves them out, as it does the language ports; Renegade Platinum, Blaze Black 2 / Volt White 2
+    Redux, Heartfelt Gold and Sacred Gold / Storm Silver keep a retail header and are turned away by their layout (the
+    activity's `dsRetailHeaderHack`, which TRADE EVOLUTIONS and NO HMS NEEDED share).
     Black, White, Black 2 and White 2 (US / Europe) have no decomp, and their item effects live in an overlay only the party
     screen loads, where the field's own overlay sits: the field can't call them. So there USE applies the effect `DsBag`
     gives the item (HP, a revive, status, PP; not the herbs, vitamins, PP Up or Rare Candy) through the game's own getter /

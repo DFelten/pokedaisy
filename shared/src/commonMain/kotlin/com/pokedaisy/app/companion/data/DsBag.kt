@@ -36,8 +36,10 @@ object DsBag {
     private const val PARALYSIS = 0x40
     private const val ANY_STATUS = 0xFF
 
-    /** Gen 5's USE items and what each does, as Black / White's item data has them. Left out: the herbs (they cost
-     * friendship too), Sacred Ash, vitamins, PP Up / Max, Rare Candy and the berries that lower EVs - the game's bag. */
+    /** Gen 5's USE items and what each does, as Black / White's item data has them (/a/0/2/4: the HP amount at +0x1D, the
+     * PP amount at +0x1E, the status bits at +0x10; ids as Gen5ItemsBlack.kt). Left out: the herbs and the Sweet Heart
+     * (they change friendship too, which the helper doesn't), Sacred Ash, vitamins, PP Up / Max, Rare Candy and the
+     * berries that lower EVs - the game's bag. */
     private val GEN5_EFFECTS: Map<Int, Effect> = mapOf(
         17 to Effect(heal = 20), 18 to Effect(statusMask = POISON), 19 to Effect(statusMask = BURN),
         20 to Effect(statusMask = FREEZE), 21 to Effect(statusMask = SLEEP), 22 to Effect(statusMask = PARALYSIS),
@@ -49,7 +51,7 @@ object DsBag {
         149 to Effect(statusMask = PARALYSIS), 150 to Effect(statusMask = SLEEP), 151 to Effect(statusMask = POISON),
         152 to Effect(statusMask = BURN), 153 to Effect(statusMask = FREEZE), 154 to Effect(pp = 10), 155 to Effect(heal = 10),
         157 to Effect(statusMask = ANY_STATUS), 158 to Effect(heal = 1, healDiv = 4),
-        494 to Effect(heal = 20), 591 to Effect(statusMask = ANY_STATUS),
+        504 to Effect(heal = 20), 591 to Effect(statusMask = ANY_STATUS),
     )
 
     /** Gen 5's effect for [itemId]; null = no USE there. */

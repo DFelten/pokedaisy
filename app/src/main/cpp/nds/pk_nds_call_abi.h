@@ -44,9 +44,19 @@ typedef struct PkNdsSkill {
     unsigned int check[8];
 } PkNdsSkill;
 
-/** Gen 4's bag helper (stub/pk_nds_item.c): its code, then its PkNdsItem, at the top of the spare ITCM (past the
- * scripts and the FLY check's scratch). */
-#define PK_NDS_ITEM_ADDR 0x01FFF000u
+/** The Gen 4 FLY check's scratch (a FieldMoveContext a job hands the game): past the scripts, up to INSTANT TEXT. */
+#define PK_NDS_SCRATCH_ADDR (PK_NDS_SCRIPT_ADDR + PK_NDS_SCRIPT_MAX)
+#define PK_NDS_SCRATCH_MAX 0x1000u
+
+/** INSTANT TEXT's routine on the Gen 4 games (DsInstantText.ROUTINE in Kotlin, written through pk_nds_code_write): it stays
+ * here for as long as the option is on, between and during our jobs, so nothing else of ours may be written over it. The
+ * routine is 54 bytes; 256 are kept for it. DsInstantTextTest reads these two lines. */
+#define PK_NDS_INSTANT_TEXT_ADDR 0x01FFF000u
+#define PK_NDS_INSTANT_TEXT_MAX 0x100u
+
+/** Gen 4's bag helper (stub/pk_nds_item.c): its code past INSTANT TEXT's routine, then its PkNdsItem. The code is
+ * position independent (gen_nds_stub.py checks there's nothing to relocate), so it runs from any address. */
+#define PK_NDS_ITEM_ADDR (PK_NDS_INSTANT_TEXT_ADDR + PK_NDS_INSTANT_TEXT_MAX)
 #define PK_NDS_ITEM_ARGS 0x01FFF800u
 
 /** What the helper does (PkNdsItem.mode) and what it answers. */
@@ -87,8 +97,8 @@ typedef struct PkNdsItem {
     unsigned int out;
 } PkNdsItem;
 
-/** Gen 5's bag helper (stub/pk_nds_item5.c): its code from the Gen 4 FLY check's scratch (no Gen 5 job uses it), its
- * PkNdsItem5 at PK_NDS_ITEM_ARGS like Gen 4's (a game runs one or the other). */
+/** Gen 5's bag helper (stub/pk_nds_item5.c): its code from the Gen 4 FLY check's scratch (no Gen 5 job uses it) up to
+ * INSTANT TEXT's routine, its PkNdsItem5 at PK_NDS_ITEM_ARGS like Gen 4's (a game runs one or the other). */
 #define PK_NDS_ITEM5_ADDR 0x01FFE000u
 #define PK_NDS_ITEM5_KEEP 24
 /** An amount meaning "all the way" (HP to its maximum, PP to the move's). */
@@ -213,3 +223,30 @@ typedef struct PkNdsHm {
     unsigned int gen5;           // Gen 5's argument shapes (above)
     unsigned short hms[12];      // the moves anyone may stand in for, 0-terminated
 } PkNdsHm;
+
+/* The map of the spare ITCM, checked here (the stubs' code sizes are checked in pk_nds_call.cpp, which has the bytes).
+ * A Gen 4 game and a Gen 5 game never run together, so the Gen 5 helpers (HELPER / SKILL in the scripts' place, ITEM5 in
+ * the scratch's) may share space with Gen 4's; INSTANT TEXT's routine, the item arguments and NO HMS NEEDED, which can
+ * stay resident while a job runs, collide with nothing of either. */
+#ifdef __cplusplus
+#define PK_NDS_ABI_ASSERT(c, m) static_assert(c, m)
+#else
+#define PK_NDS_ABI_ASSERT(c, m) _Static_assert(c, m)
+#endif
+#define PK_NDS_ABI_MAX(a, b) ((a) > (b) ? (a) : (b))
+PK_NDS_ABI_ASSERT(PK_NDS_HOOK_ADDR < PK_NDS_JOB, "the hook runs into the job block");
+PK_NDS_ABI_ASSERT(PK_NDS_JOB + sizeof(PkNdsJob) <= PK_NDS_EVO_ADDR, "the job block runs into the evolution helper");
+PK_NDS_ABI_ASSERT(PK_NDS_EVO_ADDR < PK_NDS_EVO_ARGS, "the evolution helper's arguments come before its code");
+PK_NDS_ABI_ASSERT(PK_NDS_EVO_ARGS + PK_NDS_ABI_MAX(sizeof(PkNdsEvo), sizeof(PkNdsEvo5)) <= PK_NDS_SCRIPT_ADDR,
+                  "the evolution helper's arguments run into the scripts");
+PK_NDS_ABI_ASSERT(PK_NDS_SCRATCH_ADDR + PK_NDS_SCRATCH_MAX <= PK_NDS_INSTANT_TEXT_ADDR, "the scripts' scratch runs into INSTANT TEXT");
+PK_NDS_ABI_ASSERT(PK_NDS_HELPER_ADDR >= PK_NDS_EVO_ARGS + sizeof(PkNdsEvo5) && PK_NDS_HELPER_ADDR < PK_NDS_SKILL_ADDR,
+                  "Gen 5's field-skill helper is out of place");
+PK_NDS_ABI_ASSERT(PK_NDS_SKILL_ADDR + sizeof(PkNdsSkill) <= PK_NDS_ITEM5_ADDR, "the field-skill arguments run into Gen 5's bag helper");
+PK_NDS_ABI_ASSERT(PK_NDS_ITEM5_ADDR < PK_NDS_INSTANT_TEXT_ADDR, "Gen 5's bag helper starts past INSTANT TEXT");
+PK_NDS_ABI_ASSERT(PK_NDS_INSTANT_TEXT_ADDR + PK_NDS_INSTANT_TEXT_MAX <= PK_NDS_ITEM_ADDR, "INSTANT TEXT runs into Gen 4's bag helper");
+PK_NDS_ABI_ASSERT(PK_NDS_ITEM_ADDR < PK_NDS_ITEM_ARGS, "Gen 4's bag helper starts past its arguments");
+PK_NDS_ABI_ASSERT(PK_NDS_ITEM_ARGS + PK_NDS_ABI_MAX(sizeof(PkNdsItem), sizeof(PkNdsItem5)) <= PK_NDS_HM_ADDR,
+                  "the bag helpers' arguments run into NO HMS NEEDED's helper");
+PK_NDS_ABI_ASSERT(PK_NDS_HM_ADDR < PK_NDS_HM_ARGS, "NO HMS NEEDED's helper starts past its arguments");
+PK_NDS_ABI_ASSERT(PK_NDS_HM_ARGS + sizeof(PkNdsHm) <= 0x02000000u, "NO HMS NEEDED's arguments run past the ITCM");
