@@ -67,8 +67,19 @@ class Gen2ItemUseTest {
             put(calls.moves, "01002800ff2300" + "02003201ff1900")   // POUND 35 PP, KARATE CHOP 25 PP
         }
 
-        operator fun get(addr: Long) = wram[(addr and 0xFFFF).toInt() - 0xD000].toInt() and 0xFF
-        operator fun set(addr: Long, v: Int) { wram[(addr and 0xFFFF).toInt() - 0xD000] = v.toByte() }
+        /** WRAM0 (C000-CFFF): where the TM routine goes. */
+        val low = HashMap<Int, Byte>()
+        operator fun get(addr: Long): Int {
+            val a = (addr and 0xFFFF).toInt()
+            return (if (a < 0xD000) low[a] ?: 0 else wram[a - 0xD000]).toInt() and 0xFF
+        }
+        operator fun set(addr: Long, v: Int) {
+            val a = (addr and 0xFFFF).toInt()
+            if (a < 0xD000) low[a] = v.toByte() else wram[a - 0xD000] = v.toByte()
+        }
+        /** Calls set up through UseRegisteredItem / the TM routine, and whether a field item's effect works here. */
+        val gameCalls = mutableListOf<Int>()
+        var fieldWorks = true
         override fun call(fn: Long, a0: Int, a1: Int, a2: Int, a3: Int) = -1L
         override fun read(addr: Long, len: Int) = ByteArray(len) { get(addr + it).toByte() }
         override fun write(addr: Long, bytes: ByteArray): Boolean { bytes.forEachIndexed { i, b -> set(addr + i, b.toInt()) }; return true }
@@ -81,9 +92,17 @@ class Gen2ItemUseTest {
             pending = null
             if (fn == calls.tossItem) pending = { toss(hl) }
             if (fn == calls.reanchorMap) reanchored = true
+            if (fn == Gen2ItemCalls.ROUTINE) gameCalls += fn
+            if (fn == 0x0008 && a == 0x04 && hl == calls.useRegisteredItem) { gameCalls += hl; pending = { fieldItem() } }
             if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
             if (fn == 0x0008 && a == 0x03 && hl in calls.oldRodEffect..calls.oldRodEffect + 8) pending = { fish(hl - calls.oldRodEffect) }
             return true
+        }
+
+        /** UseRegisteredItem's CLOSE kind: the effect answers in wItemEffectSucceeded, a script queued when it works. */
+        private fun fieldItem() {
+            this[calls.fieldMoveSucceeded] = if (fieldWorks) 1 else 0
+            if (fieldWorks) { this[calls.queuedScript] = 0x04; this[calls.queuedScript + 1] = 0xA8; this[calls.queuedScript + 2] = 0x65 }
         }
 
         var waterHere = true
@@ -161,7 +180,6 @@ class Gen2ItemUseTest {
     private val MAX_ETHER = 0x40
     private val ELIXER = 0x41
     private val REPEL = 0x14
-    private val ENERGYPOWDER = 0x79
 
     @Test
     fun `a Potion heals 20 up to the max HP, and the game takes it out of the bag`() {
@@ -270,7 +288,7 @@ class Gen2ItemUseTest {
         assertEquals(ItemUseResult.FAILED, calls.useRepel(g, cfg, REPEL).result)
         assertEquals(10 to 0, g.hp(0) to g[calls.repelEffect])
         assertEquals(1, g.qty(POTION))
-        assertFalse(calls.usable(ENERGYPOWDER))
+        assertFalse(calls.usable(0xA7) || calls.usable(0xA8))   // NORMAL BOX, GORGEOUS BOX
         assertTrue(calls.usable(REPEL) && !calls.picksMon(REPEL) && calls.picksMove(ETHER) && !calls.picksMove(ELIXER))
         g.onField = true
         g.bag()
@@ -302,5 +320,65 @@ class Gen2ItemUseTest {
         assertEquals(null, calls.onTheSpot(g, 0x3B))
         assertEquals(listOf(2, 0, 1), g.rodsCast)
         assertEquals(0, g[calls.usingItemWithSelect])
+    }
+
+    private val TM01 = 0xBF
+    private val HM01 = 0xF3
+    private val RARE_CANDY = 0x20
+    private val COIN_CASE = 0x36
+    private val ITEMFINDER = 0x37
+    private val ESCAPE_ROPE = 0x13
+
+    @Test
+    fun `the TM routine is the one checked in the German cart`() {
+        val de = "cda42dcd132bcddd31cddb0fcd5a04061 4cd2a333e0b21b947cffa65d2ea62d2cde234cdc03021cccf7ef5cba63e0b21fe47cf381218083e0b210d48cf38083e0b216a48cf30f0f1eacccfcd262bcdb92dc9".replace(" ", "")
+        assertEquals(de, GEN2_ITEM_CALLS_CRYSTAL_DE.tm.routine().joinToString("") { "%02x".format(it) })
+        assertEquals(82, GEN2_ITEM_CALLS_CRYSTAL.tm.routine().size)
+    }
+
+    @Test
+    fun `a TM or HM runs the TM routine on the game's own screen, none left = nothing`() {
+        val g = game()
+        g.bag()
+        assertTrue(calls.usable(TM01) && calls.inGame(TM01) && !calls.picksMon(TM01) && calls.inGame(HM01))
+        assertFalse(calls.inGame(0xC3) || calls.inGame(0xDC))
+        assertEquals(ItemUseResult.NONE_LEFT, calls.openInGame(g, cfg, TM01).result)
+        assertTrue(g.gameCalls.isEmpty())
+        g[cfg.tmsHms] = 1
+        assertEquals(ItemUseResult.IN_GAME, calls.openInGame(g, cfg, TM01).result)
+        assertEquals(listOf(Gen2ItemCalls.ROUTINE), g.gameCalls)
+        assertEquals(TM01, g[calls.curItem])
+        val routine = calls.tm.routine()
+        assertTrue(routine.indices.all { g[Gen2ItemCalls.ROUTINE.toLong() + it] == routine[it].toInt() and 0xFF })
+        assertEquals(1, g[cfg.tmsHms])   // TeachTMHM spends it, not us
+    }
+
+    @Test
+    fun `a party item opens the game's party menu, a text item just shows its text`() {
+        val g = game()
+        g.bag(RARE_CANDY to 1)
+        assertTrue(calls.inGame(RARE_CANDY) && !calls.picksMon(RARE_CANDY))
+        assertEquals(ItemUseResult.IN_GAME, calls.openInGame(g, cfg, RARE_CANDY).result)
+        assertEquals(RARE_CANDY, g[calls.curItem])
+        assertEquals(1, g.qty(RARE_CANDY))
+        assertEquals(ItemUseResult.USED, calls.openInGame(g, cfg, COIN_CASE).result)
+        assertEquals(listOf(calls.useRegisteredItem, calls.useRegisteredItem), g.gameCalls)
+        g.bag()
+        assertEquals(ItemUseResult.NONE_LEFT, calls.openInGame(g, cfg, RARE_CANDY).result)
+    }
+
+    @Test
+    fun `a field item hands back the script its effect queued, nothing where the game says not now`() {
+        val g = game()
+        g.bag(ESCAPE_ROPE to 1)
+        assertTrue(calls.fieldEffect(ITEMFINDER) && calls.usable(ESCAPE_ROPE) && !calls.inGame(ESCAPE_ROPE))
+        assertEquals(0x04 to 0x65A8, calls.fieldEffect(g, cfg, ITEMFINDER))
+        assertEquals(ITEMFINDER, g[calls.curItem])
+        g.fieldWorks = false
+        assertEquals(null, calls.fieldEffect(g, cfg, ESCAPE_ROPE))
+        g.bag()
+        g.gameCalls.clear()
+        assertEquals(null, calls.fieldEffect(g, cfg, ESCAPE_ROPE))
+        assertTrue(g.gameCalls.isEmpty())
     }
 }

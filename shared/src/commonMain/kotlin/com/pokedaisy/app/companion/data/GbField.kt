@@ -304,15 +304,18 @@ sealed class GbField {
             return if (!free(g)) PartyTargets(ItemUseResult.NOT_NOW) else calls.targets(g, cfg, itemId)
         }
 
-        /** USE of [itemId]: a Repel, the BICYCLE or a rod on the spot ([target] null), anything else on [target]. NOT_NOW off the free field. */
+        /** USE of [itemId]: a Repel, the BICYCLE, a rod or a field item on the spot, a TM or an item with its own screen in the
+         * game ([target] null), anything else on [target]. NOT_NOW off the free field. */
         fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
             val calls = itemCalls ?: return ItemUseOutcome(ItemUseResult.FAILED)
             if (!free(g)) return ItemUseOutcome(ItemUseResult.NOT_NOW)
-            if (calls.onTheSpot(itemId)) {
-                val (bank, addr) = calls.onTheSpot(g, itemId) ?: return ItemUseOutcome(ItemUseResult.FAILED)
+            if (calls.onTheSpot(itemId) || calls.fieldEffect(itemId)) {
+                val (bank, addr) = (if (calls.onTheSpot(itemId)) calls.onTheSpot(g, itemId) else calls.fieldEffect(g, cfg, itemId))
+                    ?: return ItemUseOutcome(ItemUseResult.FAILED)
                 queue(g, bank, addr)
                 return ItemUseOutcome(ItemUseResult.USED)
             }
+            if (calls.inGame(itemId)) return calls.openInGame(g, cfg, itemId)
             return if (target == null) calls.useRepel(g, cfg, itemId) else calls.useOn(g, cfg, itemId, target, moveIndex)
         }
 

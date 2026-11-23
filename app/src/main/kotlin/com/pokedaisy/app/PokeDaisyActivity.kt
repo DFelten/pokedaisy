@@ -692,7 +692,13 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
         override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
             if (gbUse(itemId)) {
-                return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), done) { f, calls ->
+                // A TM, a party screen or a text of the game's own: the companion window gets out of its way.
+                val handsOver = gbItemField()?.itemCalls?.inGame(itemId) == true
+                return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
+                    if (handsOver && (out.result == com.pokedaisy.app.companion.data.ItemUseResult.IN_GAME ||
+                            out.result == com.pokedaisy.app.companion.data.ItemUseResult.USED)) closeCompanionWindow()
+                    done(out)
+                }) { f, calls ->
                     f.useItem(calls, itemId, null, 0)
                 }
             }

@@ -1091,5 +1091,13 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     use does (without it the get-off script's CloseText left EXPAND's margins wrong until the next map), then far-calls the game's BikeFunction with
     wUsingItemWithSelect set (its checks, the music) and moves the script it queues into wMapReentryScriptQueue, which the overworld runs; a rod far-calls its own item effect (OldRodEffect + 4 * rod: FishFunction) the same way. The item leaves the bag through the game's own TossItem (called from the
     overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
-    StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Left out: vitamins, RARE CANDY,
-    PP UP, stones, the bitter herbs (friendship) and SACRED ASH, and GIVE. `Gen2ItemUseTest`. Not yet played on a device.
+    StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Every other item the pack can use
+    goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
+    wCurItem set: vitamins, RARE CANDY, PP UP, stones and the bitter herbs open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
+    show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
+    effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs: an 82-byte
+    routine written to wStackBottom (C000) and called there (`Gen2TmFns.routine`): the pack's TMHM path (GetTMHMItemMove, the move's name,
+    ChooseMonToLearnTMHM, TeachTMHM - it spends the TM - looping on a Pokémon that can't learn it) between ReanchorMap and CloseSubmenu
+    + CloseText (without those EXPAND's margins went wrong after walking), wOptions' NO_TEXT_SCROLL restored. Each function found by its
+    code in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German cart (a TM taught, cancelled and refused,
+    RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor. `Gen2ItemUseTest`.

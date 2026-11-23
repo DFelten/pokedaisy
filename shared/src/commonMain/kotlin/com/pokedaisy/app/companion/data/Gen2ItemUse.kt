@@ -17,8 +17,17 @@ package com.pokedaisy.app.companion.data
  *   PP, its base PP from the cart's Moves table plus min(base / 5, 7) for each PP Up (ComputeMaxPP), the PP Up bits kept.
  * - Repels: wRepelEffect set to 100 / 200 / 250 steps, refused while one still works (UseRepel).
  *
- * Left out: ENERGYPOWDER, ENERGY ROOT, HEAL POWDER and REVIVAL HERB (they also lower friendship), SACRED ASH, PP UP, the
- * evolution stones, vitamins and RARE CANDY (their own screens).
+ * - The BICYCLE and the rods: their own field effects ([onTheSpot]).
+ *
+ * Everything else the game's bag can USE goes the game's own way ([openInGame], [fieldEffect]), as SELECT runs a registered
+ * item (engine/overworld/select_menu.asm's UseRegisteredItem, far-called from HandleMap with wCurItem set): the vitamins,
+ * PP UP, RARE CANDY, the stones and the bitter herbs (ITEMMENU_PARTY: ReanchorMap, FadeToMenu, the item's own party screen,
+ * CloseSubmenu, CloseText), the COIN CASE and BLUE CARD (ITEMMENU_CURRENT: their text over the map), SACRED ASH, ESCAPE
+ * ROPE, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE: the script their effect queues runs from the map's queue,
+ * or the game's "not the time" text). TMs and HMs aren't SELECT items: [Gen2TmFns.routine] is what the bag's TM USE does
+ * (AskTeachTMHM's move name, ChooseMonToLearnTMHM, TeachTMHM) inside SELECT's ITEMMENU_PARTY frame, run from WRAM0.
+ *
+ * Left out: NORMAL BOX and GORGEOUS BOX (Mystery Gift's, their text needs the bag's window).
  */
 class Gen2ItemCalls(
     /** TossItem's address in bank 0. */
@@ -46,6 +55,10 @@ class Gen2ItemCalls(
     val fieldMoveSucceeded: Long = wramx(1, 0xD0EC),
     /** wUsingItemWithSelect: set, BikeFunction queues the short scripts SELECT uses (no text box). */
     val usingItemWithSelect: Long = wramx(1, 0xD0EF),
+    /** UseRegisteredItem (bank 4): SELECT's item use, by the item's menu type. */
+    val useRegisteredItem: Int = 0x73C3,
+    /** The functions the TM routine calls. */
+    val tm: Gen2TmFns = Gen2TmFns(),
 ) {
     fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
         val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
@@ -54,9 +67,16 @@ class Gen2ItemCalls(
 
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
-        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId)
+        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId) ||
+        inGame(itemId) || fieldEffect(itemId)
 
-    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && !onTheSpot(itemId)
+    /** TMs / HMs and the items whose own screen or text the game shows ([openInGame]): the companion hands over to it. */
+    fun inGame(itemId: Int) = itemId in TM_ITEMS || itemId in GAME_PARTY || itemId in GAME_TEXT
+
+    /** The items whose effect queues a script ([fieldEffect]). */
+    fun fieldEffect(itemId: Int) = itemId in GAME_FIELD
+
+    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && !onTheSpot(itemId) && !inGame(itemId) && !fieldEffect(itemId)
 
     /** The BICYCLE and the rods: the game's own field effect, which queues a script of its own. */
     fun onTheSpot(itemId: Int) = itemId == BICYCLE || itemId in RODS
@@ -180,6 +200,42 @@ class Gen2ItemCalls(
         return (q[0].toInt() and 0xFF) to ((q[1].toInt() and 0xFF) or ((q[2].toInt() and 0xFF) shl 8))
     }
 
+    /**
+     * USE of a TM / HM or an item with its own screen or text ([inGame]): the game's own flow started from the overworld loop
+     * (a TM's routine written to [ROUTINE] first), wCurItem set once the call is set up. The rest is the game's - the
+     * party pick, the item spent - so this only says it opened: IN_GAME for a screen, USED for a text.
+     */
+    fun openInGame(g: GameCalls, cfg: Gen2Config, itemId: Int): ItemUseOutcome {
+        val tm = TM_ITEMS.indexOf(itemId)
+        val left = when {
+            tm >= 0 -> u8(g.read(cfg.tmsHms + tm, 1), 0)
+            itemId in GAME_TEXT -> 1
+            else -> quantity(g, cfg, itemId)
+        }
+        if (left == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        val set = if (tm >= 0) g.gbCallAt(at, ROUTINE, 0, 0, 0) else g.gbCallAt(at, FARCALL, USE_ITEM_BANK, 0, useRegisteredItem)
+        if (!set) return ItemUseOutcome(ItemUseResult.FAILED)
+        if (tm >= 0) g.write(ROUTINE.toLong(), this.tm.routine())
+        g.write(curItem, byteArrayOf(itemId.toByte()))
+        return ItemUseOutcome(if (itemId in GAME_TEXT) ItemUseResult.USED else ItemUseResult.IN_GAME)
+    }
+
+    /**
+     * USE of SACRED ASH, ESCAPE ROPE, ITEMFINDER, SQUIRTBOTTLE or a key ([fieldEffect]): UseRegisteredItem's ITEMMENU_CLOSE
+     * (ReanchorMap, the item's effect, which spends it itself), then the script it queued (bank, address) for the map's own
+     * queue. Null = not here: the game says so itself ("not the time"), or the loop didn't come back.
+     */
+    fun fieldEffect(g: GameCalls, cfg: Gen2Config, itemId: Int): Pair<Int, Int>? {
+        if (itemId in ITEM_POCKET_FIELD && quantity(g, cfg, itemId) == 0) return null
+        if (!g.gbCallAt(at, FARCALL, USE_ITEM_BANK, 0, useRegisteredItem)) return null
+        g.write(curItem, byteArrayOf(itemId.toByte()))
+        g.write(fieldMoveSucceeded, byteArrayOf(0))
+        if (!(0 until REANCHOR_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }) return null
+        if (g.read(fieldMoveSucceeded, 1)[0].toInt() != 1) return null
+        val q = g.read(queuedScript, 3)
+        return (q[0].toInt() and 0xFF) to ((q[1].toInt() and 0xFF) or ((q[2].toInt() and 0xFF) shl 8))
+    }
+
     /** USE of [itemId] on [target] ([moveIndex] for a one-move PP item). */
     fun useOn(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget, moveIndex: Int): ItemUseOutcome {
         if (!picksMon(itemId)) return ItemUseOutcome(ItemUseResult.FAILED)
@@ -229,6 +285,11 @@ class Gen2ItemCalls(
         private const val SETTLE_TRIES = 6
         /** ReanchorMap waits a few frames (5 tries headless on Kristall) before the loop is back at HandleMap. */
         private const val REANCHOR_TRIES = 12
+        /** UseRegisteredItem's bank. */
+        private const val USE_ITEM_BANK = 0x04
+        /** Where the TM routine runs: the stack's far end (wStackBottom, WRAM0), which the TM screens never reach (the
+         * routine's last bytes run after them, headless). */
+        const val ROUTINE = 0xC000
         private const val PARTY_MAX = 6
         private const val MON_SIZE = 0x30
         private const val HELD_ITEM = 0x01
@@ -261,37 +322,124 @@ class Gen2ItemCalls(
         val PP_ALL_MOVES = mapOf(0x41 to 10, 0x15 to ALL)
         /** REPEL, SUPER REPEL, MAX REPEL and their steps. */
         val REPELS = mapOf(0x14 to 100, 0x2A to 200, 0x2B to 250)
+        /** TM01-TM50, HM01-HM07 in wTMsHMs' order (ITEM_C3 and ITEM_DC sit between them). */
+        val TM_ITEMS: List<Int> = (0xBF..0xF9).filter { it != 0xC3 && it != 0xDC }
+        /** ITEMMENU_PARTY items with their own screen: the stones (MOON, FIRE, THUNDER, WATER, LEAF, SUN), HP UP, PROTEIN,
+         * IRON, CARBOS, CALCIUM, RARE CANDY, PP UP, ENERGYPOWDER, ENERGY ROOT, HEAL POWDER, REVIVAL HERB. */
+        val GAME_PARTY = setOf(0x08, 0x16, 0x17, 0x18, 0x22, 0xA9, 0x1A, 0x1B, 0x1C, 0x1D, 0x1F, 0x20, 0x3E, 0x79, 0x7A, 0x7B, 0x7C)
+        /** ITEMMENU_CURRENT items with a text: COIN CASE, BLUE CARD. */
+        val GAME_TEXT = setOf(0x36, 0x74)
+        /** ITEMMENU_CLOSE items that queue a script: ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE, CARD KEY, BASEMENT KEY. */
+        val GAME_FIELD = setOf(0x13, 0x9C, 0x37, 0xAF, 0x7F, 0x85)
+        /** Of those, the ITEMS pocket's (the rest are key items, never spent). */
+        private val ITEM_POCKET_FIELD = setOf(0x13, 0x9C)
 
         fun romOff(bank: Int, addr: Int) = if (bank == 0) addr.toLong() else bank * 0x4000L + (addr - 0x4000)
     }
 }
 
+/**
+ * The bag's TM USE (engine/items/pack.asm's TMHMSubmenu .UseItem: AskTeachTMHM's move name, ChooseMonToLearnTMHM,
+ * TeachTMHM) in SELECT's ITEMMENU_PARTY frame (ReanchorMap, FadeToMenu, ..., CloseSubmenu, CloseText), with the party menu
+ * coming back after a Pokémon that can't learn it, as the Move Tutor's does. Addresses in bank 0, the TM screens' in
+ * bank 0x0B; wCurItem names the TM (TeachTMHM spends a TM, never an HM).
+ */
+data class Gen2TmFns(
+    val reanchorMap: Int = 0x2DBA,
+    val fadeToMenu: Int = 0x2B29,
+    val clearBgPalettes: Int = 0x31F3,
+    val clearScreen: Int = 0x0FDB,
+    val delayFrame: Int = 0x045A,
+    val getSgbLayout: Int = 0x3340,
+    val getMoveName: Int = 0x34F8,
+    val copyName1: Int = 0x30D6,
+    val closeSubmenu: Int = 0x2B3C,
+    val closeText: Int = 0x2DCF,
+    val getTmhmItemMove: Int = 0x47B6,
+    val chooseMon: Int = 0x47FB,
+    val chooseMonNoRefresh: Int = 0x480A,
+    val teach: Int = 0x4867,
+) {
+    /** The routine (SM83, 82 bytes), its far calls through FarCall_hl (rst $08). */
+    fun routine(): ByteArray {
+        val c = ArrayList<Int>()
+        val fix = ArrayList<Pair<Int, String>>()
+        val at = HashMap<String, Int>()
+        fun le(x: Int) = listOf(x and 0xFF, x shr 8 and 0xFF)
+        fun call(x: Int) { c += 0xCD; c += le(x) }
+        fun far(x: Int) { c += listOf(0x3E, TM_BANK, 0x21) + le(x) + 0xCF }
+        fun jr(op: Int, label: String) { c += listOf(op, 0); fix += c.size - 1 to label }
+        call(reanchorMap); call(fadeToMenu); call(clearBgPalettes); call(clearScreen); call(delayFrame)
+        c += listOf(0x06, SCGB_PACKPALS); call(getSgbLayout)
+        far(getTmhmItemMove)
+        c += listOf(0xFA) + le(TEMP_TMHM) + 0xEA + le(PUTATIVE_TMHM_MOVE)   // ld a, [wTempTMHM]; ld [wPutativeTMHMMove], a
+        call(getMoveName); call(copyName1)
+        c += listOf(0x21) + le(OPTIONS) + listOf(0x7E, 0xF5, 0xCB, 0xA6)     // ld hl, wOptions; ld a, [hl]; push af; res NO_TEXT_SCROLL, [hl]
+        far(chooseMon); jr(0x38, "cancel"); jr(0x18, "teach")
+        at["loop"] = c.size; far(chooseMonNoRefresh); jr(0x38, "cancel")
+        at["teach"] = c.size; far(teach); jr(0x30, "loop")                   // carry: learned
+        at["cancel"] = c.size; c += listOf(0xF1, 0xEA) + le(OPTIONS)          // pop af; ld [wOptions], a
+        call(closeSubmenu); call(closeText); c += 0xC9
+        for ((p, label) in fix) c[p] = (at.getValue(label) - (p + 1)) and 0xFF
+        return ByteArray(c.size) { c[it].toByte() }
+    }
+
+    private companion object {
+        const val TM_BANK = 0x0B
+        const val SCGB_PACKPALS = 0x14
+        const val TEMP_TMHM = 0xD265
+        const val PUTATIVE_TMHM_MOVE = 0xD262
+        const val OPTIONS = 0xCFCC
+    }
+}
+
 /** The tables' first bytes and HandleMap, shared by every Crystal build: HealingHPAmounts (FRESH WATER 50), StatusHealingActions
  * (ANTIDOTE), Moves (POUND). */
-private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int) = listOf(
+private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int,
+                                  useRegisteredItem: Int, chooseMon: Int, getSgbLayout: Int, getMoveName: Int, copyName1: Int) = listOf(
     0x25 * 0x4000L + (0x6773 - 0x4000) to handleMap,
     Gen2ItemCalls.romOff(0x03, healingHp) to "2e32002f3c0030500010c800",
     Gen2ItemCalls.romOff(0x03, statusHealing) to "09f0080af1100bf2200cf307",
     Gen2ItemCalls.romOff(0x10, moves) to "01002800ff2300",
     Gen2ItemCalls.romOff(0x03, 0x50B3) to "cdbc50e67feaecd0c9cd2151",   // BikeFunction
     Gen2ItemCalls.romOff(0x03, oldRod) to "1e0018081e0118041e0218003e03218e4fcf",   // the rods' effects, farcall FishFunction
+    0x045AL to "3e01eab3cf7600fab3cf",   // DelayFrame; GetSGBLayout, GetMoveName, CopyName1 by build below
+    Gen2ItemCalls.romOff(0x04, useRegisteredItem) to "3e03215354cffa42d1",   // farcall CheckItemMenu, ld a, [wItemAttributeValue]
+    Gen2ItemCalls.romOff(0x0B, chooseMon) to "2186d01166d0010c00cd",
+    getSgbLayout.toLong() to "f0e6a72004f0e7a7c83e",
+    getMoveName.toLong() to "e53e02ea61cffa65d2ea",
+    copyName1.toLong() to "2186d01a1322fe5020f9",
 )
 
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */
 val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
     tossItem = 0x2F53,
     signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1", 0x2DBAL to "cdbf1ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5),
+        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5, 0x73C3, 0x47FB, 0x3340, 0x34F8, 0x30D6) + listOf(
+            0x2B29L to "afe0d4cd6e1d3e232184", 0x31F3L to "cd17333e01e0d40e04cd", 0x0FDBL to "3e0721d9cd016801cd41",
+            0x2B3CL to "cdf331cdae2bcdd21acd", 0x2DCFL to "f0d8f53e01e0d8cde22d",
+            Gen2ItemCalls.romOff(0x0B, 0x47B6) to "cda7473e0fcd832dc921", Gen2ItemCalls.romOff(0x0B, 0x480A) to "3e14214f40cf3e142105",
+            Gen2ItemCalls.romOff(0x0B, 0x4867) to "3e0ecd832dc5fa09d121",
+        ),
 )
 
 /** German Crystal (Kristall): English's RAM and _TossItem; TossItem, the tables and Moves a little earlier. */
 val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     tossItem = 0x2F3D,
     signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1", 0x2DA4L to "cda91ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574),
+        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574, 0x73C8, 0x47FE, 0x332A, 0x34E2, 0x30C0) + listOf(
+            0x2B13L to "afe0d4cd571d3e232184", 0x31DDL to "cd01333e01e0d40e04cd", 0x0FDBL to "3e0721d9cd016801cd2b",
+            0x2B26L to "cddd31cd982bcdbb1acd", 0x2DB9L to "f0d8f53e01e0d8cdcc2d",
+            Gen2ItemCalls.romOff(0x0B, 0x47B9) to "cdaa473e0fcd6d2dc921", Gen2ItemCalls.romOff(0x0B, 0x480D) to "3e14214f40cf3e1421fb",
+            Gen2ItemCalls.romOff(0x0B, 0x486A) to "3e0ecd6d2dc5fa09d121",
+        ),
     healingHp = Gen2ItemCalls.romOff(0x03, 0x737E),
     statusHealing = Gen2ItemCalls.romOff(0x03, 0x7040),
     moves = Gen2ItemCalls.romOff(0x10, 0x5AEB),
     reanchorMap = 0x2DA4,
     oldRodEffect = 0x7574,
+    useRegisteredItem = 0x73C8,
+    tm = Gen2TmFns(reanchorMap = 0x2DA4, fadeToMenu = 0x2B13, clearBgPalettes = 0x31DD, getSgbLayout = 0x332A, getMoveName = 0x34E2,
+        copyName1 = 0x30C0, closeSubmenu = 0x2B26, closeText = 0x2DB9, getTmhmItemMove = 0x47B9, chooseMon = 0x47FE,
+        chooseMonNoRefresh = 0x480D, teach = 0x486A),
 )
