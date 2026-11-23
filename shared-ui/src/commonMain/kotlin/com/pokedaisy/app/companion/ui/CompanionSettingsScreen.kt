@@ -603,12 +603,12 @@ private fun withoutGameRows(rows: List<SettingRow>): List<SettingRow> {
  */
 private val QOL_ROWS = listOf(
     "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+    "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
 )
 
 /** A QOL row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
 private val QOL_UNUSED = mapOf(
-    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "WILD PIN" to "ON", "SHINY ODDS" to "NORMAL",
 )
 
 /** QUALITY OF LIFE's rows, out of HOME's, in [QOL_ROWS]' order. */
@@ -856,6 +856,13 @@ private fun homeRows(
             subtitle = "Evolve without a trade",
         ) {
             if (s.tradeEvolutionsSupported) { s.setTradeEvolutions(!s.tradeEvolutions); changed() }
+        },
+        // A PIN on GUIDE > HERE's and the HUD's wild rows (grass, surf, rock smash, rods): the next wild one that way is the pick (WildPin.kt). OFF hides them.
+        SettingRow(
+            tk("WILD PIN"), if (s.wildPinSupported) onOff(s.wildPin) else tk("N/A"), enabled = s.wildPinSupported,
+            labelBadge = NewFeatures.badge(NewFeatures.WILD_PIN), subtitle = "Pick the next wild POKéMON from HERE",
+        ) {
+            if (s.wildPinSupported) { s.setWildPin(!s.wildPin); changed() }
         },
         // A new wild foe made shiny at these odds before its battle draws it (ShinyOdds.kt; the versions it knows by hash).
         SettingRow(
