@@ -192,12 +192,12 @@ end
 # Rejuvenation's build takes a sixth Audio.bgm_play argument (a fade-in) and tells its own build from an older one by
 # calling it so, rescuing the TypeError an older one raises; the libretro core's raises ArgumentError for the count
 # instead, which it doesn't rescue. Past five, the extra arguments are left off: the older build's answer, and the game
-# plays its music without the fade.
+# plays its music without the fade. (By index, not Array#first: GS Vitro's scripts make first(n) mean "is n 0?".)
 module Audio
   class << self
     if method_defined?(:bgm_play) && !method_defined?(:__pokedaisy_bgm_play)
       alias_method :__pokedaisy_bgm_play, :bgm_play
-      def bgm_play(*args) = __pokedaisy_bgm_play(*args.first(5))
+      def bgm_play(*args) = __pokedaisy_bgm_play(*args[0, 5])
     end
   end
 end
