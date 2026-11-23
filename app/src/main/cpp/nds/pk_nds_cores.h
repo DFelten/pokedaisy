@@ -28,9 +28,11 @@
     X(int, action, (int action, const uint32_t args[4]), (action, args)) \
     X(int, action_status, (int seq), (seq)) \
     X(bool, action_results, (int seq, uint32_t* out), (seq, out)) \
+    X(void, item5_effect, (const uint32_t effect[6]), (effect)) \
     X(void, set_wild_off, (bool off), (off)) \
     X(void, set_keep_start_menu, (bool on), (on)) \
     X(void, set_exp_share, (int mode, uint32_t mask), (mode, mask)) \
+    X(void, set_hm_free, (bool on), (on)) \
     X(void, set_cpu_boost, (bool on), (on)) \
     X(int, set_cheats, (const uint32_t* words, int nWords, const int32_t* lengths, int nCheats), (words, nWords, lengths, nCheats)) \
     X(int, bgm, (void), ()) \

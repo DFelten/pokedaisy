@@ -70,10 +70,10 @@ The game's own rules still apply: your last Pokémon that can battle has to stay
 
 Some Pokémon only evolve when traded, some of them while holding an item. If you have no one to trade with, turn on `TRADE EVOS` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE` (it's `OFF` until you turn it on). A Pokémon in your party that would evolve from a trade right now then gets an `EVOLVE` button on its summary. Tap it and confirm: the game plays its own evolution on the game's screen, as it would after a trade, and you're back where you were when it's done. The Pokémon stays yours, with your name on it.
 
-The game decides, by its own rules: a Pokémon holding the item that stops evolution doesn't get the button, and one that needs a held item uses it up, as in a real trade. It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
+The game decides, by its own rules: a Pokémon holding the item that stops evolution doesn't get the button, and one that needs a held item uses it up, as in a real trade. In Black and White and their sequels, the two Pokémon that only evolve by trading with each other don't get it. It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
 
 > [!NOTE]
-> `TRADE EVOS` works in FireRed, LeafGreen and Emerald, in every language and release. In other games it shows `N/A`. To trade for real between two of your games, see [Link play](link-play.md).
+> `TRADE EVOS` works in FireRed, LeafGreen and Emerald, in every language and release, and in the US Platinum, HeartGold and SoulSilver and the English Black, White, Black 2 and White 2. On the DS the screen fades out, the game's evolution plays on both screens, and the field fades back in after. In other games it shows `N/A`. To trade for real between two of your games, see [Link play](link-play.md).
 
 ## CENTER: heal, relearn, forget, rename
 

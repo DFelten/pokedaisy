@@ -35,7 +35,12 @@ object HmFree {
 
     /** The option is on and the running ROM took the patch: FLY / FREE FLIGHT / FLASH don't ask for the move either. Set
      * by the activity (any thread reads it). */
-    @Volatile var active = false
+    @Volatile private var romActive = false
+    /** A DS cart's NO HMS NEEDED ([DsHmFree]): hooks, not this ROM patch, set by the activity beside GameOptions' [active]. */
+    @Volatile var dsActive = false
+    var active: Boolean
+        get() = romActive || dsActive
+        set(v) { romActive = v }
 
     private const val ROM_BASE = 0x08000000L
     private const val ANY = -1

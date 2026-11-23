@@ -115,6 +115,7 @@ static std::vector<u32> gpuTop(256 * 192), gpuBottom(256 * 192), gpuTopArgb(256 
 static u32 rgbaToArgb(u32 p) { return 0xFF000000u | ((p & 0xFF) << 16) | (p & 0xFF00) | ((p >> 16) & 0xFF); }
 static u32 read32(u32 addr) { return nds->ARM9Read32(addr); }
 static void write32(u32 addr, u32 v) { nds->ARM9Write32(addr, v); }
+static int hmFree = 0;           // hmfree 1: NO HMS NEEDED's hooks in, after every frame (pk_nds_call_hm_free_frame)
 static int wildOff = 0;          // wildoff 1: WILD ENCOUNTERS OFF, the field read run every frame (pk_nds_field.cpp)
 static int battlesSeen = 0;      // battles started since wildoff (the field read's BATTLE bit going on)
 static void write16(u32 addr, uint16_t v) { nds->ARM9Write16(addr, v); }
@@ -312,6 +313,7 @@ static void runFrames(int n, u32 keys)
                 int bits = pk_nds_field_state(g, read32, write32, wildOff);
                 expSharePatched = pk_nds_exp_share_tick(g, expShareMode, expShareMask, expSharePatched, read32, write32, write16);
                 pk_nds_call_frame(nds, g);
+                pk_nds_call_hm_free_frame(nds, g, hmFree != 0);
                 battle = (bits & PK_NDS_FIELD_BATTLE) != 0;
                 if (battle && !wasBattle) battlesSeen++;
                 wasBattle = battle;
@@ -851,12 +853,26 @@ int main(int argc, char** argv)
         } else if (!strcmp(cmd, "battles")) {
             printf("battles %d\n", battlesSeen);
             fflush(stdout);
+        } else if (!strcmp(cmd, "itemfx")) {
+            // itemfx HEAL HEALDIV REVIVE STATUSMASK PP PPALL: Gen 5's USE effect for the next `action 4` (pk_nds_call.h)
+            PkNdsItem5Effect e = {};
+            sscanf(line, "%*s %i %i %i %i %i %i", (int*) &e.heal, (int*) &e.healDiv, (int*) &e.revive, (int*) &e.statusMask,
+                   (int*) &e.pp, (int*) &e.ppAll);
+            pk_nds_call_item5_effect(e);
+            printf("itemfx set\n");
+            fflush(stdout);
+        } else if (!strcmp(cmd, "hmfree")) {
+            // hmfree 0|1: NO HMS NEEDED (Platinum / HG / SS) from the next frame, as the app sets it
+            hmFree = (int) num(a);
+            printf("hmfree %d\n", hmFree);
+            fflush(stdout);
         } else if (!strcmp(cmd, "action")) {
             // action N [A0 A1 A2 A3]: post pk_nds_call's action N (1 = PC) for the next frame, then report when it ran
             auto* cart = nds->NDSCartSlot.GetCart();
             const PkNdsFieldGame* g = cart ? pk_nds_field_game_rom(cart->GetROM(), cart->GetROMLength()) : nullptr;
             u32 args[4] = {n > 2 ? num(b) : 0, n > 3 ? num(c) : 0, n > 4 ? num(d) : 0, 0};
-            if (n > 5) sscanf(line, "%*s %*s %*s %*s %*s %u", &args[3]);
+            // the fourth argument is the line's sixth word (the split above reads five)
+            if (n == 5) sscanf(line, "%*s %*s %*s %*s %*s %u", &args[3]);
             int seq = pk_nds_call_action(nds, g, (int) num(a), args);
             int st = 0, f = 0;
             while (seq && (st = pk_nds_call_status(seq)) == 0 && f < 20) { runFrames(1, heldKeys); f++; }

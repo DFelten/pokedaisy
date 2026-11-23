@@ -70,7 +70,9 @@ X Y`, joined with commas (`A,UP`), or `NONE`.
 | `gpu N` | (`NDS_DUMP_GL` builds) DS RESOLUTION at N: the GPU renderer, or `gpu 1` back to the software one. `shot` then writes its 1x copies (a drawn frame late), `ffmode` the composed window. |
 | `gpushot FILE` | (`NDS_DUMP_GL` builds) The GPU path's last window at its scale: the screen, or with `wide` on EXPAND's whole view. |
 | `call FN [A0..A3]` | The game's function FN (Thumb: odd) from the field's main loop next frame; prints r0. |
-| `action N [A0..A3]` | One of `pk_nds_call`'s jobs (1 = PC, 2 = FLY's checks, 3 = FLY; the Gen 5 games' FLY takes the party slot and the zone) and its results. |
+| `action N [A0..A3]` | One of `pk_nds_call`'s jobs (1 = PC, 2 = FLY's checks, 3 = FLY, 4 = the bag on a Pokémon, 5 = TRADE EVOLUTIONS on Platinum / HG / SS: `5 MODE|SLOT<<8 0 PERSONALITY COUNT`, 0 = each slot's target, 1 = evolve; the Gen 5 games' FLY takes the party slot and the zone) and its results. |
+| `hmfree 0\|1` | NO HMS NEEDED's hooks in (1) or out from the next frame (Platinum / HG / SS, `pk_nds_call_hm_free_frame`). |
+| `itemfx HEAL HEALDIV REVIVE STATUS PP PPALL` | Gen 5's USE effect for the next `action 4` (the bag on a Pokémon: `DsBag.kt` sets it in the app). |
 | `script FILE` / `scriptgo FILE` | A field script (the game's bytecode) run as the PC job runs its own; `scriptgo` returns once it has started. |
 | `itcm32 ADDR V` | A word into the hook's spare ITCM (an argument a call points at). |
 | `watch LO HI [r\|w\|rw] [N]`, `watch off` | The game's own reads / writes of main RAM in [LO, HI) (at most N, default 20), each with the ARM9's PC, LR, r0-r5 and SP; `WATCH_STACK=N` in the environment adds N stack words (the callers' return addresses). The interpreter only: run without `--jit`. How Black's PC and FLY were traced. |

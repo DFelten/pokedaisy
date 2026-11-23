@@ -1204,6 +1204,12 @@ Java_com_pokedaisy_app_MgbaCore_pkNdsKeepStartMenu(JNIEnv* env, jobject thiz, jb
     if (pk_nds_active()) pk_nds_set_keep_start_menu(on == JNI_TRUE);
 }
 
+// NO HMS NEEDED on Platinum / HeartGold / SoulSilver (melonDS): the party move checks' hooks, from the next frame. Emu thread.
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkNdsHmFree(JNIEnv* env, jobject thiz, jboolean on) {
+    if (pk_nds_active()) pk_nds_set_hm_free(on == JNI_TRUE);
+}
+
 // DS LAYOUT's transition hold (EmulatorEngine.dsHold): the two screens' brightness fade (pk_nds_fade). Emu thread, after a frame.
 JNIEXPORT jint JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkNdsFade(JNIEnv* env, jobject thiz) {
@@ -1293,6 +1299,13 @@ JNIEXPORT jint JNICALL
 Java_com_pokedaisy_app_MgbaCore_pkNdsAction(JNIEnv* env, jobject thiz, jint action, jint a0, jint a1, jint a2, jint a3) {
     uint32_t args[4] = {(uint32_t) a0, (uint32_t) a1, (uint32_t) a2, (uint32_t) a3};
     return pk_nds_active() ? pk_nds_action((int) action, args) : 0;
+}
+
+// Gen 5's USE effect for the next ITEM action (pk_nds_call.h's PkNdsItem5Effect).
+JNIEXPORT void JNICALL
+Java_com_pokedaisy_app_MgbaCore_pkNdsItemEffect(JNIEnv* env, jobject thiz, jint heal, jint healDiv, jint revive, jint statusMask, jint pp, jint ppAll) {
+    uint32_t e[6] = {(uint32_t) heal, (uint32_t) healDiv, (uint32_t) revive, (uint32_t) statusMask, (uint32_t) pp, (uint32_t) ppAll};
+    if (pk_nds_active()) pk_nds_item5_effect(e);
 }
 
 // The job's results once it ran (op i's into [i]), or null.
