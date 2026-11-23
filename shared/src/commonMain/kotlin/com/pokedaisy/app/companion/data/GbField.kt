@@ -304,12 +304,12 @@ sealed class GbField {
             return if (!free(g)) PartyTargets(ItemUseResult.NOT_NOW) else calls.targets(g, cfg, itemId)
         }
 
-        /** USE of [itemId]: a Repel or the BICYCLE on the spot ([target] null), anything else on [target]. NOT_NOW off the free field. */
+        /** USE of [itemId]: a Repel, the BICYCLE or a rod on the spot ([target] null), anything else on [target]. NOT_NOW off the free field. */
         fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
             val calls = itemCalls ?: return ItemUseOutcome(ItemUseResult.FAILED)
             if (!free(g)) return ItemUseOutcome(ItemUseResult.NOT_NOW)
-            if (itemId == Gen2ItemCalls.BICYCLE) {
-                val (bank, addr) = calls.bike(g) ?: return ItemUseOutcome(ItemUseResult.FAILED)
+            if (calls.onTheSpot(itemId)) {
+                val (bank, addr) = calls.onTheSpot(g, itemId) ?: return ItemUseOutcome(ItemUseResult.FAILED)
                 queue(g, bank, addr)
                 return ItemUseOutcome(ItemUseResult.USED)
             }

@@ -82,7 +82,19 @@ class Gen2ItemUseTest {
             if (fn == calls.tossItem) pending = { toss(hl) }
             if (fn == calls.reanchorMap) reanchored = true
             if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
+            if (fn == 0x0008 && a == 0x03 && hl in calls.oldRodEffect..calls.oldRodEffect + 8) pending = { fish(hl - calls.oldRodEffect) }
             return true
+        }
+
+        var waterHere = true
+        val rodsCast = mutableListOf<Int>()
+
+        /** OldRodEffect + 4 * rod: FishFunction queues Script_GotABite facing water, 0 elsewhere. */
+        private fun fish(rodOff: Int) {
+            assertTrue("ReanchorMap first, as SELECT's item use does", reanchored)
+            rodsCast += rodOff / 4
+            this[calls.fieldMoveSucceeded] = if (waterHere) 1 else 0
+            if (waterHere) { this[calls.queuedScript] = 0x03; this[calls.queuedScript + 1] = 0x35; this[calls.queuedScript + 2] = 0x50 }
         }
 
         /** BikeFunction: Script_GetOnBike_Register queued (SELECT's, as wUsingItemWithSelect asks), or 0 off a floor. */
@@ -270,12 +282,25 @@ class Gen2ItemUseTest {
         val g = game()
         g.bag()
         assertTrue(calls.usable(Gen2ItemCalls.BICYCLE) && !calls.picksMon(Gen2ItemCalls.BICYCLE))
-        assertEquals(0x03 to 0x514E, calls.bike(g))
+        assertEquals(0x03 to 0x514E, calls.onTheSpot(g, Gen2ItemCalls.BICYCLE))
         assertEquals(0, g[calls.usingItemWithSelect])
         g.bikeHere = false
-        assertEquals(null, calls.bike(g))
+        assertEquals(null, calls.onTheSpot(g, Gen2ItemCalls.BICYCLE))
         g.onField = false
-        assertEquals(null, calls.bike(g))
+        assertEquals(null, calls.onTheSpot(g, Gen2ItemCalls.BICYCLE))
         assertEquals(2, g.bikeCalls)
+    }
+
+    @Test
+    fun `a rod runs its own item effect and hands back FishFunction's script, nothing away from water`() {
+        val g = game()
+        g.bag()
+        for (rod in Gen2ItemCalls.RODS) assertTrue(calls.usable(rod) && !calls.picksMon(rod))
+        assertEquals(0x03 to 0x5035, calls.onTheSpot(g, 0x3D))
+        assertEquals(0x03 to 0x5035, calls.onTheSpot(g, 0x3A))
+        g.waterHere = false
+        assertEquals(null, calls.onTheSpot(g, 0x3B))
+        assertEquals(listOf(2, 0, 1), g.rodsCast)
+        assertEquals(0, g[calls.usingItemWithSelect])
     }
 }

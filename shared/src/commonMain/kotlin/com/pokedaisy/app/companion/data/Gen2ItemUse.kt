@@ -35,12 +35,14 @@ class Gen2ItemCalls(
     val repelEffect: Long = wramx(1, 0xDCA1),
     /** BikeFunction (bank 3): the BICYCLE's field effect, the same in every Crystal build. */
     val bikeFunction: Int = 0x50B3,
+    /** OldRodEffect (bank 3): `ld e, 0` + FishFunction; GoodRodEffect and SuperRodEffect follow, 4 bytes apart. */
+    val oldRodEffect: Int = 0x75A5,
     /** ReanchorMap (bank 0): what SELECT's item use runs first - the BG map put back at the screen, so the get-on /
      * get-off script's CloseText redraws the map where it is (without it, EXPAND lost its place after getting off). */
     val reanchorMap: Int = 0x2DBA,
     /** wQueuedScriptBank, then Addr (lo, hi): where BikeFunction queues its get-on / get-off script. */
     val queuedScript: Long = wramx(1, 0xD0E8),
-    /** wFieldMoveSucceeded: BikeFunction's answer, 1 = a script is queued, 0 = not here. */
+    /** wFieldMoveSucceeded: BikeFunction's / FishFunction's answer, 1 = a script is queued, 0 = not here. */
     val fieldMoveSucceeded: Long = wramx(1, 0xD0EC),
     /** wUsingItemWithSelect: set, BikeFunction queues the short scripts SELECT uses (no text box). */
     val usingItemWithSelect: Long = wramx(1, 0xD0EF),
@@ -52,9 +54,12 @@ class Gen2ItemCalls(
 
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
-        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || itemId == BICYCLE
+        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId)
 
-    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && itemId != BICYCLE
+    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && !onTheSpot(itemId)
+
+    /** The BICYCLE and the rods: the game's own field effect, which queues a script of its own. */
+    fun onTheSpot(itemId: Int) = itemId == BICYCLE || itemId in RODS
     fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE
 
     private class Party(val count: Int, val species: ByteArray, val mons: ByteArray)
@@ -157,14 +162,17 @@ class Gen2ItemCalls(
     /**
      * The BICYCLE: the game's own BikeFunction far-called from the overworld loop, as SELECT runs it - its checks (outdoors, a
      * cave or a gate, a plain floor tile; Cycling Road keeps you on), the music, then the get-on / get-off script it queues.
+     * The rods: OLD / GOOD / SUPER ROD's item effect (FishFunction: facing water, the map's fishing group, the bite), which
+     * queues the cast and either a bite's battle or "Not even a nibble!".
      * That queue is the START / SELECT menus', so its script comes back here (bank, address) for the map's own queue
      * ([GbField.CrystalEngine]); null = not here.
      */
-    fun bike(g: GameCalls): Pair<Int, Int>? {
+    fun onTheSpot(g: GameCalls, itemId: Int): Pair<Int, Int>? {
+        val fn = if (itemId == BICYCLE) bikeFunction else oldRodEffect + 4 * (RODS.indexOf(itemId).takeIf { it >= 0 } ?: return null)
         if (!(0 until SETTLE_TRIES).any { g.gbCallAt(at, reanchorMap, 0, 0, 0) }) return null
-        if (!(0 until REANCHOR_TRIES).any { g.gbCallAt(at, FARCALL, BIKE_BANK, 0, bikeFunction) }) return null
+        if (!(0 until REANCHOR_TRIES).any { g.gbCallAt(at, FARCALL, FIELD_BANK, 0, fn) }) return null
         g.write(fieldMoveSucceeded, byteArrayOf(0xFF.toByte()))
-        g.write(usingItemWithSelect, byteArrayOf(1))
+        g.write(usingItemWithSelect, byteArrayOf(if (itemId == BICYCLE) 1 else 0))
         val ran = (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
         g.write(usingItemWithSelect, byteArrayOf(0))
         if (!ran || g.read(fieldMoveSucceeded, 1)[0].toInt() != 1) return null
@@ -237,7 +245,9 @@ class Gen2ItemCalls(
         private const val ALL = -1
 
         const val BICYCLE = 0x07
-        private const val BIKE_BANK = 0x03
+        /** OLD ROD, GOOD ROD, SUPER ROD, in OldRodEffect's order. */
+        val RODS = listOf(0x3A, 0x3B, 0x3D)
+        private const val FIELD_BANK = 0x03
         const val FULL_RESTORE = 0x0E
         const val REVIVE = 0x27
         val REVIVES = setOf(REVIVE, 0x28)
@@ -258,28 +268,30 @@ class Gen2ItemCalls(
 
 /** The tables' first bytes and HandleMap, shared by every Crystal build: HealingHPAmounts (FRESH WATER 50), StatusHealingActions
  * (ANTIDOTE), Moves (POUND). */
-private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int) = listOf(
+private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int) = listOf(
     0x25 * 0x4000L + (0x6773 - 0x4000) to handleMap,
     Gen2ItemCalls.romOff(0x03, healingHp) to "2e32002f3c0030500010c800",
     Gen2ItemCalls.romOff(0x03, statusHealing) to "09f0080af1100bf2200cf307",
     Gen2ItemCalls.romOff(0x10, moves) to "01002800ff2300",
     Gen2ItemCalls.romOff(0x03, 0x50B3) to "cdbc50e67feaecd0c9cd2151",   // BikeFunction
+    Gen2ItemCalls.romOff(0x03, oldRod) to "1e0018081e0118041e0218003e03218e4fcf",   // the rods' effects, farcall FishFunction
 )
 
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */
 val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
     tossItem = 0x2F53,
     signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1", 0x2DBAL to "cdbf1ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB),
+        crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB, 0x75A5),
 )
 
 /** German Crystal (Kristall): English's RAM and _TossItem; TossItem, the tables and Moves a little earlier. */
 val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     tossItem = 0x2F3D,
     signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1", 0x2DA4L to "cda91ff09df53e01d7") +
-        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB),
+        crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB, 0x7574),
     healingHp = Gen2ItemCalls.romOff(0x03, 0x737E),
     statusHealing = Gen2ItemCalls.romOff(0x03, 0x7040),
     moves = Gen2ItemCalls.romOff(0x10, 0x5AEB),
     reanchorMap = 0x2DA4,
+    oldRodEffect = 0x7574,
 )
