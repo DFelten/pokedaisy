@@ -224,3 +224,19 @@ TRADE EVOS and the party summary's EVOLVE use the common FieldTradeSupport/Field
 ## Emerald co-op pairing
 
 Co-op is off until it ships, as on Android: build with the Xcode setting `POKEDAISY_FEATURE_COOP=YES`, or create an empty `features/coop` file in the app's Application Support / PokeDaisy folder. Then the library's SETTINGS > CO-OP uses the shared PAIR, PARTNERS and RELAY pages. Choose a retail English Emerald save to share an invite or join a room. Tapped `pokedaisy://coop/` invites open the save picker when the library is available. To supply a built-in relay, set the Xcode build setting `POKEDAISY_COOP_RELAY_URL` to its HTTPS base URL. A relay can also be entered in the app.
+
+## Install with AltStore Classic
+
+In AltStore Classic, open **Browse → Sources → +** and add:
+
+```text
+https://raw.githubusercontent.com/lidor30/pokedaisy/altstore/source.json
+```
+
+Install **PokeDaisy** from **PokeDaisy Builds**. AltStore Classic handles signing
+and refresh. Back up saves in Files before switching from an Xcode-installed copy.
+
+The first successful AltStore workflow run from `main` creates the source.
+Maintainers can run it from Actions or set the repository variable
+`ALTSTORE_PUBLISH_ON_PUSH` to `true` to publish on every push to `main`.
+Each build is an unsigned Debug device IPA attached to a public prerelease.
