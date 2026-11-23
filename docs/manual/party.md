@@ -79,11 +79,12 @@ The game decides, by its own rules: a Pokémon holding the item that stops evolu
 
 An Egg needs thousands of steps to hatch. To skip the walk, turn on `QUICK HATCH` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE` (it's `OFF` until you turn it on). An Egg in your party then gets a `HATCH` button on its summary. Tap it and confirm, then take one step on the field: the game plays its own hatching, asks about a nickname as usual, and adds the Pokémon to your Pokédex.
 
-It works on the field, with no menu, text or battle open. If you carry more than one Egg, the others get one step closer to hatching too. **Save in the game** to keep it.
+It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
+
+Carrying more than one Egg? The game goes down your party in order on that step: each Egg above the one you picked gets a little closer to hatching (a bit more if a Pokémon in your party has an ability that warms Eggs), and the Eggs below it don't change. If an Egg above it is already ready to hatch, that one would hatch instead, so `HATCH` says so: hatch that one first, then this one.
 
 > [!NOTE]
 > `QUICK HATCH` works in Emerald. In other games it shows `N/A`.
-
 
 ## CENTER: heal, relearn, forget, rename
 

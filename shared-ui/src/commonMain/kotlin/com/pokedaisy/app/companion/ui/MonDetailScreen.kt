@@ -498,6 +498,7 @@ internal fun hatchMessage(r: com.pokedaisy.app.companion.data.HatchResult): Stri
     com.pokedaisy.app.companion.data.HatchResult.NOT_NOW -> tr("Not now: close the game's menus and battles first.")
     com.pokedaisy.app.companion.data.HatchResult.NOT_EGG -> tr("This one won't hatch.")
     com.pokedaisy.app.companion.data.HatchResult.MOVED -> tr("The party has changed. Try again.")
+    com.pokedaisy.app.companion.data.HatchResult.EGG_AHEAD -> tr("An Egg higher in your party hatches first. Hatch that one, then this one.")
     else -> tr("It can't be used here.")
 }
 

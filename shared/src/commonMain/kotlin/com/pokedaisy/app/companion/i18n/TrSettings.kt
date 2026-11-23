@@ -539,7 +539,7 @@ internal val trSettings: Map<String, Tr> = mapOf(
     "CLICK SOUND" to Tr(ja = "クリックおん", fr = "SON DES CLICS", de = "KLICKTON", it = "SUONO CLIC", es = "SONIDO CLIC", br = "SOM DE CLIQUE", pt = "SOM DE CLIQUE", ko = "클릭음"),
     "{0} TABS" to Tr(ja = "タブ {0}こ", fr = "{0} ONGLETS", de = "{0} TABS", it = "{0} SCHEDE", es = "{0} PESTAÑAS", br = "{0} ABAS", pt = "{0} SEPARADORES", ko = "탭 {0}개"),
     "QUICK HATCH" to Tr(ja = "すぐに かえる", fr = "ÉCLOSION RAPIDE", de = "SCHNELL SCHLÜPFEN", it = "SCHIUSA RAPIDA", es = "ECLOSIÓN RÁPIDA", br = "CHOCAR RÁPIDO", pt = "CHOCAR RÁPIDO", ko = "빠른 부화"),
-    "Hatch an Egg on your next step" to Tr(ja = "つぎの いっぽで タマゴが かえる", fr = "Un Œuf éclot au prochain pas", de = "Ein Ei schlüpft beim nächsten Schritt", it = "Un Uovo si schiude al prossimo passo", es = "Un Huevo eclosiona en tu próximo paso", br = "Um Ovo choca no seu próximo passo", pt = "Um Ovo choca no seu próximo passo", ko = "다음 걸음에 알이 부화"),
+    "Hatch an Egg on your next step" to Tr(ja = "つぎの いっぽで タマゴが かえる", fr = "Un Œuf éclot au prochain pas", de = "Ein Ei schlüpft beim nächsten Schritt", it = "Un Uovo si schiude al prossimo passo", es = "Un Huevo eclosiona en tu próximo paso", br = "Um Ovo choca no seu próximo passo", pt = "Um Ovo choca no seu próximo passo", ko = "다음 걸음에 알이 부화해요"),
 
     // ASPECT picker
     "Fills the screen, drawn wider" to Tr(ja = "がめん いっぱい、 よこに のばして ひょうじ", fr = "Remplit l'écran, image élargie", de = "Füllt den Bildschirm, breiter gezeichnet", it = "Riempie lo schermo, più largo", es = "Llena la pantalla, más ancho", br = "Preenche a tela, imagem mais larga", pt = "Preenche o ecrã, imagem mais larga", ko = "가로로 늘려 화면을 채워요"),

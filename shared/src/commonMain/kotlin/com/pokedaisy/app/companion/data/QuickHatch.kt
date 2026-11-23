@@ -3,11 +3,14 @@ package com.pokedaisy.app.companion.data
 /**
  * QUICK HATCH (a GAMEPLAY setting, off by default): an Egg in the party hatches on the player's next step, the game's own
  * way. daycare.c's TryProduceOrHatchEgg runs on every step the player takes (field_control_avatar.c's
- * TryStartStepCountScript): it adds one to SaveBlock1's daycare.stepCounter and, when that reaches 255, takes a cycle off
- * every party Egg (the count lives in MON_DATA_FRIENDSHIP) - or, for an Egg already at 0, starts EventScript_EggHatch
- * ("Huh?", the hatch scene, the nickname question). So HATCH sets the Egg's count to 0 through the game's SetMonData (it
- * re-encrypts the box and fixes its checksum) and the counter to 254. The hatch, its Pokédex entry and the HATCHED EGGS
- * game stat are the game's own; any other Egg in the party loses one cycle early, as on a 255th step.
+ * TryStartStepCountScript): it adds one to SaveBlock1's daycare.stepCounter and, when that reaches 255, walks the party
+ * in order: each Egg with cycles left (the count lives in MON_DATA_FRIENDSHIP) loses one (two when a party Pokémon has
+ * Flame Body or Magma Armor, GetEggCyclesToSubtract), and the first Egg already at 0 stops the walk and starts
+ * EventScript_EggHatch ("Huh?", the hatch scene, the nickname question). So HATCH sets the Egg's count to 0 through the
+ * game's SetMonData (it re-encrypts the box and fixes its checksum) and the counter to 254. The hatch, its Pokédex entry
+ * and the HATCHED EGGS game stat are the game's own. Only the Eggs ahead of it in the party lose their cycle early (the
+ * walk stops at it, so the ones after it keep theirs), and an Egg ahead already at 0 would hatch in its place: HATCH
+ * refuses then ([HatchResult.EGG_AHEAD]) and that Egg's own HATCH goes first.
  *
  * Checked headless on retail English Emerald (2026-11-12, mgba_dump): the lead made an Egg with 20 cycles (SetMonData
  * IS_EGG / FRIENDSHIP), then these two writes; one step on Route 101 gave "Huh?" and the hatch scene, IS_EGG 0 after it.
@@ -41,6 +44,8 @@ enum class HatchResult {
     NOT_EGG,
     /** The party changed under the summary (the Egg isn't in that slot any more). */
     MOVED,
+    /** An Egg higher in the party is at 0 cycles: the game's walk would hatch that one instead. */
+    EGG_AHEAD,
     FAILED,
 }
 
@@ -71,11 +76,19 @@ fun hatchSoon(
     if (g.call(p.getMonData, mon, MON_DATA_PERSONALITY) and 0xFFFFFFFFL != personality) return HatchResult.MOVED
     if (g.call(p.getMonData, mon, p.isEggField) == 0L) return HatchResult.NOT_EGG
     if (g.call(p.getMonData, mon, MON_DATA_SANITY_IS_BAD_EGG) != 0L) return HatchResult.NOT_EGG
+    val friendship = MON_DATA_FRIENDSHIP + p.monFieldShift
+    // TryProduceOrHatchEgg hatches the first Egg at 0 cycles in party order: one ahead of this one would hatch instead,
+    // and this one wait another 255 steps. Refused before anything is written.
+    for (i in 0 until slot) {
+        val ahead = (p.party + i * MON_SIZE).toInt()
+        if (g.call(p.getMonData, ahead, p.isEggField) == 0L) continue
+        if (g.call(p.getMonData, ahead, MON_DATA_SANITY_IS_BAD_EGG) != 0L) continue
+        if (g.call(p.getMonData, ahead, friendship) == 0L) return HatchResult.EGG_AHEAD
+    }
     val base = if (staticSaveBlocks) saveBlock1Ptr else u32le(g.read(saveBlock1Ptr, 4), 0)
     val counter = base + counterOff
     if (base < EWRAM_FIRST || counter > EWRAM_LAST) return HatchResult.FAILED
     // The Egg's cycles to 0: SetMonData reads the value through a pointer, a byte for FRIENDSHIP.
-    val friendship = MON_DATA_FRIENDSHIP + p.monFieldShift
     val before = g.read(p.scratch, 2)
     if (!g.write(p.scratch, byteArrayOf(0, 0))) return HatchResult.FAILED
     g.call(p.setMonData, mon, friendship, p.scratch.toInt())

@@ -90,6 +90,27 @@ class QuickHatchTest {
     }
 
     @Test
+    fun anEggAheadAtZeroCyclesGoesFirst() {
+        // The game's walk hatches the first Egg at 0 in party order: slot 0 would hatch instead of slot 2.
+        val g = FakeGame(FNS, Mon(1, egg = true, cycles = 0), Mon(2, egg = false), Mon(3, egg = true))
+        assertEquals(HatchResult.EGG_AHEAD, hatch(g, 2, 3))
+        assertEquals(20, g.party[2].cycles)
+        assertEquals(0x3D, g.counter)
+        // That Egg's own HATCH works.
+        assertEquals(HatchResult.HATCHING, hatch(g, 0, 1))
+    }
+
+    @Test
+    fun eggsAheadWithCyclesLeftOrBadDontStopIt() {
+        // An Egg ahead with cycles left only loses one on the step; a Bad Egg never hatches, so the walk passes it.
+        val g = FakeGame(FNS, Mon(1, egg = true, cycles = 5), Mon(2, egg = true, badEgg = true, cycles = 0), Mon(3, egg = true))
+        assertEquals(HatchResult.HATCHING, hatch(g, 2, 3))
+        assertEquals(5, g.party[0].cycles)
+        assertEquals(0, g.party[2].cycles)
+        assertEquals(254, g.counter)
+    }
+
+    @Test
     fun offeredOnRetailEmeraldOnly() {
         assertEquals(EMERALD_DAYCARE_STEP_COUNTER, quickHatchCounterOff(GameKind.EMERALD, "BPEE", hack = false))
         assertEquals(EMERALD_DAYCARE_STEP_COUNTER, quickHatchCounterOff(GameKind.EMERALD, "BPEJ", hack = false))

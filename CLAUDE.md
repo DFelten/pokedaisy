@@ -1078,7 +1078,9 @@ every language) `TRADE_EVO_PORTS` from `port_field_items.py`; hacks / Kaizo / Le
 **QUICK HATCH** (2026-11-12, companion GAMEPLAY > QUALITY OF LIFE, `Prefs.quickHatch` OFF, NEW tag; `QuickHatch.kt`, `FieldQuickHatch`): an
 Egg's summary gets HATCH: the Egg's cycles (MON_DATA_FRIENDSHIP) to 0 through the game's SetMonData and SaveBlock1's daycare.stepCounter
 to 254, so the game's own TryProduceOrHatchEgg starts EventScript_EggHatch on the next step ("Huh?", the scene, the nickname question).
-Free field only; the window closes for the walk. Retail Emerald in every language (+ Kaizo, randomized), counter 0x314C, checked headless
+Free field only; the window closes for the walk. The game's loop goes down the party: Eggs ahead of it lose a cycle (two with a
+Flame Body / Magma Armor in the party), those after it nothing, and an Egg ahead already at 0 hatches first, so HATCH refuses then
+(`EGG_AHEAD`). Retail Emerald in every language (+ Kaizo, randomized), counter 0x314C, checked headless
 (one step, the scene, IS_EGG 0). FireRed / LeafGreen 0x309A and Ruby / Sapphire 0x30B6 are in the file's doc from pret's global.h, not
 offered until run.
 **INSTANT TEXT** (GitHub #111, GAMEPLAY on the companion, `Prefs.instantText` OFF, NEW tag; `InstantText.kt`): a game-option patch like REUSABLE TMS (`pkRomPatch` in 4-byte pieces, `EmulatorEngine.applyTmPatch` does both). RenderFont rewritten in its own 40 bytes (no free ROM): it goes on past RENDER_PRINT until a control code, textSpeed 0; Ruby / Sapphire: UpdateWindowText's delay turned into a `b` back to PrintNextChar. A delay of 0 (the game's own instant path) would lose everything after a page break. Found in the ROM's first 64 KB by code; gcc builds: N/A. TEXT SPEED stays: it's the emulator's speed, stops at what the device runs.
