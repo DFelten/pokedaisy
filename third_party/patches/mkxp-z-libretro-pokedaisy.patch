@@ -1,8 +1,24 @@
 diff --git a/binding-sandbox/sandbox-serial-core.h b/binding-sandbox/sandbox-serial-core.h
-index 31da7364..fb85997d 100644
+index 31da7364..474f9be9 100644
 --- a/binding-sandbox/sandbox-serial-core.h
 +++ b/binding-sandbox/sandbox-serial-core.h
-@@ -121,6 +121,29 @@ extern "C" RETRO_API bool retro_serialize(void *data, size_t len) {
+@@ -47,6 +47,15 @@
+     max_size -= (bytes); \
+ } while (0)
+ 
++// PokeDaisy: where functions in two other parts of the library sit relative to wasm-rt.cpp's (the run-time function
++// table's entries are saved as offsets from it): the core's frontend glue and the generated Ruby module.
++static std::array<int64_t, 2> pokedaisy_layout(uintptr_t base) {
++    return {
++        (int64_t)(reinterpret_cast<uintptr_t>(&retro_run) - base),
++        (int64_t)(reinterpret_cast<uintptr_t>(&wasm2c_ruby_free) - base),
++    };
++}
++
+ #define SER_FAIL do { ser_fail(); return false; } while (0)
+ #define SER_OBJECTS_BEGIN_DETAIL(_r, _data, T) sandbox_ptr_map<T>::sandbox_serialize_begin();
+ #define SER_OBJECTS_BEGIN do { BOOST_PP_SEQ_FOR_EACH(SER_OBJECTS_BEGIN_DETAIL, _, SANDBOX_TYPENUM_TYPES) } while (0)
+@@ -121,6 +130,34 @@ extern "C" RETRO_API bool retro_serialize(void *data, size_t len) {
          ADVANCE(memory_size);
      }
  
@@ -17,6 +33,11 @@ index 31da7364..fb85997d 100644
 +        if (!sandbox_serialize(size, data, max_size)) SER_FAIL;
 +        const uintptr_t base = reinterpret_cast<uintptr_t>(&wasm_rt_push_funcref);
 +        const uintptr_t inst = reinterpret_cast<uintptr_t>(&sb()->instance());
++        // The offsets only hold for this very build of the library: the distances to functions in other parts of it go
++        // first, and a load in another build (other sources or another compiler) is refused on them
++        for (int64_t distance : pokedaisy_layout(base)) {
++            if (!sandbox_serialize(distance, data, max_size)) SER_FAIL;
++        }
 +        for (uint32_t i = first; i < size; ++i) {
 +            const wasm_rt_funcref_t &f = table.data[i];
 +            const uintptr_t ptrs[4] = {reinterpret_cast<uintptr_t>(f.func_type), reinterpret_cast<uintptr_t>(f.func), reinterpret_cast<uintptr_t>(f.func_tailcallee.fn), reinterpret_cast<uintptr_t>(f.module_instance)};
@@ -32,7 +53,7 @@ index 31da7364..fb85997d 100644
      // Write the number of sandbox fibers
      if (!sandbox_serialize((wasm_size_t)sb()->fiber_list.size(), data, max_size)) SER_FAIL;
  
-@@ -326,6 +349,33 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
+@@ -326,6 +363,41 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
          const void *memory = data;
          ADVANCE(memory_size);
  
@@ -46,6 +67,14 @@ index 31da7364..fb85997d 100644
 +        {
 +            const uintptr_t base = reinterpret_cast<uintptr_t>(&wasm_rt_push_funcref);
 +            const uintptr_t inst = reinterpret_cast<uintptr_t>(&sb()->instance());
++            for (int64_t distance : pokedaisy_layout(base)) {
++                int64_t saved;
++                if (!sandbox_deserialize(saved, data, max_size)) return false;
++                if (saved != distance) {
++                    LOG_PRINTF(RETRO_LOG_ERROR, "Failed to load save state because it was made by another build of this core%s\n", "");
++                    return false;
++                }
++            }
 +            for (wasm_rt_funcref_t &f : table_entries) {
 +                uintptr_t ptrs[4];
 +                for (uintptr_t &p : ptrs) {
@@ -66,7 +95,7 @@ index 31da7364..fb85997d 100644
          // Read sandbox fibers
          wasm_size_t num_fibers;
          if (!sandbox_deserialize(num_fibers, data, max_size)) DESER_FAIL;
-@@ -372,6 +422,7 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
+@@ -372,6 +444,7 @@ extern "C" RETRO_API bool retro_unserialize(const void *data, size_t len) {
  
          // Read the VM memory
          sb()->copy_memory_from(memory, memory_size, memory_capacity, deser_swap_bytes);
@@ -74,6 +103,76 @@ index 31da7364..fb85997d 100644
      }
  
      // Read the sandbox state
+diff --git a/binding-sandbox/sandbox-serial-plane.h b/binding-sandbox/sandbox-serial-plane.h
+index 6f19f637..da55611e 100644
+--- a/binding-sandbox/sandbox-serial-plane.h
++++ b/binding-sandbox/sandbox-serial-plane.h
+@@ -125,9 +125,26 @@ void Plane::sandbox_deserialize_end()
+ 	sandbox_deserialize_end_viewport_element();
+ 
+ 	if (isDisposed()) return;
++	// PokeDaisy: A bitmap past the GPU's texture size ("mega") is drawn through a child its setter spawns, which isn't an object a
++	// state can point to: it came back null, and a sprite still marked visible then drew through it (a crash on the first
++	// frame after loading). Spawn the child again as the setter does, and watch the real bitmap's disposal as it does.
++	if (p->realBitmap != nullptr && !p->realBitmap->isDisposed() && p->realBitmap->isMega() && (p->bitmap == nullptr || p->bitmap == p->realBitmap)) {
++		Exception e;
++		Bitmap *child = p->realBitmap->spawnChild(e);
++		if (e.is_ok() && child != nullptr) {
++			child->getChildInfo()->wrap = true;
++			p->bitmap = child;
++		} else {
++			delete child;
++			p->bitmap = nullptr;
++		}
++	} else if (p->bitmap == nullptr && p->realBitmap != nullptr && !p->realBitmap->isMega()) {
++		p->bitmap = p->realBitmap;
++	}
+ 	if (p->bitmap != nullptr) {
+-		p->bitmapDispCon = p->bitmap->wasDisposed.connect(&PlanePrivate::bitmapDisposal, p);
+-		if (p->bitmap->isDisposed()) {
++		Bitmap *watched = p->realBitmap != nullptr ? p->realBitmap : p->bitmap;
++		p->bitmapDispCon = watched->wasDisposed.connect(&PlanePrivate::bitmapDisposal, p);
++		if (watched->isDisposed()) {
+ 			p->bitmapDisposal();
+ 		}
+ 	}
+diff --git a/binding-sandbox/sandbox-serial-sprite.h b/binding-sandbox/sandbox-serial-sprite.h
+index 7bdb2611..2cb24439 100644
+--- a/binding-sandbox/sandbox-serial-sprite.h
++++ b/binding-sandbox/sandbox-serial-sprite.h
+@@ -229,9 +229,30 @@ void Sprite::sandbox_deserialize_end()
+     sandbox_deserialize_end_viewport_element();
+ 
+     if (isDisposed()) return;
++    // PokeDaisy: A bitmap past the GPU's texture size ("mega") is drawn through a child its setter spawns, which isn't an object a
++    // state can point to: it came back null, and a sprite still marked visible then drew through it (a crash on the first
++    // frame after loading). Spawn the child again as the setter does, and watch the real bitmap's disposal as it does.
++    if (p->realBitmap != nullptr && !p->realBitmap->isDisposed() && p->realBitmap->isMega() && (p->bitmap == nullptr || p->bitmap == p->realBitmap)) {
++        Exception e;
++        Bitmap *child = p->realBitmap->spawnChild(e);
++        if (e.is_ok() && child != nullptr) {
++            p->bitmap = child;
++            p->srcRect = child->rect();
++            p->onSrcRectChange();
++        } else {
++            delete child;
++            p->bitmap = nullptr;
++        }
++    } else if (p->bitmap == nullptr && p->realBitmap != nullptr && !p->realBitmap->isMega()) {
++        p->bitmap = p->realBitmap;
++    }
++    if (p->bitmap == nullptr) {
++        p->isVisible = false;
++    }
+     if (p->bitmap != nullptr) {
+-        p->bitmapDispCon = p->bitmap->wasDisposed.connect(&SpritePrivate::bitmapDisposal, p);
+-        if (p->bitmap->isDisposed()) {
++        Bitmap *watched = p->realBitmap != nullptr ? p->realBitmap : p->bitmap;
++        p->bitmapDispCon = watched->wasDisposed.connect(&SpritePrivate::bitmapDisposal, p);
++        if (watched->isDisposed()) {
+             p->bitmapDisposal();
+         }
+         if (p->wave.active && (p->bitmap != nullptr ? p->bitmap->id : -1) != p->deserSavedBitmapId) {
 diff --git a/binding-sandbox/sandbox-serial-wasi.h b/binding-sandbox/sandbox-serial-wasi.h
 index 020ede4e..c4fcdecf 100644
 --- a/binding-sandbox/sandbox-serial-wasi.h
@@ -135,6 +234,41 @@ index 020ede4e..c4fcdecf 100644
      std::vector<uint32_t> new_vacant_fds;
      for (uint32_t j = 0; j < fdtable.size(); ++j) {
          if (fdtable[j].type == wasi_fd_type::VACANT) {
+diff --git a/binding-sandbox/sandbox-serial-window.h b/binding-sandbox/sandbox-serial-window.h
+index 782046c8..36a25b6f 100644
+--- a/binding-sandbox/sandbox-serial-window.h
++++ b/binding-sandbox/sandbox-serial-window.h
+@@ -173,9 +173,28 @@ void Window::sandbox_deserialize_end()
+ 	}
+ 
+ 	if (isDisposed()) return;
++	// PokeDaisy: A bitmap past the GPU's texture size ("mega") is drawn through a child its setter spawns, which isn't an object a
++	// state can point to: it came back null, and a sprite still marked visible then drew through it (a crash on the first
++	// frame after loading). Spawn the child again as the setter does, and watch the real bitmap's disposal as it does.
++	if (p->realContents != nullptr && !p->realContents->isDisposed() && p->realContents->isMega() && (p->contents == nullptr || p->contents == p->realContents)) {
++		Exception e;
++		Bitmap *child = p->realContents->spawnChild(e);
++		if (e.is_ok() && child != nullptr) {
++			ChildPublic &shared = *child->getChildInfo();
++			shared.sceneElementType = ChildPublic::WINDOW;
++			shared.sceneElement = this;
++			p->contents = child;
++		} else {
++			delete child;
++			p->contents = nullptr;
++		}
++	} else if (p->contents == nullptr && p->realContents != nullptr && !p->realContents->isMega()) {
++		p->contents = p->realContents;
++	}
+ 	if (p->contents != nullptr) {
+-		p->contentsDispCon = p->contents->wasDisposed.connect(&WindowPrivate::contentsDisposal, p);
+-		if (p->contents->isDisposed()) {
++		Bitmap *watched = p->realContents != nullptr ? p->realContents : p->contents;
++		p->contentsDispCon = watched->wasDisposed.connect(&WindowPrivate::contentsDisposal, p);
++		if (watched->isDisposed()) {
+ 			p->contentsDisposal();
+ 		}
+ 	}
 diff --git a/binding-sandbox/wasm-rt.cpp b/binding-sandbox/wasm-rt.cpp
 index 4ea2f88e..238e2835 100644
 --- a/binding-sandbox/wasm-rt.cpp
