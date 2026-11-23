@@ -1195,8 +1195,10 @@ is found by shape in the first 16 MB), plus gifts / trades from the area data. M
 Glazed / Odyssey say level-up only. Celia has no evolutions or learnsets located; Rogue no learnsets (its baked profiles).
 **DEX list filters**: under the seen / caught rows (`DexFilter`; PARTY + PC = `dexHoldings`, only where the boxes are read) the
 list has TYPE (a seen type, then `TypeRelation` IS / HITS {0} HARD / RESISTS {0} over the running game's chart), NAME (`DexNameSearch`:
-a letter grid in the left column, contains, keys that would find nothing dimmed) and SORT (`DexSort`: a base stat, highest first, read
-by `rememberDexStats` for seen entries only while one is on). The rules are pure in `DexQuery.kt` (`DexQueryTest`); `rememberDexList`
+a letter grid in the left column, contains, keys that would find nothing dimmed; names that aren't Latin - kana, Hangul, `dexNameKeysFitGrid` -
+get a pick-list of first letters instead, `DexUiState.letter`; with SPOILERS on HIDE both only see entries the player may, `dexVisibleNameOf`)
+and SORT (`DexSort`: a base stat, highest first, read by `rememberDexStats` for seen entries only while one is on; Gen 1's five stats are
+HP / ATK / DEF / SPEED / SPECIAL, `gen1Stat`, every other game's the dex page's six, `DexSort.offered` / `sortFor`). The rules are pure in `DexQuery.kt` (`DexQueryTest`); `rememberDexList`
 gives the list and the entry page the same order. ui-preview `emerald-dex-list-*` (needs `-Prom`).
 **Move advice (GitHub #45, phases 1-2: the original games only)**: `MoveAdvisor` (`data/MoveAdvice.kt`) scores a moveset
 as the mean over defending types of its best hit (power x accuracy x1.5 own type x the stat it runs on - Gen 3 splits

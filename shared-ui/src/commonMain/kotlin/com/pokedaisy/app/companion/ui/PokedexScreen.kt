@@ -58,6 +58,7 @@ import com.pokedaisy.app.companion.data.DexSort
 import com.pokedaisy.app.companion.data.TYPE_NONE
 import com.pokedaisy.app.companion.data.TypeRelation
 import com.pokedaisy.app.companion.data.dexNameKeys
+import com.pokedaisy.app.companion.data.dexNameKeysFitGrid
 import com.pokedaisy.app.companion.data.dexNameNextKeys
 import com.pokedaisy.app.companion.data.filterDexByName
 import com.pokedaisy.app.companion.data.matchesType
@@ -79,6 +80,7 @@ import com.pokedaisy.app.companion.data.formatDexHeight
 import com.pokedaisy.app.companion.data.formatDexWeight
 import com.pokedaisy.app.companion.data.speciesName
 import com.pokedaisy.app.companion.data.spriteAsset
+import com.pokedaisy.app.companion.i18n.stripAccents
 import com.pokedaisy.app.companion.i18n.tk
 import com.pokedaisy.app.companion.i18n.tr
 import kotlinx.coroutines.Dispatchers
@@ -112,6 +114,9 @@ class DexUiState(val list: LazyListState) {
      * can't host a keyboard. [typing] = the grid is open in the left column. */
     var name by mutableStateOf("")
     var typing by mutableStateOf(false)
+    /** NAME where the names aren't Latin (kana, Hangul: [dexNameKeysFitGrid]): only names starting with this letter
+     * ([dexInitial]), picked from a list; null = any. Only one of [name] / [letter] is ever set, so the NAME row shows it. */
+    var letter by mutableStateOf<Char?>(null)
     /** SORT: the dex's own order, or a base stat, highest first. */
     var sort by mutableStateOf(DexSort.NUMBER)
     /** null = follow the save (national once it's unlocked). */
@@ -125,12 +130,18 @@ class DexUiState(val list: LazyListState) {
 
     fun showsNational(dex: PokedexState) = !dex.tables.hasRegional || (national ?: dex.national)
 
+    /** [sort] where [dex]'s game has that stat, else the dex order: a sort kept from another game (Gen 1's SPECIAL,
+     * the others' SP. ATK) would put every entry last. */
+    fun sortFor(dex: PokedexState): DexSort = sort.takeIf { it.isOffered(dex.tables.gen1 != null) } ?: DexSort.NUMBER
+
     /** The dex numbers the list shows, in dex order ([DexList] sorts them): [order] (the whole dex, see
      * [rememberDexOrder]) through the filters. [species]: dex number -> species id, without which PARTY + PC, TYPE and
      * NAME can't filter yet. [holdings]: [dexHoldings], null where the boxes aren't read (PARTY + PC then shows all).
-     * [named] false leaves NAME out: the names its letter grid can still spell. */
+     * [named] false leaves NAME out: the names its letter grid can still spell. SPOILERS on HIDE: NAME only finds
+     * entries the player may see ([dexVisibleNameOf]), as the list draws the rest as "-----". */
     fun entries(dex: PokedexState, order: DexOrder, species: IntArray?, holdings: Map<Int, Int>? = null, named: Boolean = true): List<Int> {
         val type = type.takeIf { species != null }?.let(::typeIdOf)?.takeIf { it != TYPE_NONE }
+        val letter = letter.takeIf { named && species != null }
         val listed = order.nationals.filter { n ->
             val id = species?.getOrElse(n) { 0 } ?: 0
             val status = when (filter) {
@@ -141,16 +152,25 @@ class DexUiState(val list: LazyListState) {
                 DexFilter.UNSEEN -> n !in dex.seen
             }
             // An entry's type is only known once it's been seen, as in the games' own dex search.
-            status && (type == null || (n in dex.seen && activeSpeciesTypeData[id]?.let { matchesType(it.type1, it.type2, type, relation) } == true))
+            // SPOILERS on HIDE: a name's letter is only known once it's been seen too.
+            status && (type == null || (n in dex.seen && activeSpeciesTypeData[id]?.let { matchesType(it.type1, it.type2, type, relation) } == true)) &&
+                (letter == null || (dexInitial(id) == letter && (!Spoilers.hiding || Spoilers.seenNational(n, id, dex))))
         }
-        return if (!named || species == null) listed else filterDexByName(listed, name, dexNameOf(species))
+        return if (!named || species == null) listed else filterDexByName(listed, name, dexVisibleNameOf(species, dex))
     }
 }
 
 private fun dexTypes(species: Int): List<String> = activeSpeciesTypeData[species]?.let { monTypes(it.type1, it.type2) }.orEmpty()
 
-/** Dex number -> the name the list shows, through [species] (0 = no species there). */
-private fun dexNameOf(species: IntArray): (Int) -> String? = { n -> species.getOrElse(n) { 0 }.takeIf { it > 0 }?.let(::speciesName) }
+/** Dex number -> the name the list shows, through [species] (0 = no species there); null for an entry SPOILERS on HIDE
+ * keeps "-----", so NAME never finds it and the letter grid's keys don't tell which names exist. */
+private fun dexVisibleNameOf(species: IntArray, dex: PokedexState): (Int) -> String? = { n ->
+    species.getOrElse(n) { 0 }.takeIf { it > 0 && (!Spoilers.hiding || Spoilers.seenNational(n, it, dex)) }?.let(::speciesName)
+}
+
+/** The letter a species' name is filed under, accents gone (a Hangul syllable's first consonant); null for no name. */
+private fun dexInitial(species: Int): Char? = if (species <= 0) null else
+    stripAccents(speciesName(species)).firstOrNull { it.isLetter() }?.uppercaseChar()
 
 /**
  * The dex being shown, as national numbers in its own order - national, or the
@@ -219,12 +239,13 @@ private class DexList(val entries: List<Int>, val stats: Map<Int, List<Int>>?, v
 @Composable
 private fun rememberDexList(dex: PokedexState, ui: DexUiState, order: DexOrder, species: IntArray?, holdings: Map<Int, Int>?): DexList {
     val listed = ui.entries(dex, order, species, holdings)
-    val sorting = ui.sort != DexSort.NUMBER
+    val sort = ui.sortFor(dex)
+    val sorting = sort != DexSort.NUMBER
     val stats = rememberDexStats(dex, order.nationals, sorting)
     return when {
         !sorting -> DexList(listed, null, loading = false)
         stats == null -> DexList(emptyList(), null, loading = true)
-        else -> DexList(sortDex(listed, ui.sort, stats::get), stats, loading = false)
+        else -> DexList(sortDex(listed, sort, stats::get), stats, loading = false)
     }
 }
 
@@ -258,12 +279,14 @@ fun PokedexScreen(
     /** The type picked, while its IS / HITS HARD / RESISTS list is up. */
     var pickingRelation by remember { mutableStateOf<String?>(null) }
     var pickingSort by remember { mutableStateOf(false) }
+    var pickingLetter by remember { mutableStateOf(false) }
+    val sort = ui.sortFor(dex)
 
     Box(modifier.fillMaxSize()) {
     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (ui.typing && species != null) {
             // The grid spells the names the other filters leave: a key that would find nothing is dimmed.
-            val names = ui.entries(dex, order, species, holdings, named = false).mapNotNull(dexNameOf(species))
+            val names = ui.entries(dex, order, species, holdings, named = false).mapNotNull(dexVisibleNameOf(species, dex))
             val keys = remember(names) { dexNameKeys(names) }
             val live = remember(names, ui.name) { dexNameNextKeys(names, ui.name) }
             DexNameSearch(
@@ -293,8 +316,16 @@ fun PokedexScreen(
                 OptionRows(
                     filters.map { f -> Triple<String, String?, () -> Unit>(f.label, "${counts[f]}", { ui.filter = f }) } + listOf(
                         Triple(ui.type?.let { tr(ui.relation.label, typeLabel(it)) } ?: (tr("TYPE") + ": " + tr("ALL")), null, { pickingType = true }),
-                        Triple(tr("NAME") + ": " + ui.name.ifEmpty { tr("ALL") }, null, { ui.typing = true }),
-                        Triple(tr("SORT") + ": " + tr(ui.sort.label), null, { pickingSort = true }),
+                        Triple(tr("NAME") + ": " + (ui.letter?.toString() ?: ui.name.ifEmpty { tr("ALL") }), null, {
+                            // Latin names get the letter grid; kana / Hangul would make it a key per character, so
+                            // they get a pick-list of first letters. Decided on the whole dex, so it doesn't flip with the filters.
+                            if (species != null) {
+                                val names = order.nationals.mapNotNull(dexVisibleNameOf(species, dex))
+                                if (dexNameKeysFitGrid(dexNameKeys(names))) { ui.letter = null; ui.typing = true }
+                                else { pickingLetter = true }
+                            }
+                        }),
+                        Triple(tr("SORT") + ": " + tr(sort.label), null, { pickingSort = true }),
                     ),
                     small,
                     Modifier.fillMaxSize(),
@@ -334,7 +365,7 @@ fun PokedexScreen(
                             order.number(n), if (hidden) 0 else id, n in dex.caught, n in dex.seen, m, small,
                             start = n == (back ?: top),
                             holding = holdingLabel(species?.getOrNull(n) ?: 0, n in dex.caught, holdings),
-                            stat = list.stats?.get(n)?.let(ui.sort::value),
+                            stat = list.stats?.get(n)?.let(sort::value),
                         ) { ui.lastOpened = n; ui.open = n }
                     }
                 }
@@ -358,9 +389,22 @@ fun PokedexScreen(
             onDismiss = { pickingRelation = null },
         )
     }
+    if (pickingLetter && species != null) {
+        val hiding = Spoilers.hiding
+        val letters = remember(order, species, hiding, dex.seen) {
+            order.nationals.filter { !hiding || Spoilers.seenNational(it, species.getOrElse(it) { 0 }, dex) }
+                .mapNotNull { dexInitial(species.getOrElse(it) { 0 }) }.distinct().sorted()
+        }
+        OptionSelector(
+            tr("NAME"), listOf<Char?>(null) + letters, ui.letter, { it?.toString() ?: tr("ALL") }, m,
+            // One of NAME's two ways at a time: a letter picked here drops a name typed on the grid.
+            onPick = { ui.letter = it; ui.name = ""; pickingLetter = false },
+            onDismiss = { pickingLetter = false },
+        )
+    }
     if (pickingSort) {
         OptionSelector(
-            tr("SORT"), DexSort.entries, ui.sort, { tr(it.label) }, m,
+            tr("SORT"), DexSort.offered(dex.tables.gen1 != null), sort, { tr(it.label) }, m,
             onPick = { ui.sort = it; pickingSort = false },
             onDismiss = { pickingSort = false },
         )

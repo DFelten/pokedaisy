@@ -18,24 +18,42 @@ enum class TypeRelation(val label: String) {
     RESISTS(tk("RESISTS {0}")),
 }
 
-/** What the list is sorted by: the dex's own order, or a base stat (highest first). [stat] = its index in HP, ATK, DEF, SP.ATK, SP.DEF, SPEED. */
-enum class DexSort(val label: String, val stat: Int?) {
-    NUMBER(tk("DEX NO."), null),
-    HP(tk("HP"), 0),
-    ATTACK(tk("ATTACK"), 1),
-    DEFENSE(tk("DEFENSE"), 2),
-    SP_ATK(tk("SP. ATK"), 3),
-    SP_DEF(tk("SP. DEF"), 4),
-    SPEED(tk("SPEED"), 5),
-    TOTAL(tk("TOTAL"), null);
+/**
+ * What the list is sorted by: the dex's own order, or a base stat (highest first). [stat] = its index in the six stats
+ * every game's entries carry but Gen 1's (HP, ATK, DEF, SP. ATK, SP. DEF, SPEED: the dex page's order), [gen1Stat] in
+ * Gen 1's five (HP, ATK, DEF, SPEED, SPECIAL: Red / Blue / Yellow and their hacks); null where that game has no such stat.
+ */
+enum class DexSort(val label: String, val stat: Int?, val gen1Stat: Int?) {
+    NUMBER(tk("DEX NO."), null, null),
+    HP(tk("HP"), 0, 0),
+    ATTACK(tk("ATTACK"), 1, 1),
+    DEFENSE(tk("DEFENSE"), 2, 2),
+    SP_ATK(tk("SP. ATK"), 3, null),
+    SP_DEF(tk("SP. DEF"), 4, null),
+    SPEED(tk("SPEED"), 5, 3),
+    /** Gen 1's one special stat, both SP. ATK and SP. DEF there. */
+    SPECIAL(tk("SPECIAL"), null, 4),
+    TOTAL(tk("TOTAL"), null, null);
 
-    /** The number this sort reads off [baseStats]; null for [NUMBER], or with no stats read. */
+    /** The number this sort reads off [baseStats] (five = Gen 1's, else six); null for [NUMBER], with no stats read, or
+     * for a stat that game doesn't have. */
     fun value(baseStats: List<Int>): Int? = when {
         this == NUMBER || baseStats.isEmpty() -> null
         this == TOTAL -> baseStats.sum()
-        else -> baseStats.getOrNull(requireNotNull(stat))
+        else -> (if (baseStats.size == GEN1_STAT_COUNT) gen1Stat else stat)?.let { baseStats.getOrNull(it) }
+    }
+
+    /** Whether a game of [gen1]'s kind has this to sort by. */
+    fun isOffered(gen1: Boolean): Boolean = this == NUMBER || this == TOTAL || (if (gen1) gen1Stat else stat) != null
+
+    companion object {
+        /** The SORT pick-list for a game: Gen 1's SPECIAL, everyone else's SP. ATK / SP. DEF. */
+        fun offered(gen1: Boolean): List<DexSort> = entries.filter { it.isOffered(gen1) }
     }
 }
+
+/** Gen 1's entries carry five base stats ([DexSort.gen1Stat]'s order), every other game's six. */
+private const val GEN1_STAT_COUNT = 5
 
 /** An entry's own types, without TYPE_NONE and without the second when it repeats the first. */
 private fun ownTypes(type1: Int, type2: Int) = listOf(type1, type2).filter { it != TYPE_NONE }.distinct()
@@ -87,6 +105,16 @@ fun dexNameKeys(names: Collection<String>): List<Char> {
     val letters = if (used.any { it in 'A'..'Z' }) ('A'..'Z').toList() else emptyList()
     return letters + used.filter { it !in 'A'..'Z' }.sorted()
 }
+
+/** Latin letters (A-Z with their accents, Æ, Ø ...) end here; past it are kana, Hangul and the rest. */
+private const val LATIN_END = 0x250
+
+/**
+ * Whether the letter grid suits these [keys] ([dexNameKeys]): Latin names fold to A-Z plus a few marks. Kana or Hangul
+ * names make a key per character (dozens, or hundreds of syllables), far too many for the grid, so the screen offers
+ * their first letters in a pick-list instead.
+ */
+fun dexNameKeysFitGrid(keys: Collection<Char>): Boolean = keys.none { it.isLetter() && it.code >= LATIN_END }
 
 /**
  * The keys that would still find a name after [query]: every character that follows the query somewhere in one of

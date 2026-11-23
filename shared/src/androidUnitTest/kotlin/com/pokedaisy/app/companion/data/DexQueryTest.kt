@@ -61,6 +61,35 @@ class DexQueryTest {
         assertNull(DexSort.TOTAL.value(emptyList()))
     }
 
+    @Test fun gen1sFiveStatsSortInTheirOwnOrder() {
+        // Gen 1's entries: HP, ATTACK, DEFENSE, SPEED, SPECIAL.
+        val stats = mapOf(
+            1 to listOf(45, 49, 49, 45, 65),
+            2 to listOf(35, 55, 30, 90, 50),
+            3 to listOf(60, 62, 63, 60, 80),
+        )
+        assertEquals(listOf(2, 3, 1), sortDex(listOf(1, 2, 3), DexSort.SPEED, stats::get))
+        assertEquals(listOf(3, 1, 2), sortDex(listOf(1, 2, 3), DexSort.SPECIAL, stats::get))
+        assertEquals(listOf(3, 1, 2), sortDex(listOf(1, 2, 3), DexSort.DEFENSE, stats::get))
+        assertEquals(90, DexSort.SPEED.value(stats.getValue(2)))
+        assertEquals(260, DexSort.TOTAL.value(stats.getValue(2)))
+        // Gen 1 has no SP. ATK / SP. DEF, the others no SPECIAL.
+        assertNull(DexSort.SP_ATK.value(stats.getValue(1)))
+        assertNull(DexSort.SPECIAL.value(listOf(45, 49, 49, 65, 65, 45)))
+        assertEquals(65, DexSort.SP_ATK.value(listOf(45, 49, 49, 65, 65, 45)))
+    }
+
+    @Test fun eachGameIsOfferedOnlyTheStatsItHas() {
+        assertEquals(
+            listOf(DexSort.NUMBER, DexSort.HP, DexSort.ATTACK, DexSort.DEFENSE, DexSort.SPEED, DexSort.SPECIAL, DexSort.TOTAL),
+            DexSort.offered(gen1 = true),
+        )
+        assertEquals(
+            listOf(DexSort.NUMBER, DexSort.HP, DexSort.ATTACK, DexSort.DEFENSE, DexSort.SP_ATK, DexSort.SP_DEF, DexSort.SPEED, DexSort.TOTAL),
+            DexSort.offered(gen1 = false),
+        )
+    }
+
     // NAME search: invented names.
     private val names = mapOf(1 to "EMBERPUP", 2 to "Emberhound", 3 to "Pokéfin", 5 to "MR. TIDE")
 
@@ -87,6 +116,13 @@ class DexQueryTest {
         assertEquals(listOf('カ', 'ヒ'), dexNameKeys(listOf("ヒカ", "ビガ")))
         // A Hangul syllable stays one key.
         assertEquals(listOf('각'), dexNameKeys(listOf("각")))
+    }
+
+    @Test fun onlyLatinNamesGetTheLetterGrid() {
+        assertTrue(dexNameKeysFitGrid(dexNameKeys(listOf("MR. TIDE", "Pokéfin", "EMBER2"))))
+        assertFalse(dexNameKeysFitGrid(dexNameKeys(listOf("ヒカ", "ビガ"))))
+        assertFalse(dexNameKeysFitGrid(dexNameKeys(listOf("각"))))
+        assertTrue(dexNameKeysFitGrid(emptyList()))
     }
 
     @Test fun onlyKeysThatStillFindANameAreLive() {
