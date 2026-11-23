@@ -767,7 +767,7 @@ fun CompanionScreen(
                                 )
                             } else PokedexScreen(
                                 dex, dexUi,
-                                holdings = remember(snapshot.party, pcBoxes) { com.pokedaisy.app.companion.data.dexHoldings(snapshot.party, pcBoxes) },
+                                holdings = remember(snapshot.party, pcBoxes, snapshot.boxSpecies) { com.pokedaisy.app.companion.data.dexHoldings(snapshot.party, pcBoxes, snapshot.boxSpecies) },
                             )
                         } else if (tab == "GUIDE" && guide != null) {
                             if (noticeAccepted) GuideScreen(guide, guideUi, snapshot)

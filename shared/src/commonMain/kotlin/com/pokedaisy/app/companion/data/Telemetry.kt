@@ -164,6 +164,8 @@ data class Telemetry(
     val pokegearState: Int? = null,
     /** The PC's boxes (the BOXES tab, [readPcBoxes]); null where the game's storage isn't mapped. */
     val pcBoxes: PcBoxes? = null,
+    /** Where [pcBoxes] isn't read: each box's hatched species, from LEVEL UP ALL's storage read ([boxSpecies]); else null. */
+    val boxSpecies: List<List<Int>>? = null,
     /** The game's move-learning summary, while it's up (see [MoveLearningPrompt]); null otherwise. */
     val moveLearning: MoveLearningPrompt? = null,
 )
