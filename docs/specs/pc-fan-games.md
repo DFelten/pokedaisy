@@ -428,6 +428,51 @@ Android core in an arm64 Android emulator (API 32, SwiftShader's OpenGL ES 3.1: 
   your Reborn save). A cheat that runs the game's own loop (a battle) runs again inside it until the sandbox overflows: the
   core clears a cheat only once it returns, so a test starts one from the next frame update instead.
 
+## GS Vitro: Essentials v16 / v17 on Ruby 1.8 (2026-11-23)
+
+GS Vitro 1.2.3 (the Spanish BES fork of Essentials, a Crystal remake; a zip from its makers' site, its own mkxp build on
+Ruby 1.8.7, 399 scripts in `Data/Scripts.rxdata`, the PBS data in `Data/*.dat`). Run in the arm64 emulator through the
+probe, from boot to its overworld and into wild battles.
+
+- **Ruby 1.8 on 3.3** (`linux/pc_games/pokedaisy_ruby18_compat.rb`, a new preload): a game is a 1.8 one when a script has
+  a `when x:` line (no later Ruby parses one; read from `$RGSS_SCRIPTS`, which the core sets before the preloads). Only
+  then is the core's `top_self.eval` of each script ours: `str[0]` byte reads through a helper (`file.read(1)[0]`,
+  `rstr[1]>>4`), `proc { }` as 1.8's lambda with its argument rules (an event handler's `return` otherwise unwinds into
+  a finished script: a LocalJumpError, and in the sandbox an out-of-bounds trap on entering a map), `public` first (1.8's
+  top-level `def`s in scripts were public: `Kernel.respond_to?("pbSetResizeFactor")` decides whether the game swaps its
+  screen capture for a nil stand-in, and its pause menu crashed on that), and a script that still doesn't parse has the
+  lines Ruby names rewritten (`when x:`, `name (a, b)`, `\x80`-`\xFF` in a UTF-8 regex). Around it: the core's Win32API
+  stand-ins answer `FindWindowEx` / `GetWindowThreadProcessId` (the mouse code looks for the game's window at once),
+  `TEMP` set, a folder opened as a file refused with Windows' `EACCES` (the core opened it, then asserted on reading:
+  Spanish has no messages file, so it loads `Data/`), the screen resized to `DEFAULTSCREENWIDTH` / `HEIGHT` (512 x 384;
+  the core opens RPG Maker XP at 640 x 480), `RTP.getSaveFolder` = `System.data_directory`, `StringInput#getc` a byte
+  (every `dexdata.dat` read), `Thread.critical`, `Array#nitems`, `Hash#index`, `Fixnum` / `Bignum`. The game redefines
+  core methods (`Array#first(n)` = "is n 0?"), so our preloads index arrays instead of calling `first(n)`.
+- **The companion** (`PokeDaisyClassic`): names from `PBSpecies.getName` & co. in the game's language, types by number with
+  the chart from `PBTypes.getEffectiveness`, stats reordered from PBStats' HP / Atk / Def / Spe / SpA / SpD, statuses
+  by number, icons from `pbPokemonIconFile` (one file per form / gender / shiny), the bag by `pbPocketNames` (GS Vitro
+  has 10 pockets), the Town Map from `Data/townmap.dat` (its Marin map screen: a sprite's middle on tile * 16 + 8, the
+  head `Graphics/Pictures/mapPlayer` when there's no `pbPlayerHeadFile` picture), HERE from `@enctypes` with
+  `EnctypeChances`, the battle scene's hooks the Reborn engine's (`pbFrameUpdate(cw)`, `pbCommandMenuEx`, `pbSwitch`).
+  Checked: party (Spanish names, a shiny's and a female's icon, paralysis), the bag with icons, Route 29's grass and
+  headbutt lists, a wild battle's battlers and waiting menu; FIGHT with a move, a switch and RUN through the game's menus
+  ("¡Escapaste sin problemas!").
+- **Hooks as alias chains** (`PokeDaisyCompanion.wrap`): GS Vitro aliases `pbFrameUpdate` / `pbStartBattle` / `pbSwitch`
+  itself, and a method aliased before a module is prepended over it called the prepended one again, forever ("stack level
+  too deep"). The battle hook (every engine) and the Reborn / v16 / v17 scene hooks wrap by alias now; the v19+ path is
+  unchanged.
+- **States** (our core patch, two more fixes for every game): the sandbox gives each host function it passes to Ruby a
+  new slot in the WASM function table as it's first used, and states didn't keep the table: a state taken after the game
+  added slots (5,750 at boot, 6,156 past GS Vitro's intro) trapped (CALL_INDIRECT) in a fresh core and was refused after a
+  few loads in one run. The slots past the module's own are saved now, each pointer an offset into the library, with two
+  distances between parts of the library first: a state from another build of the core is refused instead of followed.
+  And a bitmap past the GPU's texture size is drawn through a child its setter spawns, which a state can't point to: a
+  sprite came back visible with no bitmap and the core crashed drawing it. Sprites, planes and windows spawn the child
+  again on load.
+- Its intro: a language pick, the title, the load screen (it autosaves), a game-mode pick (Normal / Permadeath / Random:
+  A ticks a box, Terminar ends it), the professor's controls help (B closes it; pick "No necesito nada" after), the name
+  on the letter grid. Its own A / B and menus work as on a PC.
+
 ## Next steps
 
 1. Time Infinite Fusion on the other handhelds: the aarch64 core and `pokedaisy-linux` on a TrimUI / Steam Deck (built

@@ -106,7 +106,8 @@ $NDK_LLVM/bin/aarch64-linux-android29-clang -O2 -I../../third_party/mgba/src/pla
 
 The probe asks for OpenGL ES 3.2 and falls back to 3.1 / 3.0, so it also runs in an arm64 Android emulator with
 `-gpu swiftshader_indirect` (3.1): slow, but enough to boot a game when no device is connected. A big game wants an AVD
-with room (`disk.dataPartition.size`); Rejuvenation is 2.3 GB.
+with room (`disk.dataPartition.size`); Rejuvenation is 4.1 GB unpacked. The android-32 image wants a 6 GB data partition
+at least, and the emulator won't start without 1.2 times that free on the Mac.
 
 On the device everything goes in `/data/local/tmp/pc` (`adb shell` may run code there): the core, the probe, the game
 (streamed: `curl -sL <repo tarball> | adb shell 'cd game && tar xzf -'`), `system/mkxp-z/Scripts/Preload/` with

@@ -14,7 +14,8 @@ keywords: [pc games, fan games, essentials, rpg maker, mkxp, mkxp-z, joiplay, ga
 > Delete this note when it moves.
 
 Some fan games are made for computers rather than for a console. Most of them are built with Pokémon Essentials, a kit
-for making these games. PokeDaisy can play the ones made with Essentials version 19 or newer, and Pokémon Reborn and Pokémon Rejuvenation.
+for making these games. PokeDaisy can play the ones made with Essentials version 19 or newer, Pokémon Reborn and Pokémon Rejuvenation,
+and ones made with versions 16 and 17, such as Pokémon GS Vitro.
 
 ## What you need
 
@@ -69,7 +70,7 @@ The first start of a game takes a while, as the game gets its own code ready. Af
 - The GUIDE's other pages (the next boss, where things are) and the companion's settings.
 - The MAP only shows once the game's Town Map has a spot for where you are.
 - Double battles: their picks stay in the game's own menu.
-- Games made with older versions of Essentials (Pokémon Reborn and Pokémon Rejuvenation aside).
+- Games made with versions of Essentials older than 16.
 - Anything a game does online. Its update check, online play and Discord status act as on a computer with no internet,
   so update a game by copying its newer folder in. Pokémon Rejuvenation can't see your Pokémon Reborn save for its
   bonuses either.
