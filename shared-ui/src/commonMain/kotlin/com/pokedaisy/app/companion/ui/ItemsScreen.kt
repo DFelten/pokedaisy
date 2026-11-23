@@ -1866,6 +1866,7 @@ fun itemUseMessage(o: ItemUseOutcome, mon: String = "", item: String = "", held:
     ItemUseResult.MAILBOX_FULL -> tr("The PC's mailbox is full.")
     ItemUseResult.IN_GAME -> tr("Pick a POKéMON on the game's screen.")
     ItemUseResult.TEACHING -> tr("{0} is learning it on the game's screen.", mon)
+    ItemUseResult.USING_IN_GAME -> tr("{0} gets it on the game's screen.", mon)
 }
 
 /** What a USE / GIVE did, popped up over the bag ([ItemNoticeWindow]). */

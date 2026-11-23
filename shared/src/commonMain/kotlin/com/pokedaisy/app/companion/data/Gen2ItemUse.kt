@@ -24,13 +24,17 @@ package com.pokedaisy.app.companion.data
  *   WRAM0 like the TM routine: [vitaminRoutine]), then a vitamin's friendship. An egg can't; a fainted Pokémon can.
  * - PP UP (RestorePPEffect): one move, not SKETCH, with fewer than three PP Ups; its PP Up count + 1 and ApplyPPUp's
  *   ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base PP / 5, 7) to the move's PP once.
+ * - RARE CANDY and the stones ([levelOrStone]): the Pokémon picked here (below level 100; a stone only for one whose
+ *   EvosAttacks has that stone and that doesn't hold an EVERSTONE), then the game's own screens from WRAM0 as SELECT
+ *   opens a party item - its party menu drawn without its pick (ChooseMonToUseItemOn up to PartyMenuSelect), the picked
+ *   Pokémon in wCurPartyMon / wCurPartySpecies, and RareCandyEffect / EvoStoneEffect entered just past their
+ *   UseItem_SelectMon: the level-up text, the stats, LearnLevelMoves, the evolution, the item spent ([partyItemRoutine]).
  *
  * - The BICYCLE and the rods: their own field effects ([onTheSpot]).
  *
  * Everything else the game's bag can USE goes the game's own way ([openInGame], [fieldEffect]), as SELECT runs a registered
- * item (engine/overworld/select_menu.asm's UseRegisteredItem, far-called from HandleMap with wCurItem set): the vitamins,
- * RARE CANDY and the stones (ITEMMENU_PARTY: ReanchorMap, FadeToMenu, the item's own party screen,
- * CloseSubmenu, CloseText), the COIN CASE and BLUE CARD (ITEMMENU_CURRENT: their text over the map), SACRED ASH, ESCAPE
+ * item (engine/overworld/select_menu.asm's UseRegisteredItem, far-called from HandleMap with wCurItem set): the COIN CASE
+ * and BLUE CARD (ITEMMENU_CURRENT: their text over the map), SACRED ASH, ESCAPE
  * ROPE, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE: the script their effect queues runs from the map's queue,
  * or the game's "not the time" text).
  *
@@ -79,19 +83,24 @@ class Gen2ItemCalls(
     val updateStatsAfterItem: Int = 0x6E8C,
     /** HappinessChanges (bank 1): three bytes per HAPPINESS_* change, by friendship < 100, < 200, the rest. */
     val happinessChanges: Long = romOff(0x01, 0x7221),
+    /** What RARE CANDY and the stones run ([partyItemRoutine]). */
+    val party: Gen2PartyItemFns = Gen2PartyItemFns(),
 ) {
-    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
-        val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        rom(off, want.size)?.contentEquals(want) == true
+    /** Every signature's bytes at its place (`??` = any byte), the party items' too. */
+    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = (signatures + party.signatures()).all { (off, hex) ->
+        val want = hex.chunked(2)
+        val got = rom(off, want.size) ?: return@all false
+        want.indices.all { want[it] == "??" || got[it] == want[it].toInt(16).toByte() }
     }
 
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
         itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || onTheSpot(itemId) ||
-        inGame(itemId) || fieldEffect(itemId) || itemId in TM_ITEMS || itemId in BITTER || itemId in VITAMINS || itemId == PP_UP
+        inGame(itemId) || fieldEffect(itemId) || itemId in TM_ITEMS || itemId in BITTER || itemId in VITAMINS || itemId == PP_UP ||
+        itemId == RARE_CANDY || itemId in STONES
 
     /** The items whose own screen or text the game shows ([openInGame]): the companion hands over to it. */
-    fun inGame(itemId: Int) = itemId in GAME_PARTY || itemId in GAME_TEXT
+    fun inGame(itemId: Int) = itemId in GAME_TEXT
 
     /** The items whose effect queues a script ([fieldEffect]). */
     fun fieldEffect(itemId: Int) = itemId in GAME_FIELD
@@ -152,6 +161,22 @@ class Gen2ItemCalls(
         }
     }
 
+    /** Whether [species] evolves with stone [itemId]: an EVOLVE_ITEM entry for it in its EvosAttacks (EvolveAfterBattle). */
+    private fun evolvesWith(g: GameCalls, species: Int, itemId: Int): Boolean {
+        if (species == 0 || species > LAST_SPECIES) return false
+        val ptr = g.rom(party.evosAttacksPointers + (species - 1) * 2L, 2) ?: return false
+        val evos = g.rom(romOff(EVOS_BANK, u8(ptr, 0) or (u8(ptr, 1) shl 8)), EVOS_MAX) ?: return false
+        var i = 0
+        while (i < evos.size) {
+            when (u8(evos, i)) {
+                0 -> return false
+                EVOLVE_ITEM -> if (i + 1 < evos.size && u8(evos, i + 1) == itemId) return true
+            }
+            i += if (u8(evos, i) == EVOLVE_STAT) 4 else 3
+        }
+        return false
+    }
+
     private fun verdict(g: GameCalls, p: Party, slot: Int, itemId: Int): SlotVerdict {
         if (u8(p.species, slot) == EGG) return SlotVerdict.EGG
         val o = slot * MON_SIZE
@@ -161,6 +186,8 @@ class Gen2ItemCalls(
         val ok = when {
             itemId in VITAMINS -> u8(p.mons, o + STAT_EXP + VITAMINS.getValue(itemId)) < VITAMIN_CAP
             itemId == PP_UP -> ppUpMoves(p, slot).any { it }
+            itemId == RARE_CANDY -> u8(p.mons, o + LEVEL) < MAX_LEVEL
+            itemId in STONES -> u8(p.mons, o + HELD_ITEM) != EVERSTONE && evolvesWith(g, u8(p.species, slot), itemId)
             itemId in REVIVES || itemId == REVIVAL_HERB -> hp == 0
             // RestorePPEffect has no fainted check: a fainted Pokémon's moves take PP back too.
             itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES -> ppMoves(g, p, slot).any { it }
@@ -238,6 +265,45 @@ class Gen2ItemCalls(
         g.write(curPartySpecies, byteArrayOf(p.species[slot]))
         g.write(curPartyMon, byteArrayOf(slot.toByte()))
         return ItemUseOutcome(ItemUseResult.TEACHING)
+    }
+
+    /**
+     * RARE CANDY or a stone on [target]: the game's own screens over the map ([partyItemRoutine]) with wCurItem the item.
+     * The rest is the game's - the level-up, a new move, the evolution, the item spent - so this says it started.
+     */
+    fun levelOrStone(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget): ItemUseOutcome {
+        val p = party(g, cfg)
+        val slot = target.slot
+        if (slot !in 0 until p.count || gen2MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
+        if (verdict(g, p, slot, itemId) != SlotVerdict.OK) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
+        if (quantity(g, cfg, itemId) == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        if (!g.gbCallAt(at, ROUTINE, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
+        g.write(ROUTINE.toLong(), partyItemRoutine(itemId, slot, u8(p.species, slot)))
+        g.write(curItem, byteArrayOf(itemId.toByte()))
+        return ItemUseOutcome(ItemUseResult.USING_IN_GAME)
+    }
+
+    /**
+     * SELECT's ITEMMENU_PARTY (ReanchorMap, FadeToMenu ... CloseSubmenu, CloseText) with UseItem_SelectMon's party menu
+     * drawn but not asked (ClearBGPalettes, ChooseMonToUseItemOn up to PartyMenuSelect; the cursor on [slot]), the
+     * Pokémon set, and RareCandyEffect / EvoStoneEffect entered past their pick ([Gen2PartyItemFns.effectEntry]).
+     */
+    fun partyItemRoutine(itemId: Int, slot: Int, species: Int): ByteArray = with(party) {
+        val c = ArrayList<Int>()
+        fun le(x: Int) = listOf(x and 0xFF, x shr 8 and 0xFF)
+        fun call(x: Int) { c += 0xCD; c += le(x) }
+        fun far(bank: Int, x: Int) { c += listOf(0x3E, bank, 0x21) + le(x) + 0xCF }
+        fun store(v: Int, addr: Long) { c += listOf(0x3E, v and 0xFF, 0xEA) + le((addr and 0xFFFF).toInt()) }
+        call(reanchorMap); call(fadeToMenu)
+        store(if (itemId == RARE_CANDY) PARTYMENUACTION_HEALING_ITEM else PARTYMENUACTION_EVO_STONE, partyMenuActionText)
+        store(slot + 1, partyMenuCursor)
+        call(clearBgPalettes)
+        for (f in listOf(loadPartyMenuGfx, initPartyMenuWithCancel, initPartyMenuGfx, writePartyMenuTilemap, placePartyMenuText)) far(PARTY_MENU_BANK, f)
+        call(waitBgMap); call(setDefaultBgpAndObp); call(delayFrame)
+        store(slot, curPartyMon); store(species, curPartySpecies)
+        far(FIELD_BANK, (if (itemId == RARE_CANDY) rareCandyEffect else evoStoneEffect) + EFFECT_PAST_PICK)
+        call(closeSubmenu); call(tm.closeText); c += 0xC9
+        ByteArray(c.size) { c[it].toByte() }
     }
 
     /** How many [itemId] the ITEMS pocket holds. */
@@ -324,6 +390,7 @@ class Gen2ItemCalls(
     fun useOn(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget, moveIndex: Int): ItemUseOutcome {
         if (!picksMon(itemId)) return ItemUseOutcome(ItemUseResult.FAILED)
         if (itemId in TM_ITEMS) return teach(g, cfg, itemId, target, moveIndex)
+        if (itemId == RARE_CANDY || itemId in STONES) return levelOrStone(g, cfg, itemId, target)
         val p = party(g, cfg)
         val slot = target.slot
         if (slot !in 0 until p.count || gen2MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
@@ -442,6 +509,19 @@ class Gen2ItemCalls(
         private const val HAPPINESS = 0x1B
         private const val VITAMIN_CAP = 100
         private const val VITAMIN_STEP = 10
+        private const val LEVEL = 0x1F
+        private const val MAX_LEVEL = 100
+        private const val EVERSTONE = 0x70
+        private const val EVOLVE_ITEM = 2
+        private const val EVOLVE_STAT = 5
+        private const val EVOS_BANK = 0x10
+        /** More than the longest EvosAttacks' evolutions (EEVEE's five) need. */
+        private const val EVOS_MAX = 24
+        private const val PARTY_MENU_BANK = 0x14
+        private const val PARTYMENUACTION_HEALING_ITEM = 1
+        private const val PARTYMENUACTION_EVO_STONE = 5
+        /** `ld b, PARTYMENUACTION_*; call UseItem_SelectMon; jp c, ...`: where both effects go on with the picked Pokémon. */
+        private const val EFFECT_PAST_PICK = 8
         private const val HAPPINESS_USEDITEM = 0x02
         private const val MOVE_LENGTH = 7
         private const val MOVE_PP = 5
@@ -466,8 +546,9 @@ class Gen2ItemCalls(
         val REPELS = mapOf(0x14 to 100, 0x2A to 200, 0x2B to 250)
         /** TM01-TM50, HM01-HM07 in wTMsHMs' order (ITEM_C3 and ITEM_DC sit between them). */
         val TM_ITEMS: List<Int> = (0xBF..0xF9).filter { it != 0xC3 && it != 0xDC }
-        /** ITEMMENU_PARTY items left to their own screen: the stones (MOON, FIRE, THUNDER, WATER, LEAF, SUN), RARE CANDY. */
-        val GAME_PARTY = setOf(0x08, 0x16, 0x17, 0x18, 0x22, 0xA9, 0x20)
+        const val RARE_CANDY = 0x20
+        /** MOON, FIRE, THUNDER, WATER, LEAF, SUN STONE. */
+        val STONES = setOf(0x08, 0x16, 0x17, 0x18, 0x22, 0xA9)
         /** HP UP, PROTEIN, IRON, CARBOS, CALCIUM and their stat experience's place (StatExpItemPointerOffsets). */
         val VITAMINS = mapOf(0x1A to 0, 0x1B to 2, 0x1C to 4, 0x1D to 6, 0x1F to 8)
         const val PP_UP = 0x3E
@@ -530,6 +611,49 @@ data class Gen2TmFns(
     }
 }
 
+/**
+ * RARE CANDY's and the stones' functions: SELECT's ITEMMENU_PARTY ones (bank 0), ChooseMonToUseItemOn's party menu (bank
+ * 0x14), the two effects (bank 3) and EvosAttacksPointers (bank 0x10, a cart offset).
+ */
+data class Gen2PartyItemFns(
+    val fadeToMenu: Int = 0x2B29,
+    val closeSubmenu: Int = 0x2B3C,
+    val clearBgPalettes: Int = 0x31F3,
+    val waitBgMap: Int = 0x31F6,
+    val setDefaultBgpAndObp: Int = 0x32F9,
+    val delayFrame: Int = 0x045A,
+    val loadPartyMenuGfx: Int = 0x404F,
+    val initPartyMenuWithCancel: Int = 0x4405,
+    val initPartyMenuGfx: Int = 0x43E0,
+    val writePartyMenuTilemap: Int = 0x405F,
+    val placePartyMenuText: Int = 0x449A,
+    val rareCandyEffect: Int = 0x6F14,
+    val evoStoneEffect: Int = 0x6E0F,
+    val evosAttacksPointers: Long = Gen2ItemCalls.romOff(0x10, 0x65B1),
+    val partyMenuActionText: Long = wramx(1, 0xD141),
+    val partyMenuCursor: Long = wramx(1, 0xD0D8),
+    /** EvosAttacksPointers' first three words (BULBASAUR, IVYSAUR, VENUSAUR), as hex. */
+    val evosHead: String = "a767c267e167",
+) {
+    /** Their first bytes, calls' and loads' addresses left out (`??`), and EvosAttacksPointers' first three words. */
+    fun signatures(): List<Pair<Long, String>> = listOf(
+        Gen2ItemCalls.romOff(0x03, rareCandyEffect) to "0601cd????da????cd",   // ld b, PARTYMENUACTION_HEALING_ITEM; call UseItem_SelectMon; jp c
+        Gen2ItemCalls.romOff(0x03, evoStoneEffect) to "0605cd????da????3e01cd",  // ld b, PARTYMENUACTION_EVO_STONE; ...; ld a, MON_ITEM
+        fadeToMenu.toLong() to "afe0d4cd????3e23",
+        closeSubmenu.toLong() to "cd????cd????cd",
+        clearBgPalettes.toLong() to "cd????3e01e0d40e",
+        waitBgMap.toLong() to "3e01e0d40e04cd",
+        setDefaultBgpAndObp.toLong() to "f0e6a7200b3ee4e0",
+        delayFrame.toLong() to "3e01eab3cf7600",
+        Gen2ItemCalls.romOff(0x14, loadPartyMenuGfx) to "cd580e21d14a3e02",
+        Gen2ItemCalls.romOff(0x14, initPartyMenuWithCancel) to "afeae3d011??44cd",
+        Gen2ItemCalls.romOff(0x14, initPartyMenuGfx) to "21d7dc2aa7c84faf",
+        Gen2ItemCalls.romOff(0x14, writePartyMenuTilemap) to "21cccf7ef5cbe6af",
+        Gen2ItemCalls.romOff(0x14, placePartyMenuText) to "21b8c5011202cd",
+        evosAttacksPointers to evosHead,
+    )
+}
+
 /** The tables' first bytes and HandleMap, shared by every Crystal build: HealingHPAmounts (FRESH WATER 50), StatusHealingActions
  * (ANTIDOTE), Moves (POUND). */
 private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHealing: Int, moves: Int, oldRod: Int,
@@ -583,4 +707,8 @@ val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     statBoosterParams = 0x6EC4,
     updateStatsAfterItem = 0x6E60,
     happinessChanges = Gen2ItemCalls.romOff(0x01, 0x7242),
+    party = Gen2PartyItemFns(fadeToMenu = 0x2B13, closeSubmenu = 0x2B26, clearBgPalettes = 0x31DD, waitBgMap = 0x31E0,
+        setDefaultBgpAndObp = 0x32E3, initPartyMenuWithCancel = 0x43FB, initPartyMenuGfx = 0x43D6, placePartyMenuText = 0x4490,
+        rareCandyEffect = 0x6EE3, evoStoneEffect = 0x6DE3, evosAttacksPointers = Gen2ItemCalls.romOff(0x10, 0x65A1),
+        evosHead = "9767b267d167"),
 )

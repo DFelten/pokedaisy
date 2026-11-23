@@ -1133,7 +1133,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
     StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Every other item the pack can use
     goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
-    wCurItem set: RARE CANDY and the stones open its party menu (ITEMMENU_PARTY), COIN CASE / BLUE CARD
+    wCurItem set: COIN CASE / BLUE CARD
     show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
     effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
     in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
@@ -1148,8 +1148,16 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     it's under 100 (VitaminEffect), its friendship change, then RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem (bank 03, EN
     0x6EF5 / 0x6E8C, DE 0x6EC4 / 0x6E60) far-called by a 13-byte routine at C000 (`vitaminRoutine`); PP UP one move, not SKETCH, under
     three PP Ups, the count + 1 and ApplyPPUp's ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base / 5, 7) once.
+    RARE CANDY (below level 100, a fainted one too) and the stones (EvosAttacks has that stone, no EVERSTONE held) pick the Pokémon here,
+    then an 81-byte routine at C000 (`partyItemRoutine`, `Gen2PartyItemFns`) runs SELECT's ITEMMENU_PARTY with the pick left out:
+    ReanchorMap, FadeToMenu, wPartyMenuActionText / wPartyMenuCursor, ClearBGPalettes, ChooseMonToUseItemOn's party menu up to
+    PartyMenuSelect (bank 14), wCurPartyMon / wCurPartySpecies, then RareCandyEffect / EvoStoneEffect + 8 (bank 03, past their
+    UseItem_SelectMon; EN 0x6F14 / 0x6E0F, DE 0x6EE3 / 0x6DE3) far-called: the game's level-up text and stats, LearnLevelMoves, the
+    evolution, UseDisposableItem; CloseSubmenu, CloseText. The companion window closes for it (`USING_IN_GAME`).
     Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
-    cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY, ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY
+    picked here on a level 35 QUILAVA: level 36, the stats box, the evolution, one candy spent, back on the map; a THUNDERSTONE on a
+    PIKACHU: RAICHU, the stone spent; ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
     `Gen2ItemUseTest`.
 63. WILD PIN (`WildPin.kt`): while a pin is on, the pinned method's slots on the map ({u8 min, u8 max, u16 species},
     the WildPokemonInfo's slot array, `GuideRomSource.pinSlots`: `WildPin.Method` LAND 12, WATER 5, ROCK_SMASH 5,

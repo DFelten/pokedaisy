@@ -537,17 +537,72 @@ class Gen2ItemUseTest {
     }
 
     @Test
-    fun `a party item opens the game's party menu, a text item just shows its text`() {
+    fun `a text item just shows its text`() {
         val g = game()
-        g.bag(RARE_CANDY to 1)
-        assertTrue(calls.inGame(RARE_CANDY) && !calls.picksMon(RARE_CANDY))
-        assertEquals(ItemUseResult.IN_GAME, calls.openInGame(g, cfg, RARE_CANDY).result)
-        assertEquals(RARE_CANDY, g[calls.curItem])
-        assertEquals(1, g.qty(RARE_CANDY))
-        assertEquals(ItemUseResult.USED, calls.openInGame(g, cfg, COIN_CASE).result)
-        assertEquals(listOf(calls.useRegisteredItem, calls.useRegisteredItem), g.gameCalls)
         g.bag()
-        assertEquals(ItemUseResult.NONE_LEFT, calls.openInGame(g, cfg, RARE_CANDY).result)
+        assertEquals(ItemUseResult.USED, calls.openInGame(g, cfg, COIN_CASE).result)
+        assertEquals(COIN_CASE, g[calls.curItem])
+        assertEquals(listOf(calls.useRegisteredItem), g.gameCalls)
+    }
+
+    private val THUNDERSTONE = 0x17
+    private val WATER_STONE = 0x18
+    private val EVERSTONE = 0x70
+
+    /** EvosAttacks for CYNDAQUIL (a level), PIKACHU (THUNDERSTONE) and EEVEE (two friendship ones, then three stones). */
+    private fun Game.evos() {
+        fun put(off: Long, hex: String) = hex.chunked(2).forEachIndexed { i, h -> cart[off + i] = h.toInt(16).toByte() }
+        val table = calls.party.evosAttacksPointers
+        fun species(id: Int, addr: Int, evos: String) {
+            put(table + (id - 1) * 2L, "%02x%02x".format(addr and 0xFF, addr shr 8))
+            put(Gen2ItemCalls.romOff(0x10, addr), evos)
+        }
+        species(0x9B, 0x6800, "010e9c00")
+        species(0x19, 0x6810, "02171a00")
+        species(0x85, 0x6820, "0401c40402c50217870218860216880000")
+    }
+
+    @Test
+    fun `RARE CANDY and the stones are picked here, then the game's own screens run them`() {
+        val g = game()
+        g.evos()
+        g.bag(RARE_CANDY to 1, THUNDERSTONE to 1)
+        assertTrue(calls.picksMon(RARE_CANDY) && calls.picksMon(THUNDERSTONE) && !calls.inGame(RARE_CANDY) && !calls.picksMove(RARE_CANDY))
+        g.mon(0, hp = 0); g.mon(1); g.mon(2, species = 0xFD); g.mon(3, species = 0x19); g.mon(4, species = 0x85); g.mon(5, species = 0x19)
+        g[cfg.partyMons + 0x30 + 0x1F] = 100                  // slot 1: level 100
+        g[cfg.partyMons + 5 * 0x30 + 1] = EVERSTONE            // slot 5 holds an EVERSTONE
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.OK, SlotVerdict.OK, SlotVerdict.OK),
+            calls.targets(g, cfg, RARE_CANDY).targets.map { it.verdict })   // fainted is fine, as in the game
+        assertEquals(listOf(SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.OK, SlotVerdict.OK, SlotVerdict.NO_EFFECT),
+            calls.targets(g, cfg, THUNDERSTONE).targets.map { it.verdict })
+        g.bag(WATER_STONE to 1)
+        assertEquals(SlotVerdict.NO_EFFECT, calls.targets(g, cfg, WATER_STONE).targets[3].verdict)   // PIKACHU: THUNDERSTONE only
+        assertEquals(SlotVerdict.OK, calls.targets(g, cfg, WATER_STONE).targets[4].verdict)
+
+        g.bag(THUNDERSTONE to 1)
+        val pika = calls.targets(g, cfg, THUNDERSTONE).targets[3]
+        assertEquals(ItemUseResult.USING_IN_GAME, calls.useOn(g, cfg, THUNDERSTONE, pika, 0).result)
+        assertEquals(listOf(Gen2ItemCalls.ROUTINE), g.gameCalls)
+        assertEquals(THUNDERSTONE, g[calls.curItem])
+        val routine = calls.partyItemRoutine(THUNDERSTONE, 3, 0x19)
+        assertTrue(routine.indices.all { g[Gen2ItemCalls.ROUTINE.toLong() + it] == routine[it].toInt() and 0xFF })
+        assertEquals(1, g.qty(THUNDERSTONE))   // the game spends it, not us
+        assertEquals(ItemUseResult.PARTY_CHANGED, calls.useOn(g, cfg, THUNDERSTONE, pika.copy(personality = 7), 0).result)
+        g.bag()
+        assertEquals(ItemUseResult.NONE_LEFT, calls.targets(g, cfg, RARE_CANDY).result)
+    }
+
+    @Test
+    fun `the party item routine draws the party menu, sets the Pokemon and enters the effect past its pick`() {
+        // The German routines run headless on Kristall: QUILAVA grew to 36 and evolved, PIKACHU took a THUNDERSTONE.
+        val de = GEN2_ITEM_CALLS_CRYSTAL_DE
+        fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
+        assertEquals("cda42dcd132b3e01ea41d13e03ead8d0cddd313e14214f40cf3e1421fb43cf3e1421d643cf3e14215f40cf3e14219044cfcde031cde332cd5a04" +
+            "3e02ea09d13e9cea08d13e0321eb6ecfcd262bcdb92dc9", hex(de.partyItemRoutine(RARE_CANDY, 2, 0x9C)))
+        assertEquals("cda42dcd132b3e05ea41d13e06ead8d0cddd313e14214f40cf3e1421fb43cf3e1421d643cf3e14215f40cf3e14219044cfcde031cde332cd5a04" +
+            "3e05ea09d13e19ea08d13e0321eb6dcfcd262bcdb92dc9", hex(de.partyItemRoutine(THUNDERSTONE, 5, 0x19)))
+        assertEquals("cdba2dcd292b3e01ea41d13e01ead8d0cdf3313e14214f40cf3e14210544cf3e1421e043cf3e14215f40cf3e14219a44cfcdf631cdf932cd5a04" +
+            "3e00ea09d13e9bea08d13e03211c6fcfcd3c2bcdcf2dc9", hex(calls.partyItemRoutine(RARE_CANDY, 0, 0x9B)))
     }
 
     @Test
