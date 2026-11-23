@@ -25,6 +25,20 @@ module PokeDaisyCompanion
     attr_accessor :battle
   end
 
+  # [cls]#[name] wrapped: [body] runs as the instance with the method as the game left it (a callable), the arguments
+  # and the block. An alias chain, not a prepended module: a game's own alias of the method made before it (GS Vitro's
+  # Damage Numbers: `alias tk_pbFrameUpdate_orig pbFrameUpdate`) would call a prepended module's method again, forever.
+  # Hooks go on at the first frame, after every script of the game, so they're the outermost.
+  def self.wrap(cls, name, &body)
+    orig = :"__pokedaisy_#{name}"
+    return false if cls.method_defined?(orig) || cls.private_method_defined?(orig)
+    cls.send(:alias_method, orig, name)
+    cls.send(:define_method, name) do |*args, &blk|
+      instance_exec(->(*a, &b) { __send__(orig, *a, &b) }, args, blk, &body)
+    end
+    true
+  end
+
   # The game's battle class gets a wrapper round pbStartBattle (the whole battle, start to end) once the game's scripts
   # have defined it: our preload runs before them. Essentials v19 calls it PokeBattle_Battle, v20+ Battle.
   def self.hook_battle
@@ -33,20 +47,19 @@ module PokeDaisyCompanion
           (defined?(::Battle) && ::Battle.is_a?(Class) && ::Battle.method_defined?(:pbStartBattle) && ::Battle)
     return unless cls && cls.method_defined?(:pbStartBattle)
     @battle_hooked = true
-    cls.prepend(Module.new do
-      def pbStartBattle(*args, &block)
-        PokeDaisyCompanion.battle = self
-        super
-      ensure
-        PokeDaisyCompanion.battle = nil
-      end
-    end)
+    wrap(cls, :pbStartBattle) do |orig, args, blk|
+      PokeDaisyCompanion.battle = self
+      orig.(*args, &blk)
+    ensure
+      PokeDaisyCompanion.battle = nil
+    end
   end
 
   # One battler as the companion's BATTLE tab takes it: the party entry of who it shows as (an Illusion's), then what the
   # battle has changed - HP, status, types, moves with their PP, stages, stats.
   def self.battler(b)
     return PokeDaisyReborn.battler(b) if PokeDaisyReborn.on?
+    return PokeDaisyClassic.battler(b) if PokeDaisyClassic.on?
     shown = try { b.displayPokemon } || try { b.pokemon }
     out = (shown && try { mon(shown) }) || {}
     out.merge(
@@ -155,9 +168,11 @@ module PokeDaisyCompanion
   # The battle scene gets its hooks once the game's scripts have defined it: which menu waits ([menu]) and the picks.
   def self.hook_scene
     return if @scene_hooked
-    # The Reborn engine's scene has its own loops (PokeDaisyReborn.hook_scene); asked until its scripts are in.
-    return (@scene_hooked = true) if PokeDaisyReborn.on? && PokeDaisyReborn.hook_scene
-    return if PokeDaisyReborn.on?
+    # The Reborn engine's scene has its own loops (PokeDaisyReborn.hook_scene), and so has Essentials v16 / v17's, which
+    # it grew from; asked until their scripts are in.
+    old = PokeDaisyReborn.on? || PokeDaisyClassic.on?
+    return (@scene_hooked = true) if old && PokeDaisyReborn.hook_scene
+    return if old
     cls = (defined?(::PokeBattle_Scene) && ::PokeBattle_Scene) || (defined?(::Battle::Scene) && ::Battle::Scene)
     return unless cls && cls.method_defined?(:pbCommandMenuEx) && cls.method_defined?(:pbUpdate)
     @scene_hooked = true
@@ -209,6 +224,7 @@ module PokeDaisyCompanion
 
   def self.battle_snapshot(bt)
     return PokeDaisyReborn.battle(bt) if PokeDaisyReborn.on?
+    return PokeDaisyClassic.battle(bt) if PokeDaisyClassic.on?
     list = try { bt.battlers } || []
     out = {
       "trainer" => try { bt.trainerBattle? } || false,
@@ -296,12 +312,14 @@ module PokeDaisyCompanion
   # snapshot's "typeTable", so a game's own types (Fairy, a hack's) read right.
   def self.type_id(t)
     return PokeDaisyReborn.type_id(t) if PokeDaisyReborn.on?
+    return PokeDaisyClassic.type_id(t) if PokeDaisyClassic.on?
     try { GameData::Type.get(t).id_number }
   end
 
   # Every type: its name and what it's weak to, resists and is immune to, by number. The same each time: built once.
   def self.type_table
     return PokeDaisyReborn.type_table if PokeDaisyReborn.on?
+    return PokeDaisyClassic.type_table if PokeDaisyClassic.on?
     @types ||= try {
       list = []
       GameData::Type.each do |t|
@@ -335,6 +353,7 @@ module PokeDaisyCompanion
 
   def self.mon(p)
     return PokeDaisyReborn.mon(p) if PokeDaisyReborn.on?
+    return PokeDaisyClassic.mon(p) if PokeDaisyClassic.on?
     {
       "name" => try { p.name },
       "species" => try { p.speciesName },
@@ -369,6 +388,7 @@ module PokeDaisyCompanion
 
   def self.bag(b)
     return PokeDaisyReborn.bag(b) if PokeDaisyReborn.on?
+    return PokeDaisyClassic.bag(b) if PokeDaisyClassic.on?
     names = try { PokemonBag.pocketNames } || []
     b.pockets.each_with_index.map { |pk, i|
       next nil if i == 0
@@ -390,6 +410,7 @@ module PokeDaisyCompanion
   # leaves them unnamed) and the player's mark. nil off the Town Map (a map without a position).
   def self.town_map
     return PokeDaisyReborn.town_map if PokeDaisyReborn.on?
+    return PokeDaisyClassic.town_map if PokeDaisyClassic.on?
     md = try { GameData::MapMetadata.try_get($game_map.map_id) }
     pos = md ? try { md.town_map_position } : nil
     return nil unless pos.is_a?(Array) && pos.size >= 3
@@ -463,6 +484,7 @@ module PokeDaisyCompanion
   # its icon, and whether the Pokédex has seen and caught it. Built once per map and time of day; the Pokédex each time.
   def self.wild
     return PokeDaisyReborn.wild if PokeDaisyReborn.on?
+    return PokeDaisyClassic.wild if PokeDaisyClassic.on?
     enc = defined?($PokemonEncounters) && $PokemonEncounters
     return nil unless enc
     tables = try { enc.instance_variable_get(:@encounter_tables) }
@@ -685,8 +707,8 @@ module PokeDaisyReborn
       "ability" => try { $cache.abil[p.ability].name },
       "stats" => try { [p.totalhp, p.attack, p.defense, p.spatk, p.spdef, p.speed] },
       # Arrays in the stats' order already (HP, Attack, Defense, Sp. Atk, Sp. Def, Speed: their calcStats').
-      "ivs" => try { p.iv.first(6) },
-      "evs" => try { p.ev.first(6) },
+      "ivs" => try { p.iv[0, 6] },
+      "evs" => try { p.ev[0, 6] },
       "moves" => try {
         p.moves.compact.map { |m|
           d = move_data(m.move)
@@ -878,87 +900,328 @@ module PokeDaisyReborn
   end
   def hook_scene
     return true if @scene_hooked
-    return false unless defined?(::PokeBattle_Scene) && ::PokeBattle_Scene.method_defined?(:pbFrameUpdate) &&
-                        ::PokeBattle_Scene.method_defined?(:pbCommandMenuEx)
+    sc = defined?(::PokeBattle_Scene) && ::PokeBattle_Scene
+    return false unless sc && sc.method_defined?(:pbFrameUpdate) && sc.method_defined?(:pbCommandMenuEx)
     @scene_hooked = true
-    ::PokeBattle_Scene.prepend(Module.new do
-      def pbFrameUpdate(cw = nil, *args)
-        r = super
-        PokeDaisyCompanion.on_menu_update(self, cw)
-        r
-      end
-
-      def pbCommandMenuEx(index, *args, &block)
-        PokeDaisyCompanion.menu = "command"
-        PokeDaisyCompanion.menu_battler = index
-        super
-      ensure
-        PokeDaisyCompanion.menu = nil
-      end
-
-      def pbFightMenu(index, *args, &block)
-        PokeDaisyCompanion.menu = "fight"
-        PokeDaisyCompanion.menu_battler = index
-        super
-      ensure
-        PokeDaisyCompanion.menu = nil
-      end
-    end)
-    scene_extra = Module.new
-    if ::PokeBattle_Scene.method_defined?(:pbFightMenuDX)
-      scene_extra.define_method(:pbFightMenuDX) do |index, *args, &block|
-        PokeDaisyCompanion.menu = "fight"
-        PokeDaisyCompanion.menu_battler = index
-        super(index, *args, &block)
+    PokeDaisyCompanion.wrap(sc, :pbFrameUpdate) do |orig, args, blk|
+      r = orig.(*args, &blk)
+      PokeDaisyCompanion.on_menu_update(self, args[0])
+      r
+    end
+    { pbCommandMenuEx: "command", pbFightMenu: "fight", pbFightMenuDX: "fight", pbItemMenu: "bag" }.each do |m, kind|
+      next unless sc.method_defined?(m)
+      PokeDaisyCompanion.wrap(sc, m) do |orig, args, blk|
+        PokeDaisyCompanion.menu = kind
+        PokeDaisyCompanion.menu_battler = args[0] unless kind == "bag"
+        orig.(*args, &blk)
       ensure
         PokeDaisyCompanion.menu = nil
       end
     end
-    if ::PokeBattle_Scene.method_defined?(:pbItemMenu)
-      scene_extra.define_method(:pbItemMenu) do |*args, &block|
-        PokeDaisyCompanion.menu = "bag"
-        super(*args, &block)
-      ensure
-        PokeDaisyCompanion.menu = nil
-      end
-    end
-    if ::PokeBattle_Scene.method_defined?(:pbSwitch) && ::PokeBattle_Scene.instance_method(:pbSwitch).arity.abs >= 3
-      scene_extra.define_method(:pbSwitch) do |index, lax, cancancel, *args, &block|
-        slot = PokeDaisyReborn.switch_pick(@battle, index, lax)
+    if sc.method_defined?(:pbSwitch) && sc.instance_method(:pbSwitch).arity.abs >= 3
+      PokeDaisyCompanion.wrap(sc, :pbSwitch) do |orig, args, blk|
+        slot = PokeDaisyReborn.switch_pick(@battle, args[0], args[1])
         if slot
-          @battle.logSwitch(index, slot) rescue nil
-          return slot
+          @battle.logSwitch(args[0], slot) rescue nil
+          next slot
         end
-        PokeDaisyCompanion.menu = "party"
-        super(index, lax, cancancel, *args, &block)
-      ensure
-        PokeDaisyCompanion.menu = nil
-      end
-    end
-    if ::PokeBattle_Scene.method_defined?(:pbSwitchPlayer)
-      scene_extra.define_method(:pbSwitchPlayer) do |indices, lax, cancancel, *args, &block|
-        if indices.is_a?(Array) && indices.length == 1
-          slot = PokeDaisyReborn.switch_pick(@battle, indices.first, lax)
-          return { indices.first => slot } if slot
-        end
-        PokeDaisyCompanion.menu = "party"
-        super(indices, lax, cancancel, *args, &block)
-      ensure
-        PokeDaisyCompanion.menu = nil
-      end
-    end
-    ::PokeBattle_Scene.prepend(scene_extra)
-    if defined?(::PokeBattle_Battle) && ::PokeBattle_Battle.method_defined?(:pbItemMenu) && !::PokeBattle_Scene.method_defined?(:pbItemMenu)
-      ::PokeBattle_Battle.prepend(Module.new do
-        def pbItemMenu(*args, &block)
-          PokeDaisyCompanion.menu = "bag"
-          super
+        begin
+          PokeDaisyCompanion.menu = "party"
+          orig.(*args, &blk)
         ensure
           PokeDaisyCompanion.menu = nil
         end
-      end)
+      end
+    end
+    if sc.method_defined?(:pbSwitchPlayer)
+      PokeDaisyCompanion.wrap(sc, :pbSwitchPlayer) do |orig, args, blk|
+        indices = args[0]
+        if indices.is_a?(Array) && indices.length == 1
+          slot = PokeDaisyReborn.switch_pick(@battle, indices[0], args[1])
+          next({ indices[0] => slot }) if slot
+        end
+        begin
+          PokeDaisyCompanion.menu = "party"
+          orig.(*args, &blk)
+        ensure
+          PokeDaisyCompanion.menu = nil
+        end
+      end
+    end
+    if defined?(::PokeBattle_Battle) && ::PokeBattle_Battle.method_defined?(:pbItemMenu) && !sc.method_defined?(:pbItemMenu)
+      PokeDaisyCompanion.wrap(::PokeBattle_Battle, :pbItemMenu) do |orig, args, blk|
+        PokeDaisyCompanion.menu = "bag"
+        orig.(*args, &blk)
+      ensure
+        PokeDaisyCompanion.menu = nil
+      end
     end
     true
+  end
+end
+
+# Essentials v16 / v17 and the forks on them (the Spanish BES: GS Vitro): everything numbered - species, moves, items,
+# types, natures, abilities - and named through PBSpecies / PBMoves / PBItems ... (pbGetMessage on the game's own
+# messages, so in the game's language). The Pokémon, battle and scene classes are the ones the Reborn engine grew from,
+# so the battle buttons go through PokeDaisyReborn.hook_scene.
+module PokeDaisyClassic
+  module_function
+
+  def try
+    yield
+  rescue Exception
+    nil
+  end
+
+  def on?
+    return @on unless @on.nil?
+    return false unless defined?(::PBSpecies) && defined?(::PokeBattle_Pokemon) && defined?(::PBTypes)
+    @on = !defined?(::GameData::Species) && !PokeDaisyReborn.on?
+  end
+
+  # Their stats' order (PBStats): HP, Attack, Defense, Speed, Sp. Atk, Sp. Def; the snapshot's is HP, Attack, Defense,
+  # Sp. Atk, Sp. Def, Speed.
+  STAT_ORDER = [0, 1, 2, 4, 5, 3].freeze
+  STATUSES = [nil, "SLEEP", "POISON", "BURN", "PARALYSIS", "FROZEN"].freeze
+
+  def status(s) = s.is_a?(Integer) ? STATUSES[s] : (s ? s.to_s : nil)
+  def stats(a) = a.is_a?(Array) && a.size >= 6 ? STAT_ORDER.map { |i| a[i] } : nil
+
+  # A type is its number; QMARKS and the like (pseudo types) are left out of the table.
+  def type_id(t) = t.is_a?(Integer) && t >= 0 ? t : nil
+
+  def type_table
+    @type_table ||= try {
+      (0..::PBTypes.maxValue).filter_map do |t|
+        next nil if try { ::PBTypes.isPseudoType?(t) }
+        name = try { ::PBTypes.getName(t) }
+        next nil if name.nil? || name == ""
+        by = ->(m) { (0..::PBTypes.maxValue).select { |a| !try { ::PBTypes.isPseudoType?(a) } && try { ::PBTypes.getEffectiveness(a, t) } == m } }
+        { "id" => t, "name" => name, "weak" => by.(4), "resist" => by.(1), "immune" => by.(0) }
+      end
+    } || []
+  end
+
+  def species_name(sp) = try { ::PBSpecies.getName(sp) } || sp.to_s
+  def item_name(i) = i.nil? || i == 0 ? nil : (try { ::PBItems.getName(i) } || i.to_s)
+  def move_name(m) = try { ::PBMoves.getName(m) } || m.to_s
+  def move_data(m) = try { ::PBMoveData.new(m) }
+
+  # Seen / caught: $Trainer.seen / owned, an entry per species.
+  def dex_marks(sp)
+    t = defined?($Trainer) && $Trainer
+    return [nil, nil] unless t
+    seen = try { t.seen } || try { t.instance_variable_get(:@seen) }
+    owned = try { t.owned } || try { t.instance_variable_get(:@owned) }
+    return [nil, nil] unless seen.is_a?(Array) && owned.is_a?(Array)
+    [!!seen[sp], !!owned[sp]]
+  end
+
+  # The party icon the game draws (pbPokemonIconFile: form, gender, shiny and egg are in the file's name), a 128 x 64
+  # sheet of two frames.
+  def icon(p)
+    key = [:clicon, p.species, try { p.form }, try { p.isFemale? }, try { p.isShiny? }, try { p.isEgg? }]
+    file = PokeDaisyCompanion.cached(key) { pbPokemonIconFile(p) }
+    file && { "file" => file, "x" => 0, "y" => 0, "w" => 128, "h" => 64 }
+  end
+
+  def species_icon(sp)
+    file = PokeDaisyCompanion.cached([:clicon, sp]) { pbCheckPokemonIconFiles([sp, false, false, 0, false], false) }
+    file && { "file" => file, "x" => 0, "y" => 0, "w" => 128, "h" => 64 }
+  end
+
+  def move(m)
+    id = try { m.id }
+    return nil if id.nil? || id == 0
+    d = move_data(id)
+    { "name" => move_name(id), "pp" => try { m.pp }, "total" => try { m.totalpp },
+      "type" => type_id(try { d.type }), "power" => try { d.basedamage } || 0 }
+  end
+
+  def mon(p)
+    {
+      "name" => try { p.name },
+      "species" => species_name(p.species),
+      "dex" => p.species,
+      "level" => try { p.level },
+      "hp" => try { p.hp },
+      "totalhp" => try { p.totalhp },
+      "status" => status(try { p.status }),
+      "egg" => try { p.isEgg? } || false,
+      "shiny" => try { p.isShiny? } || false,
+      "gender" => try { p.gender },
+      "fusion" => false,
+      "types" => try { [p.type1, p.type2].uniq.filter_map { |t| type_id(t) } },
+      "item" => item_name(try { p.item }),
+      "nature" => try { ::PBNatures.getName(p.nature) },
+      "natureId" => try { p.nature },
+      "ability" => try { ::PBAbilities.getName(p.ability) },
+      "stats" => try { [p.totalhp, p.attack, p.defense, p.spatk, p.spdef, p.speed] },
+      "ivs" => stats(try { p.iv }),
+      "evs" => stats(try { p.ev }),
+      "moves" => try { p.moves.filter_map { |m| move(m) } },
+      "icon" => try { icon(p) },
+    }
+  end
+
+  # Their pockets (Settings' pbPocketNames, the game's words); Essentials' first five and its eighth (Key Items) are the
+  # same in every v16 / v17 game, the rest (Mail, Battle Items, a fork's own) count as items.
+  POCKET_KINDS = [nil, "items", "medicine", "balls", "tms", "berries", "items", "items", "key"].freeze
+
+  def bag(b)
+    names = try { pbPocketNames } || []
+    try { b.pockets }.to_a.each_with_index.map { |pk, i|
+      next nil if i == 0 || !pk.is_a?(Array)
+      {
+        "name" => names[i] || "POCKET #{i}",
+        "kind" => POCKET_KINDS[i] || "items",
+        "items" => pk.filter_map { |e|
+          id, qty = e.is_a?(Array) ? e : [e, 1]
+          next nil if id.nil? || id == 0
+          { "name" => item_name(id), "qty" => qty,
+            "desc" => PokeDaisyCompanion.cached([:cldesc, id]) { pbGetMessage(MessageTypes::ItemDescriptions, id) },
+            "icon" => PokeDaisyCompanion.cached([:clitem, id]) { pbItemIconFile(id) } }
+        },
+      }
+    }.compact
+  end
+
+  # The Town Map: Data/townmap.dat, a region per entry ([name, picture, points]; a point is [x, y, name, poi, ...]) and
+  # the map's MapPosition / MapSize from its metadata. The sprites sit on a tile's middle (tile * 16 + 8).
+  def town_map
+    pos = try { pbGetMetadata($game_map.map_id, MetadataMapPosition) }
+    return nil unless pos.is_a?(Array) && pos.size >= 3
+    region, x, y = pos[0], pos[1], pos[2]
+    size = try { pbGetMetadata($game_map.map_id, MetadataMapSize) }
+    if size.is_a?(Array) && size[0].to_i > 0
+      w = size[0]
+      h = (size[1].to_s.length * 1.0 / w).ceil
+      x += ($game_player.x * w / $game_map.width).floor if w > 1
+      y += ($game_player.y * h / $game_map.height).floor if h > 1
+    end
+    data = town_map_region(region)
+    return nil unless data
+    {
+      "region" => region, "x" => x, "y" => y, "picture" => data[:picture], "tile" => 16, "centre" => 8,
+      "head" => head, "hidden" => [], "points" => PokeDaisyCompanion::Raw.new(data[:json]),
+    }
+  end
+
+  # The player's head on it: Essentials' pbPlayerHeadFile (mapPlayer000 ...), else the one picture the map screens of
+  # the forks draw (GS Vitro's: Graphics/Pictures/mapPlayer).
+  def head
+    PokeDaisyCompanion.cached([:clhead, try { $Trainer.trainertype }]) do
+      f = try { pbPlayerHeadFile($Trainer.trainertype) }
+      f && try { pbResolveBitmap(f) } ? f : (try { pbResolveBitmap("Graphics/Pictures/mapPlayer") } && "Graphics/Pictures/mapPlayer")
+    end
+  end
+
+  def town_map_region(region)
+    @town_maps ||= {}
+    return @town_maps[region] if @town_maps.key?(region)
+    @town_maps[region] = try {
+      r = load_data("Data/townmap.dat")[region]
+      points = (r[2] || []).map { |pt| [pt[0], pt[1], place_name(pt[2]), place_name(pt[3])] }
+      { picture: r[1], json: PokeDaisyCompanion.j(points) }
+    }
+  end
+
+  def place_name(n)
+    return nil if n.nil? || n == ""
+    try { _INTL(n) } || n.to_s
+  end
+
+  # The map's wild Pokémon: $PokemonEncounters' @enctypes holds a list per way to meet them, a [species, min, max] per
+  # slot, with EncounterTypes::EnctypeChances giving each slot's odds; the grass list the clock picks as
+  # pbEncounterType does. Each Pokémon once, its slots' odds added up; built once per map and time of day.
+  WAYS = [[:Cave, "Cave"], [:Water, "Water"], [:RockSmash, "RockSmash"], [:OldRod, "OldRod"], [:GoodRod, "GoodRod"],
+          [:SuperRod, "SuperRod"], [:HeadbuttLow, "HeadbuttLow"], [:HeadbuttHigh, "HeadbuttHigh"]].freeze
+
+  def wild
+    enc = defined?($PokemonEncounters) && $PokemonEncounters
+    return nil unless enc && defined?(::EncounterTypes)
+    tables = try { enc.instance_variable_get(:@enctypes) }
+    return nil unless tables.is_a?(Array)
+    et = ::EncounterTypes
+    time = try { pbGetTimeNow }
+    land = et::Land
+    land = et::LandNight if tables[et::LandNight] && try { PBDayNight.isNight?(time) }
+    land = et::LandDay if tables[et::LandDay] && try { PBDayNight.isDay?(time) }
+    land = et::LandMorning if tables[et::LandMorning] && try { PBDayNight.isMorning?(time) }
+    key = [try { $game_map.map_id }, land, tables.object_id]
+    if key != @wild_key
+      @wild_key = key
+      ways = [[land, "Land"]] + WAYS.map { |c, k| [try { et.const_get(c) }, k] }
+      @wild = ways.filter_map { |t, kind| t && kind_of(kind, tables[t], try { et::EnctypeChances[t] }) }
+    end
+    @wild.map do |k|
+      { "kind" => k[:kind], "slots" => k[:slots].map { |sl|
+        seen, owned = dex_marks(sl[:id])
+        sl.merge("seen" => seen, "owned" => owned).reject { |key, _| key == :id }
+      } }
+    end
+  end
+
+  def kind_of(kind, list, chances)
+    return nil unless list.is_a?(Array) && !list.empty? && chances.is_a?(Array)
+    by = {}
+    list.each_with_index do |row, i|
+      next unless row.is_a?(Array) && row[0].is_a?(Integer) && row[0] > 0
+      s = (by[row[0]] ||= { id: row[0], chance: 0, min: row[1], max: row[2] || row[1] })
+      s[:chance] += chances[i].to_i
+      s[:min] = [s[:min], row[1]].min
+      s[:max] = [s[:max], row[2] || row[1]].max
+    end
+    total = by.values.sum { |s| s[:chance] }
+    return nil if total <= 0
+    slots = by.values.sort_by { |s| -s[:chance] }.map do |s|
+      { id: s[:id], "name" => species_name(s[:id]), "min" => s[:min], "max" => s[:max],
+        "percent" => (s[:chance] * 100.0 / total).round, "icon" => try { species_icon(s[:id]) } }
+    end
+    { kind: kind, slots: slots }
+  end
+
+  STAGES = %i[ATTACK DEFENSE SPEED SPATK SPDEF ACCURACY EVASION].freeze
+
+  def battler(b)
+    out = (try { mon(b.pokemon) }) || {}
+    out.merge(
+      "name" => try { b.pokemon.name } || try { b.name },
+      "index" => b.index,
+      "partyIndex" => try { b.pokemonIndex },
+      "level" => try { b.level },
+      "hp" => try { b.hp },
+      "totalhp" => try { b.totalhp },
+      "status" => status(try { b.status }),
+      "types" => try { [b.type1, b.type2].uniq.filter_map { |t| type_id(t) } },
+      "item" => item_name(try { b.item }),
+      "ability" => try { ::PBAbilities.getName(b.ability) },
+      "moves" => try {
+        b.moves.filter_map { |m|
+          next nil unless try { m.id }.to_i > 0
+          { "name" => try { m.name } || move_name(m.id), "pp" => try { m.pp }, "total" => try { m.totalpp },
+            "type" => type_id(try { m.type }), "power" => try { m.basedamage } || 0 }
+        }
+      },
+      "battleStats" => try { [b.attack, b.defense, b.speed, b.spatk, b.spdef] },
+      "stages" => try { STAGES.map { |k| b.stages[::PBStats.const_get(k)] || 0 } },
+      "fainted" => try { b.isFainted? } || false,
+    )
+  end
+
+  def battle(bt)
+    list = try { bt.battlers } || []
+    trainer = !try { bt.opponent }.nil?
+    out = {
+      "trainer" => trainer,
+      "double" => try { bt.doublebattle } || false,
+      "player" => list.each_with_index.select { |b, i| b && i.even? && try { b.pokemon } }.map { |b, _| battler(b) },
+      "foes" => list.each_with_index.select { |b, i| b && i.odd? && try { b.pokemon } }.map { |b, _| battler(b) },
+      "menu" => PokeDaisyCompanion.menu,
+      "menuBattler" => PokeDaisyCompanion.menu_battler,
+    }
+    out["foeParty"] = try { bt.pbParty(1).map { |p| p ? mon(p) : nil } } if trainer
+    out
   end
 end
 
