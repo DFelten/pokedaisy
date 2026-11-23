@@ -15,7 +15,7 @@ import java.io.File
  * Skips without the ROM (`-DromDir=`'s ../nds/).
  */
 class DsMoveLearningTest {
-    private val rom = File(File(RETAIL_ROM_DIR).parentFile, "nds/Pokemon - Black Version 2 (USA, Europe) (NDSi Enhanced).nds")
+    private val rom = File(File(RETAIL_ROM_DIR).parentFile, "nds/Pokemon - Black Version 2 (USA, Europe) (NDSi Enhanced) [b].nds")
     private var dir: File? = null
 
     @After fun tearDown() {
@@ -39,15 +39,34 @@ class DsMoveLearningTest {
             .filter { m -> lead.moves.none { it.id == m.move } }.distinctBy { it.move }.take(4)
         assertEquals(expected.map { it.move }, levels.map { it.move })
         assertTrue(levels.all { it.tm.isEmpty() })
-        // The bag's machines: each one the lead can learn and doesn't know, under the bag's own name.
+        // The bag's machines: each one the lead can learn and doesn't know, found by item id (on this English cart the
+        // labels are also the items' own names).
         val tms = MoveLearning.options(t, v.guideTables, lead, v.items).filter { it.tm.isNotEmpty() }
         assertTrue(tms.isNotEmpty())
         val teach = DexDetails.teachable(t, v.guideTables, lead.species)!!.associate { it.label to it.move }
+        val bagLabels = v.items.mapNotNull { MoveLearning.machineLabel(t, it.itemId) }.toSet()
         val bagNames = v.items.map { it.name.uppercase().replace(" ", "") }.toSet()
         tms.forEach { o ->
             assertEquals(teach[o.tm], o.move)
+            assertTrue(o.tm in bagLabels)
             assertTrue(o.tm in bagNames)
             assertTrue(lead.moves.none { it.id == o.move })
         }
+    }
+
+    /** Machines by item id, whatever the cart calls them (CT / MT in French / Spanish / Italian, kana, Hangul). */
+    @Test fun `machine labels by item id`() {
+        assertEquals("TM01", MoveLearning.machineLabel(POKEDEX_BLACK, 328))
+        assertEquals("TM92", MoveLearning.machineLabel(POKEDEX_BLACK, 419))
+        assertEquals("HM06", MoveLearning.machineLabel(POKEDEX_BLACK, 425))
+        assertEquals(null, MoveLearning.machineLabel(POKEDEX_BLACK, 426))
+        assertEquals("TM93", MoveLearning.machineLabel(POKEDEX_BLACK2, 618))
+        assertEquals("TM95", MoveLearning.machineLabel(POKEDEX_BLACK2, 620))
+        assertEquals("HM08", MoveLearning.machineLabel(POKEDEX_HEARTGOLD, 427))
+        assertEquals(null, MoveLearning.machineLabel(POKEDEX_PLATINUM, 618))
+        assertEquals(null, MoveLearning.machineLabel(POKEDEX_PLATINUM, 537))
+        assertEquals("TM93", MoveLearning.machineLabel(POKEDEX_ORIGIN, 537))
+        assertEquals("TM130", MoveLearning.machineLabel(POKEDEX_ORIGIN, 574))
+        assertEquals(null, MoveLearning.machineLabel(POKEDEX_BLACK, 17))
     }
 }

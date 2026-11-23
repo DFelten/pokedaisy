@@ -96,14 +96,18 @@ private val GEN1_DEX_RED = GEN1_DEX_YELLOW.copy(
     tmMoves = 0x04 to 0x7773,
 )
 
-/** Pokémon Red Gen II Graphics V2.0: pic's bank from byte 27 of base stats, CGB palettes in bank 0x2F. */
+/** Pokémon Red Gen II Graphics V2.0: pic's bank from byte 27 of base stats, CGB palettes in bank 0x2F. Its learnsets,
+ * TechnicalMachines and BaseStats' moves / TM bits are Red's, at Red's addresses (read from the cart, all 190 entries). */
 val GEN1_DEX_RED_GEN2_GRAPHICS = GEN1_DEX_RED.copy(
     cgbPalettes = 0x2F to 0x4000,
     picBankOffset = 27,
 )
 
-/** Pokémon Yellow Gen II Graphics V1.1: pic's bank from byte 27 of base stats, CGB palettes in bank 0x42. */
+/** Pokémon Yellow Gen II Graphics V1.1: pic's bank from byte 27 of base stats, CGB palettes in bank 0x42. Its
+ * EvosMovesPointerTable moved to 0E:721C (the learnsets themselves are Yellow's, all 190, read from the cart); its
+ * TechnicalMachines and BaseStats' moves / TM bits are Yellow's, at Yellow's addresses. */
 val GEN1_DEX_YELLOW_GEN2_GRAPHICS = GEN1_DEX_YELLOW.copy(
+    evosMoves = 0x0E to 0x721C,
     monsterPalettes = 0x1C to 0x6995,
     cgbPalettes = 0x42 to 0x4000,
     picBankOffset = 27,

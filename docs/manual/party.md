@@ -144,7 +144,9 @@ A few rules behind the verdicts:
 > [!NOTE]
 > `LEARN` gives its advice in FireRed, LeafGreen, Ruby, Sapphire and Emerald (the original games) so far. Hacks change too many moves for the advice to be right there yet.
 >
-> In the DS games (Platinum, HeartGold, SoulSilver, Black, White, Black 2, White 2 and the hacks on them) and the English Red, Blue, Yellow, Gold, Silver and Crystal, `LEARN` lists the next moves it learns by level and the TMs and HMs in your bag it can learn, read from your cart, without the verdicts.
+> On the DS, `LEARN` lists the next moves a Pokémon learns by level and the TMs and HMs in your bag it can learn, read from your cart, without the verdicts. That's Platinum, HeartGold, SoulSilver, Black, White, Black 2 and White 2 in every language, and Renegade Platinum, Origin HeartGold, Sacred Gold, Storm Silver, Blaze Black 2 Redux and Volt White 2 Redux. Heartfelt Gold lists the moves by level only, since its TMs can't be read yet.
+>
+> On the Game Boy it does the same in the English Red, Blue, Yellow, Gold, Silver and Crystal, and in Red and Yellow with the Gen II Graphics patch. Crystal's move tutor moves aren't in the list, since you don't carry them in your bag.
 
 The verdicts follow `BATTLE HINTS` in SETTINGS. With it off, `LEARN` still lists what the Pokémon can learn and the move details, but without the verdicts and reasons.
 

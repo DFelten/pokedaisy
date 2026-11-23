@@ -36,16 +36,36 @@ object MoveLearning {
     /** No verdict: a DS game's options ([advises] false), never drawn. */
     private fun noAdvice(move: Int) = MoveAdvice(move, Verdict.LEARN, 0, emptyList(), 0f)
 
-    /** A DS bag's TMs / HMs ("TM06", "HM01": the item's own name, as the cart spells it) it can learn, in machine order. */
+    /** A DS or Game Boy bag's TMs / HMs it can learn, in machine order. */
     private fun dsMachines(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>, known: Collection<Int>): List<LearnOption> {
-        // By name ("TM06", as the DS carts spell it), or on the Game Boy by the item's id (GbLearnsets.machineLabel).
-        val held = (bag.map { it.name.uppercase().replace(" ", "") } + bag.mapNotNull { GbLearnsets.machineLabel(t, it.itemId) })
-            .filter { MACHINE.matches(it) }.toSet()
+        val held = bag.mapNotNull { machineLabel(t, it.itemId) }.toSet()
         return DexDetails.teachable(t, g, mon.species).orEmpty()
             .filter { it.label in held && it.move !in known }
             .map { LearnOption(it.move, 0, it.label, noAdvice(it.move)) }
     }
-    private val MACHINE = Regex("^(TM|HM)\\d{2}$")
+
+    /**
+     * A bag item's machine label as the DEX's TM / HM list names it ("TM06", "HM01"), by its id; null = not a machine.
+     * By id, not by the item's name: the French / Spanish / Italian carts call them CT / MT, the Japanese and Korean
+     * ones spell them in their own script. The DS games keep the ids of Platinum / HeartGold (TM01-TM92 = 328-419,
+     * HM01-HM08 = 420-427) and Black (the same TMs, HM01-HM06 = 420-425, TM93-TM95 = 618-620), the item tables'
+     * (Gen4TablesHeartGold.kt, Gen5ItemsBlack.kt); Origin HeartGold adds TM93-TM130 at 537-574 ([OriginHeartGold.machine]).
+     */
+    fun machineLabel(t: PokedexTables, itemId: Int): String? {
+        val g = t.gen4 ?: return GbLearnsets.machineLabel(t, itemId)
+        val hms = if (g.gen5) 6 else 8
+        return when (itemId) {
+            in DS_TM01 until DS_TM01 + 92 -> "TM" + (itemId - DS_TM01 + 1).pad(2)
+            in DS_HM01 until DS_HM01 + hms -> "HM" + (itemId - DS_HM01 + 1).pad(2)
+            in GEN5_TM93 until GEN5_TM93 + 3 -> if (g.gen5) "TM" + (itemId - GEN5_TM93 + 93) else null
+            in OriginHeartGold.TM93_ITEM until OriginHeartGold.TM93_ITEM + 38 ->
+                if (g.origin) "TM" + (itemId - OriginHeartGold.TM93_ITEM + 93) else null
+            else -> null
+        }
+    }
+    private const val DS_TM01 = 328
+    private const val DS_HM01 = 420
+    private const val GEN5_TM93 = 618
 
     fun isTm(itemId: Int): Boolean = movesAreVanilla && itemId in VANILLA_ITEM_TM01..VANILLA_ITEM_HM08
 
@@ -77,7 +97,7 @@ object MoveLearning {
     private fun hmMoves(t: PokedexTables): Set<Int> = DexDetails.tmhmMoves(t)?.drop(50)?.toSet() ?: VANILLA_HM_MOVES
 
     private fun optionsKey(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>): List<Any?> =
-        listOf(t, g, activeGame, mon.species, mon.level, mon.moves.map { it.id }, mon.stats?.stats, bag.map { it.itemId }.filter(::isTm).sorted(), if (advises) null else bag.map { it.name }.sorted())
+        listOf(t, g, activeGame, mon.species, mon.level, mon.moves.map { it.id }, mon.stats?.stats, bag.map { it.itemId }.filter(::isTm).sorted(), if (advises) null else bag.mapNotNull { machineLabel(t, it.itemId) }.sorted())
 
     fun cachedOptions(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>): List<LearnOption>? =
         optionsCache[optionsKey(t, g, mon, bag)]

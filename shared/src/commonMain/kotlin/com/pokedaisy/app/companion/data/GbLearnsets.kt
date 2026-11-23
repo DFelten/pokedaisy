@@ -5,13 +5,15 @@ package com.pokedaisy.app.companion.data
  * summary's LEARN list (pret's pokered / pokeyellow / pokecrystal / pokegold layouts):
  *
  * - Gen 1: EvosMovesPointerTable (by internal species - 1) points at each Pokémon's evolutions (EVOLVE_LEVEL / TRADE
- *   3 bytes, EVOLVE_ITEM 4, a 0 after) and then its learnset, {level, move} pairs ending in 0. The TM / HM bits are its
+ *   3 bytes, EVOLVE_ITEM 4, a 0 after) and then its learnset, {level, move} pairs ending in 0; the moves it starts with
+ *   are its BaseStats' four at +0x0F. The TM / HM bits are its
  *   BaseStats' 7 bytes at +0x14 (by Dex number; Red / Blue's MEW in a record of its own), TechnicalMachines the move
  *   each of the 55 teaches; TM01 is item 0xC9, HM01 0xC4.
  * - Gen 2: EvosAttacksPointers (by species - 1, bank 0x10) the same way (EVOLVE_STAT is 4 bytes, the rest 3), the bits
  *   BaseData's 8 bytes at +0x18 over TMHMMoves (50 TMs, 7 HMs, then Crystal's 3 tutor moves), the items [Gen2DexTables.tmItems].
  *
- * Only where the tables name these ([Gen1DexTables.evosMoves] / [Gen2DexTables.evosAttacks]: the English carts).
+ * Only where the tables name these ([Gen1DexTables.evosMoves] / [Gen2DexTables.evosAttacks]: the English carts, and Red /
+ * Yellow with the Gen II Graphics patch, which kept their learnsets).
  */
 object GbLearnsets {
     private fun off(bank: Int, addr: Int) = if (bank == 0) addr else bank * 0x4000 + (addr - 0x4000)
@@ -27,7 +29,12 @@ object GbLearnsets {
         t.gen1?.let { g ->
             val (bank, addr) = g.evosMoves ?: return null
             val internal = g.internalToDex.indexOfFirst { it == species }.takeIf { it > 0 } ?: return null
-            return learnset(rom, off(bank, addr) + (internal - 1) * 2, bank) { type -> if (type == 2) 4 else 3 }
+            val learned = learnset(rom, off(bank, addr) + (internal - 1) * 2, bank) { type -> if (type == 2) 4 else 3 } ?: return null
+            // Gen 1 keeps the moves a Pokémon starts with out of the learnset: its BaseStats' four move ids at +0x0F
+            // (0 = none), listed as level 1 like Gen 2's own learnsets do.
+            if (species !in 1..151) return learned
+            val start = baseRecord(g, species) + 0x0F
+            return (0 until 4).map { u8(rom, start + it) }.filter { it != 0 }.map { LevelMove(1, it) } + learned
         }
         t.gen2?.let { g ->
             val (bank, addr) = g.evosAttacks ?: return null
@@ -36,6 +43,11 @@ object GbLearnsets {
         }
         return null
     }
+
+    /** [species]' (a Dex number, 1-151) BaseStats record: Red / Blue's MEW sits in a record of its own. */
+    private fun baseRecord(g: Gen1DexTables, species: Int): Int =
+        if (species == 151 && g.mewBaseStats != null) off(g.mewBaseStats.first, g.mewBaseStats.second)
+        else off(g.baseStats.first, g.baseStats.second) + (species - 1) * g.baseStatsSize
 
     private fun learnset(rom: ByteArray, ptrAt: Int, bank: Int, evoLen: (Int) -> Int): List<LevelMove>? {
         val p = u16(rom, ptrAt).takeIf { it in 0x4000..0x7FFF } ?: return null
@@ -59,9 +71,7 @@ object GbLearnsets {
         t.gen1?.let { g ->
             val (tmBank, tmAddr) = g.tmMoves ?: return null
             if (species !in 1..151) return null
-            val base = if (species == 151 && g.mewBaseStats != null) off(g.mewBaseStats.first, g.mewBaseStats.second)
-            else off(g.baseStats.first, g.baseStats.second) + (species - 1) * g.baseStatsSize
-            val bits = base + 0x14
+            val bits = baseRecord(g, species) + 0x14
             val moves = off(tmBank, tmAddr)
             return (0 until GEN1_MACHINES).filter { u8(rom, bits + it / 8) shr (it % 8) and 1 != 0 }
                 .map { TeachMove(if (it < 50) machineName("TM", it + 1) else machineName("HM", it - 49), u8(rom, moves + it)) }
