@@ -567,13 +567,13 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     /** This game session's save file backed up before its first Game Boy box move (reset on [loadRom]). */
     @Volatile private var gbBoxesBackedUp = false
 
-    /** The Game Boy game's PC moves (Crystal's current box), their code checked in the cart once per game. */
-    private fun gbBoxField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? {
-        val field = gbField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine ?: return null
-        val calls = field.boxCalls ?: return null
+    /** The Game Boy game's PC moves (Red / Blue / Yellow's and Crystal's current box), their code checked in the cart once per game. */
+    private fun gbBoxField(): com.pokedaisy.app.companion.data.GbField? {
+        val field = gbField() ?: return null
+        val box = field.pcBox ?: return null
         gbBoxCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
         if (!::engine.isInitialized || !engine.running) return null
-        val ok = runCatching { calls.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        val ok = runCatching { box.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
         Log.i("pokedaisy", "Game Boy PC moves (${field.javaClass.simpleName}): ${if (ok) "code found" else "code not found"}")
         gbBoxCache = field to ok
         return field.takeIf { ok }
@@ -687,7 +687,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                 if (!backUpSaveNow(r)) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.BoxChangeResult.NO_BACKUP) }
                 engine.requestFieldItemJob(false) { calls, busy ->
                     val res = if (busy) com.pokedaisy.app.companion.data.BoxChangeResult.NOT_NOW
-                    else runCatching { field.changeBox(calls, box) }
+                    else runCatching { field.pcChangeBox(calls, box) }
                         .getOrElse { Log.e("pokedaisy", "Game Boy box change failed", it); com.pokedaisy.app.companion.data.BoxChangeResult.FAILED }
                     // A rewind past it would put the old wCurBox back over the new box in SRAM (the next save loses a box).
                     if (!busy) MgbaCore.pkRewindDrop()
@@ -719,28 +719,29 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         override fun swapBox(
             box: Int, slot: Int, boxPersonality: Long, partySlot: Int, partyPersonality: Long,
             done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
-        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.swap(g, cfg, slot, boxPersonality, partySlot, partyPersonality) }
+        ) = if (romIsGameBoy) onGbBoxes(done) { b, g -> b.swap(g, slot, boxPersonality, partySlot, partyPersonality) }
         else partyActions.swapBox(box, slot, boxPersonality, partySlot, partyPersonality, done)
 
         override fun depositToBox(
             partySlot: Int, partyPersonality: Long, box: Int,
             done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
-        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.deposit(g, cfg, partySlot, partyPersonality) }
+        ) = if (romIsGameBoy) onGbBoxes(done) { b, g -> b.deposit(g, partySlot, partyPersonality) }
         else partyActions.depositToBox(partySlot, partyPersonality, box, done)
 
         override fun withdrawFromBox(
             box: Int, slot: Int, boxPersonality: Long,
             done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
-        ) = if (romIsGameBoy) onGbBoxes(done) { calls, g, cfg -> calls.withdraw(g, cfg, slot, boxPersonality) }
+        ) = if (romIsGameBoy) onGbBoxes(done) { b, g -> b.withdraw(g, slot, boxPersonality) }
         else partyActions.withdrawFromBox(box, slot, boxPersonality, done)
 
-        /** A Game Boy PC move ([move], Gen2BoxSwap.kt) on the emu thread, where the bag's PC could open now. Crystal's
-         * boxes are cart SRAM: a move reaches the save file within frames, the party only at the next in-game save, so
-         * the save file is backed up before this session's first move, or nothing moves. */
+        /** A Game Boy PC move ([move], Gen1BoxSwap.kt / Gen2BoxSwap.kt) on the emu thread, where the bag's PC could open now.
+         * Crystal's boxes are cart SRAM: a move reaches the save file within frames, the party only at the next in-game save;
+         * Gen 1's current box is RAM, saved with the party. The save file is backed up before this session's first move, or
+         * nothing moves. */
         private fun onGbBoxes(
             done: (com.pokedaisy.app.companion.data.BoxSwapResult) -> Unit,
-            move: (com.pokedaisy.app.companion.data.Gen2BoxCalls, com.pokedaisy.app.companion.data.GameCalls,
-                   com.pokedaisy.app.companion.data.Gen2Config) -> com.pokedaisy.app.companion.data.BoxSwapResult,
+            move: (com.pokedaisy.app.companion.data.GbBoxMoves, com.pokedaisy.app.companion.data.GameCalls) ->
+                com.pokedaisy.app.companion.data.BoxSwapResult,
         ) {
             val field = gbBoxField()
             val r = rom
@@ -754,7 +755,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                 }
                 engine.requestFieldItemJob(false) { calls, busy ->
                     val res = if (busy) com.pokedaisy.app.companion.data.BoxSwapResult.NOT_NOW
-                    else runCatching { field.boxMove(calls) { c, cfg -> move(c, calls, cfg) } }
+                    else runCatching { field.pcMove(calls) { b -> move(b, calls) } }
                         .getOrElse { Log.e("pokedaisy", "Game Boy box move failed", it); com.pokedaisy.app.companion.data.BoxSwapResult.FAILED }
                     // A rewind past the move would undo it in RAM but not in SRAM: a Pokemon doubled or lost.
                     if (!busy) MgbaCore.pkRewindDrop()

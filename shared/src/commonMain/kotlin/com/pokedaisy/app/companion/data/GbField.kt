@@ -49,6 +49,24 @@ sealed class GbField {
     /** Once WILD ENCOUNTERS is back ON, on the field: false = not now, try again. */
     open fun releaseWild(g: GameCalls): Boolean = true
 
+    /** The PC's moves on the current box (Gen1BoxSwap.kt, Gen2BoxSwap.kt), where they're mapped: null otherwise. */
+    open val pcBox: GbBoxMoves? get() = null
+
+    /** Where the bag's PC could open: a PC move or a box change only then. */
+    protected open fun pcFree(g: GameCalls): Boolean = false
+
+    /** A PC move on [pcBox] where the bag's PC could open: NOT_NOW otherwise. */
+    fun pcMove(g: GameCalls, move: (GbBoxMoves) -> BoxSwapResult): BoxSwapResult {
+        val box = pcBox ?: return BoxSwapResult.FAILED
+        return if (!pcFree(g)) BoxSwapResult.NOT_NOW else move(box)
+    }
+
+    /** CHANGE BOX on [pcBox] (the game saves itself) where the bag's PC could open: NOT_NOW otherwise. */
+    fun pcChangeBox(g: GameCalls, to: Int): BoxChangeResult {
+        val box = pcBox ?: return BoxChangeResult.FAILED
+        return if (!pcFree(g)) BoxChangeResult.NOT_NOW else box.changeBox(g, to)
+    }
+
     protected fun u8(g: GameCalls, addr: Long) = g.read(addr, 1)[0].toInt() and 0xFF
     protected fun put(g: GameCalls, addr: Long, vararg v: Int) = g.write(addr, ByteArray(v.size) { v[it].toByte() })
 
@@ -133,8 +151,13 @@ sealed class GbField {
         /** Maps FLY works on whatever their tileset (Brown's 64 / 7E / 83), and maps it never does (B2): its own outside check. */
         private val flyMaps: Set<Int> = emptySet(),
         private val noFlyMaps: Set<Int> = emptySet(),
+        /** The PC's moves on the current box (Gen1BoxSwap.kt), where they're mapped. */
+        private val boxCalls: Gen1BoxCalls? = null,
     ) : GbField() {
         private val flags7 = flags6 + 1
+
+        override val pcBox: GbBoxMoves? get() = boxCalls
+        override fun pcFree(g: GameCalls) = free(g)
 
         // wFontLoaded (right before wWalkCounter in every cart) bit 0: a text box is up. The games without an EXPAND
         // scene (the European Yellows, Red / Blue) have only these to go by.
@@ -283,6 +306,9 @@ sealed class GbField {
             queue(g, PC_SCRIPT_BANK, PC_SCRIPT)
             return ItemUseResult.USED
         }
+
+        override val pcBox: GbBoxMoves? by lazy { boxCalls?.let { Gen2BoxMoves(it, cfg) } }
+        override fun pcFree(g: GameCalls) = free(g)
 
         /** A PC move ([boxCalls]) where the bag's PC could open: NOT_NOW otherwise. */
         fun boxMove(g: GameCalls, move: (Gen2BoxCalls, Gen2Config) -> BoxSwapResult): BoxSwapResult {
@@ -450,6 +476,7 @@ val GB_FIELD_YELLOW = GbField.Gen1(
     tileset = 0xD366L, townsVisited = 0xD70AL, destination = 0xD719L, flags6 = 0xD731L, pikachuFlags = 0xD42FL, pikachuImage = 0xC1F2L,
     partyCount = 0xD162L, partyMoves = 0xD172L, curMap = 0xD35DL, grassRate = 0xD886L,
     waterRate = 0xD8A3L, wildDataPointers = 0x4B95,
+    boxCalls = GEN1_BOX_CALLS_YELLOW,
     signatures = listOf(
         0x245L to "cd641ecd2a34cd6f1ecde10ffac4cfa7c2c303cd",
         0x3E84L to "f0b8f578e0b8ea0020cd983e",
@@ -467,6 +494,7 @@ val GB_FIELD_YELLOW_DE = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    boxCalls = GEN1_BOX_CALLS_YELLOW_DE,
     signatures = listOf(
         0x245L to "cd691ecd2f34cd741ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -553,6 +581,7 @@ val GB_FIELD_RED_BLUE = GbField.Gen1(
     tileset = 0xD367L, townsVisited = 0xD70BL, destination = 0xD71AL, flags6 = 0xD732L, pikachuFlags = -1L, pikachuImage = -1L,
     partyCount = 0xD163L, partyMoves = 0xD173L, curMap = 0xD35EL, grassRate = 0xD887L,
     waterRate = 0xD8A4L, wildDataPointers = 0x4EEB,
+    boxCalls = GEN1_BOX_CALLS_RED,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa36d7cb77c49e03fac5cfa7c2b5",
         0x35D6L to "f0b8f578e0b8ea002001e435",
@@ -603,6 +632,7 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
     tileset = 0xD36CL, townsVisited = 0xD710L, destination = 0xD71FL, flags6 = 0xD737L, pikachuFlags = -1L, pikachuImage = -1L,
     partyCount = 0xD168L, partyMoves = 0xD178L, curMap = 0xD363L, grassRate = 0xD88CL,
     waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
+    boxCalls = GEN1_BOX_CALLS_RED_DE,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
         0x35F0L to "f0b8f578e0b8ea002001fe35",

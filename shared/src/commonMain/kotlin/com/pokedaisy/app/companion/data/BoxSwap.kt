@@ -110,6 +110,8 @@ enum class BoxSwapResult {
     PARTY_FULL,
     /** DEPOSIT into a box with no free slot. */
     BOX_FULL,
+    /** Yellow's first Pikachu, the one that follows the player: its own way in and out of the PC, left to the game's. */
+    STARTER_PIKACHU,
     FAILED,
 }
 

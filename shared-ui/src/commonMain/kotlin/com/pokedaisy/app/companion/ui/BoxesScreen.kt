@@ -230,6 +230,7 @@ fun boxSwapMessage(r: com.pokedaisy.app.companion.data.BoxSwapResult, boxMon: Mo
     com.pokedaisy.app.companion.data.BoxSwapResult.LAST_MON -> tr("An EGG can't take the place of your last POKéMON that can battle.")
     com.pokedaisy.app.companion.data.BoxSwapResult.PARTY_FULL -> tr("Your party is full!")
     com.pokedaisy.app.companion.data.BoxSwapResult.BOX_FULL -> tr("{0} is full.", boxName)
+    com.pokedaisy.app.companion.data.BoxSwapResult.STARTER_PIKACHU -> tr("The POKéMON that follows you moves only with the game's own PC.")
     com.pokedaisy.app.companion.data.BoxSwapResult.FAILED -> tr("The swap didn't work. Nothing was changed.")
 }
 
