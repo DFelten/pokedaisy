@@ -33,6 +33,14 @@ class Gen2ItemCalls(
     val curItem: Long = wramx(1, 0xD106),
     val quantityChange: Long = wramx(1, 0xD10C),
     val repelEffect: Long = wramx(1, 0xDCA1),
+    /** BikeFunction (bank 3): the BICYCLE's field effect, the same in every Crystal build. */
+    val bikeFunction: Int = 0x50B3,
+    /** wQueuedScriptBank, then Addr (lo, hi): where BikeFunction queues its get-on / get-off script. */
+    val queuedScript: Long = wramx(1, 0xD0E8),
+    /** wFieldMoveSucceeded: BikeFunction's answer, 1 = a script is queued, 0 = not here. */
+    val fieldMoveSucceeded: Long = wramx(1, 0xD0EC),
+    /** wUsingItemWithSelect: set, BikeFunction queues the short scripts SELECT uses (no text box). */
+    val usingItemWithSelect: Long = wramx(1, 0xD0EF),
 ) {
     fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
         val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
@@ -41,9 +49,9 @@ class Gen2ItemCalls(
 
     /** The items USE takes here. */
     fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
-        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS
+        itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId in REPELS || itemId == BICYCLE
 
-    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS
+    fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && itemId != BICYCLE
     fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE
 
     private class Party(val count: Int, val species: ByteArray, val mons: ByteArray)
@@ -143,6 +151,23 @@ class Gen2ItemCalls(
         return ItemUseOutcome(ItemUseResult.USED, steps)
     }
 
+    /**
+     * The BICYCLE: the game's own BikeFunction far-called from the overworld loop, as SELECT runs it - its checks (outdoors, a
+     * cave or a gate, a plain floor tile; Cycling Road keeps you on), the music, then the get-on / get-off script it queues.
+     * That queue is the START / SELECT menus', so its script comes back here (bank, address) for the map's own queue
+     * ([GbField.CrystalEngine]); null = not here.
+     */
+    fun bike(g: GameCalls): Pair<Int, Int>? {
+        if (!g.gbCallAt(at, FARCALL, BIKE_BANK, 0, bikeFunction)) return null
+        g.write(fieldMoveSucceeded, byteArrayOf(0xFF.toByte()))
+        g.write(usingItemWithSelect, byteArrayOf(1))
+        val ran = (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
+        g.write(usingItemWithSelect, byteArrayOf(0))
+        if (!ran || g.read(fieldMoveSucceeded, 1)[0].toInt() != 1) return null
+        val q = g.read(queuedScript, 3)
+        return (q[0].toInt() and 0xFF) to ((q[1].toInt() and 0xFF) or ((q[2].toInt() and 0xFF) shl 8))
+    }
+
     /** USE of [itemId] on [target] ([moveIndex] for a one-move PP item). */
     fun useOn(g: GameCalls, cfg: Gen2Config, itemId: Int, target: PartyTarget, moveIndex: Int): ItemUseOutcome {
         if (!picksMon(itemId)) return ItemUseOutcome(ItemUseResult.FAILED)
@@ -187,6 +212,7 @@ class Gen2ItemCalls(
 
     companion object {
         /** rst $10's (Bankswitch's) closing `ret`: a call that does nothing (Gen2BoxCalls' settle). */
+        private const val FARCALL = 0x0008   // FarCall_hl: a = bank, hl = address
         private const val SETTLE = 0x0015
         private const val SETTLE_TRIES = 6
         private const val PARTY_MAX = 6
@@ -204,6 +230,8 @@ class Gen2ItemCalls(
         private const val MOVE_PP = 5
         private const val ALL = -1
 
+        const val BICYCLE = 0x07
+        private const val BIKE_BANK = 0x03
         const val FULL_RESTORE = 0x0E
         const val REVIVE = 0x27
         val REVIVES = setOf(REVIVE, 0x28)
@@ -229,6 +257,7 @@ private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHeali
     Gen2ItemCalls.romOff(0x03, healingHp) to "2e32002f3c0030500010c800",
     Gen2ItemCalls.romOff(0x03, statusHealing) to "09f0080af1100bf2200cf307",
     Gen2ItemCalls.romOff(0x10, moves) to "01002800ff2300",
+    Gen2ItemCalls.romOff(0x03, 0x50B3) to "cdbc50e67feaecd0c9cd2151",   // BikeFunction
 )
 
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */

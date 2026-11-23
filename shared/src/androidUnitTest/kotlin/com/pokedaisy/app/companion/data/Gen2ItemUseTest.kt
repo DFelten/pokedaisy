@@ -54,7 +54,10 @@ class Gen2ItemUseTest {
         val cart = HashMap<Long, Byte>()
         var onField = true
         var tossed = 0
-        private var pendingToss: Int? = null
+        /** Where BikeFunction may put you on / off the bike (else it answers 0), and the script it queues. */
+        var bikeHere = true
+        var bikeCalls = 0
+        private var pending: (() -> Unit)? = null
 
         init {
             fun put(off: Long, hex: String) = hex.chunked(2).forEachIndexed { i, h -> cart[off + i] = h.toInt(16).toByte() }
@@ -73,10 +76,19 @@ class Gen2ItemUseTest {
         override fun gbCallAt(at: Int, fn: Int, a: Int, b: Int, hl: Int): Boolean {
             if (!onField) return false
             assertEquals(calls.at, at)
-            pendingToss?.let { toss(it) }
-            pendingToss = null
-            if (fn == calls.tossItem) pendingToss = hl
+            pending?.invoke()
+            pending = null
+            if (fn == calls.tossItem) pending = { toss(hl) }
+            if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
             return true
+        }
+
+        /** BikeFunction: Script_GetOnBike_Register queued (SELECT's, as wUsingItemWithSelect asks), or 0 off a floor. */
+        private fun bike() {
+            bikeCalls++
+            assertEquals(1, this[calls.usingItemWithSelect])
+            this[calls.fieldMoveSucceeded] = if (bikeHere) 1 else 0
+            if (bikeHere) { this[calls.queuedScript] = 0x03; this[calls.queuedScript + 1] = 0x4E; this[calls.queuedScript + 2] = 0x51 }
         }
 
         /** _TossItem's .remove on the pocket at [hl]: wItemQuantityChange of wCurItem, the slot gone at 0. */
@@ -248,5 +260,19 @@ class Gen2ItemUseTest {
         g.onField = true
         g.bag()
         assertEquals(ItemUseResult.NONE_LEFT, calls.targets(g, cfg, POTION).result)
+    }
+
+    @Test
+    fun `the BICYCLE runs the game's BikeFunction and hands back the script it queued, nothing when it says not here`() {
+        val g = game()
+        g.bag()
+        assertTrue(calls.usable(Gen2ItemCalls.BICYCLE) && !calls.picksMon(Gen2ItemCalls.BICYCLE))
+        assertEquals(0x03 to 0x514E, calls.bike(g))
+        assertEquals(0, g[calls.usingItemWithSelect])
+        g.bikeHere = false
+        assertEquals(null, calls.bike(g))
+        g.onField = false
+        assertEquals(null, calls.bike(g))
+        assertEquals(2, g.bikeCalls)
     }
 }

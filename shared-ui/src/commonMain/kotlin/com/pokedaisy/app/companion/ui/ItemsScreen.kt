@@ -1851,7 +1851,7 @@ internal fun takenMessage(item: Int, mon: String): String =
     else tr("Received {0} from {1}.", bagItemName(item), mon)
 
 fun itemUseMessage(o: ItemUseOutcome, mon: String = "", item: String = "", held: Int = 0): String = when (o.result) {
-    ItemUseResult.USED -> if (o.steps > 0) tr("Used! It lasts {0} steps.", o.steps) else tr("Used on {0}.", mon)
+    ItemUseResult.USED -> if (o.steps > 0) tr("Used! It lasts {0} steps.", o.steps) else if (mon.isEmpty()) tr("Used!") else tr("Used on {0}.", mon)
     ItemUseResult.STILL_ACTIVE -> tr("The last one is still working.")
     ItemUseResult.NOT_NOW -> tr("Not now: close the game's menus and battles first.")
     ItemUseResult.IN_BATTLE -> tr("You can't do that during a battle.")
