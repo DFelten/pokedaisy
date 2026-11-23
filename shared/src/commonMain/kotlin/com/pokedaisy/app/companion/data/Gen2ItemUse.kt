@@ -35,6 +35,9 @@ class Gen2ItemCalls(
     val repelEffect: Long = wramx(1, 0xDCA1),
     /** BikeFunction (bank 3): the BICYCLE's field effect, the same in every Crystal build. */
     val bikeFunction: Int = 0x50B3,
+    /** ReanchorMap (bank 0): what SELECT's item use runs first - the BG map put back at the screen, so the get-on /
+     * get-off script's CloseText redraws the map where it is (without it, EXPAND lost its place after getting off). */
+    val reanchorMap: Int = 0x2DBA,
     /** wQueuedScriptBank, then Addr (lo, hi): where BikeFunction queues its get-on / get-off script. */
     val queuedScript: Long = wramx(1, 0xD0E8),
     /** wFieldMoveSucceeded: BikeFunction's answer, 1 = a script is queued, 0 = not here. */
@@ -158,7 +161,8 @@ class Gen2ItemCalls(
      * ([GbField.CrystalEngine]); null = not here.
      */
     fun bike(g: GameCalls): Pair<Int, Int>? {
-        if (!g.gbCallAt(at, FARCALL, BIKE_BANK, 0, bikeFunction)) return null
+        if (!(0 until SETTLE_TRIES).any { g.gbCallAt(at, reanchorMap, 0, 0, 0) }) return null
+        if (!(0 until REANCHOR_TRIES).any { g.gbCallAt(at, FARCALL, BIKE_BANK, 0, bikeFunction) }) return null
         g.write(fieldMoveSucceeded, byteArrayOf(0xFF.toByte()))
         g.write(usingItemWithSelect, byteArrayOf(1))
         val ran = (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
@@ -215,6 +219,8 @@ class Gen2ItemCalls(
         private const val FARCALL = 0x0008   // FarCall_hl: a = bank, hl = address
         private const val SETTLE = 0x0015
         private const val SETTLE_TRIES = 6
+        /** ReanchorMap waits a few frames (5 tries headless on Kristall) before the loop is back at HandleMap. */
+        private const val REANCHOR_TRIES = 12
         private const val PARTY_MAX = 6
         private const val MON_SIZE = 0x30
         private const val HELD_ITEM = 0x01
@@ -263,16 +269,17 @@ private fun crystalItemSignatures(handleMap: String, healingHp: Int, statusHeali
 /** Crystal (rev 0, rev 1, Australia): pret/pokecrystal's symbols. */
 val GEN2_ITEM_CALLS_CRYSTAL = Gen2ItemCalls(
     tossItem = 0x2F53,
-    signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1") +
+    signatures = listOf(0x2F53L to "e5d5c5f09df53e03d7cd0d52c1", 0x2DBAL to "cdbf1ff09df53e01d7") +
         crystalItemSignatures("cdb067cdc1673e2521087e", 0x73AF, 0x7071, 0x5AFB),
 )
 
 /** German Crystal (Kristall): English's RAM and _TossItem; TossItem, the tables and Moves a little earlier. */
 val GEN2_ITEM_CALLS_CRYSTAL_DE = Gen2ItemCalls(
     tossItem = 0x2F3D,
-    signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1") +
+    signatures = listOf(0x2F3DL to "e5d5c5f09df53e03d7cd0d52c1", 0x2DA4L to "cda91ff09df53e01d7") +
         crystalItemSignatures("cdb067cdc1673e2521097e", 0x737E, 0x7040, 0x5AEB),
     healingHp = Gen2ItemCalls.romOff(0x03, 0x737E),
     statusHealing = Gen2ItemCalls.romOff(0x03, 0x7040),
     moves = Gen2ItemCalls.romOff(0x10, 0x5AEB),
+    reanchorMap = 0x2DA4,
 )

@@ -1087,7 +1087,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
 60. Bag USE on Crystal (2026-11-23, `Gen2ItemCalls` in `Gen2ItemUse.kt`, `GbField.CrystalEngine.useItem`; rev 0 / rev 1 / AU and the
     German cart, each by its code): healing items, status cures, REVIVE / MAX REVIVE, FULL RESTORE, ETHER / ELIXER kinds and the
-    three Repels, and the BICYCLE, on the field only (the engine's `free`). The BICYCLE far-calls the game's BikeFunction with
+    three Repels, and the BICYCLE, on the field only (the engine's `free`). The BICYCLE runs ReanchorMap first, as SELECT's item
+    use does (without it the get-off script's CloseText left EXPAND's margins wrong until the next map), then far-calls the game's BikeFunction with
     wUsingItemWithSelect set (its checks, the music) and moves the script it queues into wMapReentryScriptQueue, which the overworld runs. The item leaves the bag through the game's own TossItem (called from the
     overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
     StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Left out: vitamins, RARE CANDY,

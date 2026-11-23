@@ -58,6 +58,7 @@ class Gen2ItemUseTest {
         var bikeHere = true
         var bikeCalls = 0
         private var pending: (() -> Unit)? = null
+        private var reanchored = false
 
         init {
             fun put(off: Long, hex: String) = hex.chunked(2).forEachIndexed { i, h -> cart[off + i] = h.toInt(16).toByte() }
@@ -79,6 +80,7 @@ class Gen2ItemUseTest {
             pending?.invoke()
             pending = null
             if (fn == calls.tossItem) pending = { toss(hl) }
+            if (fn == calls.reanchorMap) reanchored = true
             if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
             return true
         }
@@ -86,6 +88,7 @@ class Gen2ItemUseTest {
         /** BikeFunction: Script_GetOnBike_Register queued (SELECT's, as wUsingItemWithSelect asks), or 0 off a floor. */
         private fun bike() {
             bikeCalls++
+            assertTrue("ReanchorMap first, as SELECT's item use does", reanchored)
             assertEquals(1, this[calls.usingItemWithSelect])
             this[calls.fieldMoveSucceeded] = if (bikeHere) 1 else 0
             if (bikeHere) { this[calls.queuedScript] = 0x03; this[calls.queuedScript + 1] = 0x4E; this[calls.queuedScript + 2] = 0x51 }
