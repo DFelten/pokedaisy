@@ -966,7 +966,7 @@ fun ItemsScreen(
     fun startPick(item: ItemView, give: Boolean) {
         val use = itemUse ?: return
         use.targets(item.itemId, give) { t ->
-            if (t.result == ItemUseResult.USED) pick = ItemPick(item, give, t.targets)
+            if (t.result == ItemUseResult.USED) pick = ItemPick(item, give, t.targets, t.move)
             else say(itemUseMessage(ItemUseOutcome(t.result)))
         }
     }

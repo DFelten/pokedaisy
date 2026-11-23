@@ -2281,6 +2281,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         if (::engine.isInitialized) engine.shiny.observe(null)
         syncShinyAchievements()
         gbBoxCache = null
+        gbItemCache = null
         gbBoxesBackedUp = false
         gbFollowerLead = null
         Prefs(this).let { p ->

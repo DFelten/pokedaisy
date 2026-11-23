@@ -2437,6 +2437,7 @@ open class CompanionScreenshotTest {
         val pick = ItemPick(
             ItemView(289, "TM01", 1, spriteAsset("items", 289), POCKET_TM_HM), give = false,
             pickTargets(SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.NO_EFFECT, SlotVerdict.OK, SlotVerdict.NO_EFFECT),
+            move = 264,   // FireRed's TM01: the question names the move it learns, not the TM
         )
         AppTheme {
             GameBackdrop(GameKind.FIRERED)

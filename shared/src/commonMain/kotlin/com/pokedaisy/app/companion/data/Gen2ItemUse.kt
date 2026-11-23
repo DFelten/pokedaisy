@@ -14,7 +14,8 @@ package com.pokedaisy.app.companion.data
  *   no effect when it has none of those, or on a fainted Pokémon.
  * - REVIVE / MAX REVIVE: a fainted Pokémon only, half its max HP (rounded down) or all of it (ReviveHalfHP / ReviveFullHP).
  * - ETHER 10 / MYSTERYBERRY 5 / MAX ETHER all on one move, ELIXER / MAX ELIXER on each (RestorePP): up to the move's max
- *   PP, its base PP from the cart's Moves table plus min(base / 5, 7) for each PP Up (ComputeMaxPP), the PP Up bits kept.
+ *   PP, its base PP from the cart's Moves table plus min(base / 5, 7) for each PP Up (ComputeMaxPP), the PP Up bits kept;
+ *   a fainted Pokémon too (RestorePPEffect doesn't check).
  * - Repels: wRepelEffect set to 100 / 200 / 250 steps, refused while one still works (UseRepel).
  * - The bitter herbs: ENERGYPOWDER / ENERGY ROOT as HP items, HEAL POWDER as a status cure, REVIVAL HERB as a full revive,
  *   then the friendship they cost (ChangeHappiness: HappinessChanges' row from the cart by the friendship's band).
@@ -34,9 +35,10 @@ package com.pokedaisy.app.companion.data
  * or the game's "not the time" text).
  *
  * TMs and HMs ([teach]): the Pokémon is picked here - who can learn it by the cart's base data (CanLearnTMHMMove), not one
- * that knows it (KnowsMove) - and, with four moves, the move it forgets (never an HM's, as ForgetMove refuses). That slot is
- * emptied, so LearnMove puts the new move in its place without its forget menu (which leaves the map's colours wrong over the
- * field), and the game's own TeachTMHM runs from WRAM0 over the map ([Gen2TmFns.routine]): its text, the TM spent.
+ * that knows it (KnowsMove) - and, with four moves, the move it forgets (never an HM's, as ForgetMove refuses). The game's own
+ * TeachTMHM runs from WRAM0 over the map ([Gen2TmFns.routine]): its text, the TM spent. The routine empties the forgotten slot
+ * just before, so LearnMove puts the new move in its place without its forget menu (which leaves the map's colours wrong over
+ * the field).
  *
  * Left out: NORMAL BOX and GORGEOUS BOX (Mystery Gift's, their text needs the bag's window).
  */
@@ -160,11 +162,12 @@ class Gen2ItemCalls(
             itemId in VITAMINS -> u8(p.mons, o + STAT_EXP + VITAMINS.getValue(itemId)) < VITAMIN_CAP
             itemId == PP_UP -> ppUpMoves(p, slot).any { it }
             itemId in REVIVES || itemId == REVIVAL_HERB -> hp == 0
+            // RestorePPEffect has no fainted check: a fainted Pokémon's moves take PP back too.
+            itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES -> ppMoves(g, p, slot).any { it }
             hp == 0 -> false
             itemId == FULL_RESTORE -> hp < max || status != 0
             itemId in HP_ITEMS || itemId in BITTER_HP -> hp < max
             itemId in STATUS_ITEMS || itemId == HEAL_POWDER -> status and (statusMask(g, itemId) ?: 0) != 0
-            itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES -> ppMoves(g, p, slot).any { it }
             else -> false
         }
         return if (ok) SlotVerdict.OK else SlotVerdict.NO_EFFECT
@@ -176,7 +179,7 @@ class Gen2ItemCalls(
         val tm = TM_ITEMS.indexOf(itemId)
         if ((if (tm >= 0) tmCount(g, cfg, tm) else quantity(g, cfg, itemId)) == 0) return PartyTargets(ItemUseResult.NONE_LEFT)
         val p = party(g, cfg)
-        return PartyTargets(ItemUseResult.USED, (0 until p.count).map { slot ->
+        return PartyTargets(ItemUseResult.USED, move = if (tm >= 0) tmMove(g, tm) else 0, targets = (0 until p.count).map { slot ->
             PartyTarget(slot, gen2MonKey(p.mons, slot * MON_SIZE), u8(p.mons, slot * MON_SIZE + HELD_ITEM),
                 if (tm >= 0) tmVerdict(g, p, slot, tm) else verdict(g, p, slot, itemId),
                 when {
@@ -226,13 +229,14 @@ class Gen2ItemCalls(
         val forget = forgettable(g, p, slot)
         if (forget.isNotEmpty() && forget.getOrNull(moveIndex) != true) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
         if (tmCount(g, cfg, tm) == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        // LearnMove takes the first empty slot: the forgotten move's, as its forget menu would have replaced it. The routine
+        // empties it right before TeachTMHM, so a call that never runs (a state loaded, the loop gone) leaves the move alone.
+        val forgetAt = if (forget.isEmpty()) 0 else ((cfg.partyMons + slot * MON_SIZE + MOVES + moveIndex) and 0xFFFF).toInt()
         if (!g.gbCallAt(at, ROUTINE, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
-        g.write(ROUTINE.toLong(), this.tm.routine())
+        g.write(ROUTINE.toLong(), this.tm.routine(forgetAt))
         g.write(curItem, byteArrayOf(itemId.toByte()))
         g.write(curPartySpecies, byteArrayOf(p.species[slot]))
         g.write(curPartyMon, byteArrayOf(slot.toByte()))
-        // LearnMove takes the first empty slot: the forgotten move's, as its forget menu would have replaced it.
-        if (forget.isNotEmpty()) g.write(cfg.partyMons + slot * MON_SIZE + MOVES + moveIndex, byteArrayOf(0))
         return ItemUseOutcome(ItemUseResult.TEACHING)
     }
 
@@ -243,13 +247,15 @@ class Gen2ItemCalls(
         return (0 until n).filter { u8(raw, 1 + 2 * it) == itemId }.sumOf { u8(raw, 2 + 2 * it) }
     }
 
-    /** One [itemId] out of the bag by the game's TossItem: false = it didn't go (not on the field, or the bag didn't change). */
-    private fun toss(g: GameCalls, cfg: Gen2Config, itemId: Int, before: Int): Boolean {
+    /** One [itemId] out of the bag by the game's TossItem: false = it didn't go (not on the field, or the bag didn't change).
+     * [settle] is the next call set up from the loop (a do-nothing one unless the caller has its own). */
+    private fun toss(g: GameCalls, cfg: Gen2Config, itemId: Int, before: Int,
+                     settle: () -> Boolean = { g.gbCallAt(at, SETTLE, 0, 0, 0) }): Boolean {
         if (!g.gbCallAt(at, tossItem, 0, 0, (cfg.numItems and 0xFFFF).toInt())) return false
         g.write(curItem, byteArrayOf(itemId.toByte()))
         g.write(quantityChange, byteArrayOf(1))
         // The loop coming by again means TossItem has returned.
-        if (!(0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }) return false
+        if (!(0 until SETTLE_TRIES).any { settle() }) return false
         return quantity(g, cfg, itemId) == before - 1
     }
 
@@ -330,7 +336,20 @@ class Gen2ItemCalls(
         val amount = if (itemId in HP_ITEMS || itemId in BITTER_HP) hpAmount(g, itemId) ?: return ItemUseOutcome(ItemUseResult.FAILED) else 0
         val before = quantity(g, cfg, itemId)
         if (before == 0) return ItemUseOutcome(ItemUseResult.NONE_LEFT)
-        if (!toss(g, cfg, itemId, before)) return ItemUseOutcome(ItemUseResult.FAILED)
+        val vitamin = itemId in VITAMINS
+        // A vitamin's stats are the game's own sums (UpdateStatsAfterItem from WRAM0, like the TM routine). That routine is
+        // set up as TossItem's settle, so once the item is gone the sums are certain to run, on the stat experience written
+        // below before the loop comes by again. If the bag didn't change they run on the old one, which changes nothing.
+        val tossed = if (!vitamin) toss(g, cfg, itemId, before) else toss(g, cfg, itemId, before) {
+            g.gbCallAt(at, ROUTINE, 0, 0, 0).also { set ->
+                if (set) {
+                    g.write(ROUTINE.toLong(), vitaminRoutine())
+                    g.write(curPartySpecies, byteArrayOf(p.species[slot]))
+                    g.write(curPartyMon, byteArrayOf(slot.toByte()))
+                }
+            }
+        }
+        if (!tossed) return ItemUseOutcome(ItemUseResult.FAILED)
 
         val o = slot * MON_SIZE
         val mon = cfg.partyMons + o
@@ -369,14 +388,9 @@ class Gen2ItemCalls(
             }
         }
         change?.let { g.write(mon + HAPPINESS, byteArrayOf(it.toByte())) }
-        // A vitamin's stats: the game's own sums, run from the overworld loop like the TM routine, the loop back once they're done.
-        if (itemId in VITAMINS) {
-            if (!g.gbCallAt(at, ROUTINE, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
-            g.write(ROUTINE.toLong(), vitaminRoutine())
-            g.write(curPartySpecies, byteArrayOf(p.species[slot]))
-            g.write(curPartyMon, byteArrayOf(slot.toByte()))
-            (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
-        }
+        // Waits for the vitamin's sums, so the next read has the new stats. They're already set up, so a loop that's slow to
+        // come back only delays them: the item, its stat experience and the stats still go together, USED either way.
+        if (vitamin) (0 until SETTLE_TRIES).any { g.gbCallAt(at, SETTLE, 0, 0, 0) }
         return ItemUseOutcome(ItemUseResult.USED)
     }
 
@@ -489,8 +503,9 @@ data class Gen2TmFns(
     val baseData: Long = Gen2ItemCalls.romOff(0x14, 0x5424),
     val tmHmMoves: Long = Gen2ItemCalls.romOff(0x04, 0x567A),
 ) {
-    /** The routine (SM83, 42 bytes), its far calls through FarCall_hl (rst $08). */
-    fun routine(): ByteArray {
+    /** The routine (SM83, 42 bytes; 47 with [forgetAt], the party move slot it zeroes right before TeachTMHM, so LearnMove
+     * fills it), its far calls through FarCall_hl (rst $08). */
+    fun routine(forgetAt: Int = 0): ByteArray {
         val c = ArrayList<Int>()
         fun le(x: Int) = listOf(x and 0xFF, x shr 8 and 0xFF)
         fun call(x: Int) { c += 0xCD; c += le(x) }
@@ -500,6 +515,7 @@ data class Gen2TmFns(
         c += listOf(0xFA) + le(TEMP_TMHM) + 0xEA + le(PUTATIVE_TMHM_MOVE)   // ld a, [wTempTMHM]; ld [wPutativeTMHMMove], a
         call(getMoveName); call(copyName1)
         c += listOf(0x21) + le(OPTIONS) + listOf(0x7E, 0xF5, 0xCB, 0xA6)     // ld hl, wOptions; ld a, [hl]; push af; res NO_TEXT_SCROLL, [hl]
+        if (forgetAt != 0) c += listOf(0x21) + le(forgetAt) + listOf(0x36, 0x00)   // ld hl, the move; ld [hl], 0 (far() sets hl again)
         far(teach)
         c += listOf(0xF1, 0xEA) + le(OPTIONS)                                 // pop af; ld [wOptions], a
         call(closeText); c += 0xC9

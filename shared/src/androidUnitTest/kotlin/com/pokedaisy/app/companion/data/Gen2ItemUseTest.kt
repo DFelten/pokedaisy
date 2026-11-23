@@ -67,6 +67,8 @@ class Gen2ItemUseTest {
         val cart = HashMap<Long, Byte>()
         var onField = true
         var tossed = 0
+        /** False: TossItem returns with the bag as it was. */
+        var tossWorks = true
         /** Where BikeFunction may put you on / off the bike (else it answers 0), and the script it queues. */
         var bikeHere = true
         var bikeCalls = 0
@@ -106,13 +108,22 @@ class Gen2ItemUseTest {
             assertEquals(calls.at, at)
             pending?.invoke()
             pending = null
-            if (fn == calls.tossItem) pending = { toss(hl) }
+            if (fn == calls.tossItem) pending = { if (tossWorks) toss(hl) }
             if (fn == calls.reanchorMap) reanchored = true
-            if (fn == Gen2ItemCalls.ROUTINE) { gameCalls += fn; pending = { routineRan++ } }
+            if (fn == Gen2ItemCalls.ROUTINE) { gameCalls += fn; pending = { runRoutine() } }
             if (fn == 0x0008 && a == 0x04 && hl == calls.useRegisteredItem) { gameCalls += hl; pending = { fieldItem() } }
             if (fn == 0x0008 && a == 0x03 && hl == calls.bikeFunction) pending = { bike() }
             if (fn == 0x0008 && a == 0x03 && hl in calls.oldRodEffect..calls.oldRodEffect + 8) pending = { fish(hl - calls.oldRodEffect) }
             return true
+        }
+
+        /** The routine at ROUTINE ran: a TM routine's `ld hl, the move; ld [hl], 0` (before TeachTMHM) empties that slot. */
+        private fun runRoutine() {
+            routineRan++
+            val code = (0 until 64).map { this[Gen2ItemCalls.ROUTINE + it.toLong()] }
+            if (code[0] != 0xCD) return
+            val i = (0 until 59).firstOrNull { code[it] == 0x21 && code[it + 3] == 0x36 && code[it + 4] == 0x00 } ?: return
+            this[wramx(1, code[i + 1] or (code[i + 2] shl 8))] = 0
         }
 
         /** UseRegisteredItem's CLOSE kind: the effect answers in wItemEffectSucceeded, a script queued when it works. */
@@ -227,6 +238,20 @@ class Gen2ItemUseTest {
         assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, CALCIUM, g.target(1), 0).result)
         assertEquals(10, g.statExpHigh(1, 4))     // CALCIUM: Special
         assertEquals(100, g.statExpHigh(1, 0))
+    }
+
+    @Test
+    fun `a vitamin whose TossItem didn't take changes nothing, its stats sums run on the old values`() {
+        val g = game()
+        g.bag(HP_UP to 1)
+        g.mon(0)
+        g.tossWorks = false
+        assertEquals(ItemUseResult.FAILED, calls.useOn(g, cfg, HP_UP, g.target(0), 0).result)
+        assertEquals(0 to 0, g.statExpHigh(0, 0) to g.happiness(0))
+        assertEquals(1, g.qty(HP_UP))
+        // The routine was set up as TossItem's settle, so it runs anyway, with nothing to change.
+        g.gbCallAt(calls.at, 0x0015, 0, 0, 0)
+        assertEquals(1, g.routineRan)
     }
 
     @Test
@@ -360,6 +385,20 @@ class Gen2ItemUseTest {
     }
 
     @Test
+    fun `PP items work on a fainted Pokemon, as RestorePPEffect has no fainted check`() {
+        val g = game()
+        g.bag(ETHER to 1, ELIXER to 1)
+        g.mon(0, hp = 0, pp = intArrayOf(20, 10)); g.mon(1, hp = 0, pp = intArrayOf(5, 5))
+        val t = calls.targets(g, cfg, ETHER).targets
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.OK), t.map { it.verdict })
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, ETHER, t[0], 0).result)
+        assertEquals(30, g.pp(0, 0))
+        assertEquals(ItemUseResult.USED, calls.useOn(g, cfg, ELIXER, g.target(1), 0).result)
+        assertEquals(15 to 15, g.pp(1, 0) to g.pp(1, 1))
+        assertEquals(0 to 0, g.hp(0) to g.hp(1))
+    }
+
+    @Test
     fun `a Repel works once, then waits for the last one to wear off`() {
         val g = game()
         g.bag(REPEL to 2)
@@ -429,6 +468,13 @@ class Gen2ItemUseTest {
         assertEquals(42, GEN2_ITEM_CALLS_CRYSTAL.tm.routine().size)
     }
 
+    @Test
+    fun `with a move to forget, the TM routine empties its slot right before TeachTMHM`() {
+        // ... ld hl, wOptions; ld a, [hl]; push af; res NO_TEXT_SCROLL, [hl]; ld hl, DCE3; ld [hl], 0; farcall TeachTMHM ...
+        assertEquals("cd082e3e0b21b647cffa65d2ea62d2cdf834cdd63021cccf7ef5cba6" + "21e3dc3600" + "3e0b216748cff1eacccfcdcf2dc9",
+            calls.tm.routine(0xDCE3).joinToString("") { "%02x".format(it) })
+    }
+
     /** TM01 (DYNAMICPUNCH) for species 0x9B only, HM01 (CUT) for both; TMHMMoves' TM01 and HMs. */
     private fun Game.tmTables() {
         cart[calls.tm.tmHmMoves] = 0xDF.toByte()
@@ -459,11 +505,12 @@ class Gen2ItemUseTest {
     }
 
     @Test
-    fun `a TM is taught by the game's TeachTMHM to the picked Pokemon, the forgotten move's slot emptied first`() {
+    fun `a TM is taught by the game's TeachTMHM to the picked Pokemon, the forgotten move's slot emptied by its routine`() {
         val g = game()
         g.bag(); g.tmTables()
         g.mon(0); g.mon(1)
         g[cfg.tmsHms] = 1
+        assertEquals(0xDF, calls.targets(g, cfg, TM01).move)   // DYNAMICPUNCH, for the forget question
         val two = calls.targets(g, cfg, TM01).targets[1]
         assertEquals(ItemUseResult.TEACHING, calls.useOn(g, cfg, TM01, two, 0).result)
         assertEquals(listOf(Gen2ItemCalls.ROUTINE), g.gameCalls)
@@ -477,6 +524,12 @@ class Gen2ItemUseTest {
         val one = calls.targets(g, cfg, TM01).targets[0]
         assertEquals(ItemUseResult.NO_EFFECT, calls.useOn(g, cfg, TM01, one, 1).result)   // CUT stays
         assertEquals(ItemUseResult.TEACHING, calls.useOn(g, cfg, TM01, one, 2).result)
+        val forgetting = calls.tm.routine(((cfg.partyMons + 2 + 2) and 0xFFFF).toInt())
+        assertEquals(47, forgetting.size)
+        assertTrue(forgetting.indices.all { g[Gen2ItemCalls.ROUTINE.toLong() + it] == forgetting[it].toInt() and 0xFF })
+        // Nothing gone until the routine runs: a call that never does leaves the move.
+        assertEquals(listOf(0x01, 0x0F, 0x02, 0x03), (0 until 4).map { g[cfg.partyMons + 2 + it] })
+        g.gbCallAt(calls.at, 0x0015, 0, 0, 0)   // the loop comes by: the routine runs
         assertEquals(listOf(0x01, 0x0F, 0x00, 0x03), (0 until 4).map { g[cfg.partyMons + 2 + it] })
         assertEquals(ItemUseResult.PARTY_CHANGED, calls.useOn(g, cfg, TM01, one.copy(personality = 7), 2).result)
         g[cfg.tmsHms] = 0

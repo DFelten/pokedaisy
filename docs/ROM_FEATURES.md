@@ -19,8 +19,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ || ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
+| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
 | Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
@@ -1135,10 +1135,12 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
     effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
     in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
-    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule), asked once more (FORGET / CANCEL). That move slot is zeroed, so LearnMove puts the
-    new move (and its PP) there without ForgetMove's menu - over the field that menu leaves the map's attributes on the text palette until
-    CloseText. Then a 42-byte routine at wStackBottom (C000, `Gen2TmFns.routine`) runs TeachTMHM over the map with wCurPartyMon /
-    wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, TeachTMHM (it spends a TM), CloseText.
+    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule), asked once more (FORGET / CANCEL). A routine at
+    wStackBottom (C000, `Gen2TmFns.routine`: 42 bytes, 47 with a move to forget) runs TeachTMHM over the map with wCurPartyMon /
+    wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, the forgotten move's slot zeroed (so
+    LearnMove puts the new move and its PP there without ForgetMove's menu, which over the field leaves the map's attributes on the text
+    palette until CloseText; zeroed by the routine itself, so a call that never runs leaves the move alone), TeachTMHM (it spends a TM),
+    CloseText.
     The bitter herbs, the vitamins and PP UP pick the Pokémon here as well: the herbs heal like their kind, then ChangeHappiness's row of
     HappinessChanges (bank 01, EN 0x7221 / DE 0x7242) by the friendship's band; a vitamin adds 10 to its stat experience's high byte while
     it's under 100 (VitaminEffect), its friendship change, then RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem (bank 03, EN

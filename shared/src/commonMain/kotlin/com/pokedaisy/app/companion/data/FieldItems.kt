@@ -1080,8 +1080,9 @@ data class PartyTarget(
     val moves: List<Boolean> = emptyList(),
 )
 
-/** The party pick: [result] USED = pick from [targets]; otherwise why not (NOT_NOW, NONE_LEFT, FAILED). */
-data class PartyTargets(val result: ItemUseResult, val targets: List<PartyTarget> = emptyList())
+/** The party pick: [result] USED = pick from [targets]; otherwise why not (NOT_NOW, NONE_LEFT, FAILED). [move]: the move a
+ * TM teaches, where the pick knows it (Crystal's), for its forget question; 0 = not known. */
+data class PartyTargets(val result: ItemUseResult, val targets: List<PartyTarget> = emptyList(), val move: Int = 0)
 
 private const val MON_DATA_PERSONALITY = 0
 private const val MON_DATA_SPECIES = 11
