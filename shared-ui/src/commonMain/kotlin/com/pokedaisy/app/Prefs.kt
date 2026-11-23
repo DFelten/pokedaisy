@@ -365,6 +365,16 @@ class Prefs(
     fun huntsFor(romKey: String): String? = p.getString("hunts_$romKey", null)
     fun setHuntsFor(romKey: String, log: String) = p.edit().putString("hunts_$romKey", log).apply()
 
+    /** SPOILERS for a ROM (CRC32 key, [com.pokedaisy.app.companion.Spoilers]): -1 never answered, 0 SHOW, 1 HIDE. */
+    fun spoilersFor(romKey: String): Int = p.getInt("spoilers_$romKey", -1)
+    fun setSpoilersFor(romKey: String, value: Int) = p.edit().putInt("spoilers_$romKey", value).apply()
+    /** What the player tapped open while hiding spoilers in that ROM: [com.pokedaisy.app.companion.Spoilers]' keys, one a line. */
+    fun spoilerShownFor(romKey: String): String = p.getString("spoiler_shown_$romKey", null) ?: ""
+    fun setSpoilerShownFor(romKey: String, keys: String) = p.edit().putString("spoiler_shown_$romKey", keys).apply()
+    /** The species ids the companion has read in that ROM (party, boxes, foes), comma-separated: "seen" where the Pokédex isn't read. */
+    fun spoilerSeenFor(romKey: String): String = p.getString("spoiler_seen_$romKey", null) ?: ""
+    fun setSpoilerSeenFor(romKey: String, ids: String) = p.edit().putString("spoiler_seen_$romKey", ids).apply()
+
     /** On-screen controls: 0 = auto (only if no gamepad), 1 = always, 2 = never. */
     var touchControlsMode: Int
         get() = p.getInt("touch_controls", 0)

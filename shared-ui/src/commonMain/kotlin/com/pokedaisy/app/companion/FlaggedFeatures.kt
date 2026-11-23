@@ -15,4 +15,7 @@ object FlaggedFeatures {
 
     /** The shiny hunt counter: the HUNT tab, its HUD counter, LOAD STATE held over a shiny. */
     @Volatile var shinyHunt = false
+
+    /** Playing without spoilers: SETTINGS > SPOILERS, its question, and what each screen hides ([Spoilers]). */
+    @Volatile var spoilerFree = false
 }

@@ -20,6 +20,7 @@ class FlaggedFeaturesTest {
     }
 
     @AfterTest fun off() { FlaggedFeatures.modernLook = false; FlaggedFeatures.settingsPlus = false; FlaggedFeatures.shinyHunt = false
+        FlaggedFeatures.spoilerFree = false
         ShinyHunts.close(ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog())) }
 
     @Test fun offTheHuntTabAndItsGuardAreNotThere() {

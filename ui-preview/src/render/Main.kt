@@ -1123,6 +1123,7 @@ fun installPreviewHosts() {
         com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus = it
         com.pokedaisy.app.companion.FlaggedFeatures.modernLook = it
         com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = it
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = it
     }
     val context = android.content.Context()
     com.pokedaisy.app.companion.data.RomArt.filesDir = okio.Path.Companion.run { context.filesDir.toOkioPath() }

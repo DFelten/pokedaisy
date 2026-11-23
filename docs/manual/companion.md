@@ -86,7 +86,7 @@ The options come in groups, the ones you change while playing first. With `GROUP
 - **SCREENS**: depending on your device, `COMPANION VIEW`, `COMPANION BUTTON`, `SWAP SCREENS`, `SINGLE SCREEN`, `FOLD LAYOUT` and `TABLETOP CONTROLS`. See [Devices](devices.md).
 - **DS**: while a DS game runs, `DS LAYOUT` or `DS TOUCH SCREEN`, `DS RESOLUTION`, `DS CPU BOOST` and `DS CORE`. See [Devices](devices.md) and [Screen and display](screen.md).
 - **LOOK**: `VIEW`, `THEME`, `IN GAME`, `DARK MODE`, `FONT TYPE`, `FONT SIZE` and, once you've added a picture under the top screen's `MY LOOK`, `COMPANION BACKGROUND`. See [Screen and display](screen.md).
-- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
+- **COMPANION**: `BATTLE` (a page with `BATTLE INFO`, `BATTLE HINTS`, `BATTLE VIEW`, `BATTLE STYLE`, `ONE-TAP MOVES`, `LAST BALL`, `FOE IVS` and `BATTLE FOCUS`; see [Battle](battle.md)), `SPOILERS` (see [Playing without spoilers](spoilers.md)), `TAB BAR`, `CLICK SOUND`, `POKéMON PICTURES` (Crystal), `ITEM POPUPS` and `TWEAKS`.
 - **ACHIEVEMENTS**: `CHALLENGE ICONS`, `ACHIEVEMENT POPUPS` and `PROGRESS POPUPS`. See [Achievements](achievements.md).
 - **CONTROLS**: `GAME BUTTONS`, `HOTKEYS`, `QUICK MENU` and `TOUCH CONTROLS`. See [Controls](controls.md).
 - **APP**: `TIPS`, `LANGUAGE` and `HELP` (this manual).

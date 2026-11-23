@@ -743,6 +743,8 @@ private fun FoeDetailsColumn(
     /** In a menu style's panel: its band names a single foe, groups sit on stripes, sub-heads over the rest. */
     styled: Boolean = false,
 ) {
+    // SPOILERS on HIDE: what the game never shows of a foe (ability, item, nature, stats, moves) stays out; matchups stay.
+    val hide = com.pokedaisy.app.companion.Spoilers.hiding
     // A new foe starts at the top.
     val scroll = key(opponent.map { it.species to it.level }) { rememberScrollState() }
     // A double battle's verdicts take a line of their own (a pill per target).
@@ -760,13 +762,13 @@ private fun FoeDetailsColumn(
                     val c = OptionColors.foeCells!!
                     val u = m.u
                     // (No STATS block while nothing about the foe beyond its types has been read.)
-                    if (hasFoeFacts(foe, dexTables)) Column {
+                    if (!hide && hasFoeFacts(foe, dexTables)) Column {
                         HeadCell(if (opponent.size > 1) foe.name else tr("STATS"), c, small)
                         Box(Modifier.fillMaxWidth().cell(c.a, c.line, u, top = false, bottom = true).padding(horizontal = u * 4, vertical = u * 3)) {
                             FoeFacts(foe, dexTables, m, small, wide = true)
                         }
                     }
-                    Column {
+                    if (!hide) Column {
                         HeadCell(tr("{0}'S MOVES", foe.name), c, small)
                         if (foe.moves.isEmpty()) Box(Modifier.fillMaxWidth().cell(c.a, c.line, u, top = false, bottom = true).padding(u * 4)) {
                             GbaText(tr("NO MOVE DATA"), OptionColors.muted, OptionColors.mutedShadow, small)
@@ -795,8 +797,8 @@ private fun FoeDetailsColumn(
                 }
                 if (expanded) {
                     if (opponent.size > 1) GbaText(foe.name, OptionColors.value, OptionColors.valueShadow, small)
-                    FoeFacts(foe, dexTables, m, small, wide = true)
-                    if (foe.moves.isEmpty()) GbaText(tr("NO MOVE DATA"), OptionColors.muted, OptionColors.mutedShadow, small)
+                    if (!hide) FoeFacts(foe, dexTables, m, small, wide = true)
+                    if (hide) Unit else if (foe.moves.isEmpty()) GbaText(tr("NO MOVE DATA"), OptionColors.muted, OptionColors.mutedShadow, small)
                     else foe.moves.chunked(2).forEach { pair ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(m.u * 6)) {
                             for (j in 0 until 2) BattleMoveRow(pair.getOrNull(j), showHints, playerCount, m, small,
@@ -825,13 +827,13 @@ private fun FoeDetailsColumn(
                             }
                         }
                     }
-                    if (hasFoeFacts(foe, dexTables)) Column {
+                    if (!hide && hasFoeFacts(foe, dexTables)) Column {
                         HeadCell(tr("STATS"), c, small)
                         Box(Modifier.fillMaxWidth().cell(c.a, c.line, u, top = false, bottom = true).padding(horizontal = u * 4, vertical = u * 3)) {
                             FoeFacts(foe, dexTables, m, small, wide = false)
                         }
                     }
-                    if (foe.moves.isNotEmpty()) Column {
+                    if (!hide && foe.moves.isNotEmpty()) Column {
                         HeadCell(tr("{0}'S MOVES", foe.name), c, small)
                         foe.moves.forEachIndexed { k, mv ->
                             MoveCell(mv, m, small, Modifier.fillMaxWidth().height(moveRow)
@@ -848,8 +850,8 @@ private fun FoeDetailsColumn(
                     groups.forEach { (label, list) -> MatchupGroup(label, list, small) }
                     Separator(m, Modifier.fillMaxWidth())
                 }
-                FoeFacts(foe, dexTables, m, small, wide = false)
-                if (foe.moves.isNotEmpty()) {
+                if (!hide) FoeFacts(foe, dexTables, m, small, wide = false)
+                if (!hide && foe.moves.isNotEmpty()) {
                     GbaText(tr("{0}'S MOVES", foe.name), OptionColors.value, OptionColors.valueShadow, small)
                     foe.moves.forEach { mv ->
                         BattleMoveRow(mv, showHints, playerCount, m, small, Modifier.fillMaxWidth().height(moveRow), threat = true)

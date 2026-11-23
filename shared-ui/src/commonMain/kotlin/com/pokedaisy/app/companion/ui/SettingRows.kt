@@ -215,6 +215,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "SUPPORTED ONLY" to "filter hide unsupported not supported compatible library",
     "LOOK AROUND" to "right stick freecam free camera look pan view",
     "FOE IVS" to "enemy opponent ivs stats",
+    "SPOILERS" to "spoiler free no spoilers hide unseen blind first playthrough",
     "BATTLE FOCUS" to "battle info compact one page no scrolling layout enemy opponent ability held item",
     "CLICK SOUND" to "sound effects button click audio",
     "GAME VOLUME" to "volume sound audio loudness quieter louder level percent music sfx",
@@ -282,7 +283,7 @@ val SETTINGS_GROUPS: List<Pair<String, List<String>>> = listOf(
     "BATTLE" to listOf(
         "BATTLE INFO", "BATTLE HINTS", "BATTLE VIEW", "BATTLE STYLE", "ONE-TAP MOVES", "LAST BALL", "FOE IVS", "BATTLE FOCUS",
     ),
-    "COMPANION" to listOf(BATTLE_PAGE, "TAB BAR", "CLICK SOUND", "POKéMON PICTURES", "ITEM POPUPS", "TWEAKS"),
+    "COMPANION" to listOf(BATTLE_PAGE, "SPOILERS", "TAB BAR", "CLICK SOUND", "POKéMON PICTURES", "ITEM POPUPS", "TWEAKS"),
     "ACHIEVEMENTS" to listOf("RetroAchievements", "CHALLENGE ICONS", "ACHIEVEMENT POPUPS", "PROGRESS POPUPS"),
     "LIBRARY" to emptyList(),
     "CONTROLS" to emptyList(),

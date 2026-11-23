@@ -180,7 +180,7 @@ fun hudWild(enc: MapEncounters?, dex: PokedexState?): List<HudWild> {
             val n = national(species)
             HudWild(
                 method, species, s.minOf { it.minLevel }, s.maxOf { it.maxLevel }, s.sumOf { it.percent },
-                seen = dex == null || n in dex.seen, caught = dex != null && n in dex.caught,
+                seen = com.pokedaisy.app.companion.Spoilers.seenNational(n, species, dex), caught = dex != null && n in dex.caught,
             )
         }.sortedByDescending { it.percent }
     }

@@ -4231,6 +4231,12 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
                     maxWidth = maxWidth, onAnswer = ::answerBattleRetry,
                 )
+                com.pokedaisy.app.companion.ui.SpoilerAskHost(
+                    active = !tipsOnCompanion.value, roomy = false, onCompanion = false,
+                    modifier = androidx.compose.ui.Modifier.padding(top = clearTop + 8.dp),
+                    cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
+                    maxWidth = maxWidth,
+                )
                 // RetroAchievements' popups and challenge / tracker indicators, while no companion is on screen (a DS
                 // game's touch screen in its place, one screen's closed window): GitHub #500.
                 com.pokedaisy.app.companion.ui.AchievementPopupHost(

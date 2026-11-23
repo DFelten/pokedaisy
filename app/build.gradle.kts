@@ -91,6 +91,7 @@ android {
         buildConfigField("boolean", "FEATURE_SETTINGS_PLUS", featureFlag("settingsPlus").toString())
         buildConfigField("boolean", "FEATURE_MODERN_LOOK", featureFlag("modernLook").toString())
         buildConfigField("boolean", "FEATURE_SHINY_HUNT", featureFlag("shinyHunt").toString())
+        buildConfigField("boolean", "FEATURE_SPOILER_FREE", featureFlag("spoilerFree").toString())
         // CO-OP (the connection to a paired partner): off until the feature ships (FeatureFlags.coop).
         buildConfigField("boolean", "FEATURE_COOP", featureFlag("coop").toString())
         // 3DS games (Azahar, the n3ds module): only built in with the flag (settings.gradle.kts), off until they ship

@@ -60,9 +60,10 @@ internal fun HuntScreen(
     var picking by remember { mutableStateOf<HuntPick?>(null) }
     var confirm by remember { mutableStateOf<Triple<String, String, () -> Unit>?>(null) }
     val wildHere = rememberWildHere(snapshot)
-    // What a target can be: any shiny, the foes out now, this map's wild Pokémon.
-    val targets = remember(snapshot.battleOpponent, wildHere) {
-        (listOf(0) + snapshot.battleOpponent.map { it.species } + wildHere.orEmpty().map { it.species }).distinct()
+    // What a target can be: any shiny, the foes out now, this map's wild Pokémon (SPOILERS on HIDE: the ones seen).
+    val hiding = com.pokedaisy.app.companion.Spoilers.hiding
+    val targets = remember(snapshot.battleOpponent, wildHere, hiding) {
+        (listOf(0) + snapshot.battleOpponent.map { it.species } + wildHere.orEmpty().filter { !hiding || it.seen }.map { it.species }).distinct()
     }
     val gameOdds = ShinyHunts.gameOdds
     Box(modifier.fillMaxSize()) {
