@@ -12,6 +12,8 @@ The `MAP` tab is the game's town map, always open. It answers "where am I?" at a
 
 The map is drawn the way your game draws it: the region's own picture, your character's head on the tile where the game would put it, and the game's blinking cursor around the place you're in. The place's name sits in the game's own label: a dark strip in the top left in FireRed and its relatives, a framed window in the bottom right in Emerald and its relatives. In FireRed-style games a second strip names a cave or other place on that spot when there is one.
 
+The map always keeps its own shape: it's drawn as big as the tab allows and centred, never stretched to fill it.
+
 Indoors and underground, the head stays on the last outdoor spot you were on, like the game does. In the games that have one, a cave or a building gets a map of its own instead: see below.
 
 ![The MAP tab: an island map with the player's head on DAISY TOWN, the town's name in a strip at the top left, and PLACES at the top right](shots/companion-map.png "The MAP tab")

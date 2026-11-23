@@ -68,6 +68,11 @@ class Prefs(
         get() = p.getInt("library_sort", 0)   // LibrarySort.NAME
         set(v) = p.edit().putInt("library_sort", v).apply()
 
+    /** The quick views' order the player dragged them into: [LibraryView] ids, comma-separated; empty = the default order. */
+    var libraryViewOrder: String
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) "" else p.getString("library_view_order", "") ?: ""
+        set(v) = p.edit().putString("library_view_order", v).apply()
+
     /** The library's quick view: a [LibraryView] id (ALL, FAVORITES, RECENT, a console, HACKS). */
     var libraryView: Int
         get() = p.getInt("library_view", 0)   // LibraryView.ALL
@@ -75,7 +80,7 @@ class Prefs(
 
     /** 0 = list, 1 = grid — Library screen's view-mode toggle. */
     var libraryViewMode: Int
-        get() = p.getInt("library_view_mode", 0)
+        get() = p.getInt("library_view_mode", 0).let { if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook && it > 1) 0 else it }
         set(v) = p.edit().putInt("library_view_mode", v).apply()
 
     /** Whether a ROM's cover (keyed by file name, like [romDisplayName]) was
@@ -361,6 +366,20 @@ class Prefs(
     fun nuzlockeRunFor(romKey: String): String? = p.getString("nuzlocke_run_$romKey", null)
     fun setNuzlockeRunFor(romKey: String, run: String) = p.edit().putString("nuzlocke_run_$romKey", run).apply()
 
+    /** SHINY HUNT's hunts per ROM (keyed by CRC32, [com.pokedaisy.app.companion.data.HuntLog.encode]). */
+    fun huntsFor(romKey: String): String? = p.getString("hunts_$romKey", null)
+    fun setHuntsFor(romKey: String, log: String) = p.edit().putString("hunts_$romKey", log).apply()
+
+    /** SPOILERS for a ROM (CRC32 key, [com.pokedaisy.app.companion.Spoilers]): -1 never answered, 0 SHOW, 1 HIDE. */
+    fun spoilersFor(romKey: String): Int = p.getInt("spoilers_$romKey", -1)
+    fun setSpoilersFor(romKey: String, value: Int) = p.edit().putInt("spoilers_$romKey", value).apply()
+    /** What the player tapped open while hiding spoilers in that ROM: [com.pokedaisy.app.companion.Spoilers]' keys, one a line. */
+    fun spoilerShownFor(romKey: String): String = p.getString("spoiler_shown_$romKey", null) ?: ""
+    fun setSpoilerShownFor(romKey: String, keys: String) = p.edit().putString("spoiler_shown_$romKey", keys).apply()
+    /** The species ids the companion has read in that ROM (party, boxes, foes), comma-separated: "seen" where the Pokédex isn't read. */
+    fun spoilerSeenFor(romKey: String): String = p.getString("spoiler_seen_$romKey", null) ?: ""
+    fun setSpoilerSeenFor(romKey: String, ids: String) = p.edit().putString("spoiler_seen_$romKey", ids).apply()
+
     /** On-screen controls: 0 = auto (only if no gamepad), 1 = always, 2 = never. */
     var touchControlsMode: Int
         get() = p.getInt("touch_controls", 0)
@@ -634,13 +653,16 @@ class Prefs(
                 size = pick(com.pokedaisy.app.companion.FieldHudSize.values(), "field_hud_size", d.size),
                 hidden = p.getString("field_hud_hidden", null).orEmpty().split(',')
                     .mapNotNull { n -> com.pokedaisy.app.companion.FieldHudPart.values().firstOrNull { it.name == n } }.toSet(),
-            )
+                customs = p.getString("field_hud_layouts", null).orEmpty().lines().mapNotNull(com.pokedaisy.app.companion.HudCustom::decode),
+            ).let { it.copy(custom = p.getInt("field_hud_custom", -1).takeIf { i -> com.pokedaisy.app.companion.FlaggedFeatures.modernLook && i in it.customs.indices } ?: -1) }
         }
         set(v) = p.edit()
             .putString("field_hud_layout", v.layout.name)
             .putString("field_hud_look", v.look.name)
             .putString("field_hud_size", v.size.name)
             .putString("field_hud_hidden", v.hidden.joinToString(",") { it.name })
+            .putString("field_hud_layouts", v.customs.joinToString("\n") { it.encode() })
+            .putInt("field_hud_custom", v.custom)
             .apply()
 
     /** Whether the game has a status bar on top (game, location, money, clock, battery). */
@@ -882,6 +904,12 @@ class Prefs(
         get() = p.getString("saves_dir_override", null)
         set(v) = p.edit().putString("saves_dir_override", v).apply()
 
+    /** Custom folder for save states (a folder per game inside it, Settings > FOLDERS > SAVE STATES); null = the app's
+     * own files/states/. */
+    var statesDirOverride: String?
+        get() = p.getString("states_dir_override", null)
+        set(v) = p.edit().putString("states_dir_override", v).apply()
+
     /** More folders to look for a game's save in, after [savesDirOverride] (Settings > FOLDERS >
      * ALSO LOOK IN; see [SavesLocation.saveFor]). New saves still go to the saves folder. */
     var extraSaveDirs: List<String>
@@ -1020,6 +1048,71 @@ class Prefs(
     var appFont: Int
         get() = p.getInt("app_font", 4)   // AppFont.PIXEL_SMALL.ordinal (PrefsCompanionSettingsTest checks it)
         set(v) = p.edit().putInt("app_font", v).apply()
+
+    /** SETTINGS > FONT SIZE: an AppFontSize ordinal (0 SMALL, 1 MEDIUM the default, 2 LARGE, 3 MORE SIZES). */
+    var fontSize: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 1 else p.getInt("font_size", 1)
+        set(v) = p.edit().putInt("font_size", v).apply()
+
+    /** FONT SIZE > MORE SIZES: the text's size in percent of MEDIUM's (50 - 200). */
+    var fontSizePercent: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 100 else p.getInt("font_size_percent", 100)
+        set(v) = p.edit().putInt("font_size_percent", v).apply()
+
+    /** FONT TYPE's added font: its file's name under files/look/fonts ("" = none; AppFonts.custom). */
+    var customFont: String
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) "" else p.getString("custom_font", null) ?: ""
+        set(v) = p.edit().putString("custom_font", v).apply()
+
+    /** MY LOOK > APP BACKGROUND: 0 the look's own, 1 the player's picture (LookBackground). */
+    var appBackground: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("app_background", 0)
+        set(v) = p.edit().putInt("app_background", v).apply()
+
+    /** MY LOOK > COMPANION BACKGROUND: 0 the game's / the look's own, 1 its own picture, 2 the app's picture (LookBackground). */
+    var companionBackground: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("companion_background", 0)
+        set(v) = p.edit().putInt("companion_background", v).apply()
+
+    /** SIDE BARS: what's beside a game that doesn't fill the screen (a SideBars ordinal: DEFAULT, BLACK, MY PICTURES). */
+    var sideBars: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("side_bars", 0)
+        set(v) = p.edit().putInt("side_bars", v).apply()
+
+    /** TAB BAR > POSITION / SIZE (the companion's: a TabBarPlace ordinal, compact) and MENU BAR / MENU BAR SIZE (the
+     * library's GAMES / TOOLS / SETTINGS: a MenuBarPlace ordinal, compact). */
+    var tabBarPlace: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("tab_bar_place", 0)
+        set(v) = p.edit().putInt("tab_bar_place", v).apply()
+    var tabBarCompact: Boolean
+        get() = com.pokedaisy.app.companion.FlaggedFeatures.modernLook && p.getBoolean("tab_bar_compact", false)
+        set(v) = p.edit().putBoolean("tab_bar_compact", v).apply()
+    var menuBarPlace: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("menu_bar_place", 0)
+        set(v) = p.edit().putInt("menu_bar_place", v).apply()
+    var menuBarCompact: Boolean
+        get() = com.pokedaisy.app.companion.FlaggedFeatures.modernLook && p.getBoolean("menu_bar_compact", false)
+        set(v) = p.edit().putBoolean("menu_bar_compact", v).apply()
+
+    /** COMPANION > TAB BAR's SHOW AS: false = the tabs' names, true = their icons. */
+    var tabIcons: Boolean
+        get() = com.pokedaisy.app.companion.FlaggedFeatures.modernLook && p.getBoolean("tab_icons", false)
+        set(v) = p.edit().putBoolean("tab_icons", v).apply()
+
+    /** The font RETRO wore before VIEW MODERN put on its own (AppViews.set gives it back). */
+    var appFontRetro: Int
+        get() = p.getInt("app_font_retro", 4)
+        set(v) = p.edit().putInt("app_font_retro", v).apply()
+
+    /** SETTINGS > VIEW: 0 RETRO (the default), 1 MODERN (AppView, companion/ui/theme/AppView.kt). */
+    var appView: Int
+        get() = if (!com.pokedaisy.app.companion.FlaggedFeatures.modernLook) 0 else p.getInt("app_view", 0)
+        set(v) = p.edit().putInt("app_view", v).apply()
+
+    /** The VIEW picker (AppViewIntro) was answered, or this install never needed it. */
+    var appViewAsked: Boolean
+        get() = !com.pokedaisy.app.companion.FlaggedFeatures.modernLook || p.getBoolean("app_view_asked", false)
+        set(v) = p.edit().putBoolean("app_view_asked", v).apply()
 
     /** User-supplied SteamGridDB API key (Settings > Cover Art) — see
      * [SteamGridDbClient]. Null/blank = cover-art fetching is off; nothing is

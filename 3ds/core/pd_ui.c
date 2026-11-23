@@ -276,14 +276,13 @@ static bool on_bar(const struct pd_ui* ui, enum pd_tab t) {
 
 static void chip(struct pd_ui* ui, struct pd_canvas* c, int x, int w, bool open, int id) {
     // HeartGold's two-tone face, like every companion button (the app's tab chips).
-    pd_layered_two_tone(c, x, BAR_Y(c), w, CHIP_H, 3, pd_cur->chip, pd_cur->chipCount,
-                        open || ui->pressedId == id ? pd_cur->tabSelectedFill : pd_cur->tabIdleFill, 0);
+    pd_chip_face(c, x, BAR_Y(c), w, CHIP_H, open || ui->pressedId == id);
     ui_add_hit(ui, x, BAR_Y(c), w, CHIP_H, id);
 }
 
 static void icon_chip(struct pd_ui* ui, struct pd_canvas* c, int x, const struct pd_mono* icon, bool open, int id) {
     chip(ui, c, x, ICON_CHIP_W, open, id);
-    uint32_t color = open ? PD_VALUE : PD_TITLE_TEXT;
+    uint32_t color = pd_chip_text(open);
     if (pd_font_size_small()) {
         const int size = 12;
         ui_icon_smooth(c, NULL, icon, color, x + (ICON_CHIP_W - size) / 2, BAR_Y(c) + (CHIP_H - size) / 2, size);
@@ -306,7 +305,7 @@ static void tab_bar(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
     int x = MARGIN;
     if (shoulderHints) {
         chip(ui, c, x, SHOULDER_W, false, HIT_SHOULDER_L);
-        pd_text(c, x + (SHOULDER_W - pd_text_width("L")) / 2, pd_text_y(by, CHIP_H), "L", PD_TITLE_TEXT, PD_TITLE_SHADOW);
+        pd_text(c, x + (SHOULDER_W - pd_text_width("L")) / 2, pd_text_y(by, CHIP_H), "L", pd_chip_text(false), pd_chip_shadow(false));
         x += SHOULDER_W + CHIP_GAP;
     }
     // Equal chips while every label fits one; a longer word (another language's) gets its width and the rest
@@ -330,8 +329,7 @@ static void tab_bar(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
         const char* label = ui_tab_label(t);
         int tw = pd_text_width(label);
         if (tw > w - 4) tw = w - 4;
-        pd_text_fit(c, x + (w - tw) / 2, pd_text_y(by, CHIP_H), tw, label, open ? PD_VALUE : PD_TITLE_TEXT,
-                    open ? PD_VALUE_SHADOW : PD_TITLE_SHADOW);
+        pd_text_fit(c, x + (w - tw) / 2, pd_text_y(by, CHIP_H), tw, label, pd_chip_text(open), pd_chip_shadow(open));
         x += w + CHIP_GAP;
     }
     // MORE: lit while a tab it opens is up.
@@ -344,7 +342,7 @@ static void tab_bar(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
     if (ffW) {
         bool ff = host->ffOn;
         chip(ui, c, x, FF_W, ff, HIT_FF);
-        uint32_t col = ff ? PD_VALUE : PD_TITLE_TEXT;
+        uint32_t col = pd_chip_text(ff);
         pd_triangle(c, x + 7, by + CHIP_H / 2 - 4, 5, PD_RIGHT, col);
         pd_triangle(c, x + 13, by + CHIP_H / 2 - 4, 5, PD_RIGHT, col);
         x += FF_W + CHIP_GAP;
@@ -353,7 +351,7 @@ static void tab_bar(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game*
     if (shoulderHints) {
         x += ICON_CHIP_W + CHIP_GAP;
         chip(ui, c, x, SHOULDER_W, false, HIT_SHOULDER_R);
-        pd_text(c, x + (SHOULDER_W - pd_text_width("R")) / 2, pd_text_y(by, CHIP_H), "R", PD_TITLE_TEXT, PD_TITLE_SHADOW);
+        pd_text(c, x + (SHOULDER_W - pd_text_width("R")) / 2, pd_text_y(by, CHIP_H), "R", pd_chip_text(false), pd_chip_shadow(false));
     }
 }
 
@@ -636,6 +634,10 @@ static void act(struct pd_ui* ui, int id) {
             id == HIT_SETTING + SETTING_FF_MODE ? &ui->settings->ffNormal : &ui->settings->cheats;
         *flag = !*flag;
         ui->action = PD_ACTION_SETTINGS_CHANGED;
+    } else if (id == HIT_SETTING + SETTING_FONT_TYPE) {
+        // Two values: a tap flips it, as the app's pick-list would with two (the host draws the next frame in it).
+        ui->settings->fontPixel = !ui->settings->fontPixel;
+        ui->action = PD_ACTION_SETTINGS_CHANGED;
     } else if (id == HIT_SETTING + SETTING_RESET) {
         ui->overlay = PD_OVERLAY_CONFIRM_RESET;
     } else if (id == HIT_SETTING + SETTING_RESTART) {
@@ -741,6 +743,9 @@ static void act(struct pd_ui* ui, int id) {
 }
 
 bool pd_ui_settings_control(struct pd_ui* ui, int dy, bool accept) {
+    // Nothing pressed: the list stays where the pointer left it (a host calls this every frame; following the cursor
+    // then pulled the list back from the rail's tap, the wheel and a drag on the desktop).
+    if (!dy && !accept) return ui->settingsNavCount > 0;
     int count = ui->settingsNavCount, index = 0;
     while (index < count && ui->settingsNav[index].id != ui->settingsNavId) ++index;
     if (index == count) return false;
@@ -785,6 +790,18 @@ static bool scroll_area_at(struct pd_ui* ui, int x, int y) {
     ui->scrollAreaW = best->w;
     ui->scrollAreaH = best->h;
     return true;
+}
+
+bool pd_ui_wheel(struct pd_ui* ui, int x, int y, int notches) {
+    if (!notches || ui->touching) return false;
+    // The list under the pointer (a scroll hit there), as a drag of two rows a notch would move it.
+    if (!scroll_area_at(ui, x, y)) return false;
+    int* scroll = scroll_target(ui);
+    if (!scroll) return false;
+    int was = *scroll;
+    *scroll -= notches * 32;
+    if (*scroll < 0) *scroll = 0; // the far end is clamped by the list's own draw
+    return *scroll != was;
 }
 
 bool pd_ui_touch(struct pd_ui* ui, int x, int y, bool down) {

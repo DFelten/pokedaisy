@@ -9,6 +9,9 @@
 #include "display_filter.h"
 #include "pd_canvas.h"
 #include "pd_menu.h"
+#include "pd_style.h"
+#include "pd_settings.h"
+#include "pd_tr.h"
 #include <SDL.h>
 #include <dirent.h>
 #ifdef _WIN32
@@ -88,7 +91,7 @@ static void stop(int sig) {
   running = 0;
 }
 static void notice(const char *s) {
-  snprintf(message, sizeof message, "%s", s);
+  snprintf(message, sizeof message, "%s", pd_tr(s));
   messageUntil = SDL_GetTicks() + 2500;
   fprintf(stderr, "%s\n", s);
 }
@@ -390,11 +393,12 @@ static SDL_Texture *compTexture;
 static int compTexW, compTexH;
 /* The host's rows in the companion's SETTINGS (PD_ENV_FRONT_ROWS): the core asked (so the menu is the short one), the row
  * it pressed (acted on in run_game, after the frame), and SETTINGS picked in the menu (handed to the core once). */
-enum { FRONT_SWAP, FRONT_FFSPEED, FRONT_REWIND, FRONT_LCD, FRONT_KEYBOARD, FRONT_HOTKEYS, FRONT_COUNT };
+enum { FRONT_SWAP, FRONT_FFSPEED, FRONT_REWIND, FRONT_LCD, FRONT_KEYBOARD, FRONT_HOTKEYS, FRONT_FULLSCREEN, FRONT_COUNT };
 static bool frontRowsCore;
 static int frontPress = -1;
 static bool frontOpenSettings;
 static bool libraryClick;              // a left press this frame
+static bool libraryMenuClick;          // a right press this frame: the game under it opens its menu
 static int libraryWheel;               // wheel notches this frame (+ up)
 
 static void pointer_at(int x, int y) {
@@ -466,6 +470,11 @@ static void script_rawkeys(void) {
     }
   }
 }
+static bool window_hotkey(const SDL_KeyboardEvent *k);
+static void window_follow(const SDL_WindowEvent *w);
+/* The game list's SEARCH field is open (library_searching): text input is on, and the keyboard types into it instead of
+ * pressing the game's buttons; its Backspace, Enter and Escape edit, finish and clear it. */
+static bool libraryText;
 static void events(void) {
   pressed = 0;
   lastKey = 0;
@@ -482,6 +491,21 @@ static void events(void) {
       controller_added(e.cdevice.which);
     if (e.type == SDL_CONTROLLERDEVICEREMOVED)
       controller_removed(e.cdevice.which);
+    if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) && kbCapture < 0 && window_hotkey(&e.key))
+      continue; // F11 / Alt+Enter: the window's, never the game's
+    if (libraryText) {
+      if (e.type == SDL_TEXTINPUT) {
+        library_text(e.text.text);
+        continue;
+      }
+      if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
+        const SDL_Keycode k = e.key.keysym.sym;
+        if (e.type == SDL_KEYDOWN)
+          library_search_key(k == SDLK_BACKSPACE ? LIB_SEARCH_BACKSPACE : k == SDLK_ESCAPE ? LIB_SEARCH_CANCEL
+                             : k == SDLK_RETURN || k == SDLK_KP_ENTER ? LIB_SEARCH_DONE : -1);
+        continue;
+      }
+    }
     if (e.type == SDL_KEYDOWN && kbCapture >= 0)
       lastKey = (int)e.key.keysym.sym; // the KEYBOARD page's next key: the game sees nothing of it
     else if ((e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) && !e.key.repeat)
@@ -524,6 +548,8 @@ static void events(void) {
         pointerPulse = 1; // a click the core sees even when press and release fall in one frame
         libraryClick = true;
       }
+      if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT)
+        libraryMenuClick = true;
     }
 #ifndef _WIN32
     // The cursor shows while a real mouse is used (not a touch screen's mouse events) and goes at the next key / button.
@@ -553,17 +579,19 @@ static void events(void) {
     }
     if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
       outputChanged = true;
+    if (e.type == SDL_WINDOWEVENT)
+      window_follow(&e.window);
   }
   script_mouse();
   script_resize();
   script_keys();
 }
-/* POCKET_MOUSE="TICK:X:Y[:c],...": where the cursor is (window pixels) from that tick on, ',c' clicking then, for
+/* POCKET_MOUSE="TICK:X:Y[:c],...": where the cursor is (window pixels) from that tick on, ",c" clicking then (",r" a right click), for
  * tests; the same tick numbering as POCKET_KEYS. */
 static struct {
   unsigned at;
   int x, y, wheel;
-  bool click;
+  bool click, menu; // 'c' a left click, 'r' a right one
 } mscript[16];
 static int mscriptN = -1;
 static void script_mouse(void) {
@@ -576,7 +604,7 @@ static void script_mouse(void) {
       int x, y;
       char c = 0;
       if (sscanf(t, "%u:%d:%d:%c", &at, &x, &y, &c) >= 3)
-        mscript[mscriptN] = (typeof(mscript[0])){at, x, y, c == 'd' ? -1 : c == 'u' ? 1 : 0, c == 'c'}, mscriptN++;
+        mscript[mscriptN] = (typeof(mscript[0])){at, x, y, c == 'd' ? -1 : c == 'u' ? 1 : 0, c == 'c', c == 'r'}, mscriptN++;
     }
   }
   for (int i = 0; i < mscriptN; i++)
@@ -587,6 +615,8 @@ static void script_mouse(void) {
         pointerPulse = 1;
         libraryClick = true;
       }
+      if (mscript[i].menu)
+        libraryMenuClick = true;
       wheelSteps += mscript[i].wheel;
       libraryWheel += mscript[i].wheel;
     }
@@ -664,9 +694,12 @@ static struct {
   int hotkey[HK_ACTIONS]; // the HOTKEYS page's button per action, -1 none
   int dsHotkey[HK_ACTIONS];
   int modifier;
-  bool fullscreen; // the WINDOW setting
+  bool fullscreen; // the FULLSCREEN setting (F11 / Alt+Enter on a desktop)
   int panel;       // the PANEL setting: 0 = the window's size, else a preset the core lays out for
-} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0};
+  // The desktop window as it was left (windowedHost only): its size, its place (winPlaced), and whether it was maximized.
+  int winW, winH, winX, winY;
+  bool winPlaced, maximized;
+} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0, 0, 0, 0, 0, false, false};
 static char hostIni[PATH_MAX];
 /* A DS game's L2 / R2 are its companion and screen buttons: with no modifier held for them, its FAST FORWARD and REWIND
  * go back to the stick clicks (R3 / L3), and come back to R2 / L2 when a modifier is picked again. */
@@ -707,6 +740,13 @@ static void host_load(void) {
       hostSet.fullscreen = v != 0;
     if (sscanf(line, "panel=%d", &v) == 1 && v >= 0 && v < PD_PANEL_PRESETS)
       hostSet.panel = v;
+    int a, b;
+    if (sscanf(line, "window=%dx%d", &a, &b) == 2 && a >= 320 && b >= 240 && a <= 16384 && b <= 16384)
+      hostSet.winW = a, hostSet.winH = b;
+    if (sscanf(line, "window_pos=%d,%d", &a, &b) == 2)
+      hostSet.winX = a, hostSet.winY = b, hostSet.winPlaced = true;
+    if (sscanf(line, "maximized=%d", &v) == 1)
+      hostSet.maximized = v != 0;
     char modifier[16];
     if (sscanf(line, "hk_modifier=%15s", modifier) == 1) {
       int k = key_named(modifier);
@@ -747,6 +787,11 @@ static void host_save(void) {
     return;
   fprintf(f, "ff_speed=%d\nrewind=%d\nlcd=%d\nswap_ab=%d\n", hostSet.ffSpeed, hostSet.rewind, hostSet.lcd, hostSet.swapAB);
   fprintf(f, "fullscreen=%d\npanel=%d\n", hostSet.fullscreen, hostSet.panel);
+  if (hostSet.winW > 0)
+    fprintf(f, "window=%dx%d\n", hostSet.winW, hostSet.winH);
+  if (hostSet.winPlaced)
+    fprintf(f, "window_pos=%d,%d\n", hostSet.winX, hostSet.winY);
+  fprintf(f, "maximized=%d\n", hostSet.maximized);
   fprintf(f, "hk_modifier=%s\n", key_name(hostSet.modifier));
   for (int i = 0; i < HK_ACTIONS; i++) {
     fprintf(f, "hk_%s=%s\n", hotkeyIds[i], key_name(hostSet.hotkey[i]));
@@ -755,6 +800,137 @@ static void host_save(void) {
   for (int i = 0; i < KB_COUNT; i++)
     fprintf(f, "kb_%s=%d\n", kbIds[i], kbKeys[i]);
   fclose(f);
+}
+/* The companion window's X (the app's: beside its top right corner): a key in the look's button colours, at the window's
+ * scale, where the window leaves room for it on the right. A click on it lands outside the window, which closes it (the
+ * core's rule), so it needs no handling of its own. A square handheld's screen has no room: none there. */
+#define CLOSE_KEY 16
+static SDL_Texture *closeTex;
+static uint32_t closeTexKey;
+static void companion_close_key(int ow, SDL_Rect win, int k) {
+  const int x = win.x + win.w + 3 * k, size = CLOSE_KEY * k;
+  if (x + size > ow - 2 * k)
+    return;
+  const struct pd_key plain = {pd_cur->title[0].color, pd_cur->titleFill, pd_two_tone_low(pd_cur->titleFill),
+                               pd_cur->title[0].color, pd_cur->titleText, PD_NO_SHADOW, PD_NO_SHADOW, false};
+  const struct pd_key *key = pd_style ? &pd_style->button : &plain;
+  const uint32_t want = key->face ^ (key->outline << 1) ^ (key->text << 2) ^ key->depth;
+  if (!closeTex || closeTexKey != want) {
+    static uint32_t px[CLOSE_KEY * CLOSE_KEY];
+    const uint32_t clear = 0x00FF00FF;
+    for (int i = 0; i < CLOSE_KEY * CLOSE_KEY; i++)
+      px[i] = clear;
+    struct pd_canvas c;
+    pd_canvas_init(&c, CLOSE_KEY, CLOSE_KEY, px);
+    pd_key(&c, 0, 0, CLOSE_KEY, CLOSE_KEY, key);
+    // The X: two 2-pixel diagonals, 8 wide, in the face's middle (over the depth edge).
+    for (int i = 0; i < 7; i++) {
+      pd_fill(&c, 4 + i, 3 + i, 2, 1, key->text);
+      pd_fill(&c, 10 - i, 3 + i, 2, 1, key->text);
+    }
+    for (int i = 0; i < CLOSE_KEY * CLOSE_KEY; i++)
+      px[i] = px[i] == clear ? 0 : (px[i] | 0xFF000000u);
+    if (closeTex)
+      SDL_DestroyTexture(closeTex);
+    closeTex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, CLOSE_KEY, CLOSE_KEY);
+    if (!closeTex)
+      return;
+    SDL_SetTextureBlendMode(closeTex, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureScaleMode(closeTex, SDL_ScaleModeNearest);
+    SDL_UpdateTexture(closeTex, NULL, px, CLOSE_KEY * 4);
+    closeTexKey = want;
+  }
+  SDL_Rect dst = {x, win.y, size, size};
+  SDL_RenderCopy(renderer, closeTex, NULL, &dst);
+}
+
+/* ---- the desktop window (Windows, a Linux desktop, the Steam Deck's Desktop Mode) ----
+ * windowedHost: the video driver has a window manager (not KMSDRM / a handheld's framebuffer, not gamescope, which
+ * fills the screen itself, not the tests' dummy / offscreen drivers) - only there does FULLSCREEN mean anything, and
+ * only there is the window's size and place kept. */
+static bool windowedHost;
+static bool window_is_fullscreen(void) {
+  return window && (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+}
+static void window_set_fullscreen(bool on) {
+  if (!windowedHost || !window || on == window_is_fullscreen())
+    return;
+  // The desktop's own mode: no mode switch, Alt+Tab stays quick, the picture is laid out again for the new size.
+  SDL_SetWindowFullscreen(window, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+  hostSet.fullscreen = on;
+  outputChanged = true;
+  host_save();
+}
+/* F11, or Alt+Enter: fullscreen on / off. True when the key was this (its release too, so the game never sees half of
+ * it: Enter is START). */
+static bool window_hotkey(const SDL_KeyboardEvent *k) {
+  const bool f11 = k->keysym.sym == SDLK_F11;
+  const bool altEnter = (k->keysym.sym == SDLK_RETURN || k->keysym.sym == SDLK_KP_ENTER) && (k->keysym.mod & KMOD_ALT);
+  if (!windowedHost || !(f11 || altEnter))
+    return false;
+  if (k->type == SDL_KEYDOWN && !k->repeat)
+    window_set_fullscreen(!window_is_fullscreen());
+  return true;
+}
+/* The window as the player leaves it: its size and place while it's a normal window, and whether it's maximized
+ * (written to host.ini on quit, host_save). */
+static void window_follow(const SDL_WindowEvent *w) {
+  if (!windowedHost || !window || window_is_fullscreen())
+    return;
+  const Uint32 flags = SDL_GetWindowFlags(window);
+  if (w->event == SDL_WINDOWEVENT_MAXIMIZED)
+    hostSet.maximized = true;
+  else if (w->event == SDL_WINDOWEVENT_RESTORED)
+    hostSet.maximized = (flags & SDL_WINDOW_MAXIMIZED) != 0;
+  if (flags & (SDL_WINDOW_MAXIMIZED | SDL_WINDOW_MINIMIZED))
+    return;
+  if (w->event == SDL_WINDOWEVENT_SIZE_CHANGED || w->event == SDL_WINDOWEVENT_RESIZED)
+    SDL_GetWindowSize(window, &hostSet.winW, &hostSet.winH);
+  if (w->event == SDL_WINDOWEVENT_MOVED) {
+    SDL_GetWindowPosition(window, &hostSet.winX, &hostSet.winY);
+    hostSet.winPlaced = true;
+  }
+}
+/* The window's first size: the one it was left at, else the largest whole multiple of the GBA's 240x160 that fits 85%
+ * of the desktop's usable area (1200x800 on a 1080p monitor, 960x640 on a Deck's Desktop Mode), never the old fixed
+ * 512x384, which opened tiny on every monitor. */
+static void window_first_size(int *w, int *h) {
+  SDL_Rect usable;
+  if (hostSet.winW > 0 && !SDL_GetDisplayUsableBounds(0, &usable) && hostSet.winW <= usable.w &&
+      hostSet.winH <= usable.h) {
+    *w = hostSet.winW;
+    *h = hostSet.winH;
+    return;
+  }
+  if (SDL_GetDisplayUsableBounds(0, &usable))
+    return;
+  int k = usable.w * 85 / 100 / 240, kh = usable.h * 85 / 100 / 160;
+  if (kh < k)
+    k = kh;
+  if (k >= 2) {
+    *w = 240 * k;
+    *h = 160 * k;
+  }
+}
+/* Where it opens: where it was left, when that place is still on one of the screens (a monitor unplugged since puts
+ * it back in the middle). */
+static bool window_first_place(int w, int h, int *x, int *y) {
+  if (!hostSet.winPlaced)
+    return false;
+  for (int i = 0; i < SDL_GetNumVideoDisplays(); i++) {
+    SDL_Rect b;
+    if (SDL_GetDisplayUsableBounds(i, &b))
+      continue;
+    // Its title bar's middle has to be on that screen.
+    const int cx = hostSet.winX + w / 2, cy = hostSet.winY + 8;
+    if (cx >= b.x && cx < b.x + b.w && cy >= b.y && cy < b.y + b.h - 32) {
+      *x = hostSet.winX;
+      *y = hostSet.winY;
+      (void)h;
+      return true;
+    }
+  }
+  return false;
 }
 // A hotkey's button as the HOTKEYS page shows it.
 static const char *hotkey_label(int k) {
@@ -1159,13 +1335,14 @@ static bool environment(unsigned cmd, void *data) {
     if (f->press >= 0 && f->press < FRONT_COUNT)
       frontPress = f->press;
     static const char *const labels[FRONT_COUNT] = {"A/B BUTTONS", "FF SPEED", "REWIND", "LCD FILTER", "KEYBOARD",
-                                                    "HOTKEYS"};
+                                                    "HOTKEYS",     "FULLSCREEN"};
     // Their places in the app's SETTINGS: GAME BUTTONS / HOTKEYS are CONTROLS, FF SPEED / REWIND FF / SPEED, the LCD
     // look SCREEN (its DISPLAY OPTIONS).
     static const char *const groups[FRONT_COUNT] = {"CONTROLS", "FF / SPEED", "FF / SPEED", "SCREEN", "CONTROLS",
-                                                    "CONTROLS"};
-    f->count = FRONT_COUNT;
-    for (int i = 0; i < FRONT_COUNT; i++) {
+                                                    "CONTROLS", "SCREEN"};
+    // FULLSCREEN (last) only on a desktop: a handheld and gamescope always fill the screen.
+    f->count = windowedHost ? FRONT_COUNT : FRONT_FULLSCREEN;
+    for (int i = 0; i < f->count; i++) {
       snprintf(f->label[i], sizeof f->label[i], "%s", labels[i]);
       snprintf(f->group[i], sizeof f->group[i], "%s", groups[i]);
       f->value[i][0] = 0;
@@ -1177,6 +1354,8 @@ static bool environment(unsigned cmd, void *data) {
       snprintf(f->value[FRONT_FFSPEED], 24, "MAX");
     snprintf(f->value[FRONT_REWIND], 24, "%s", hostSet.rewind ? "ON" : "OFF");
     snprintf(f->value[FRONT_LCD], 24, "%s", hostSet.lcd ? "ON" : "OFF");
+    if (windowedHost)
+      snprintf(f->value[FRONT_FULLSCREEN], 24, "%s", window_is_fullscreen() ? "ON" : "OFF");
     f->open_settings = frontOpenSettings;
     frontOpenSettings = false;
     return true;
@@ -1429,6 +1608,7 @@ static void present_game(const struct pd_menu *menu) {
       SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
       SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
       SDL_RenderCopy(renderer, compTexture, NULL, &dst);
+      companion_close_key(ow, dst, k);
     }
   }
   bool any = false;
@@ -2060,13 +2240,14 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     snprintf(rows[M_RESUME], 40, "RESUME");
     snprintf(rows[M_SAVE], 40, "SAVE STATE");
     snprintf(rows[M_LOAD], 40, "LOAD STATE");
+    // A label and its value, each in the player's language (pd_menu translates whole rows only).
     if (hostSet.ffSpeed)
-      snprintf(rows[M_FFSPEED], 40, "FF SPEED  %dx", hostSet.ffSpeed);
+      snprintf(rows[M_FFSPEED], 40, "%s  %dx", pd_tr("FF SPEED"), hostSet.ffSpeed);
     else
-      snprintf(rows[M_FFSPEED], 40, "FF SPEED  MAX");
-    snprintf(rows[M_REWIND], 40, "REWIND  %s", hostSet.rewind ? "ON" : "OFF");
-    snprintf(rows[M_LCD], 40, "LCD FILTER  %s", hostSet.lcd ? "ON" : "OFF");
-    snprintf(rows[M_SWAP], 40, "A/B BUTTONS  %s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
+      snprintf(rows[M_FFSPEED], 40, "%s  %s", pd_tr("FF SPEED"), pd_tr("MAX"));
+    snprintf(rows[M_REWIND], 40, "%s  %s", pd_tr("REWIND"), pd_tr(hostSet.rewind ? "ON" : "OFF"));
+    snprintf(rows[M_LCD], 40, "%s  %s", pd_tr("LCD FILTER"), pd_tr(hostSet.lcd ? "ON" : "OFF"));
+    snprintf(rows[M_SWAP], 40, "%s  %s", pd_tr("A/B BUTTONS"), pd_tr(hostSet.swapAB ? "SWAPPED" : "NORMAL"));
     snprintf(rows[M_HOTKEYS], 40, "HOTKEYS");
     snprintf(rows[M_KEYBOARD], 40, "KEYBOARD");
     snprintf(rows[M_QUIT], 40, fromList ? "QUIT TO GAME LIST" : "QUIT");
@@ -2076,10 +2257,10 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     for (int i = 0; i < menuN; i++)
       rowPtrs[i] = rows[menuMap[i]];
     for (int i = 0; i < HK_ACTIONS; i++) {
-      snprintf(hkRows[i], 40, "%s  %s", hkNames[i], capturing == i ? "..." : hotkey_label(hotkeys[i]));
+      snprintf(hkRows[i], 40, "%s  %s", pd_tr(hkNames[i]), capturing == i ? "..." : hotkey_label(hotkeys[i]));
       hkPtrs[i] = hkRows[i];
     }
-    snprintf(hkRows[HK_ACTIONS], 40, "MODIFIER  %s",
+    snprintf(hkRows[HK_ACTIONS], 40, "%s  %s", pd_tr("MODIFIER"),
              capturing == HK_ACTIONS ? "..." : hotkey_label(hostSet.modifier));
     hkPtrs[HK_ACTIONS] = hkRows[HK_ACTIONS];
     for (int i = 0; i < KB_COUNT; i++) {
@@ -2404,6 +2585,9 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
         kb_menu_open();
         held = pressed = 0; // the A that chose it isn't the page's
         break;
+      case FRONT_FULLSCREEN:
+        window_set_fullscreen(!window_is_fullscreen());
+        break;
       case FRONT_HOTKEYS:
         menuOpen = frontPage = hkPage = true;
         kbPage = false;
@@ -2457,10 +2641,12 @@ static const char *base_name(const char *p) {
 /* ---- the library (library.c): the host's own SETTINGS rows, and its canvases and covers on the screen ---- */
 static bool libraryKeyboard; // the game list's KEYBOARD row was picked: its loop opens the page
 static const char *lib_label(int row) {
-  static const char *const LABELS[] = {"LCD FILTER", "FF SPEED", "REWIND", "A/B BUTTONS", "KEYBOARD"};
+  static const char *const LABELS[] = {"LCD FILTER", "FF SPEED", "REWIND", "A/B BUTTONS", "KEYBOARD", "FULLSCREEN"};
   return LABELS[row];
 }
-static const char *lib_group(int row) { return row == 0 ? "SCREEN" : row < 3 ? "FF / SPEED" : "CONTROLS"; }
+static const char *lib_group(int row) {
+  return row == 0 || row == 5 ? "SCREEN" : row < 3 ? "FF / SPEED" : "CONTROLS";
+}
 static void lib_value(int row, char *out, int len) {
   if (row == 0)
     snprintf(out, (size_t)len, "%s", hostSet.lcd ? "ON" : "OFF");
@@ -2472,6 +2658,8 @@ static void lib_value(int row, char *out, int len) {
     snprintf(out, (size_t)len, "%s", hostSet.rewind ? "ON" : "OFF");
   else if (row == 3)
     snprintf(out, (size_t)len, "%s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
+  else if (row == 5)
+    snprintf(out, (size_t)len, "%s", window_is_fullscreen() ? "ON" : "OFF");
   else
     snprintf(out, (size_t)len, "EDIT");
 }
@@ -2487,7 +2675,10 @@ static void lib_step(int row, int dir) {
     hostSet.rewind = !hostSet.rewind;
   else if (row == 3)
     hostSet.swapAB = swapFace = !hostSet.swapAB;
-  else {
+  else if (row == 5) {
+    window_set_fullscreen(!window_is_fullscreen()); // saves it
+    return;
+  } else {
     libraryKeyboard = true; // the loop opens the page over the list
     return;
   }
@@ -2496,7 +2687,8 @@ static void lib_step(int row, int dir) {
 #ifndef POCKET_VERSION
 #define POCKET_VERSION "dev"
 #endif
-static const struct lib_host libraryHost = {5, lib_label, lib_group, lib_value, lib_step, POCKET_VERSION};
+// FULLSCREEN (row 5) only on a desktop (windowedHost, set before the library opens).
+static struct lib_host libraryHost = {5, lib_label, lib_group, lib_value, lib_step, POCKET_VERSION};
 
 /* The library at a finer grain than the overlay (its 320x240 is the companion's): about 640x480 on a 1280x960 panel. Its
  * page, then the covers at the screen's own resolution, then a second canvas with the legend and the menus. */
@@ -2707,6 +2899,18 @@ int main(int argc, char **argv) {
   snprintf(savesDir, sizeof savesDir, "%s/saves", root);
   snprintf(hostIni, sizeof hostIni, "%s/host.ini", root);
   host_load();
+  // The app's RETRO look for the host's own windows (its menu, HOTKEYS, KEYBOARD, the game list), as the cores draw
+  // the companion: the game list applies the player's THEME and DARK MODE over it (library.c's pd_look_apply).
+  pd_style_enable(true);
+  {
+    // The player's THEME, DARK MODE and LANGUAGE (the companion's settings.ini) for the host's own windows from the
+    // start, a game opened straight from the command line too; the game list applies them again when it opens.
+    struct pd_settings look;
+    char lookPath[PATH_MAX * 2];
+    snprintf(lookPath, sizeof lookPath, "%s/pokedaisy/settings.ini", savesDir);
+    pd_settings_defaults(&look);
+    pd_look_apply(NULL, pd_settings_load(&look, lookPath) ? &look : NULL);
+  }
   faceLabels = getenv("POCKET_FACE_LABELS") && !strcmp(getenv("POCKET_FACE_LABELS"), "1");
   comboMenu = !(getenv("POCKET_MENU_COMBO") && !strcmp(getenv("POCKET_MENU_COMBO"), "off"));
   // A window manager can give another window the focus over the game (plorpOS's in-game menu on the GKD): the
@@ -2721,7 +2925,12 @@ int main(int argc, char **argv) {
   // Fullscreen with POCKET_FULLSCREEN, and under gamescope (the Steam Deck's Game Mode): it scales a window to the
   // screen keeping its shape, so a window there was letterboxed and EXPAND couldn't reach the edges.
   const char *desktop = getenv("XDG_CURRENT_DESKTOP");
-  bool fullscreen = hostSet.fullscreen || getenv("POCKET_FULLSCREEN") != NULL || (desktop && strstr(desktop, "gamescope"));
+  const bool gamescope = desktop && strstr(desktop, "gamescope");
+  const char *driver = SDL_GetCurrentVideoDriver();
+  windowedHost = !gamescope && driver &&
+                 (!strcmp(driver, "windows") || !strcmp(driver, "x11") || !strcmp(driver, "wayland") ||
+                  !strcmp(driver, "cocoa"));
+  bool fullscreen = hostSet.fullscreen || getenv("POCKET_FULLSCREEN") != NULL || gamescope;
   if (fullscreen && SDL_GetCurrentDisplayMode(0, &display))
     fullscreen = false;
   // POCKET_WINDOW=WxH: a window the size of a device's panel, for trying a layout on a desktop.
@@ -2730,9 +2939,21 @@ int main(int argc, char **argv) {
   if (size &&
       (sscanf(size, "%dx%d", &winW, &winH) != 2 || winW < 160 || winH < 144 || winW > 8192 || winH > 8192))
     winW = W, winH = H;
-  window = SDL_CreateWindow(PD_HOST_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                            fullscreen ? display.w : winW, fullscreen ? display.h : winH,
-                            fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE);
+  if (!size && windowedHost)
+    window_first_size(&winW, &winH);
+  int winX = SDL_WINDOWPOS_CENTERED, winY = SDL_WINDOWPOS_CENTERED;
+  if (!size && windowedHost && !fullscreen)
+    window_first_place(winW, winH, &winX, &winY);
+  // On a desktop the fullscreen setting is the desktop's own mode (F11 switches it back and forth); a handheld's
+  // framebuffer and gamescope keep the display mode they always had.
+  const Uint32 fullFlag = windowedHost ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
+  window = SDL_CreateWindow(PD_HOST_NAME, winX, winY, fullscreen ? display.w : winW, fullscreen ? display.h : winH,
+                            fullscreen ? (windowedHost ? fullFlag | SDL_WINDOW_RESIZABLE : fullFlag) : SDL_WINDOW_RESIZABLE);
+  if (window && windowedHost && !fullscreen && !size && hostSet.maximized)
+    SDL_MaximizeWindow(window);
+  // The companion and the game list lay out from 320x240 up: a window dragged smaller stops there.
+  if (window && windowedHost)
+    SDL_SetWindowMinimumSize(window, 320, 240);
 #ifdef _WIN32
   set_window_icon(window);
 #endif
@@ -2798,10 +3019,27 @@ int main(int argc, char **argv) {
     }
     qsort(paths, count, sizeof(*paths), cmp);
     settings_migrate(); // before the library writes its first settings: an old DATA/settings.ini wins
+    libraryHost.settings = windowedHost ? 6 : 5;
     library_open(paths, count, root, savesDir, &libraryHost);
     int ticks = 0;
     bool keyPage = false; // the KEYBOARD page over the game list
+    const char *typeAt = getenv("POCKET_TEXT"); // "TICK:text": typed into an open SEARCH field at that tick, for tests
     while (running && !library_quit()) {
+      if (library_searching() != libraryText) {
+        libraryText = library_searching();
+        if (libraryText)
+          SDL_StartTextInput(); // Steam's on-screen keyboard comes up in Game Mode
+        else
+          SDL_StopTextInput();
+      }
+      if (typeAt) {
+        unsigned at = 0;
+        const char *colon = strchr(typeAt, ':');
+        if (colon && sscanf(typeAt, "%u", &at) == 1 && tick >= at) {
+          library_text(colon + 1);
+          typeAt = NULL;
+        }
+      }
       events();
       repeat_directions();
       static const int LIB_KEYS[][2] = {{A, LIB_A},       {B, LIB_B},         {X, LIB_X},           {Y, LIB_Y},
@@ -2880,17 +3118,25 @@ int main(int argc, char **argv) {
         kb_menu_build();
         libraryClick = false;
         libraryWheel = 0;
-      } else if (libraryClick || libraryWheel) {
+      } else if (libraryClick || libraryWheel || libraryMenuClick) {
         int ow, oh, s, w, h, x0, y0;
         library_viewport(&ow, &oh, &s, &w, &h, &x0, &y0);
         int mx = (mouseWindowX - x0) / s, my = (mouseWindowY - y0) / s;
-        if (mx >= 0 && my >= 0 && mx < w && my < h)
-          library_pointer(mx, my, libraryClick, libraryWheel);
-        libraryClick = false;
+        if (mx >= 0 && my >= 0 && mx < w && my < h) {
+          if (libraryMenuClick)
+            library_menu_at(mx, my); // a right click: the game's menu, as the app's long press
+          else
+            library_pointer(mx, my, libraryClick, libraryWheel);
+        }
+        libraryClick = libraryMenuClick = false;
         libraryWheel = 0;
       }
       const char *game = library_picked();
       if (game) {
+        if (libraryText) { // the game's keys are the keyboard's again
+          libraryText = false;
+          SDL_StopTextInput();
+        }
         char picked[PATH_MAX];
         snprintf(picked, sizeof picked, "%s", game);
         appError = 0;
@@ -2926,6 +3172,8 @@ int main(int argc, char **argv) {
     SDL_DestroyTexture(overlayTexture);
   if (lcdTexture)
     SDL_DestroyTexture(lcdTexture);
+  if (windowedHost)
+    host_save(); // the window's size, place and maximized state, as the player left them
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();

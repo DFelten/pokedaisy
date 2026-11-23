@@ -5,6 +5,10 @@ import com.pokedaisy.app.companion.ui.LibrarySection
 import kotlin.test.*
 
 class LibraryCoordinatorTest {
+    // The library views and the pills' order are the next release's (FlaggedFeatures.modernLook): on here.
+    @BeforeTest fun batchOn() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = true }
+    @AfterTest fun batchOff() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = false }
+
     private var saved: String? = null
     private val prefs = LibraryPreferences({ saved }, { saved = it })
 
@@ -57,7 +61,10 @@ class LibraryCoordinatorTest {
         library.openSort(); library.selectSort(LibrarySort.DATE_ADDED)
         assertNull(library.dialog)
         library.selectSection(LibrarySection.TOOLS); library.selectView(LibraryView.RECENT)
-        library.toggleGrid(); library.search("temporary")
+        // The view button opens LIBRARY VIEW's pick-list; the pick is saved.
+        library.toggleGrid(); assertEquals(LibraryCoordinator.Dialog.LAYOUT, library.dialog)
+        library.selectLayout(LibraryLayout.GRID); assertNull(library.dialog)
+        library.search("temporary")
         assertEquals(LibraryCoordinator.Change.entries.toSet(), changes.toSet())
         val reopened = LibraryCoordinator({ LibraryPreferences({ saved }, { saved = it }) })
         assertEquals(LibrarySort.DATE_ADDED, reopened.sort)
@@ -80,7 +87,9 @@ class LibraryCoordinatorTest {
         actions.add(); actions.refresh(); actions.query("query")
         actions.search(); assertEquals(LibraryCoordinator.Dialog.SEARCH, library.dialog)
         actions.sort(); assertEquals(LibraryCoordinator.Dialog.SORT, library.dialog)
-        actions.toggleGrid(); assertTrue(library.grid)
+        actions.toggleGrid(); assertEquals(LibraryCoordinator.Dialog.LAYOUT, library.dialog)
+        library.selectLayout(LibraryLayout.SPOTLIGHT); assertEquals(LibraryLayout.SPOTLIGHT, library.layout)
+        library.selectLayout(LibraryLayout.GRID); assertTrue(library.grid)
         actions.section(LibrarySection.TOOLS); actions.view(LibraryView.ALL)
         assertEquals(LibrarySection.GAMES, library.section)
         actions.help(); assertEquals("HELP", library.settingsPage)

@@ -251,7 +251,7 @@ fun MonDetailScreen(
                             MovesSection(mon, m, small, Modifier.weight(0.5f).fillMaxHeight().padding(end = gap), forget = forget)
                             Separator(m, Modifier.fillMaxHeight(), vertical = true)
                             CanLearnSection(options, learnPick, { learnPick = it }, learn.showHints, m, small,
-                                Modifier.weight(0.5f).fillMaxHeight().padding(start = gap))
+                                Modifier.weight(0.5f).fillMaxHeight().padding(start = gap), species = mon.species, level = mon.level)
                         } else {
                             val heldItem = heldOf(i)
                             val held: (@Composable () -> Unit)? = heldItem?.let { t ->

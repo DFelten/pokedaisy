@@ -110,7 +110,7 @@ import com.pokedaisy.app.companion.data.lastModified
 /** HeartGold, SoulSilver, Platinum (every language): their text printer task is DsInstantText's (INSTANT TEXT). */
 private val DS_TEXT_CODES = setOf("IPK", "IPG", "CPU")
 
-class PokeDaisyActivity : Activity() {
+class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private val input = GbaInput()
     /** The companion's GAME BUTTONS / HOTKEYS rows waiting for keys: every key comes here (the Presentation forwards
@@ -173,6 +173,9 @@ class PokeDaisyActivity : Activity() {
     /** Opened by a frontend through [LaunchActivity] (see [exitGame]). */
     private var fromFrontend = false
     private var romKey: String = ""      // ROM CRC32, for per-ROM prefs
+    /** Per-game settings: every Prefs(this) reads this game's own values first (GameSettings.kt). */
+    override val gameSettingsKey: String? get() = romKey.takeIf { it.isNotEmpty() }
+    private val ownSettings by lazy { gameSettingsStore(this) { gameSettingsKey } }
     /** WIDE's native tables for this ROM ([WideScreen.gameFor]); OFF for a game it doesn't know. */
     private var wideGame = WideScreen.OFF
     /** The running game is one its makers asked PokéDaisy not to read ([com.pokedaisy.app.companion.data.BlockedGames], by
@@ -306,6 +309,10 @@ class PokeDaisyActivity : Activity() {
     /** DS LAYOUT's pieces on the stage ([syncDsStage]): the game's backdrop under the screens, the touch screen beside
      * or inset in the game, and the floating touch window over it ([com.pokedaisy.app.companion.ui.DsTouchWindow]). */
     private lateinit var dsBackdropView: ComposeView
+    /** SIDE BARS' view, the game's picture it keeps clear of, and whether a DS game's backdrop draws them itself. */
+    private lateinit var sideBarsView: ComposeView
+    private val barsRect = androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)
+    private val dsBarsOwn = androidx.compose.runtime.mutableStateOf(false)
     private lateinit var dsTouchView: FrameLayout
 
     /** Pictures of the game for behind DS LAYOUT's screens ([DsShots]). */
@@ -1502,6 +1509,7 @@ class PokeDaisyActivity : Activity() {
         override val touchSkins get() = skinStore.list()
         override fun touchPreviewShot() = newestStateShot()
         override fun editTouchLayout() = runOnUiThread { openTouchEditor() }
+        override val editHudLayout: (() -> Unit)? get() = { runOnUiThread { openHudEditor() } }
         override val touchRevision get() = touchRev.intValue
         override val touchControlsShown get() = ::touchControls.isInitialized && touchControls.visibility == View.VISIBLE
         override fun gbaControlBindings() = gameBindings.gameButtons()
@@ -1736,6 +1744,18 @@ class PokeDaisyActivity : Activity() {
         }
         override val gameName get() = romBlocked?.title ?: com.pokedaisy.app.companion.data.activeGame.displayName()
         override val gameBlocked get() = romBlocked != null
+        // SETTINGS FOR: this game's own settings (GameSettings.kt). Made only here, never in the top screen's Settings.
+        override val gameSettings get() = gameSettingsKey?.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let {
+            object : com.pokedaisy.app.companion.GameSettingsControl {
+                override val thisGame get() = ownSettings.thisGame()
+                override fun setThisGame(on: Boolean) = ownSettings.setThisGame(on)
+                override val overridden get() = ownSettings.overridden()
+                override fun reset() {
+                    ownSettings.forgetAll()
+                    runOnUiThread { reapplyGameSettings() }
+                }
+            }
+        }
         override val romFileName get() = rom?.name ?: "(none)"
         override val coopEnabled get() = coopOn
         override val coopState get() = com.pokedaisy.app.companion.coop.CoopSession.link.state.value
@@ -1778,6 +1798,8 @@ class PokeDaisyActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SaveStates.openGames.incrementAndGet()
+        FeatureFlags.applyBatches(this)
         coopOn = FeatureFlags.coop(this)
         RomFolder.useBestEffortStore(this)
         BestEffortShare.flush(this)   // a shared match that couldn't go out last time
@@ -1930,6 +1952,19 @@ class PokeDaisyActivity : Activity() {
             message = hud,
             onPicture = { fieldHudBounds = it })
         touchControls.inputExclusions = root::inputExclusions
+        // SIDE BARS: behind everything in the game's area, the game's surface showing through its picture.
+        sideBarsView = ComposeView(this).apply {
+            setContent {
+                val bars = com.pokedaisy.app.companion.ui.theme.CustomLook.bars
+                if (bars != null && !dsBarsOwn.value) com.pokedaisy.app.companion.ui.SideBarsFill(bars, barsRect.value)
+            }
+        }
+        root.viewport.sideBars = sideBarsView
+        root.viewport.addView(sideBarsView, 0, FrameLayout.LayoutParams(-1, -1))
+        root.viewport.onContent = { r ->
+            val v = androidx.compose.ui.geometry.Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
+            if (barsRect.value != v) barsRect.value = v
+        }
         if (debugMirror) {
             root.reserveRendererRight(dp(DEBUG_MIRROR_WIDTH_DP))
             root.addView(buildDebugCompanionMirror(), debugMirrorLayoutParams())
@@ -2006,7 +2041,7 @@ class PokeDaisyActivity : Activity() {
         FeatureFlags.applyBlocked(this)
         romBlocked = com.pokedaisy.app.companion.data.BlockedGames.forCrc(crc)
         RetroAchievements.setFlightAnywhere(false)
-        states = SaveStates(getExternalFilesDir(null) ?: filesDir, crc)
+        states = SaveStates.of(this, crc).also { it.noteGame(GameTitles.label(this, Prefs(this), romFile)) }
         val ffMusicCache = androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, crc, gameBoy = RomIdentity.isGameBoy(r))
         // STEADY FF music: songs rendered on their own from this ROM, in the
         // background, as the game starts them (see FfMusicRenderer).
@@ -2187,7 +2222,7 @@ class PokeDaisyActivity : Activity() {
                     Hotkeys.Action.SAVE_STATE -> if (ok) tr("Saved slot {0}", slot) else tr("Slot {0}: save failed", slot)
                     // BOSS RETRY's state (slot -1): the battle's start.
                     Hotkeys.Action.LOAD_STATE -> if (slot < 0) { if (ok) tr("Back to the battle's start") else tr("Can't go back to that battle") }
-                        else if (ok) tr("Loaded slot {0}", slot) else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Slot {0}: nothing to load", slot)
+                        else if (ok) tr("Loaded slot {0}", slot) else if (playback.loadHeldForShiny()) tr("A shiny is out: LOAD STATE waits a moment") else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Slot {0}: nothing to load", slot)
                     Hotkeys.Action.UNDO_SAVE -> if (ok) tr("Undid save (slot {0})", slot) else tr("Nothing to undo")
                     Hotkeys.Action.UNDO_LOAD -> if (ok) tr("Undid load") else if (CoopGuards.statesBlockedBy(CoopGuards.StateBlock.LOCK)) tr("Not while you play together only") else tr("Nothing to undo")
                     else -> ""
@@ -2251,6 +2286,17 @@ class PokeDaisyActivity : Activity() {
                         input.releaseAll()
                         unlockSound?.play()
                         showHud(alert.message(), com.pokedaisy.app.companion.GameShinyAlert.NOTICE_MILLIS)
+                    }
+                }, onHuntShiny = { found ->
+                    val current = this
+                    runOnUiThread {
+                        if (!::engine.isInitialized || engine !== current || !current.running) return@runOnUiThread
+                        if (found.shiny) {
+                            gameActions.stopFastForward()
+                            input.releaseAll()
+                            unlockSound?.play()
+                        }
+                        showHud(found.message(), com.pokedaisy.app.companion.ShinyHunts.NOTICE_MILLIS)
                     }
                 }, onNuzlockeNotices = { notices ->
                     val current = this
@@ -2351,6 +2397,19 @@ class PokeDaisyActivity : Activity() {
     }
 
     /** SCENE SPEEDS, AUTO-RUN, RUN INDOORS, WILD ENCOUNTERS and REUSABLE TMS onto [e], and the game whose field they read (EXPAND on or off). */
+    /** SETTINGS FOR flipped or RESET THIS GAME: everything onResume picks up from the settings, again. */
+    private fun reapplyGameSettings() {
+        if (::engine.isInitialized) {
+            val p = Prefs(this)
+            engine.ffMaxSpeed = p.ffMaxSpeed
+            engine.ffMusicMode = p.ffMusicMode
+            engine.ffMode = p.ffMode
+            engine.rewindEntries = rewindEntries(p.rewind)
+            applyFieldPrefs(engine)
+        }
+        syncGameScreen()
+    }
+
     private fun applyFieldPrefs(e: EmulatorEngine) {
         val p = Prefs(this)
         e.fieldGame = fieldGame
@@ -2807,6 +2866,7 @@ class PokeDaisyActivity : Activity() {
     }
 
     override fun onDestroy() {
+        SaveStates.openGames.decrementAndGet()
         if (::engine.isInitialized) engine.playback.quiesce()
         if (::touchControls.isInitialized) touchControls.releaseInputWindows()
         stopListeningForFold()
@@ -3395,6 +3455,7 @@ class PokeDaisyActivity : Activity() {
         dsTouchView.setBackgroundColor(if (pip) Color.WHITE else Color.TRANSPARENT)
         dsTouchView.isClickable = false
         dsBackdropView.visibility = if (on) View.VISIBLE else View.GONE
+        dsBarsOwn.value = on
         dsTouchView.visibility = if (on && layout != com.pokedaisy.app.companion.DsLayout.ONE_SCREEN) View.VISIBLE else View.GONE
         dsFloats.value = on && layout.floats
         dsPip.value = on && pip
@@ -3519,7 +3580,7 @@ class PokeDaisyActivity : Activity() {
         romKey = key
         // AUTO language: the title id names none (its 4th character is a digit); the session sets the save's.
         com.pokedaisy.app.companion.i18n.L10n.apply(Prefs(this).appLanguage, key)
-        states = SaveStates(getExternalFilesDir(null) ?: filesDir, key)
+        states = SaveStates.of(this, key)
         engine = EmulatorEngine(input, states!!, androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, key), com.pokedaisy.app.companion.GameBattleInput(telemetry, null, 0, input = input), Prefs(this), telemetry)
         val session = com.pokedaisy.app.n3ds.N3dsSession(
             this, romFile, header.titleId, input,
@@ -3717,6 +3778,7 @@ class PokeDaisyActivity : Activity() {
         dsTouchView.isClickable = floating
         // A screen of the game's own: its two screens framed over the field it came from, as a DS game's menus.
         dsBackdropView.visibility = if (on && n3dsBothScreens) View.VISIBLE else View.GONE
+        dsBarsOwn.value = on && n3dsBothScreens
         // Back from the second display (SINGLE SCREEN, the display gone): the touch surface into the stage again.
         n3ds?.touchView?.let { v ->
             if (on && v.parent !== dsTouchView) {
@@ -3809,7 +3871,10 @@ class PokeDaisyActivity : Activity() {
                 val current by dsShots.latest
                 // A menu screen: the overworld it came from, its two screens framed over it like a modal. Anything else
                 // with room round the game (the title, a layout beside it): the game itself, blurred.
-                androidx.compose.foundation.layout.BoxWithConstraints(androidx.compose.ui.Modifier.fillMaxSize()) {
+                // SIDE BARS other than the app's own: black or the player's pictures, never the game blurred.
+                val bars = com.pokedaisy.app.companion.ui.theme.CustomLook.bars
+                if (bars != null) com.pokedaisy.app.companion.ui.SideBarsFill(bars, barsRect.value)
+                else androidx.compose.foundation.layout.BoxWithConstraints(androidx.compose.ui.Modifier.fillMaxSize()) {
                     val w = constraints.maxWidth
                     val h = constraints.maxHeight
                     val modal = if (menuScreen) com.pokedaisy.app.companion.DsLayouts.arrange(
@@ -4212,6 +4277,12 @@ class PokeDaisyActivity : Activity() {
                     cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
                     maxWidth = maxWidth, onAnswer = ::answerBattleRetry,
                 )
+                com.pokedaisy.app.companion.ui.SpoilerAskHost(
+                    active = !tipsOnCompanion.value, roomy = false, onCompanion = false,
+                    modifier = androidx.compose.ui.Modifier.padding(top = clearTop + 8.dp),
+                    cardModifier = androidx.compose.ui.Modifier.width(maxWidth * if (narrow) 0.94f else 0.54f),
+                    maxWidth = maxWidth,
+                )
                 // RetroAchievements' popups and challenge / tracker indicators, while no companion is on screen (a DS
                 // game's touch screen in its place, one screen's closed window): GitHub #500.
                 com.pokedaisy.app.companion.ui.AchievementPopupHost(
@@ -4467,6 +4538,19 @@ class PokeDaisyActivity : Activity() {
     private val touchEditor = com.pokedaisy.app.companion.ui.TouchEditorState(
         read = { Prefs(this).touchControlsStyle }, write = { Prefs(this).touchControlsStyle = it },
         closed = { touchRev.intValue++; syncTouchControls() })
+
+    /** HUD > EDIT LAYOUT: the HUD's parts dragged over the game ([com.pokedaisy.app.companion.ui.HudEditor]); DONE keeps them
+     * as the player's layout in use (a new one when LAYOUT was a built-in one). */
+    private fun openHudEditor() {
+        if (com.pokedaisy.app.companion.ui.HudEditor.open) return
+        if (::sidePanel.isInitialized) sidePanel.closeWindow()
+        closeCompanionWindow()
+        val prefs = Prefs(this)
+        com.pokedaisy.app.companion.ui.HudEditor.begin(prefs.fieldHudStyle) { places ->
+            prefs.fieldHudStyle = prefs.fieldHudStyle.withPlaces(places)
+            hudStyle.value = prefs.fieldHudStyle
+        }
+    }
 
     private fun openTouchEditor() {
         if (touchEditor.isOpen) return
@@ -5308,6 +5392,11 @@ class PokeDaisyActivity : Activity() {
     /** RESTART GAME (SETTINGS, and its hotkey): the game booted again from its save, the resume state dropped. */
     private fun restartGame() {
         if (coopRefuses()) return
+        // SHINY HUNT: not while a shiny is on screen (a slip would lose it).
+        if (::engine.isInitialized && engine.playback.loadHeldForShiny()) {
+            showHud(com.pokedaisy.app.companion.i18n.tr("A shiny is out: RESTART waits a moment"))
+            return
+        }
         val r = rom ?: return
         if (romIs3ds) { endN3ds(); load3ds(r); startGame(); return }
         if (!::engine.isInitialized || !recoverSaveTrade()) return

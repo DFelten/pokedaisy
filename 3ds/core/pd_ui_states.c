@@ -17,11 +17,11 @@ static void thumb(struct pd_canvas* c, const uint32_t* px, int x, int y, int w, 
 
 void ui_states_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_host_info* host) {
     int x = MARGIN, w = c->w - 2 * MARGIN;
-    int f = pd_title_box(c, x, CONTENT_Y, w, TITLE_ROW, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(CONTENT_Y, TITLE_ROW), pd_tr("SAVE STATES"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, CONTENT_Y, w, TITLE_ROW);
+    pd_text(c, x + f + 6, pd_text_y(CONTENT_Y, TITLE_ROW), pd_tr("SAVE STATES"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     char name[16];
     snprintf(name, sizeof(name), pd_tr("SLOT %d"), host->slotSelected);
-    pd_text_right(c, x + w - f - 6, pd_text_y(CONTENT_Y, TITLE_ROW), name, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    pd_text_right(c, x + w - f - 6, pd_text_y(CONTENT_Y, TITLE_ROW), name, PD_HEADER_TEXT, PD_HEADER_SHADOW);
 
     int y = CONTENT_Y + TITLE_ROW + 3, half = (w - 4) / 2;
     if (host->undoSave) ui_button(ui, c, x, y, half, UNDO_ROW, "UNDO SAVE", HIT_STATE_UNDO_SAVE);

@@ -88,6 +88,9 @@ internal fun CanLearnSection(
     m: GbaTextMetrics,
     small: GbaTextMetrics,
     modifier: Modifier = Modifier,
+    /** SPOILERS on HIDE: the Pokémon's species and level - its next levels' moves stay "a new move" until tapped. */
+    species: Int = 0,
+    level: Int = 0,
 ) {
     val u = m.u
     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(u * 3)) {
@@ -97,7 +100,13 @@ internal fun CanLearnSection(
             else -> {
                 val (levels, tms) = options.partition { it.tm.isEmpty() }
                 if (levels.isNotEmpty()) GbaText(tr("NEXT LEVELS"), optionLook.value, optionLook.valueShadow, small)
-                levels.forEach { LearnRow(it, it.move == selected, onSelect, showHints, m, small) }
+                levels.forEach { o ->
+                    if (species > 0 && com.pokedaisy.app.companion.Spoilers.moveAhead(species, o.level, o.move, level)) {
+                        HiddenLearnRow(o, m, small) {
+                            com.pokedaisy.app.companion.Spoilers.reveal(com.pokedaisy.app.companion.Spoilers.moveKey(species, o.level, o.move))
+                        }
+                    } else LearnRow(o, o.move == selected, onSelect, showHints, m, small)
+                }
                 if (tms.isNotEmpty()) GbaText(tr("TMs IN THE BAG"), optionLook.value, optionLook.valueShadow, small)
                 tms.forEach { LearnRow(it, it.move == selected, onSelect, showHints, m, small) }
             }
@@ -147,6 +156,29 @@ private fun LearnRow(o: LearnOption, open: Boolean, onSelect: (Int) -> Unit, sho
             VerdictBadge(o.advice)
             if (open) o.advice.reasons.forEach { r -> VerdictPill(tr(r.text, *r.args.toTypedArray()), if (r.good) LearnGreen else ForgetRed) }
         }
+    }
+}
+
+/** A level's move still to come (SPOILERS on HIDE): its level and A NEW MOVE; a tap shows it. */
+@Composable
+private fun HiddenLearnRow(o: LearnOption, m: GbaTextMetrics, small: GbaTextMetrics, onShow: () -> Unit) {
+    val u = m.u
+    val edge = optionLook.muted
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                val px = u.toPx()
+                drawPixelRoundRect(edge, Offset(0f, 2 * px), Size(3 * px, size.height - 4 * px), radius = px, step = px)
+            }
+            .soundClickable(onClick = onShow)
+            .padding(start = u * 8, end = u * 3, top = u * 2, bottom = u * 2),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GbaText("${tr("Lv")} ${o.level}", optionLook.muted, optionLook.mutedShadow, small)
+        Spacer(Modifier.width(u * 4))
+        GbaText(tr("A NEW MOVE"), optionLook.label, optionLook.labelShadow, m, Modifier.weight(1f))
+        GbaText(tr("SHOW"), optionLook.muted, optionLook.mutedShadow, small)
     }
 }
 

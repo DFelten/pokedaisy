@@ -2027,7 +2027,8 @@ class EmulatorEngine(
         val load = pendingLoad
         if (load >= 0) {
             pendingLoad = -1
-            if (refuseLoad(coopStatesBlocked, isResume = false)) {
+            // SHINY HUNT's guard: a shiny on screen isn't loaded over by a slip of the button.
+            if (playback.loadHeldForShiny() || refuseLoad(coopStatesBlocked, isResume = false)) {
                 onStateResult?.invoke(Hotkeys.Action.LOAD_STATE, load, false)
             } else slots.requestLoad(load)
         }

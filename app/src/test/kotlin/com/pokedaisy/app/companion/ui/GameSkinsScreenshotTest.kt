@@ -31,6 +31,7 @@ class GameSkinsScreenshotTest {
     @Before fun hosts() = installTestHosts(paparazzi.context)
 
     @After fun reset() {
+        com.pokedaisy.app.companion.ui.theme.AppViews.override = null
         CompanionSkins.override = null
         DarkMode.override = null
         activeGame = GameKind.FIRERED
@@ -43,9 +44,10 @@ class GameSkinsScreenshotTest {
         CompanionSkins.override = skin
     }
 
-    private fun tabs(game: GameKind, skin: CompanionSkin, dark: Boolean = false) {
+    private fun tabs(game: GameKind, skin: CompanionSkin, dark: Boolean = false, modern: Boolean = false) {
         use(game, skin)
         if (dark) DarkMode.override = true
+        if (modern) com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN
         for (tab in listOf("PARTY", "ITEMS", "SETTINGS")) {
             paparazzi.snapshot(tab.lowercase()) {
                 CompanionScreen(SampleCompanion.snapshot.copy(game = game), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = tab)
@@ -62,6 +64,17 @@ class GameSkinsScreenshotTest {
     @Test fun rubySapphire() = tabs(GameKind.EMERALD, CompanionSkins.RUBY_SAPPHIRE)
     /** A light skin gives way to the app's own dark windows in DARK MODE. */
     @Test fun heartgoldDark() = tabs(GameKind.HEARTGOLD, CompanionSkins.HEARTGOLD, dark = true)
+    // IN GAME GAME COLORS in VIEW MODERN: the modern cards in the game's colours.
+    @Test fun fireredModern() = tabs(GameKind.FIRERED, CompanionSkins.FIRERED, modern = true)
+    // A theme picked (CHERRY) stays out of a game on GAME COLORS: Unbound in its own colours in both views.
+    @Test fun unboundCherry() = cherry { tabs(GameKind.UNBOUND, CompanionSkins.PIXEL) }
+    @Test fun unboundCherryModern() = cherry { tabs(GameKind.UNBOUND, CompanionSkins.PIXEL, modern = true) }
+    private fun cherry(run: () -> Unit) {
+        val was = com.pokedaisy.app.companion.ui.theme.AppColors.chosen
+        com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(com.pokedaisy.app.companion.ui.theme.APP_THEMES.first { it.label == "CHERRY" })
+        try { run() } finally { com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(was) }
+    }
+    @Test fun heartgoldModern() = tabs(GameKind.HEARTGOLD, CompanionSkins.HEARTGOLD, modern = true)
 }
 
 /** The HUD (LOOK GAME) in each skin over the top screen's 1920x1080, with its BAG and a summary open too. */

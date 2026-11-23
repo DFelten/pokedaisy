@@ -153,6 +153,20 @@ class FieldHudScreenshotTest {
 
     @Test fun railsWindow() = shot(FieldHudStyle(FieldHudLayout.RAILS, FieldHudLook.WINDOW))
 
+    /** A layout of the player's (HUD > LAYOUT's own, EDIT LAYOUT's places): the party top left, the minimap bottom right. */
+    @Test fun customLayout() = shot(FieldHudStyle().withPlaces(mapOf(
+        com.pokedaisy.app.companion.HudBlock.PARTY to com.pokedaisy.app.companion.HudPlace(0f, 0f),
+        com.pokedaisy.app.companion.HudBlock.MAP to com.pokedaisy.app.companion.HudPlace(1f, 1f),
+        com.pokedaisy.app.companion.HudBlock.BALLS to com.pokedaisy.app.companion.HudPlace(0f, 1f),
+        com.pokedaisy.app.companion.HudBlock.BUTTONS to com.pokedaisy.app.companion.HudPlace(0.5f, 1f),
+    )))
+
+    /** EDIT LAYOUT open over the game: each part framed, DONE / CORNERS / CANCEL at the top. */
+    @Test fun editLayout() {
+        HudEditor.begin(FieldHudStyle()) {}
+        try { shot(FieldHudStyle()) } finally { HudEditor.close() }
+    }
+
     @Test fun dockGlass() = shot(FieldHudStyle(FieldHudLayout.DOCK))
 
     @Test fun dockWindow() = shot(FieldHudStyle(FieldHudLayout.DOCK, FieldHudLook.WINDOW))
@@ -292,6 +306,23 @@ class FieldHudScreenshotTest {
 
     /** Its last steps: gold, the bar red (DOCK's bar, no window of its own). */
     @Test fun repelStepsLow() = shot(FieldHudStyle(FieldHudLayout.DOCK), pc = true, snap = snapshot.copy(progress = repelProgress(14)))
+
+    /** SHINY HUNT's count beside the REPEL's steps (its flag on, a hunt going). */
+    private fun hunting(block: () -> Unit) {
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = true
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog(listOf(
+            com.pokedaisy.app.companion.data.Hunt(id = 1, target = 16, targetName = "SKYLARK", count = 4321))))
+        try { block() } finally {
+            com.pokedaisy.app.companion.ShinyHunts.close(game)
+            com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = false
+        }
+    }
+
+    @Test fun huntCount() = hunting { shot(FieldHudStyle(), pc = true, snap = snapshot.copy(progress = repelProgress(187))) }
+
+    @Test fun huntCountRails() = hunting { shot(FieldHudStyle(FieldHudLayout.RAILS), pc = true) }
+
+    @Test fun huntCountDock() = hunting { shot(FieldHudStyle(FieldHudLayout.DOCK), pc = true) }
 
     @Test fun pcButtonCorners2() = shot(FieldHudStyle(FieldHudLayout.CORNERS_2), pc = true)
 

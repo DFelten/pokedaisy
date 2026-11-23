@@ -27,8 +27,8 @@ val appIncludes = listOf(
     "SettingsActivity.kt", "KeyEvents.kt", "AndroidCoopSettings.kt", "LibraryActivity.kt", "SavesLocation.kt",
     "CoverArtSync.kt", "CoverSync.kt", "DocsStore.kt", "RomFolder.kt", "StorageAccess.kt", "SetupScreen.kt", "AppUpdater.kt", "AppUpdate.kt", "GameSavesAndroid.kt", "RzipSave.kt", "SaveBackups.kt", "AndroidGameInfo.kt", "LibraryOrder.kt", "RomSupportRequest.kt", "RomIntake.kt", "BestEffortShare.kt", "SaveStates.kt", "RomIdentity.kt", "RomArchive.kt", "CompanionSupport.kt", "CoverPicker.kt", "SteamGridDbGames.kt", "SteamGridDbClient.kt", "GameTitles.kt", "SaveEditorActivity.kt", "SaveFileEdits.kt",
     "RomPatcher.kt", "AndroidRomPatches.kt", "RomCrcs.kt", "SpritePackFlow.kt", "n3ds/N3dsCart.kt",
-    "ScreenScraperClient.kt", "ScreenScraperUi.kt", "GameMedia.kt", "LauncherScreen.kt",
-    "achievements/**", "AndroidPictures.kt", "JvmDeviceDates.kt", "overlay/OverlayFiles.kt",
+    "ScreenScraperClient.kt", "ScreenScraperUi.kt", "GameMedia.kt", "LauncherScreen.kt", "ThemePackFiles.kt",
+    "achievements/**", "AndroidPictures.kt", "SettingsFile.kt", "StatesBrowser.kt", "StatesPages.kt", "JvmDeviceDates.kt", "overlay/OverlayFiles.kt",
 )
 
 // Copied (not referenced in place) so the few Android-only APIs desktop
@@ -125,10 +125,16 @@ tasks.register<JavaExec>("render") {
     systemProperty("lang", (project.findProperty("lang") as String?) ?: "")
     // -Pdark=true: every screen in DARK MODE (pair with -Pout=build/shots-dark).
     systemProperty("dark", (project.findProperty("dark") as String?) ?: "")
+    // -PflagsOff=true: the next release's two batches off, as players have the app now (FlaggedFeatures).
+    systemProperty("flagsOff", (project.findProperty("flagsOff") as String?) ?: "")
     // -Pstyle=CLASSIC: every screen in FireRed's OPTION look instead of SUMMARY MINT (UiStyle).
     systemProperty("style", (project.findProperty("style") as String?) ?: "")
+    // -Pview=MODERN: every screen in VIEW MODERN (AppView), its font with it.
+    systemProperty("view", (project.findProperty("view") as String?) ?: "")
     // -Pfont=SMOOTH: every screen in that FONT (AppFont).
     systemProperty("font", (project.findProperty("font") as String?) ?: "")
+    // -PfontSize=LARGE: every screen at that FONT SIZE (AppFontSize).
+    systemProperty("fontSize", (project.findProperty("fontSize") as String?) ?: "")
     // -Ptheme=CHERRY: every screen in that THEME (its English name; limited-time ones too, whatever the date).
     systemProperty("theme", (project.findProperty("theme") as String?) ?: "")
     systemProperty("appVersion", (project.findProperty("appVersion") as String?) ?: "")

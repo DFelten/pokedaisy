@@ -56,8 +56,8 @@ fun buildSecret(prop: String, env: String): String =
 
 // Features merged but off until asked for (FeatureFlags.kt): `-Ppokedaisy.<name>=true` on the command line, or the same
 // key in local.properties. A marker file on the device turns them on for an APK already installed.
-fun featureFlag(name: String): Boolean =
-    (findProperty("pokedaisy.$name") ?: localProps?.getProperty("pokedaisy.$name"))?.toString()?.trim()?.toBoolean() == true
+fun featureFlag(name: String, default: Boolean = false): Boolean =
+    (findProperty("pokedaisy.$name") ?: localProps?.getProperty("pokedaisy.$name"))?.toString()?.trim()?.toBoolean() ?: default
 
 // The ABIs every native library is built for: arm64 always, x86_64 too for the emulator
 // (`-Ppokedaisy.x86_64=true`), 32-bit ARM for a device running a 32-bit Android (`-Ppokedaisy.armv7=true`).
@@ -87,6 +87,11 @@ android {
         // ScreenScraper (game media, its setup step and the update's popup): off until the app has its developer login
         // (FeatureFlags.screenScraper).
         buildConfigField("boolean", "FEATURE_SCREENSCRAPER", featureFlag("screenScraper").toString())
+        // The two batches for the next release (FeatureFlags.settingsPlus / modernLook, companion.FlaggedFeatures): off until it.
+        buildConfigField("boolean", "FEATURE_SETTINGS_PLUS", featureFlag("settingsPlus").toString())
+        buildConfigField("boolean", "FEATURE_MODERN_LOOK", featureFlag("modernLook").toString())
+        buildConfigField("boolean", "FEATURE_SHINY_HUNT", featureFlag("shinyHunt").toString())
+        buildConfigField("boolean", "FEATURE_SPOILER_FREE", featureFlag("spoilerFree").toString())
         // CO-OP (the connection to a paired partner): off until the feature ships (FeatureFlags.coop).
         buildConfigField("boolean", "FEATURE_COOP", featureFlag("coop").toString())
         // 3DS games (Azahar, the n3ds module): only built in with the flag (settings.gradle.kts), off until they ship
@@ -226,6 +231,7 @@ val licensesAsset by tasks.registering {
         "PixelMplus - M+ FONT LICENSE" to "app/src/main/assets/fonts/LICENSE-PixelMplus.txt",
         "Galmuri - SIL Open Font License 1.1" to "app/src/main/assets/fonts/LICENSE-Galmuri.txt",
         "Atkinson Hyperlegible - SIL Open Font License 1.1" to "app/src/main/assets/fonts/LICENSE-AtkinsonHyperlegible.txt",
+        "Nunito - SIL Open Font License 1.1" to "app/src/main/assets/fonts/LICENSE-Nunito.txt",
         "PokeAPI data - BSD 3-Clause" to "third_party/licenses/PokeAPI-BSD-3-Clause.txt",
         "AndroidX, Jetpack Compose / Compose Multiplatform, Kotlin, Ktor, kotlinx.atomicfu, kotlinx-datetime, Apache Commons Compress / IO / Codec / Lang, Firebase Crashlytics, ZXing, OkHttp, Okio - Apache License 2.0" to "third_party/licenses/Apache-2.0.txt",
         "Apache Commons - NOTICE" to "third_party/licenses/Apache-Commons-NOTICE.txt",

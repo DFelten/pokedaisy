@@ -41,6 +41,7 @@ bool pd_type_tag_at(const char* name, int* x, int* y);
 int pd_party_glyph_row(const struct pd_party_art* a, int glyph, int y);
 
 // Fills c with the game's party backdrop under the theme's wash and dark mode's scrim, or returns false for the stripes.
+// With pd_whole_scale_art a screen-sized picture goes at the smallest whole scale covering the canvas, cropped to its middle.
 bool pd_party_backdrop(struct pd_canvas* c, const struct pd_game* g);
 
 // The backdrop behind the slots at the game's own size, filling c: no zig-zags, text box or CANCEL.

@@ -3,12 +3,12 @@ title: HUD
 summary: Your party, a minimap, your Poké Balls and quick buttons for the bag and this area's wild Pokémon, right on the game screen while you walk around.
 section: player
 order: 4
-keywords: [field hud, heads up display, overlay, minimap, mini map, party, hp, status, balls, bag, wild, encounters, overworld, legends, single screen]
+keywords: [field hud, heads up display, overlay, minimap, mini map, party, hp, status, balls, bag, wild, encounters, overworld, legends, single screen, move hud, customize hud, custom hud, edit hud layout, drag hud, rearrange hud, hud position]
 ---
 
 Modern Pokémon games keep the important things on screen while you explore: your team, where you are, what you're carrying. The HUD does the same for the classic games. It's most useful on a device with one screen, where the companion is tucked away until you open it, but it works with two screens too.
 
-It's on by default. Turn it off, or change how it looks, in `HUD`, in the `SCREEN` group of Settings on either screen.
+It's on by default. Turn it off, or change how it looks, in `HUD`, in the `ON THE GAME` group of Settings on either screen.
 
 On the Game Boy it shows in Red and Blue (the English and German carts), Yellow (in every language), Yellow Legacy, Gold, Silver, Crystal, Crystal Legacy, Crystal Clear and Polished Crystal (3.2.3, the normal build) too, with or without `EXPAND`. Those games have no pictures for their items, so the bag lists your items by name, the way their own bag does. In Gold, Silver and Crystal each kind of ball shows as the game throws it in battle, in its own colour (the blue ones a little lighter, so they stand out on the HUD). Red, Blue and Yellow throw every kind alike, so there the HUD colours each kind the way Crystal does, and the one ball Crystal doesn't have gets a camouflage pattern. In the others your balls show as a plain drawn ball with the count.
 
@@ -47,10 +47,20 @@ Tap `LAYOUT`, `LOOK` or `SIZE` to step to the next choice. The HUD changes right
 | Setting | Choices | What it does |
 | --- | --- | --- |
 | `HUD` | **`ON`**, `OFF` | The whole HUD. |
-| `LAYOUT` | **`CORNERS`**, `CORNERS 2`, `RAILS`, `DOCK` | `CORNERS` puts the minimap top right (the games show a new area's name at the top left), your party bottom left and the rest bottom right. `CORNERS 2` swaps the right side: the minimap bottom right, the balls and buttons top right. `RAILS` lines everything up in two columns at the sides of the screen, in the bars beside the game (or over the extra map with `EXPAND`), so the game's own picture is never covered. `DOCK` puts your party, balls and buttons in one bar along the bottom, and the minimap top right. |
-| `LOOK` | **`GAME`**, `GLASS`, `WHITE GLASS`, `WINDOW` | `GAME` draws the HUD in the style of the game you're playing: HeartGold's green menu window, Black's navy panels and so on (see [Game look](screen.md#game-look)); a game without a look of its own gets `GLASS`. `GLASS` is a dark see-through panel that lets the game show through, with light text. `WHITE GLASS` is the same in white, with dark text. `WINDOW` uses the white windows the rest of the app has. In every look the windows are shaped like the games' battle HP boxes, with a shadow below and to the right, and whatever is picked (a pocket, an item, `KEEP OPEN`) gets an orange edge, like the chosen slot on the games' party screen. |
+| `LAYOUT` | **`CORNERS`**, `CORNERS 2`, `RAILS`, `DOCK`, your own | `CORNERS` puts the minimap top right (the games show a new area's name at the top left), your party bottom left and the rest bottom right. `CORNERS 2` swaps the right side: the minimap bottom right, the balls and buttons top right. `RAILS` lines everything up in two columns at the sides of the screen, in the bars beside the game (or over the extra map with `EXPAND`), so the game's own picture is never covered. `DOCK` puts your party, balls and buttons in one bar along the bottom, and the minimap top right. Your own layouts (`MY LAYOUT 1` and on) come after these; see [Your own layout](#your-own-layout). |
+| `EDIT LAYOUT` | a page | Move the HUD's parts yourself, over the game. |
+| `DELETE LAYOUT` | | Forgets the layout of yours in use and goes back to `CORNERS`. Only there while one of yours is in use. |
+| `LOOK` | **`GAME`**, `GLASS`, `WHITE GLASS`, `WINDOW` | `GAME` draws the HUD in the style of the game you're playing: HeartGold's green menu window, Black's navy panels and so on (see [In game: the game's colors](screen.md#in-game-the-games-colors)); a game without a look of its own gets `GLASS`. `GLASS` is a dark see-through panel that lets the game show through, with light text. `WHITE GLASS` is the same in white, with dark text. `WINDOW` uses the white windows the rest of the app has. In every look the windows are shaped like the games' battle HP boxes, with a shadow below and to the right, and whatever is picked (a pocket, an item, `KEEP OPEN`) gets an orange edge, like the chosen slot on the games' party screen. |
 | `SIZE` | `SMALL`, **`NORMAL`**, `LARGE` | How big it is, from small to large. |
-| `PARTY`, `MINIMAP`, `POKé BALLS`, the steps left, `PC`, `BAG`, `WILD POKéMON`, `MOVE ADVICE` | **`ON`**, `OFF` | Show or hide each part. Each row carries the part's icon. |
+| `PARTY`, `MINIMAP`, `POKé BALLS`, the steps left, `PC`, `BAG`, `WILD POKéMON`, `MOVE ADVICE`, `SHINY HUNT` | **`ON`**, `OFF` | Show or hide each part. Each row carries the part's icon. `SHINY HUNT` is the count of a [shiny hunt](shiny-hunt.md) while one is going. |
+
+## Your own layout
+
+`EDIT LAYOUT` (in the companion's `SETTINGS` > `HUD`, while you play) puts the HUD over the game with a yellow frame round each of its four parts: your party, the minimap, the balls with the steps left, and the buttons. Drag each one where you want it; it stays whole on the screen, at any `SIZE`. `DONE` keeps it, `CORNERS` puts every part back where `CORNERS` has it, and `CANCEL` (or `BACK`) leaves things as they were. While you edit, a tap on a part moves it rather than opening it.
+
+On `CORNERS`, `CORNERS 2`, `RAILS` or `DOCK`, `EDIT LAYOUT` makes a new layout of your own from where the parts are, so a ready-made one never changes. On one of yours, it changes that one. Each layout you make is kept under `LAYOUT`, so you can step to another and back without losing it. `BAG` and `WILD` open next to the buttons: from the top when you placed the buttons in the upper half of the screen.
+
+From the top screen's Settings the row says to open it in a game: the HUD needs the game under it to be placed.
 
 ## On Linux and in other launchers
 

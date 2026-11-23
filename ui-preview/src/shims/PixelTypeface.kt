@@ -48,6 +48,10 @@ class PreviewFonts(private val context: android.content.Context) : com.pokedaisy
     override fun pixel(): FontFamily = pixelFontFamily(context)
     override fun pixelSmall(): FontFamily = pixelSmallFontFamily(context)
     override fun smooth(bold: Boolean): FontFamily = atkinsonFamily(context, bold)
+    override fun modern(): FontFamily = nunito ?: FontFamily(
+        Font("fonts/Nunito-SemiBold.ttf", context.assets, androidx.compose.ui.text.font.FontWeight.Normal),
+        Font("fonts/Nunito-ExtraBold.ttf", context.assets, androidx.compose.ui.text.font.FontWeight.Bold),
+    ).also { nunito = it }
     override fun reading(): FontFamily = readingFontFamily(context)
     override fun game(file: okio.Path): FontFamily? = gameFontFamily(context, file.toFile())
 }
@@ -57,4 +61,5 @@ fun atkinsonFamily(context: android.content.Context, bold: Boolean): FontFamily 
 ).also { if (bold) atkBold = it else atkRegular = it }
 
 @Volatile private var atkRegular: FontFamily? = null
+@Volatile private var nunito: FontFamily? = null
 @Volatile private var atkBold: FontFamily? = null

@@ -3,7 +3,7 @@ title: Your game library
 summary: Add games, sort and favorite them, set covers, and use each game's menu for saves, info, cheats and more.
 section: start
 order: 4
-keywords: [shortcut, home screen, launcher icon, search, find a game, filter, support, donate, donation, tip, patreon, ko-fi, kofi, buy me a coffee, games list, add rom, import, folder, folders, multiple folders, several folders, add folder, zip, 7z, archive, cover, box art, artwork, icon, steamgriddb, rename, delete, hide, favourite, star, sort, grid, list view, frontend, es-de, esde, iisu, cocoon, launcher, filter, tabs, recently played, history, hacks, game boy, gbc, gba, console, platform, patch, patching, bps, apply patch, base rom, checksum, crc32, rom hack patch, tools, toolbox, rail, bottom bar, where is settings, small screen, rg ds, sprite pack]
+keywords: [shortcut, home screen, launcher icon, search, find a game, filter, support, donate, donation, tip, patreon, ko-fi, kofi, buy me a coffee, games list, add rom, import, folder, folders, multiple folders, several folders, add folder, zip, 7z, archive, cover, box art, artwork, icon, steamgriddb, rename, delete, hide, favourite, star, sort, grid, list view, frontend, es-de, esde, iisu, cocoon, launcher, filter, tabs, recently played, history, hacks, game boy, gbc, gba, console, platform, patch, patching, bps, apply patch, base rom, checksum, crc32, rom hack patch, tools, toolbox, rail, bottom bar, where is settings, small screen, rg ds, sprite pack, cartridges, cartridge view, carousel, cover flow, coverflow, spotlight, immersive, library view, screenscraper, screen scraper, scraper, fanart, wheel, game media, videos]
 ---
 
 The library is the first thing you see when you open PokeDaisy: every game you've added, in the order you pick. Tap a game to play it.
@@ -18,16 +18,28 @@ The buttons in the header, from left to right:
 | --- | --- |
 | Sort | Picks the order of your games (see [Sorting](#sorting-and-favorites)). |
 | Search | Finds a game by its name or file name (see [Searching](#searching)). |
-| List / grid | Switches between a list (one game per row, with its file path) and a grid of covers. |
+| View | Picks how your games are shown (see [Views](#views)). |
 | `+` | Adds games: `ADD A ROM FILE`, `ADD A ROMS FOLDER`, `MANAGE ROMS FOLDERS` or `PATCH A ROM` (see [Adding games](#adding-games)). |
 | Refresh | Looks through your ROMs folders again and tells you what it found. |
 | `?` | Opens this manual. |
 
 The game you have open says `PLAYING`, and a small save icon next to a name means it has a save file.
 
+## Views
+
+The view button in the header opens `LIBRARY VIEW`:
+
+- `LIST`: one game per row, with its cover, its name and where its file is.
+- `GRID`: covers side by side, the name under each.
+- `CARTRIDGES`: each game a cartridge standing in a rack, the game's cover as its label, the cartridge shaped for its console (a Game Boy cart, an Advance cart, a DS card). The one you pick rises out of its slot with its name and facts above the rack; tap it again (or press A) and it slides into its slot and the game starts.
+- `CAROUSEL`: the covers in a row turned like you're flipping through them, the one in front big and the others angled away, with its art blurred behind and its name under it.
+- `SPOTLIGHT`: the game you pick across the whole view (its art slowly drifting, its logo or name, its facts, `PLAY` and its menu), the others in a row along the bottom.
+
+In `CARTRIDGES`, `CAROUSEL` and `SPOTLIGHT` one game is in front: tap another (or move the D-pad onto it) to bring it forward, tap the one in front to play it, and long-press any of them for its menu. The art behind is the game's background picture and logo from [ScreenScraper](#game-media-from-screenscraper) when you're signed in, else its cover. On the dual-screen launcher these three show as the grid, since the second screen already shows the game.
+
 ## Games, tools and settings
 
-Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. They stay on screen whichever one is open, and the page beside them changes. On a small screen, like the RG DS's, they show their icons alone (the controller, the toolbox and the gear) and the rest of the library packs in tighter: a lower header, smaller covers, one line per game, so more of your games fit.
+Down the left edge of the library are three buttons: `GAMES`, `TOOLS` and `SETTINGS`. On a phone held upright they sit in a bar along the bottom edge instead. `MENU BAR` in Settings (the `LOOK` group) puts them where you like: `AUTO` (that way), `LEFT`, `RIGHT`, `TOP` (under the header) or `BOTTOM`, and `MENU BAR SIZE` `COMPACT` shows their icons alone, smaller. The dual-screen launcher keeps them on the left or the bottom, where its buttons reach them. They stay on screen whichever one is open, and the page beside them changes. On a small screen, like the RG DS's, they show their icons alone (the controller, the toolbox and the gear) and the rest of the library packs in tighter: a lower header, smaller covers, one line per game, so more of your games fit.
 
 - `GAMES` is your library, the games and the quick views over them.
 - `TOOLS` shows, in the games' place, what PokeDaisy can do with your games besides playing them. Tap one to open it. Its header has only the help button, since sorting and adding are for your games.
@@ -68,6 +80,8 @@ The console views and `HACKS` use the same colours as the covers of games withou
 ![The GBC quick view open: its button filled in yellow stripes, and only the Game Boy Color games listed](shots/library-views.png "A quick view")
 
 The library remembers the view you picked, also after you close the app. A view that has nothing yet tells you how to fill it.
+
+Want them in another order? Hold a quick view until it lifts, then drag it left or right and let go. The library keeps your order.
 
 ## Adding games
 
@@ -188,6 +202,8 @@ Covers come from two free services, and you need your own free key for each one 
 
 Tap `GET KEY` next to either one to open the page where your key is, copy it, paste it in the box and tap `SAVE`. PokeDaisy fetches a cover for each game once and keeps it on the device. `REPLACE ALL` fetches fresh covers for every game, replacing the ones you have (including ones you picked yourself). `CLEAR` removes the keys.
 
+Signed in to [ScreenScraper](#game-media-from-screenscraper), its box art comes before both.
+
 A game with no cover shows what kind of game it is instead, in pixel letters on its own colour: `GB` (grey) for a Game Boy game, `GBC` (yellow) for a Game Boy Color only one, `GBA` (purple) for a Game Boy Advance game, `NDS` (teal) for a DS game, or `HACK` (red) for a ROM hack.
 
 ### Pick another cover
@@ -197,6 +213,10 @@ Don't like the cover a game got? Open its menu and tap `REPLACE COVER`. The pick
 ![The REPLACE COVER picker: a search box above a grid of cover icons, each with its uploader's name](shots/library-cover-picker.png "Picking a cover")
 
 To use your own image instead, tap `SET COVER` in the menu and pick a picture from your device.
+
+## Game media from ScreenScraper
+
+ScreenScraper.fr is a free site with box art, screenshots, title screens, logos, background pictures, videos and each game's story for almost every game. Sign in with your free account (in first-time setup's `GAME MEDIA` step, or Settings > `ScreenScraper`) and PokeDaisy fetches them for your whole library, a game at a time, and keeps them on the device. Its box art comes first for covers (a cover you picked yourself stays), the immersive [views](#views) use its pictures and logos, and with two screens the second one shows them (see [The dual-screen launcher](#the-dual-screen-launcher)). `SIGN UP` opens its site to make an account; the page shows how many of your daily requests are used. Your password is kept on the device and only sent to ScreenScraper.
 
 ## The dual-screen launcher
 
@@ -211,6 +231,8 @@ The D-pad moves a cursor through it: up and down a row, left and right along a r
 On a screen held upright the legend floats just above the bar of `GAMES`, `TOOLS` and `SETTINGS`, so it never covers them.
 
 With the touch screen, a tap on a game opens it straight away, and a long press opens its menu.
+
+Signed in to [ScreenScraper](#game-media-from-screenscraper), the other screen shows the game under the cursor: its box art, its logo, a screenshot or its video (after a moment), its facts and its story scrolling by. **X** swaps the two screens, the list and the game's media trading places.
 
 Prefer the library without the cursor and legend? Turn off `DUAL-SCREEN LAUNCHER` in Settings, in the `LIBRARY` group.
 

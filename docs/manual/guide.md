@@ -8,7 +8,7 @@ keywords: [pin, pinned, unpin, pick, target, hunt, rare, randomizer, randomized,
 
 The GUIDE tab is there for the moments you'd normally open a walkthrough: you're stuck, you want to know what lives on this route, or you'd like to see the next gym leader's team before walking in. It reads your game as you play, so it knows where you are, what you've already picked up and which bosses you've beaten.
 
-It's built to spoil as little as possible. Every entry starts as a title only. You decide how much you want to know.
+It's built to spoil as little as possible. Every entry starts as a title only. You decide how much you want to know. To keep the whole companion to what your game has shown you, see [Playing without spoilers](spoilers.md).
 
 ![The GUIDE tab on a TIPS page: the page list on the left, entries on the right, one of them opened to show its hint](shots/companion-guide.png "A TIPS page with one entry opened")
 

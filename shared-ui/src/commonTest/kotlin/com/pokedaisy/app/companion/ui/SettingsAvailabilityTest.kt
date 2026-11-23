@@ -19,6 +19,6 @@ class SettingsAvailabilityTest {
         assertFalse(SharedSetting.GAME_SPEED in library)
         assertFalse(SharedSetting.CHEATS in library)
         assertFalse(SharedSetting.BOSS_RETRY in library)
-        assertEquals(SharedSetting.entries.toSet(), SharedSetting.available(running = true, cheats = true, gba = true))
+        assertEquals(SharedSetting.entries.toSet() - SharedSetting.ANDROID_ONLY, SharedSetting.available(running = true, cheats = true, gba = true))
     }
 }

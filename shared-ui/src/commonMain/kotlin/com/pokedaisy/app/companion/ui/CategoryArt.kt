@@ -17,6 +17,7 @@ import com.pokedaisy.app.companion.data.RomCategory
 @Composable
 fun CategoryArt(category: RomCategory, modifier: Modifier = Modifier) {
     val look = CategoryLooks.of(category)
+    if (modernView) { ModernCategoryArt(category, look, modifier); return }
     Canvas(modifier = modifier) { clipRect {
         val cell = kotlin.math.floor(minOf(size.width, size.height) / GRID).coerceAtLeast(1f)
         val left = kotlin.math.floor((size.width - cell * GRID) / 2f)
@@ -47,6 +48,30 @@ fun CategoryArt(category: RomCategory, modifier: Modifier = Modifier) {
             }
         }
     } }
+}
+
+/** VIEW MODERN's cover: the category's colour top to bottom, two soft rings, its name in bold rounded letters. */
+@Composable
+private fun ModernCategoryArt(category: RomCategory, look: CategoryLook, modifier: Modifier) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = androidx.compose.ui.Alignment.Center) {
+        val side = minOf(maxWidth, maxHeight)
+        Canvas(androidx.compose.ui.Modifier.matchParentSize()) {
+            drawRect(androidx.compose.ui.graphics.Brush.linearGradient(
+                listOf(androidx.compose.ui.graphics.lerp(look.back, Color.White, 0.22f), look.back, androidx.compose.ui.graphics.lerp(look.back, Color.Black, 0.12f)),
+                start = Offset.Zero, end = Offset(size.width, size.height),
+            ))
+            val r = size.minDimension
+            drawCircle(Color.White.copy(alpha = 0.10f), r * 0.62f, Offset(size.width * 0.95f, size.height * 0.05f))
+            drawCircle(Color.White.copy(alpha = 0.08f), r * 0.42f, Offset(size.width * 0.05f, size.height * 1.0f))
+        }
+        val sp = with(androidx.compose.ui.platform.LocalDensity.current) { (side * if (category.label.length > 3) 0.27f else 0.33f).toSp() }
+        androidx.compose.material3.Text(
+            category.label, color = Color.White, fontSize = sp, maxLines = 1,
+            fontFamily = com.pokedaisy.app.companion.ui.theme.FontSource.get().modern(),
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(look.shadow.copy(alpha = 0.35f), Offset(0f, 2f), 6f)),
+        )
+    }
 }
 
 // Wide enough for the widest name (HACK: 15 cells) with a cell or more to spare each side.

@@ -16,6 +16,8 @@ A Pokémon holding an item gets a small tag in its slot's top right corner with 
 
 The slots are your game's own party screen: FireRed and Emerald use their real slot art, and many hacks have their own colours. Games without a look of their own get a FireRed-style slot. The art is rebuilt from your own ROM the first time you play it, so it can take a moment to appear the very first time.
 
+With VIEW set to `MODERN` (see [Screen](screen.md#view-retro-or-modern)), the party looks like the newer games' instead: your six Pokémon in a column of rounded bars on a coloured band, the one under the cursor dark with an arrow beside it, and that Pokémon's picture large on the right with its types under it. Each bar has the icon, name, gender, level, a thin HP bar and the HP left. The band takes your theme's colour, or the game's with `GAME COLORS`. On a small or narrow screen (an RG DS, a phone held upright, the side panel) the picture is left out and the bars sit in two columns of three, the level beside the HP bar. Your party in a battle and the bag's "which Pokémon?" pick look the same.
+
 ![The PARTY tab: EMBERPUP Lv12 with full HP, GALEFINCH poisoned and low on HP, BUBBLEFIN and THORNLET](shots/companion-party.png "The PARTY tab")
 
 The icons bounce like they do in the game. If you'd rather they stood still, turn off `PARTY ICONS MOVE` in SETTINGS > `TWEAKS`.

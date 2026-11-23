@@ -262,14 +262,19 @@ fun TradeScreen(
                         else -> tr("Pick a Pokémon on one side, then a Pokémon or an empty slot on the other: party or PC")
                     }
                 }
-                // Two lines: a rule's reason names both games.
-                GbaText(hint, OptionColors.onBackdrop, OptionColors.onBackdropShadow, small, Modifier.weight(1f), maxLines = 2)
+                // Two lines' room always (a rule's reason names both games): a one-line hint left the boxes above taller,
+                // so they jumped as the hint changed.
+                Box(Modifier.weight(1f).height(small.lineHeight * 2), contentAlignment = Alignment.CenterStart) {
+                    GbaText(hint, OptionColors.onBackdrop, OptionColors.onBackdropShadow, small, maxLines = 2)
+                }
                 if (kind == null && trip != null) {
                     OptionButton(tk("TRADE AND BACK"), m, onClick = { state.confirmBack = true }, emphasis = true, enabled = blocker == null && !saving)
                 } else OptionButton(
                     if (kind == TradeState.Kind.SWAP) tk("TRADE") else tk("SEND"), m, onClick = { state.start() }, emphasis = true,
                     enabled = kind != null && blocker == null && !saving,
                 )
+                // Names under the sprites, or the sprites alone and larger (hidden at first): one switch for every box grid.
+                if (iconsA != null || iconsB != null) MonNamesButton(m)
                 OptionButton(tk("UNDO ALL"), m, onClick = { state.undoAll() }, enabled = state.changed && !saving)
                 OptionButton(tk("SAVE"), m, onClick = { state.confirmSave = true }, emphasis = true, enabled = state.changed && !saving)
             }

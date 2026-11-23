@@ -7,16 +7,17 @@ import com.pokedaisy.app.companion.data.StateFiles
 import java.util.zip.CRC32
 
 /**
- * Per-game savestate storage: `files/states/<rom-crc32>/ss<N>` + `ss<N>.png`
+ * Per-game savestate storage: `<states folder>/<rom-crc32>/ss<N>` + `ss<N>.png` (the folder is [root]: the app's own
+ * `files/states/` or the player's, Settings > FOLDERS > SAVE STATES)
  * thumbnail, for slots [SLOT_MIN]..[SLOT_MAX]. A dedicated `resume` slot backs
  * suspend-on-background.
  *
  * The `.ss` blobs are mGBA's own extended (mpack) state format, so they also
  * load in desktop mGBA via "Load state from file".
  */
-class SaveStates(filesDir: File, romCrc: String) {
+class SaveStates(statesRoot: File, romCrc: String) {
 
-    internal val files = StateFiles(File(File(filesDir, "states"), romCrc).toOkioPath(), extraSidecars = listOf(StateFiles.ACHIEVEMENT_PROGRESS_SUFFIX))
+    internal val files = StateFiles(File(statesRoot, romCrc).toOkioPath(), extraSidecars = listOf(StateFiles.ACHIEVEMENT_PROGRESS_SUFFIX))
 
     fun stateFile(slot: Int): File = File(files.stateFile(slot).toString())
     fun thumbFile(slot: Int): File = File(files.thumbFile(slot).toString())
@@ -32,6 +33,15 @@ class SaveStates(filesDir: File, romCrc: String) {
     val freshBootFile: File get() = File(files.freshBootFile.toString())
 
     fun exists(slot: Int): Boolean = files.exists(slot)
+
+    /** Writes the game's name beside its states ([NAME_FILE]) when it isn't there yet or changed. Never throws. */
+    fun noteGame(name: String) {
+        if (!com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) return
+        runCatching {
+            val f = File(files.directory.toString(), NAME_FILE)
+            if (!f.isFile || f.readText() != name) f.writeText(name)
+        }
+    }
 
     fun slotInfo(slot: Int): SlotInfo {
         val f = stateFile(slot)
@@ -67,6 +77,31 @@ class SaveStates(filesDir: File, romCrc: String) {
     )
 
     companion object {
+        /** The app's own states folder: `<external files>/states` (internal files where there's no external storage). */
+        fun defaultRoot(context: android.content.Context): File =
+            File(context.getExternalFilesDir(null) ?: context.filesDir, "states")
+
+        /** Where every game's states folder is: the player's SAVE STATES folder while it can be written to, else
+         * [defaultRoot]. A folder that went away (an SD card out) never takes the states with it: the default is used meanwhile. */
+        fun root(context: android.content.Context, prefs: Prefs = Prefs(context)): File {
+            val custom = prefs.statesDirOverride?.takeIf { it.isNotBlank() && com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let(::File)
+            if (custom != null && (custom.isDirectory || custom.mkdirs()) && custom.canWrite()) return custom
+            return defaultRoot(context)
+        }
+
+        /** [rom]'s states at [crc] in the current [root]. */
+        fun of(context: android.content.Context, crc: String, prefs: Prefs = Prefs(context)) = SaveStates(root(context, prefs), crc)
+
+        /** Games open in this process (PokeDaisyActivity's onCreate / onDestroy): the SAVE STATES folder isn't moved
+         * while one is, since its states (its resume state) are written where it started. */
+        val openGames = java.util.concurrent.atomic.AtomicInteger(0)
+
+        /** A game's states folder name - a CRC32 (8 hex digits) or a 3DS title id (16) - what [StatesBrowser] lists. */
+        fun isGameDir(name: String) = (name.length == 8 || name.length == 16) && name.all { it in '0'..'9' || it in 'a'..'f' }
+
+        /** The file in a game's states folder naming the game, for the SAVE STATES page and anyone looking at the folder. */
+        const val NAME_FILE = "game.txt"
+
         const val SLOT_MIN = 0
         const val SLOT_MAX = 9
 

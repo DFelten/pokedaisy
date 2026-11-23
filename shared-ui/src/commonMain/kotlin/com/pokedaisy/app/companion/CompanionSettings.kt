@@ -237,6 +237,9 @@ interface CompanionSettings : StoredCompanionSettings {
     /** EDIT LAYOUT over the running game (the companion steps aside while it's open). */
     fun editTouchLayout() {}
 
+    /** HUD > EDIT LAYOUT over the running game (the companion steps aside); null = this host can't (the row says why). */
+    val editHudLayout: (() -> Unit)? get() = null
+
     /** The touch controls are on the game's screen now (SHOW, a controller): EXPAND's UNDER GAME needs them. */
     val touchControlsShown: Boolean get() = true
 
@@ -317,6 +320,9 @@ interface CompanionSettings : StoredCompanionSettings {
 
     /** A host that runs only part of the app (the iPad app, so far): SETTINGS' HOME, DISPLAY OPTIONS and SHADERS show only these shared settings, each group's title kept over the ones left. Null = every row. */
     val shownRows: Set<SharedSetting>? get() = null
+
+    /** Per-game settings (SETTINGS FOR: ALL GAMES / THIS GAME, GameSettings.kt); null = no game, or a host without them. */
+    val gameSettings: GameSettingsControl? get() = null
 
     /** Opens a web link ([url]) in the browser - a blocked game's button ([com.pokedaisy.app.companion.data.BlockedAction]). */
     fun openUrl(url: String) {}
@@ -543,8 +549,10 @@ interface CompanionSettings : StoredCompanionSettings {
 /** Every tab the player can show or hide, in tab-bar order. BATTLE (while a
  * battle runs) and SETTINGS (the way to the hidden ones) are always there.
  * CARD (the TRAINER CARD) and ACHIEVEMENTS (RetroAchievements) start off the
- * bar, under the MORE tab. */
-val COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "CARD", "STATES", "ACHIEVEMENTS")
+ * bar, under the MORE tab. HUNT (SHINY HUNT) only with its flag ([FlaggedFeatures.shinyHunt]). */
+val COMPANION_TABS: List<String> get() = listOfNotNull(
+    "PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "HUNT".takeIf { FlaggedFeatures.shinyHunt }, "CARD", "STATES", "ACHIEVEMENTS",
+)
 val DEFAULT_COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE")
 
 /** Tabs next to SETTINGS: six chips in all is as many as fit. During a
@@ -696,3 +704,14 @@ fun CompanionSettings.gameButtonRequest(button: GbaControls.Btn, changed: () -> 
     KeyCapture.Request(button.title, chord = false,
         onDone = { keys -> setGbaControlBinding(button, KeyCapture.keyName(keys.first())); changed() },
         onClear = if (button.canClear) ({ clearGbaControlBinding(button); changed() }) else null)
+
+/** The game's own settings, as companion SETTINGS shows and changes them ([GameSettingsStore]). */
+interface GameSettingsControl {
+    /** SETTINGS FOR: THIS GAME (a change is the game's own) or ALL GAMES. */
+    val thisGame: Boolean
+    fun setThisGame(on: Boolean)
+    /** The settings this game has its own value of. */
+    val overridden: Set<SharedSetting>
+    /** RESET THIS GAME: back to every game's settings, applied at once. */
+    fun reset()
+}

@@ -24,6 +24,7 @@ open class ComponentActivity : Context() {
     open fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean = false
     open fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean = false
     fun finish() {}
+    fun finishAffinity() {}
     fun setResult(code: Int, data: Intent?) {}
     fun overridePendingTransition(enter: Int, exit: Int) {}
     fun startActivity(i: Intent) {}

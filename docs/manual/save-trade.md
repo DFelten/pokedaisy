@@ -26,7 +26,7 @@ With a controller or a keyboard, the D-pad moves an orange cursor (the first pre
 
 The game's own rules still apply: a Pokémon holding mail stays in your party, your last Pokémon that can battle stays too, and an egg can't be released.
 
-At the top of a box, the magnifier searches every box and your party by name or species (tap a result to go to it), `SORT` puts the box in order by Pokédex number, level or name, and `RENAME` changes the box's name.
+At the top of a box, the magnifier searches every box and your party by name or species (tap a result to go to it), `SORT` puts the box in order by Pokédex number, level or name, and `RENAME` changes the box's name. `NAMES`, at the bottom with the other buttons, shows each Pokémon's name under its picture, or hides them so the pictures are bigger (hidden at first). It's the same switch in `TRADE`, `PAL PARK` and `POKé TRANSFER`.
 
 ### A Pokémon's page
 
@@ -129,6 +129,9 @@ Tap `TOOLS` in the library, then `COLLECTION`, to see every Pokémon in all your
 
 - Type in the box at the top to find one by its name or its species.
 - `ALL GAMES` picks one game to show, `SHINY` shows only shiny ones, and the order button sorts by Pokédex number, by level or by game.
+- The view button lays them out as a `LIST`, a `GRID` of pictures (with `NAMES` to show their names) or `CARDS`, each with its name, species, level, game and box. Each Pokémon is drawn as its own game draws it.
+
+While the saves are being read, a rocking ball shows it's working: with many games that takes a moment, in the save editor's game list too.
 
 Tap a Pokémon for what you can do with it:
 

@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.layout
@@ -138,6 +143,33 @@ data class HudWild(
     val caught: Boolean,
 )
 
+/** The player's map's wild Pokémon ([hudWild]), read off the UI thread; null = no tables for this game. The HUD's WILD and
+ * SHINY HUNT's target pick. */
+@Composable
+internal fun rememberWildHere(snapshot: SnapshotView): List<HudWild>? {
+    val live = snapshot.guideTables
+    val wildSet = live?.wildSetOf(snapshot.mapGroup, snapshot.mapNum, snapshot.progress) ?: 0
+    val read by produceState(
+        live?.let { GuideRomSource.cachedEncounters(it, snapshot.mapGroup, snapshot.mapNum, wildSet) },
+        live, snapshot.mapGroup, snapshot.mapNum, wildSet,
+    ) {
+        if (live != null) value = withContext(Dispatchers.IO) {
+            snapshot.pokedex?.let { PokedexSource.nationalOf(it.tables, 1) } // warm the species -> dex number map
+            GuideRomSource.encounters(live, snapshot.mapGroup, snapshot.mapNum, wildSet)
+        }
+    }
+    // A game whose guide has its own tables (a DS game, Polished Crystal): GUIDE > HERE's world, for the save and clock.
+    val world = if (live == null) remember(snapshot.game) { gameGuide(guideId(snapshot.game, null))?.world } else null
+    val worldHere = remember(world, snapshot.mapGroup, snapshot.mapNum, snapshot.progress) {
+        world?.encounters(snapshot.mapGroup, snapshot.mapNum, snapshot.progress)
+    }
+    return when {
+        live != null -> remember(read, snapshot.pokedex) { hudWild(read, snapshot.pokedex) }
+        world != null -> remember(worldHere, snapshot.pokedex) { hudWild(worldHere, snapshot.pokedex) }
+        else -> null
+    }
+}
+
 /** [enc]'s slots merged per species and method, most common first; seen / caught from [dex] (null = all seen). */
 fun hudWild(enc: MapEncounters?, dex: PokedexState?): List<HudWild> {
     if (enc == null) return emptyList()
@@ -150,7 +182,7 @@ fun hudWild(enc: MapEncounters?, dex: PokedexState?): List<HudWild> {
             val n = national(species)
             HudWild(
                 method, species, s.minOf { it.minLevel }, s.maxOf { it.maxLevel }, s.sumOf { it.percent },
-                seen = dex == null || n in dex.seen, caught = dex != null && n in dex.caught,
+                seen = com.pokedaisy.app.companion.Spoilers.seenNational(n, species, dex), caught = dex != null && n in dex.caught,
             )
         }.sortedByDescending { it.percent }
     }
@@ -162,19 +194,35 @@ fun fieldHudRows(
     style: FieldHudStyle,
     setOn: (Boolean) -> Unit,
     setStyle: (FieldHudStyle) -> Unit,
+    /** EDIT LAYOUT over the game ([HudEditor]); null = no game here to place it on (the row says so). */
+    onEdit: (() -> Unit)? = null,
 ): List<SettingRow> {
     fun onOff(b: Boolean) = if (b) tk("ON") else tk("OFF")
-    return listOf(
+    return listOfNotNull(
         SettingRow(tk("HUD"), onOff(on), subtitle = "Party, map and more on the field") { setOn(!on) },
         // LAYOUT, LOOK and SIZE cycle on a tap, not a pick-list (the user's call, like SHADERS' FILTER): each one
         // shows on the HUD at once, over the game, while the next tap is a thumb away.
         // The compact HUD has one layout (FieldHudFit): no choice while the picture is too narrow for the others.
         SettingRow(
-            tk("LAYOUT"), style.layout.label, enabled = on && !FieldHudFit.tight,
+            tk("LAYOUT"), tk(style.layoutLabel), enabled = on && !FieldHudFit.tight,
             subtitle = if (FieldHudFit.tight) "Unavailable: screen too small" else null,
+            labelBadge = NewFeatures.badge(NewFeatures.HUD_EDITOR),
         ) {
-            if (!FieldHudFit.tight) setStyle(style.copy(layout = style.layout.next()))
+            if (!FieldHudFit.tight) setStyle(style.nextLayout())
         },
+        // The player's own layouts: EDIT LAYOUT drags the HUD's parts over the game (a built-in LAYOUT is never changed:
+        // editing one makes a layout of the player's from it), each kept under LAYOUT.
+        SettingRow(
+            tk("EDIT LAYOUT"), null, opensPage = true, enabled = on && onEdit != null && !FieldHudFit.tight,
+            subtitle = when {
+                onEdit == null -> "In a game: from the companion's SETTINGS"
+                style.currentCustom == null -> "Makes a layout of your own, then drag the parts"
+                else -> "Drag the HUD's parts into place"
+            },
+        ) { onEdit?.invoke() },
+        SettingRow(tk("DELETE LAYOUT"), null, enabled = on, subtitle = tr("Forget {0}, back to CORNERS", style.currentCustom?.name ?: "")) {
+            setStyle(style.deleteCustom())
+        }.takeIf { style.currentCustom != null },
         SettingRow(tk("LOOK"), style.look.label, enabled = on, labelBadge = NewFeatures.badge(NewFeatures.GAME_LOOK)) {
             setStyle(style.copy(look = style.look.next()))
         },
@@ -182,11 +230,12 @@ fun fieldHudRows(
             setStyle(style.copy(size = style.size.next()))
         },
         groupTitle(tk("SHOW")),
-    ) + FieldHudPart.entries.map { p ->
+    ) + FieldHudPart.entries.filter { it != FieldHudPart.HUNT || com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt }.map { p ->
         SettingRow(p.label, onOff(style.shows(p)), enabled = on, labelBadge = when (p) {
             FieldHudPart.PC -> NewFeatures.badge(NewFeatures.HUD_PC)
             FieldHudPart.REPEL -> NewFeatures.badge(NewFeatures.HUD_REPEL)
             FieldHudPart.MOVE_ADVICE -> NewFeatures.badge(NewFeatures.HUD_MOVE_ADVICE)
+            FieldHudPart.HUNT -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
             else -> null
         }, labelIcon = hudPartIcon(p), iconPixels = ROW_ICON_PIXELS) {
             setStyle(style.copy(hidden = if (style.shows(p)) style.hidden + p else style.hidden - p))
@@ -210,6 +259,7 @@ private fun hudPartIcon(part: FieldHudPart): @Composable () -> Unit = {
         FieldHudPart.BAG -> PixelArt(BAG_ICON, BAG_COLORS, fill)
         FieldHudPart.WILD -> PixelArt(GRASS_ICON, GRASS_COLORS, fill)
         FieldHudPart.MOVE_ADVICE -> TabIcons.forTab("PARTY")?.let { PixelArt(it.bitmap, it.palette, fill) }
+        FieldHudPart.HUNT -> PixelArt(TabIcons.sparkles.bitmap, TabIcons.sparkles.palette, fill)
     }
 }
 
@@ -280,7 +330,7 @@ internal val LocalHudLook = staticCompositionLocalOf { FieldHudLook.GLASS }
 internal val FieldHudLook.glass get() = this == FieldHudLook.GLASS || this == FieldHudLook.WHITE_GLASS
 
 /** The running game's HUD palette (its [CompanionSkin.hud]); null for a game without one. */
-internal val gameHud: SkinHud? get() = CompanionSkins.current.hud
+internal val gameHud: SkinHud? get() = CompanionSkins.current.hud ?: CompanionSkins.gameSkin.hud
 
 /** LOOK as drawn: GAME is the game's own HUD where its skin has one, else GLASS (a hack in the app's look). */
 internal fun FieldHudLook.resolved(): FieldHudLook = if (this == FieldHudLook.GAME && gameHud == null) FieldHudLook.GLASS else this
@@ -533,7 +583,11 @@ fun FieldHud(
     /** Modal windows own manual input; WILD's KEEP OPEN deliberately leaves gameplay available. */
     onInputCapture: (Boolean) -> Unit = {},
 ) {
+    // EDIT LAYOUT: the HUD up whatever the game shows, its parts moved by hand ([HudEditor]), no panels.
+    val editing = HudEditor.open
+    @Suppress("NAME_SHADOWING") val shown = shown || editing
     var panel by remember { mutableStateOf(initialPanel) }
+    LaunchedEffect(editing) { if (editing) panel = null }
     var summary by remember { mutableStateOf(0) }
     // The pocket the BAG opens on: the balls' own when they were tapped (-1 = the first).
     var bagPocket by remember { mutableStateOf(-1) }
@@ -559,27 +613,8 @@ fun FieldHud(
     if (alpha == 0f && !shown) return
 
     // This map's wild Pokémon, read off the UI thread (null: no ROM tables for this game, so no WILD button).
-    val live = snapshot.guideTables
-    val wildSet = live?.wildSetOf(snapshot.mapGroup, snapshot.mapNum, snapshot.progress) ?: 0
-    val read by produceState(
-        live?.let { GuideRomSource.cachedEncounters(it, snapshot.mapGroup, snapshot.mapNum, wildSet) },
-        live, snapshot.mapGroup, snapshot.mapNum, wildSet,
-    ) {
-        if (live != null) value = withContext(Dispatchers.IO) {
-            snapshot.pokedex?.let { PokedexSource.nationalOf(it.tables, 1) } // warm the species -> dex number map
-            GuideRomSource.encounters(live, snapshot.mapGroup, snapshot.mapNum, wildSet)
-        }
-    }
-    // A game whose guide has its own tables (a DS game, Polished Crystal): GUIDE > HERE's world, for the save and clock.
-    val world = if (live == null) remember(snapshot.game) { gameGuide(guideId(snapshot.game, null))?.world } else null
-    val worldHere = remember(world, snapshot.mapGroup, snapshot.mapNum, snapshot.progress) {
-        world?.encounters(snapshot.mapGroup, snapshot.mapNum, snapshot.progress)
-    }
-    val wildHere = wild ?: when {
-        live != null -> remember(read, snapshot.pokedex) { hudWild(read, snapshot.pokedex) }
-        world != null -> remember(worldHere, snapshot.pokedex) { hudWild(worldHere, snapshot.pokedex) }
-        else -> null
-    }
+    val here = rememberWildHere(snapshot)
+    val wildHere = wild ?: here
 
     // SIZE: a density whose GBA pixel (rememberGbaTextMetrics' 20dp / 16) is exactly the wanted whole screen pixels.
     val base = LocalDensity.current
@@ -637,6 +672,17 @@ fun FieldHud(
                             ) {
                                 Box(Modifier.fillMaxSize().hudScale(scale)) { CompactLayout(parts) }
                             }
+                        } else if (editing || style.currentCustom != null) {
+                            // The player's own layout (EDIT LAYOUT's places), on the picture like CORNERS.
+                            Box(
+                                Modifier.fillMaxSize()
+                                    .padding(start = inL.toDp(), top = inT.toDp(), end = inR.toDp(), bottom = inB.toDp())
+                                    .padding(top = padT.toDp(), bottom = padB.toDp()),
+                            ) {
+                                Box(Modifier.fillMaxSize().hudScale(scale)) {
+                                    CustomHudLayout(parts, if (editing) HudEditor.places else style.currentCustom!!.places, editing)
+                                }
+                            }
                         } else if (style.layout == FieldHudLayout.RAILS) {
                             // RAILS use the room beside the picture: the whole box, told where the picture's sides are.
                             Box(Modifier.fillMaxSize().padding(top = railT.toDp(), bottom = railB.toDp()).hudScale(scale)) {
@@ -667,14 +713,17 @@ fun FieldHud(
             // The panels at the companion's own size, whatever SIZE says.
             val m = rememberGbaTextMetrics(1f)
             val dock = style.layout == FieldHudLayout.DOCK
-            // CORNERS 2's buttons are top right: BAG and WILD open there (the compact HUD's: bottom left, panelPlace).
-            val top = style.layout == FieldHudLayout.CORNERS_2
+            // CORNERS 2's buttons are top right: BAG and WILD open there (the compact HUD's: bottom left, panelPlace); a layout
+            // of the player's, wherever its buttons are nearer.
+            val top = style.currentCustom?.let { (it.places[com.pokedaisy.app.companion.HudBlock.BUTTONS]?.fy ?: 1f) < 0.5f }
+                ?: (style.layout == FieldHudLayout.CORNERS_2)
             val close = { panel = null }
             // BAG and WILD open over the buttons: on the picture, like them (RAILS: the screen's corner).
             val onPicture = style.layout != FieldHudLayout.RAILS || FieldHudFit.tight
             val inset = with(base) {
                 if (onPicture) PaddingValues(start = inL.toDp(), top = inT.toDp(), end = inR.toDp(), bottom = inB.toDp()) else PaddingValues()
             }
+            if (editing) HudEditorBar(m, Modifier.align(Alignment.TopCenter).padding(inset).padding(top = m.u * 6))
             ItemNoticeHost(pcNotice, m, Modifier.align(Alignment.TopCenter).padding(inset).padding(top = m.u * 6, start = m.u * 8, end = m.u * 8)) { pcNotice = null }
             when (panel) {
                 FieldHudPanel.MAP -> HudMapPanel(snapshot, m, fly, close)
@@ -765,6 +814,112 @@ private class HudParts(
 
 // ---- Layouts ------------------------------------------------------------------------------------
 
+/**
+ * HUD > EDIT LAYOUT (the user's call, 2026-11-23: move the HUD's parts like the touch controls): open over the game,
+ * the player's layout's [places] (CORNERS' for a new one) moved by dragging each block; DONE hands them to [save].
+ * Compose state: the HUD shows its editor while [open].
+ */
+object HudEditor {
+    var open by mutableStateOf(false)
+        private set
+    var places by mutableStateOf<Map<com.pokedaisy.app.companion.HudBlock, com.pokedaisy.app.companion.HudPlace>>(emptyMap())
+    private var save: ((Map<com.pokedaisy.app.companion.HudBlock, com.pokedaisy.app.companion.HudPlace>) -> Unit)? = null
+    private var start: Map<com.pokedaisy.app.companion.HudBlock, com.pokedaisy.app.companion.HudPlace> = emptyMap()
+
+    fun begin(style: FieldHudStyle, onSave: (Map<com.pokedaisy.app.companion.HudBlock, com.pokedaisy.app.companion.HudPlace>) -> Unit) {
+        start = style.currentCustom?.places ?: com.pokedaisy.app.companion.HudCustom.CORNERS_PLACES
+        places = start
+        save = onSave
+        open = true
+    }
+
+    fun done() { if (open) { save?.invoke(places); close() } }
+    fun reset() { places = com.pokedaisy.app.companion.HudCustom.CORNERS_PLACES }
+    fun close() { open = false; save = null }
+}
+
+/** EDIT LAYOUT's buttons, over the HUD's top: DONE keeps the places, CORNERS puts the parts back, CANCEL leaves them. */
+@Composable
+private fun HudEditorBar(m: GbaTextMetrics, modifier: Modifier) {
+    CompanionBackHandler { HudEditor.close() }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(m.u * 3)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(m.u * 4)) {
+            OptionButton(tk("DONE"), m, onClick = HudEditor::done, emphasis = true)
+            OptionButton(tk("CORNERS"), m, onClick = HudEditor::reset)
+            OptionButton(tk("CANCEL"), m, onClick = HudEditor::close)
+        }
+        GbaText(tr("Drag each part where you want it"), Color.White, Color.Black, m)
+    }
+}
+
+/**
+ * A layout of the player's: each block (party, minimap, balls, buttons) at its [places]' share of the room left for it,
+ * so it stays whole on any picture. [editing]: each block framed and dragged by a finger instead of tapped.
+ */
+@Composable
+private fun CustomHudLayout(p: HudParts, places: Map<com.pokedaisy.app.companion.HudBlock, com.pokedaisy.app.companion.HudPlace>, editing: Boolean) {
+    val u = p.m.u
+    // The room each block moves in, from the last layout: what a drag's pixels are a share of.
+    val room = remember { HashMap<com.pokedaisy.app.companion.HudBlock, Size>() }
+    @Composable
+    fun block(b: com.pokedaisy.app.companion.HudBlock, content: @Composable () -> Unit) {
+        val mod = Modifier.layoutId(b).then(if (!editing) Modifier else Modifier
+            .drawBehind {
+                val px = u.toPx()
+                drawRect(Color(0x55FFCF5A), Offset(-2 * px, -2 * px), Size(size.width + 4 * px, size.height + 4 * px))
+                drawRect(Color(0xFFFFCF5A), Offset(-2 * px, -2 * px), Size(size.width + 4 * px, size.height + 4 * px),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(px))
+            }
+            .pointerInput(b) {
+                // Every touch on a block is the editor's (the HUD's own taps don't run while it's open).
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial).consume()
+                    while (true) {
+                        val e = awaitPointerEvent(PointerEventPass.Initial)
+                        val c = e.changes.firstOrNull() ?: break
+                        if (!c.pressed) { c.consume(); break }
+                        val d = c.positionChange()
+                        c.consume()
+                        val r = room[b] ?: continue
+                        val now = HudEditor.places[b] ?: places[b] ?: com.pokedaisy.app.companion.HudPlace(0.5f, 0.5f)
+                        HudEditor.places = HudEditor.places + (b to com.pokedaisy.app.companion.HudPlace(
+                            if (r.width > 0f) (now.fx + d.x / r.width).coerceIn(0f, 1f) else now.fx,
+                            if (r.height > 0f) (now.fy + d.y / r.height).coerceIn(0f, 1f) else now.fy,
+                        ))
+                    }
+                }
+            })
+        Box(mod) { content() }
+    }
+    Layout(
+        content = {
+            if (p.map) block(com.pokedaisy.app.companion.HudBlock.MAP) { HudMiniMap(p.snapshot, mapW = 104, mapH = 64, m = p.m) { p.open(FieldHudPanel.MAP, 0) } }
+            block(com.pokedaisy.app.companion.HudBlock.PARTY) { PartyRow(p, Modifier) }
+            block(com.pokedaisy.app.companion.HudBlock.BALLS) {
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(u * 4)) {
+                    HudStatus(p)
+                    if (p.ballsRow) HudBalls(p, vertical = false)
+                }
+            }
+            block(com.pokedaisy.app.companion.HudBlock.BUTTONS) { HudButtons(p, vertical = false) }
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { measurables, c ->
+        val pad = (u * 6).roundToPx()
+        val loose = c.copy(minWidth = 0, minHeight = 0)
+        val placed = measurables.map { (it.layoutId as com.pokedaisy.app.companion.HudBlock) to it.measure(loose) }
+        layout(c.maxWidth, c.maxHeight) {
+            for ((b, pl) in placed) {
+                val freeW = (c.maxWidth - 2 * pad - pl.width).coerceAtLeast(0).toFloat()
+                val freeH = (c.maxHeight - 2 * pad - pl.height).coerceAtLeast(0).toFloat()
+                room[b] = Size(freeW, freeH)
+                val at = places[b] ?: com.pokedaisy.app.companion.HudCustom.CORNERS_PLACES[b] ?: com.pokedaisy.app.companion.HudPlace(0.5f, 0.5f)
+                pl.place(pad + (freeW * at.fx).roundToInt(), pad + (freeH * at.fy).roundToInt())
+            }
+        }
+    }
+}
+
 /** CORNERS (the minimap top right, the balls and buttons bottom right) and CORNERS 2 ([swapped]: the other way round). */
 @Composable
 private fun CornersLayout(p: HudParts, swapped: Boolean, obstacles: List<Rect> = emptyList()) {
@@ -783,9 +938,9 @@ private fun CornersLayout(p: HudParts, swapped: Boolean, obstacles: List<Rect> =
                 // The buttons toward the screen's edge: under the balls at the bottom, over them at the top.
                 // The REPEL's steps on the far side of the balls from the buttons.
                 if (swapped) HudButtons(p, vertical = false)
-                if (!swapped) RepelSteps(p)
+                if (!swapped) HudStatus(p)
                 if (p.ballsRow) HudBalls(p, vertical = false)
-                if (swapped) RepelSteps(p)
+                if (swapped) HudStatus(p)
                 if (!swapped) HudButtons(p, vertical = false)
             }
         },
@@ -922,7 +1077,7 @@ private fun PartyRow(p: HudParts, modifier: Modifier) {
 @Composable
 private fun BallsAndButtons(p: HudParts, modifier: Modifier = Modifier, alignment: Alignment.Horizontal = Alignment.End, mapButton: Boolean = false) {
     Column(modifier, horizontalAlignment = alignment, verticalArrangement = Arrangement.spacedBy(p.m.u * 4)) {
-        RepelSteps(p)
+        HudStatus(p)
         if (p.ballsRow) HudBalls(p, vertical = false)
         HudButtons(p, vertical = false, mapButton = mapButton)
     }
@@ -978,7 +1133,7 @@ private fun RailsLayout(p: HudParts, left: Dp, right: Dp) {
             val inner = (side / u).toInt() - 4 - 8
             if (p.map) HudMiniMap(p.snapshot, mapW = inner, mapH = inner, m = p.m, nameLines = 2) { p.open(FieldHudPanel.MAP, 0) }
             Spacer(Modifier.weight(1f))
-            RepelSteps(p, narrow = true)
+            HudStatus(p, narrow = true)
             if (p.ballsRow) HudBalls(p, vertical = true)
             HudButtons(p, vertical = true)
         }
@@ -1021,12 +1176,13 @@ private fun DockBar(p: HudParts, party: Boolean, modifier: Modifier) {
             if (mons.isNotEmpty()) DockDivider(p.m)
             HudBallsInline(p)
         }
-        if (p.repel > 0) {
+        val status = p.repel > 0 || huntShown(p)
+        if (status) {
             if (mons.isNotEmpty() || p.ballsRow) DockDivider(p.m)
-            RepelSteps(p, framed = false)
+            HudStatus(p, framed = false)
         }
         if (buttons) {
-            if (mons.isNotEmpty() || p.ballsRow || p.repel > 0) DockDivider(p.m)
+            if (mons.isNotEmpty() || p.ballsRow || status) DockDivider(p.m)
             HudButtons(p, vertical = false, framed = false)
         }
     }
@@ -1263,6 +1419,49 @@ private fun RepelSteps(p: HudParts, framed: Boolean = true, narrow: Boolean = fa
         }
     }
 }
+
+/** The windows by the balls: REPEL's steps, SHINY HUNT's count. Each draws nothing when it has nothing to say. */
+@Composable
+private fun HudStatus(p: HudParts, framed: Boolean = true, narrow: Boolean = false) {
+    RepelSteps(p, framed, narrow)
+    HuntCount(p, framed, narrow)
+}
+
+/**
+ * SHINY HUNT's count while a hunt goes (its flag on, HUNT shown): the target's icon (sparkles for any shiny) and the count,
+ * the chance of a shiny by now under it. A tap counts one on a BY HAND hunt, else opens the companion.
+ */
+@Composable
+private fun HuntCount(p: HudParts, framed: Boolean = true, narrow: Boolean = false) {
+    if (!huntShown(p)) return
+    val hunt = com.pokedaisy.app.companion.ShinyHunts.active ?: return
+    val u = p.m.u
+    val count = rememberGbaTextMetrics(1.25f)
+    val small = rememberGbaTextMetrics(0.75f)
+    val odds = if (hunt.odds > 0) hunt.odds else com.pokedaisy.app.companion.ShinyHunts.gameOdds
+    val byHand = hunt.method == com.pokedaisy.app.companion.data.HuntMethod.BY_HAND
+    Row(
+        (if (framed) Modifier.hudPanel(u) else Modifier)
+            .soundClickable { if (byHand) com.pokedaisy.app.companion.ShinyHunts.add(1) else p.companion?.invoke() }
+            .padding(start = if (framed) u * 2 else 0.dp, end = if (framed) u * 5 else 0.dp, top = if (framed) u * 3 else 0.dp, bottom = if (framed) u * 3 else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(u * if (narrow) 2 else 3),
+    ) {
+        val size = hudItemSize(p.m) * if (narrow) 1f else 1.25f
+        if (hunt.target != 0) SpeciesIcon(huntIcon(hunt.target), size, Modifier.size(size))
+        else PixelArt(TabIcons.sparkles.bitmap, TabIcons.sparkles.palette, Modifier.size(size))
+        Column(verticalArrangement = Arrangement.spacedBy(u)) {
+            GbaText(com.pokedaisy.app.companion.i18n.groupedNumber(hunt.count), ink.text, ink.shadow, count)
+            if (!narrow) {
+                val chance = com.pokedaisy.app.companion.data.HuntOdds.chanceBy(hunt.count, odds)
+                GbaText(tr("{0}% BY NOW", (chance * 100).toInt().coerceAtMost(99)), ink.muted, ink.shadow, small)
+            }
+        }
+    }
+}
+
+private fun huntShown(p: HudParts) = com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt && p.style.shows(FieldHudPart.HUNT) &&
+    com.pokedaisy.app.companion.ShinyHunts.active != null
 
 /** The plain REPEL's icon for the counter (the game doesn't keep which kind is working). */
 private const val REPEL_ICON_ITEM = 86
@@ -1553,7 +1752,7 @@ private fun HudMapPanel(snapshot: SnapshotView, m: GbaTextMetrics, fly: FlyActio
                 if (glass) GlassTitle(tk("MAP"), gameCase(snapshot.location.mapSecName), titleM, onClose)
                 else OptionTitleWindow(tk("MAP"), titleM, trailing = gameCase(snapshot.location.mapSecName), onBack = onClose)
                 // MapScreen draws its own frame: no window around it.
-                Box(Modifier.width(mapW).height(mapW / aspect)) { MapScreen(snapshot, fly = fly, keepShape = true) }
+                Box(Modifier.width(mapW).height(mapW / aspect)) { MapScreen(snapshot, fly = fly) }
             }
         }
     }

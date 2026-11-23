@@ -27,7 +27,7 @@ Rather use your buttons down there? Press `X` while you walk around and they mov
 
 Some devices treat their bottom screen as the main display, which would put the game below and the companion on top. `SWAP SCREENS` trades them, so the game moves to the other screen and the companion takes the main one.
 
-You'll find it in the `SCREEN` group of Settings on the top screen and of the companion's `SETTINGS`. It only shows on a device with a second screen. Flipped from the companion, it swaps right away; flipped from the top-screen Settings, the game picks it up when you go back to it.
+You'll find it in the `SCREENS` group of Settings on the top screen and of the companion's `SETTINGS`. It only shows on a device with a second screen. Flipped from the companion, it swaps right away; flipped from the top-screen Settings, the game picks it up when you go back to it.
 
 The touch controls stay with the game when you swap screens or leave the app and come back. Disconnecting the second screen brings the game and its controls back to the main display.
 
@@ -50,7 +50,7 @@ It's there on every two-screen device.
 
 ### SINGLE SCREEN
 
-Rather play on one screen, so the other is free for good? Turn on `SINGLE SCREEN` (in the `SCREEN` group of Settings on the top screen and of the companion's `SETTINGS`; it only shows on a device with a second screen). The game stays on its screen, the second screen goes back to Android for any app you like, and the companion opens as a window over the game, the way it does on a one-screen handheld (see below). Tap `BACK` to open or close it.
+Rather play on one screen, so the other is free for good? Turn on `SINGLE SCREEN` (in the `SCREENS` group of Settings on the top screen and of the companion's `SETTINGS`; it only shows on a device with a second screen). The game stays on its screen, the second screen goes back to Android for any app you like, and the companion opens as a window over the game, the way it does on a one-screen handheld (see below). Tap `BACK` to open or close it.
 
 Flipped from the companion, it switches right away and the window opens so you can see where it went. Turn it off and the companion goes back to the second screen. While it's on, `SWAP SCREENS` and `CLOSE COMPANION` step aside, and `COMPANION VIEW` and `BATTLE BUTTONS` show up, as on a one-screen device.
 
@@ -65,7 +65,7 @@ The companion is still there:
 - **On the bottom screen:** tap `COMPANION` in the bar under the touch screen and the companion takes the touch screen's place. The bar takes a little of its height, so its text is a size smaller there, as on a small screen. Tap `GAME SCREEN` in the same spot to bring the touch screen back. `BACK` with nothing left to go back from also returns to the touch screen. PokeDaisy remembers which of the two you had. On a 4:3 bottom screen, like the Retroid Pocket Duo's, there's no room under the touch screen, so it's drawn a little smaller to leave room for the bar.
 - **Over the game:** tap `BACK` and the companion opens over the top screen, as on a one-screen handheld (see [The window](#the-window)).
 
-Rather have the touch screen fill your whole bottom screen, without the bar? Set `DS TOUCH SCREEN` to `STRETCH` in SETTINGS (SCREEN group). The touch screen is stretched a little taller then, and `COMPANION` becomes a small tab on the right edge, halfway down, where the games keep nothing you need to tap. It works the same way: tap it for the companion, and tap it again there for the touch screen.
+Rather have the touch screen fill your whole bottom screen, without the bar? Set `DS TOUCH SCREEN` to `STRETCH` in SETTINGS (DS group). The touch screen is stretched a little taller then, and `COMPANION` becomes a small tab on the right edge, halfway down, where the games keep nothing you need to tap. It works the same way: tap it for the companion, and tap it again there for the touch screen.
 
 `SWAP SCREENS` trades a DS game's two screens too: the top screen goes on your bottom screen, and the touch screen, with its `COMPANION` button, on the top one. The touch screen stays up whatever `CLOSE COMPANION` says. `REWIND` isn't available in DS games.
 
@@ -73,7 +73,7 @@ On a handheld or phone with one screen, a DS game shows both of its screens on i
 
 ### DS layout: two screens on one
 
-Held sideways, `DS LAYOUT` (in the `SCREEN` group of Settings and of the companion's `SETTINGS`) picks where the two screens go. Each choice has a little picture of how it looks:
+Held sideways, `DS LAYOUT` (in the `DS` group of Settings and of the companion's `SETTINGS`) picks where the two screens go. Each choice has a little picture of how it looks:
 
 - `ONE SCREEN` (the default): the game fills the screen, with `EXPAND` if `ASPECT` says so, and the touch screen floats in over it whenever the game wants it: when you press X for the game's menu, in HeartGold and SoulSilver's menus on the touch screen outside battles (like a PC's DEPOSIT and WITHDRAW), in a battle's bag, party and questions (the party after one of yours faints too, the one you switch to after a trainer's Pokémon faints, picking a move to forget for a new one, and the naming screen after a catch), when you name yourself and your rival at the start of a new game, and whenever the top screen goes blank while the touch screen has something (like the title's `CONTINUE`). The game dims behind it, like a pop up on a web page, and keeps running. When the game brings it up (outside a battle), the picture behind it stays as it was when it came, until it goes, so nothing jumps around behind it as the game moves between its pages. When the game is done with the touch screen, it goes away by itself. When the game goes from one screen to the next (into a menu screen and back out), both screens keep the picture you tapped on, shaded a little with three dots bouncing on it, while the game runs at full speed behind it with its sound off (with fast forward on, at fast forward's speed, music and all). The next screen fades in over it once it's ready, so you never sit through the game's fades and the black between them. Your taps and buttons wait until then. Leaving a menu screen with its own back or quit button brings you back to the X menu, as B does. Tap the dim beside it to close it: the game gets B, its own way back (not in a battle). The first page of the party, the Pokédex and the options floats in alone the same way, over the field you came from. Pages with something to say on both screens (a Pokémon's summary, the Pokédex list, the bag, the Pokégear and the rest) show side by side over it instead, edge to edge. A battle gets the game's buttons on the top screen (see [Battle](battle.md#on-one-screen-battle-buttons)).
 - `SIDE BY SIDE`: both screens at the same size, next to each other like an open DS.
@@ -96,7 +96,7 @@ In Origin HeartGold, `ONE SCREEN` floats the touch screen in for its X menu, its
 
 ## Single-screen handhelds
 
-On a handheld with one screen, like the Retroid Pocket 6, the companion shares the game's screen. The `COMPANION VIEW` setting (in the `SCREEN` group of Settings and of the companion's `SETTINGS`) picks how:
+On a handheld with one screen, like the Retroid Pocket 6, the companion shares the game's screen. The `COMPANION VIEW` setting (in the `SCREENS` group of Settings and of the companion's `SETTINGS`) picks how:
 
 - `WINDOW` (the default): the companion opens as a window in the middle of the screen, over the game.
 - `SIDE PANEL`: the companion is a panel on the right side of the screen, which you can lock beside the game.
@@ -144,7 +144,7 @@ Hold a phone upright and the game sits across the top of the screen, with the co
 - **Hide it:** with the companion hidden, the game has the screen to itself and only the grip stays, along the bottom. Tap it, drag it, or press the `COMPANION` hotkey to bring the companion back.
 - **Touch controls:** they get the space at the bottom of the screen, under the companion. With the companion `AT BOTTOM` (below) they go in the gap between the game and the companion when there's room, and lie over the game when there isn't. The phone held upright has its own layout, and `POSITION` on the `TOUCH CONTROLS` page puts the buttons at the top, middle or bottom of their space; see [Touch controls](controls.md#touch-controls).
 
-The `COMPANION` setting (on the `DISPLAY OPTIONS` page of the `SCREEN` group, on single-screen devices) picks where the companion sits on a phone held upright:
+The `COMPANION` setting (on the `DISPLAY OPTIONS` page of the `GAME SCREEN` group, on single-screen devices) picks where the companion sits on a phone held upright:
 
 - `UNDER GAME` (the default): right under the game, with the touch controls at the bottom of the screen. On a screen with no room to spare under the companion (a tablet, or a DS game's taller picture), the companion and then the game get a little smaller so the touch controls still have their own space at the bottom and never cover the game.
 - `AT BOTTOM`: along the bottom of the screen, with the touch controls in any gap above it.
@@ -161,7 +161,7 @@ On a folding phone, PokeDaisy uses the fold the way a two-screen handheld uses i
 - **Half open like a book** (the fold down the middle): the game is on the left page and the companion on the right. `BACK` goes back inside the companion, and the companion stays open.
 - **Fully open or closed:** the usual layouts for one screen, sideways or upright, as above.
 
-The `FOLD LAYOUT` setting (in the `SCREEN` group, on both screens) picks when this happens:
+The `FOLD LAYOUT` setting (in the `SCREENS` group, on both screens) picks when this happens:
 
 - `HALF OPEN` (the default): only while the phone is half open.
 - `ALWAYS`: unfolded flat too, split at the fold the same way.

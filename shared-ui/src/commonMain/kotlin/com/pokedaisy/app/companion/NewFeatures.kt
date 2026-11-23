@@ -286,6 +286,14 @@ object NewFeatures {
     const val GAME_NAMES = "game_names"
     /** Settings > GAME PATHS: the file's name under a game's, only where two names match. */
     const val GAME_PATHS = "game_paths"
+    /** Companion SETTINGS > SETTINGS FOR: a game's own settings (GameSettings.kt). */
+    const val GAME_SETTINGS = "game_settings"
+    /** Settings > SETTINGS FILE (and setup's first step): every setting exported to a file and imported back. */
+    const val SETTINGS_FILE = "settings_file"
+    const val SHINY_HUNT = "shiny_hunt"
+    const val SPOILER_FREE = "spoiler_free"
+    /** Settings > FOLDERS > SAVE STATES: a folder of the player's own, the states listed by game with their pictures. */
+    const val STATES_FOLDER = "states_folder"
     /** Settings > SUPPORTED ONLY: the library without the games the companion can't read. */
     const val SUPPORTED_ONLY = "supported_only"
     /** SETTINGS > INSTANT TEXT: a text box's words at once (companion.data.InstantText). */
@@ -302,6 +310,32 @@ object NewFeatures {
     const val APP_FONT = "app_font"
     /** SETTINGS > FONT's PIXEL SMALL, the new default (the FONT row carries it now). */
     const val PIXEL_SMALL = "pixel_small"
+    /** SETTINGS > FONT SIZE (SMALL / MEDIUM / LARGE). */
+    const val FONT_SIZE = "font_size"
+    /** FONT SIZE > MORE SIZES: any size on a slider. */
+    const val MORE_FONT_SIZES = "more_font_sizes"
+    /** SETTINGS > MY LOOK: the player's own themes, fonts and background pictures (ui.theme.CustomLook). */
+    const val MY_LOOK = "my_look"
+    /** MY LOOK > CREATE A THEME: themes made in the app, exported and shared as a file (ui.theme.ThemeFiles). */
+    const val THEME_EDITOR = "theme_editor"
+    /** MY LOOK's moving pictures (GIF / WebP) behind the app and the companion. */
+    const val MOVING_BACKGROUNDS = "moving_backgrounds"
+    /** SIDE BARS: black or the player's pictures beside a game that doesn't fill the screen. */
+    const val SIDE_BARS = "side_bars"
+    /** TAB BAR > SHOW AS: the companion's tabs as icons. */
+    const val TAB_ICONS = "tab_icons"
+    /** TAB BAR > POSITION / SIZE and the library's MENU BAR / MENU BAR SIZE. */
+    const val TAB_BAR_PLACE = "tab_bar_place"
+    /** EDIT THEME > TEXT COLOR / SECOND COLOR. */
+    const val THEME_COLORS = "theme_colors"
+    /** HUD > LAYOUT's MY LAYOUT: the HUD's parts placed by hand (EDIT LAYOUT), several layouts kept. */
+    const val HUD_EDITOR = "hud_editor"
+    /** TOUCH CONTROLS > LAYOUT: several custom layouts kept. */
+    const val TOUCH_LAYOUTS = "touch_layouts"
+    /** The library's new views: CARTRIDGES, CAROUSEL, SPOTLIGHT. */
+    const val LIBRARY_VIEWS = "library_views"
+    /** SCREEN > VIEW: RETRO / MODERN (AppView). */
+    const val APP_VIEW = "app_view"
     /** FREE FLIGHT: TAKE OFF / LAND (the QUICK MENU's tile and its row, the MAP tab, the FREE FLIGHT hotkey). */
     const val FREE_FLIGHT = "free_flight"
     /** SETTINGS > FLY STYLE: SCENIC flies over the field to the town. */
@@ -390,8 +424,10 @@ object NewFeatures {
         AUDIO_EFFECTS, BATTLE_INFO, BATTLE_VIEW, GAME_NAMES, GAME_PATHS, SUPPORTED_ONLY, LOOK_AROUND, INSTANT_TEXT, BATTLE_STYLE,
         QUICK_FLASH, ZOOM_SETTING, TOUCH_VIBRATION, TOUCH_MORE_BUTTONS, FREE_FLIGHT, SCENIC_FLY, FLIGHT_AREA, FLY_ON, RIDE_ON,
         DPAD_KEYS, RA_ICONS, DS_TOUCH_FILL, DS_CORE, DS_CORE_BANANADS, RA_POPUPS, HIDE_BATTLE_MENU, SPRITE_PACK, HM_FREE, POKEMON_CENTER, EXP_SHARE, LEVEL_CAP, REPEL_REFILL, SHINY_ALERT, LAST_BALL, ITEM_POPUPS, HUD_MOVE_ADVICE, BOSS_RETRY, LOW_HP_BEEP, FIELD_POISON, RUNNING_SHOES, SETTINGS_LOOK,
-        QUICK_TOUCH, APP_FONT, PIXEL_SMALL, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
-        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL,
+        QUICK_TOUCH, APP_FONT, PIXEL_SMALL, FONT_SIZE, APP_VIEW, PAL_PARK, SAVE_MISSING, TRADE_BACK, SAVE_COLLECTION, POKE_TRANSFER, SAVE_EDITOR_GEN5, SAVE_EDITOR_DP, QUICK_TURBO, CRYSTAL_CARD,
+        GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
+        THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
+        TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS, SHINY_HUNT, SPOILER_FREE,
         WILD_PIN,
     )
 

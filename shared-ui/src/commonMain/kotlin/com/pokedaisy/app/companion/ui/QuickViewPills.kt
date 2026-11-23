@@ -35,8 +35,13 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.pokedaisy.app.companion.data.LibraryView
 import com.pokedaisy.app.companion.i18n.tr
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.input.pointer.pointerInput
 import com.pokedaisy.app.companion.ui.theme.gbaFocusRing
 
 /**
@@ -60,6 +65,8 @@ fun QuickViewPills(
     focusRequester: FocusRequester? = null,
     /** The launcher's cursor is on the row (its own, not Compose focus): the open pill gets the focus ring. */
     cursor: Boolean = false,
+    /** A long press on a pill, then a drag, moves it along the row; the new order when it's let go (null: fixed order). */
+    onReorder: ((List<LibraryView>) -> Unit)? = null,
 ) {
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
@@ -81,19 +88,76 @@ fun QuickViewPills(
         }
         scroll.scrollTo(target.coerceIn(0, scroll.maxValue))
     }
+    // The order while a pill is dragged (the views' own otherwise), the dragged one and how far it's moved from its place.
+    var order by remember(views) { androidx.compose.runtime.mutableStateOf(views) }
+    var dragging by remember { androidx.compose.runtime.mutableStateOf<LibraryView?>(null) }
+    var dragX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var fingerX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var settledAt by remember { androidx.compose.runtime.mutableFloatStateOf(Float.NaN) }
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    // The drag's callbacks outlive recompositions: they read the newest views and callback, never a stale copy.
+    val currentViews by androidx.compose.runtime.rememberUpdatedState(views)
+    val currentReorder by androidx.compose.runtime.rememberUpdatedState(onReorder)
     Row(
-        modifier.onSizeChanged { viewport = it.width }.horizontalScroll(scroll).padding(contentPadding),
+        modifier.onSizeChanged { viewport = it.width }.horizontalScroll(scroll, enabled = dragging == null).padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(m.u * 4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        for (view in views) {
+        // Each pill keyed by its view, so a swap mid-drag moves the pill (and its running gesture) along, rather than
+        // handing its place to the neighbour - which cancelled the drag and snapped it back.
+        for (view in order) androidx.compose.runtime.key(view) {
             val on = view == selected
+            val lifted = dragging == view
+            val drag = if (onReorder == null) Modifier else Modifier.pointerInput(view) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        dragging = view
+                        val me = edges[view]
+                        fingerX = me?.let { (it.first + it.last) / 2f } ?: 0f
+                        settledAt = Float.NaN
+                        dragX = 0f
+                        haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                    },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        // Where the finger holds the pill's middle, in the row; the pill drawn there from wherever the
+                        // layout has it now.
+                        fingerX += amount.x
+                        val me = edges[view] ?: return@detectDragGesturesAfterLongPress
+                        val mid = (me.first + me.last) / 2f
+                        dragX = fingerX - mid
+                        // Just swapped and not laid out again yet: the neighbours' places are a frame old.
+                        if (mid == settledAt) return@detectDragGesturesAfterLongPress
+                        val i = order.indexOf(view)
+                        val next = order.getOrNull(i + 1)?.let { edges[it] }
+                        val prev = order.getOrNull(i - 1)?.let { edges[it] }
+                        if (next != null && fingerX > (next.first + next.last) / 2f) {
+                            order = order.toMutableList().apply { removeAt(i); add(i + 1, view) }
+                            settledAt = mid
+                        } else if (prev != null && fingerX < (prev.first + prev.last) / 2f) {
+                            order = order.toMutableList().apply { removeAt(i); add(i - 1, view) }
+                            settledAt = mid
+                        }
+                    },
+                    onDragEnd = { dragging = null; dragX = 0f; if (order != currentViews) currentReorder?.invoke(order) },
+                    onDragCancel = { dragging = null; dragX = 0f; order = currentViews },
+                )
+            }
             QuickViewPill(
                 view, on, counts[view], m, small, cursor = on && cursor,
                 Modifier.onPlaced { c -> c.parentLayoutCoordinates?.let { row ->
                     val x = row.localPositionOf(c, androidx.compose.ui.geometry.Offset.Zero).x.toInt()
                     edges[view] = x..(x + c.size.width)
-                } }.then(if (on && focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+                } }.then(if (on && focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                    .zIndex(if (lifted) 1f else 0f)
+                    .graphicsLayer {
+                        translationX = if (lifted) edges[view]?.let { fingerX - (it.first + it.last) / 2f } ?: dragX else 0f
+                        val k = if (lifted) 1.08f else 1f
+                        scaleX = k; scaleY = k
+                        shadowElevation = if (lifted) 6.dp.toPx() else 0f
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+                    }
+                    .then(drag),
             ) { onPick(view) }
         }
     }
@@ -108,6 +172,7 @@ private fun QuickViewPill(
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val u = m.u
+    if (modernView) { ModernQuickViewPill(view, look, on, count, m, small, focused || cursor, interaction, modifier, onClick); return }
     val dark = OptionColors.dark
     val text = if (on) Color.White else if (dark) OptionColors.titleText else look.shadow
     val shadow = if (on) look.shadow else OptionColors.titleShadow
@@ -185,5 +250,67 @@ object QuickViewLooks {
         LibraryView.FAVORITES -> FAVORITES
         LibraryView.RECENT -> RECENT
         else -> CategoryLooks.of(view.platform ?: view.category!!)
+    }
+}
+
+/**
+ * VIEW MODERN's pill: a full pill, the open one filled with its colour top to bottom and white words, the others white
+ * on a soft shadow with a dot (or the star / clock) in their colour and the count in a little bubble.
+ */
+@Composable
+private fun ModernQuickViewPill(
+    view: LibraryView, look: CategoryLook, on: Boolean, count: Int?, m: GbaTextMetrics, small: GbaTextMetrics, focused: Boolean,
+    interaction: MutableInteractionSource, modifier: Modifier, onClick: () -> Unit,
+) {
+    val u = m.u
+    val dark = OptionColors.dark
+    val ink = if (on) Color.White else OptionColors.label
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Row(
+        modifier
+            .gbaFocusRing(focused, shape)
+            .semantics { selected = on }
+            .keyDrivenFocus()
+            .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
+            .drawBehind {
+                val r = size.height / 2f
+                CompanionSkins.MODERN.dropShadow?.let { drawSoftShadow(it, r) }
+                if (on) drawRoundRect(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(look.back, Color.White, 0.18f), look.back)),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(r),
+                ) else {
+                    drawRoundRect(OptionColors.titleFill, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r))
+                    drawRoundRect(
+                        OptionColors.titleLayers.first().first, cornerRadius = androidx.compose.ui.geometry.CornerRadius(r),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()),
+                    )
+                }
+            }
+            .padding(horizontal = u * 8, vertical = u * 4),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val glyph = when (view) {
+            LibraryView.FAVORITES -> ModernGlyph.STAR
+            LibraryView.RECENT -> ModernGlyph.STATES
+            else -> null
+        }
+        val mark = if (on) Color.White else look.back.let { if (dark) androidx.compose.ui.graphics.lerp(it, Color.White, 0.25f) else it }
+        if (glyph != null) ModernIcon(glyph, mark, Modifier.size(small.lineHeight * 1.1f))
+        else androidx.compose.foundation.Canvas(Modifier.size(small.lineHeight * 0.55f)) { drawCircle(mark) }
+        Spacer(Modifier.width(u * 4))
+        GbaText(quickViewLabel(view), ink, Color.Transparent, small, bold = true)
+        if (count != null) {
+            Spacer(Modifier.width(u * 4))
+            androidx.compose.foundation.layout.Box(
+                Modifier.drawBehind {
+                    drawRoundRect(
+                        if (on) Color.White.copy(alpha = 0.25f) else OptionColors.well,
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f),
+                    )
+                }.padding(horizontal = u * 4, vertical = u * 0.5f),
+            ) {
+                GbaText(count.toString(), if (on) Color.White else OptionColors.muted, Color.Transparent, small)
+            }
+        }
     }
 }
