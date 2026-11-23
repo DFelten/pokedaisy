@@ -225,3 +225,54 @@ jobs:
     with:
       tag: ${{ github.ref_name }}
       upload_3dsx: true
+
+  ios:
+    name: iOS app for AltStore Classic
+    needs: [verify, publish]
+    if: needs.verify.outputs.prerelease == 'false'
+    permissions:
+      contents: write
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - run: git submodule update --init third_party/mgba third_party/rcheevos
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+
+      - name: Generate the Xcode project
+        run: brew install xcodegen && cd iosApp && xcodegen
+
+      # Kotlin/Native release optimization exceeds the hosted runner heap with this framework.
+      - name: Build the unsigned device app
+        run: |
+          xcodebuild -project iosApp/PokeDaisy.xcodeproj -scheme PokeDaisy \
+            -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/build" ARCHS=arm64 CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="${GITHUB_REF_NAME#v}" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" build
+
+      - name: Package the IPA
+        run: |
+          app="$RUNNER_TEMP/build/Build/Products/Debug-iphoneos/PokeDaisy.app"
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Info.plist")" = "${GITHUB_REF_NAME#v}"
+          test "$(plutil -extract CFBundleVersion raw "$app/Info.plist")" = "$GITHUB_RUN_NUMBER"
+          xcrun vtool -show-build "$app/PokeDaisy" | grep -E 'platform[[:space:]]+IOS$'
+          mkdir -p "$RUNNER_TEMP/package/Payload" "$RUNNER_TEMP/distribution"
+          ditto "$app" "$RUNNER_TEMP/package/Payload/PokeDaisy.app"
+          ipa="$RUNNER_TEMP/distribution/PokeDaisy.ipa"
+          (cd "$RUNNER_TEMP/package" && ditto -c -k --keepParent Payload "$ipa")
+      - name: Attach the IPA to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/distribution/PokeDaisy.ipa" --repo "$GITHUB_REPOSITORY" --clobber

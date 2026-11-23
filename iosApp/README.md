@@ -236,7 +236,5 @@ https://raw.githubusercontent.com/lidor30/pokedaisy/altstore/source.json
 Install **PokeDaisy** from **PokeDaisy Builds**. AltStore Classic handles signing
 and refresh. Back up saves in Files before switching from an Xcode-installed copy.
 
-The first successful AltStore workflow run from `main` creates the source.
-Maintainers can run it from Actions or set the repository variable
-`ALTSTORE_PUBLISH_ON_PUSH` to `true` to publish on every push to `main`.
-Each build is an unsigned Debug device IPA attached to a public prerelease.
+The AltStore feed follows the latest stable GitHub release. Its iOS build is an
+unsigned device IPA that AltStore Classic signs during installation.

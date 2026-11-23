@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import plistlib
 import sys
-from datetime import datetime, timezone
 from zipfile import ZipFile
 
 
@@ -15,7 +14,8 @@ def main():
     ipa = Path(sys.argv[1])
     repository = os.environ["GITHUB_REPOSITORY"]
     commit = os.environ["GITHUB_SHA"]
-    tag = f'altstore-{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}'
+    tag = os.environ["TAG"]
+    published_at = os.environ["PUBLISHED_AT"]
     raw_url = f"https://raw.githubusercontent.com/{repository}"
     icon_url = (
         f"{raw_url}/{commit}/iosApp/PokeDaisy/Assets.xcassets/"
@@ -43,7 +43,7 @@ def main():
             "name": info["CFBundleDisplayName"],
             "bundleIdentifier": info["CFBundleIdentifier"],
             "developerName": "PokeDaisy contributors",
-            "localizedDescription": "PokeDaisy for iPhone and iPad, built from main.",
+            "localizedDescription": "PokeDaisy for iPhone and iPad, from the latest stable GitHub release.",
             "iconURL": icon_url,
             "category": "games",
             "appPermissions": {"entitlements": [], "privacy": privacy},
@@ -51,7 +51,7 @@ def main():
                 "version": info["CFBundleShortVersionString"],
                 "buildVersion": info["CFBundleVersion"],
                 "minOSVersion": info["MinimumOSVersion"],
-                "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "date": published_at,
                 "localizedDescription": f"Built from commit {commit[:12]}.",
                 "downloadURL": f"https://github.com/{repository}/releases/download/{tag}/{ipa.name}",
                 "size": ipa.stat().st_size,
