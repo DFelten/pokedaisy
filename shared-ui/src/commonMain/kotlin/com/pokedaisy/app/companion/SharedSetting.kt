@@ -84,12 +84,13 @@ enum class SharedSetting {
     DS_CPU_BOOST,
     DS_LAYOUT,
     HIDE_BATTLE_MENU,
+    QUICK_HATCH,
     /** SETTINGS FOR: ALL GAMES / THIS GAME. */
     SETTINGS_FOR;
 
     companion object {
         /** Rows only the Android companion draws: an iPad's SETTINGS (its shownRows) leaves them out as before. */
-        val ANDROID_ONLY = setOf(RUNNING_SHOES, DS_CORE, DS_RESOLUTION, DS_CPU_BOOST, DS_LAYOUT, HIDE_BATTLE_MENU, SETTINGS_FOR)
+        val ANDROID_ONLY = setOf(RUNNING_SHOES, DS_CORE, DS_RESOLUTION, DS_CPU_BOOST, DS_LAYOUT, HIDE_BATTLE_MENU, QUICK_HATCH, SETTINGS_FOR)
 
         fun available(running: Boolean, cheats: Boolean, gba: Boolean): Set<SharedSetting> =
             entries.filterTo(mutableSetOf()) {

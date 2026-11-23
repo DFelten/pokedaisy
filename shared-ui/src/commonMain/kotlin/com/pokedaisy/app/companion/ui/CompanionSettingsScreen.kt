@@ -928,6 +928,14 @@ private fun homeRows(
         ) {
             if (s.tradeEvolutionsSupported) { s.setTradeEvolutions(!s.tradeEvolutions); changed() }
         },
+        // An Egg's summary gets HATCH: it hatches on the next step, the game's own hatch (QuickHatch.kt).
+        SettingRow(
+            tk("QUICK HATCH"), if (s.quickHatchSupported) onOff(s.quickHatch) else tk("N/A"), setting = SharedSetting.QUICK_HATCH,
+            enabled = s.quickHatchSupported, labelBadge = NewFeatures.badge(NewFeatures.QUICK_HATCH),
+            subtitle = "Hatch an Egg on your next step",
+        ) {
+            if (s.quickHatchSupported) { s.setQuickHatch(!s.quickHatch); changed() }
+        },
         // A PIN on GUIDE > HERE's and the HUD's wild rows (grass, surf, rock smash, rods): the next wild one that way is the pick (WildPin.kt). OFF hides them.
         SettingRow(
             tk("WILD PIN"), if (s.wildPinSupported) onOff(s.wildPin) else tk("N/A"), enabled = s.wildPinSupported,

@@ -253,6 +253,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "GROUP TABS" to "group tabs side buttons rail categories left column sections hide tabs wider list",
     "LEVEL CAP" to "level cap max level limit hard mode harder overlevel over leveled gym leader boss ace stop exp",
     "NO HMS NEEDED" to "hm hms hidden machine machines free slave field moves cut surf strength rock smash waterfall dive fly flash without teaching badge only any pokemon",
+    "QUICK HATCH" to "quick hatch egg eggs hatching hatch now instant fast faster breed breeding daycare day care steps walk",
     "REUSABLE TMS" to "reusable tm tms technical machine machines reuse infinite unlimited keep tm single use consumed used up teach moves",
     "SHINY ALERT" to "shiny alert hunt hunting counter encounters count chain notify notification warn sparkle stop fast forward found",
     "WILD PIN" to "wild pin pinned unpin pick choose target hunt hunting rare slot next encounter guaranteed grass cave surf surfing water rock smash fishing fish rod here wild list chain",
@@ -303,7 +304,8 @@ val SETTINGS_PAGES: Map<String, List<String>> = mapOf(
     // helper of that kind goes here.
     QOL_PAGE to listOf(
         "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "QUICK HATCH", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP",
+        "FIELD POISON",
     ),
 )
 

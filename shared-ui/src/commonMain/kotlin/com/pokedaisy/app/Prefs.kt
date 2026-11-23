@@ -228,6 +228,10 @@ class Prefs(
     var flyStyleAsked: Boolean
         get() = p.getBoolean("fly_style_asked", false)
         set(v) = p.edit().putBoolean("fly_style_asked", v).apply()
+    /** QUICK HATCH: an Egg in the party gets a HATCH button on its summary, which hatches it on the next step (QuickHatch.kt). */
+    var quickHatch: Boolean
+        get() = p.getBoolean("quick_hatch", false)
+        set(v) = p.edit().putBoolean("quick_hatch", v).apply()
 
     /** REUSABLE TMS: a TM stays in the bag after it teaches a move, as an HM does (ReusableTms.kt). */
     var reusableTms: Boolean

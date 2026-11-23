@@ -37,6 +37,7 @@ object PerGameSettings {
         SharedSetting.EXP_SHARE to listOf("exp_share"),
         SharedSetting.LEVEL_CAP to listOf("level_cap"),
         SharedSetting.TRADE_EVOS to listOf("trade_evolutions"),
+        SharedSetting.QUICK_HATCH to listOf("quick_hatch"),
         SharedSetting.SHINY_ODDS to listOf("shiny_odds"),
         SharedSetting.SHINY_ALERT to listOf("shiny_alert"),
         SharedSetting.BOSS_RETRY to listOf("battle_retry"),

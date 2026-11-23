@@ -3,7 +3,7 @@ title: Party and summaries
 summary: Your team at a glance, each Pokémon's full summary, its exact IVs and EVs, which new moves are worth learning, and the POKéMON CENTER's services anywhere.
 section: companion
 order: 2
-keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, move replacement, replacement, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special]
+keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, move replacement, replacement, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special, egg, hatch, quick hatch, hatching, breeding, daycare]
 ---
 
 The `PARTY` tab is your team, live. Glance down and you know who's hurt, who's poisoned and who's about to level up, without pausing to open the game's menu.
@@ -74,6 +74,16 @@ The game decides, by its own rules: a Pokémon holding the item that stops evolu
 
 > [!NOTE]
 > `TRADE EVOS` works in FireRed, LeafGreen and Emerald, in every language and release, and in the US Platinum, HeartGold and SoulSilver and the English Black, White, Black 2 and White 2. On the DS the screen fades out, the game's evolution plays on both screens, and the field fades back in after. In other games it shows `N/A`. To trade for real between two of your games, see [Link play](link-play.md).
+
+## Quick hatch
+
+An Egg needs thousands of steps to hatch. To skip the walk, turn on `QUICK HATCH` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE` (it's `OFF` until you turn it on). An Egg in your party then gets a `HATCH` button on its summary. Tap it and confirm, then take one step on the field: the game plays its own hatching, asks about a nickname as usual, and adds the Pokémon to your Pokédex.
+
+It works on the field, with no menu, text or battle open. If you carry more than one Egg, the others get one step closer to hatching too. **Save in the game** to keep it.
+
+> [!NOTE]
+> `QUICK HATCH` works in Emerald. In other games it shows `N/A`.
+
 
 ## CENTER: heal, relearn, forget, rename
 

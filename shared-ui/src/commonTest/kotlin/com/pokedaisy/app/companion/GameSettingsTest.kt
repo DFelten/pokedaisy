@@ -69,7 +69,7 @@ class GameSettingsTest {
             "scene_speed_menu", "scene_speed_bike", "scene_speed_surf", "rewind", "game_aspect", "stretch_game", "expand_zoom_on_text",
             "look_around", "overlay", "screen_filter", "grid_strength", "smoothing", "gba_colors", "unlit_screen", "wild_encounters",
             "wild_encounters_before_off", "instant_text", "auto_run", "run_indoors", "repel_refill", "reusable_tms", "hm_free",
-            "exp_share", "level_cap", "trade_evolutions", "shiny_odds", "shiny_alert", "battle_retry", "low_hp_beep", "field_poison",
+            "exp_share", "level_cap", "trade_evolutions", "quick_hatch", "shiny_odds", "shiny_alert", "battle_retry", "low_hp_beep", "field_poison",
             "running_shoes", "follower", "day_night", "rival_look", "fly_style", "flight_area", "flight_vehicle", "ride_vehicle",
             "ds_core", "ds_resolution", "ds_cpu_boost", "ds_layout", "battle_style", "one_tap_moves", "hide_battle_menu", "battle_buttons")
         assertEquals(known, PerGameSettings.PREF_KEYS)

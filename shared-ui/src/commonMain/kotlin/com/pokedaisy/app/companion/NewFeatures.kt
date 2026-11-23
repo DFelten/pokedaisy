@@ -153,6 +153,8 @@ object NewFeatures {
     const val TRADE_EVOLUTIONS = "trade_evolutions"
     /** SETTINGS > WILD PIN: a PIN on GUIDE > HERE's and the HUD's grass rows picks the next wild one (companion.data.WildPin). */
     const val WILD_PIN = "wild_pin"
+    /** SETTINGS > QUICK HATCH: an Egg hatches on the next step, from its summary (companion.data.QuickHatch). */
+    const val QUICK_HATCH = "quick_hatch"
     /** SETTINGS > SHINY ODDS: a wild foe shiny at the odds picked (companion.data.ShinyOdds). */
     const val SHINY_ODDS = "shiny_odds"
 
@@ -428,7 +430,7 @@ object NewFeatures {
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
         TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS, SHINY_HUNT, SPOILER_FREE,
-        WILD_PIN,
+        WILD_PIN, QUICK_HATCH,
     )
 
     private const val DAYS = 7
