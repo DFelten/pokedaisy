@@ -255,6 +255,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "NO HMS NEEDED" to "hm hms hidden machine machines free slave field moves cut surf strength rock smash waterfall dive fly flash without teaching badge only any pokemon",
     "REUSABLE TMS" to "reusable tm tms technical machine machines reuse infinite unlimited keep tm single use consumed used up teach moves",
     "SHINY ALERT" to "shiny alert hunt hunting counter encounters count chain notify notification warn sparkle stop fast forward found",
+    "WILD PIN" to "wild pin pinned unpin pick choose target hunt hunting rare slot next encounter guaranteed grass cave surf surfing water rock smash fishing fish rod here wild list chain",
     "SHINY HUNT" to "shiny hunt hunting counter tracker hud count encounters resets soft reset eggs odds phase",
     "SHINY ODDS" to "shiny shinies shiny odds shiny rate shiny hunting hunt shiny charm sparkle rare color colour chance",
     "TIPS" to "tips hints help popup pop up feature discovery introduce new features suggestions what can it do",
@@ -302,7 +303,7 @@ val SETTINGS_PAGES: Map<String, List<String>> = mapOf(
     // helper of that kind goes here.
     QOL_PAGE to listOf(
         "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
+        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP", "FIELD POISON",
     ),
 )
 
@@ -318,7 +319,7 @@ val SETTINGS_TABS: Map<String, String> = mapOf(
 
 /** A QUALITY OF LIFE row's value with its helper not in use (the game's own way); anything else counts as on. The rest: OFF. */
 val QOL_UNUSED = mapOf(
-    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "SHINY ODDS" to "NORMAL",
+    "WILD ENCOUNTERS" to "ON", "LOW HP BEEP" to "ON", "FIELD POISON" to "ON", "WILD PIN" to "ON", "SHINY ODDS" to "NORMAL",
 )
 
 /** [rows]' rows on [page] ([SETTINGS_PAGES]), in the page's order. */
