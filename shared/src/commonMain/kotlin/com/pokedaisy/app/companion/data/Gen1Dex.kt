@@ -44,6 +44,9 @@ data class Gen1DexTables(
     val categoryStrings: Pair<Int, Int>? = null,
     /** The text command that points at the page's text: TX_FAR 0x17 (PureRGB renumbered its commands: TX_FAR_END 0x15). */
     val textFar: Int = 0x17,
+    /** EvosMovesPointerTable and TechnicalMachines ([GbLearnsets]); null = not mapped here (only the English carts are). */
+    val evosMoves: Pair<Int, Int>? = null,
+    val tmMoves: Pair<Int, Int>? = null,
     /** The highest Dex number (Brown: 252), and the bytes of each flag array ([owned] / [seen]: 19 = 152 bits in Red). */
     val dexCount: Int = 151,
     val flagBytes: Int = 19,
@@ -72,6 +75,8 @@ val GEN1_DEX_YELLOW = Gen1DexTables(
     internalToDex = gen1InternalToDexYellow,
     owned = 0xD2F6L,
     seen = 0xD309L,
+    evosMoves = 0x0E to 0x71E5,
+    tmMoves = 0x04 to 0x632D,
 )
 
 /**
@@ -87,6 +92,8 @@ private val GEN1_DEX_RED = GEN1_DEX_YELLOW.copy(
     seen = 0xD30AL,
     mewBaseStats = 0x01 to 0x425B,
     mewPicsBank = 0x01,
+    evosMoves = 0x0E to 0x705C,
+    tmMoves = 0x04 to 0x7773,
 )
 
 /** Pokémon Red Gen II Graphics V2.0: pic's bank from byte 27 of base stats, CGB palettes in bank 0x2F. */
@@ -107,7 +114,7 @@ val GEN1_DEX_YELLOW_GEN2_GRAPHICS = GEN1_DEX_YELLOW.copy(
  * (MEW in the main table), pages and Super Game Boy palettes (the colours its SGB and COLORS > SGB1 modes give each
  * Pokémon; on a Color it shows them two-tone by default). Seen / owned keep Red's bit order, in WRAM bank 1.
  */
-private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(
+private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null,
     baseStats = 0x2C to 0x6445,
     dexEntryPointers = 0 to 0,
     monsterPalettes = 0x1C to 0x6435,
@@ -125,7 +132,7 @@ private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(
 )
 
 /** Yellow Legacy v1.0.10 (its pokeyellow.sym): its own base data, pages and palettes. */
-private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(
+private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null,
     baseStats = 0x3B to 0x5272,
     dexEntryPointers = 0x10 to 0x46D3,
     monsterPalettes = 0x1C to 0x68B5,
@@ -133,7 +140,7 @@ private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(
 )
 
 /** The European Yellows: English's tables but for the dex pages' text and palettes (port_gen1.py, checked by contents). */
-private val GEN1_DEX_YELLOW_DE = GEN1_DEX_YELLOW.copy(dexEntryPointers = 0x10 to 0x4507, monsterPalettes = 0x1C to 0x6900,
+private val GEN1_DEX_YELLOW_DE = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null, dexEntryPointers = 0x10 to 0x4507, monsterPalettes = 0x1C to 0x6900,
     cgbPalettes = 0x1C to 0x6AD8, owned = 0xD2FBL, seen = 0xD30EL, metric = true, charset = Gen1Charset.DF)
 private val GEN1_DEX_YELLOW_FR = GEN1_DEX_YELLOW_DE.copy(dexEntryPointers = 0x10 to 0x4508, monsterPalettes = 0x1C to 0x68F2,
     cgbPalettes = 0x1C to 0x6ACA)
@@ -142,7 +149,7 @@ private val GEN1_DEX_YELLOW_IT = GEN1_DEX_YELLOW_DE.copy(dexEntryPointers = 0x10
 private val GEN1_DEX_YELLOW_ES = GEN1_DEX_YELLOW_IT.copy(monsterPalettes = 0x1C to 0x6911, cgbPalettes = 0x1C to 0x6AE9)
 
 /** German Red / Blue: Red's tables, their pages' text and palettes moved (port_gen1.py), German Yellow's letters, metric. */
-private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(dexEntryPointers = 0x10 to 0x447A, monsterPalettes = 0x1C to 0x65A2,
+private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(evosMoves = null, tmMoves = null, dexEntryPointers = 0x10 to 0x447A, monsterPalettes = 0x1C to 0x65A2,
     cgbPalettes = 0x1C to 0x663A, owned = 0xD2FCL, seen = 0xD30FL, metric = true, charset = Gen1Charset.DF)
 
 /**
@@ -154,6 +161,8 @@ private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(dexEntryPointers = 0x10 to 0x447
  * D300 (the game swaps it into D31D to count them): 211 / 227 on the player's save, as the game's own POKéDEX says.
  */
 private val GEN1_DEX_BROWN = GEN1_DEX_RED.copy(
+    // MOVES reads English Red's tables: not Brown's.
+    evosMoves = null, tmMoves = null,
     baseStats = 0x3F to 0x4336,
     dexEntryPointers = 0x10 to 0x6C20,
     monsterPalettes = 0x1C to 0x7250,

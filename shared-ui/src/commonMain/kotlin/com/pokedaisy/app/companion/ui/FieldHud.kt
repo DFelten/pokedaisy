@@ -1757,7 +1757,7 @@ internal fun HudSummaryPanel(
     val u = m.u
     val learn = snapshot.pokedex?.tables
         ?.takeIf { com.pokedaisy.app.companion.data.MoveLearning.available(it, snapshot.guideTables) }
-        ?.let { LearnContext(it, snapshot.guideTables, snapshot.items, true) }
+        ?.let { LearnContext(it, snapshot.guideTables, snapshot.items, com.pokedaisy.app.companion.data.MoveLearning.advises) }
     // GLASS: the summary's windows and text in the HUD's see-through look too.
     val look = when (LocalHudLook.current) {
         FieldHudLook.GLASS -> HudGlassLook

@@ -142,7 +142,9 @@ A few rules behind the verdicts:
 - It weighs damage against every type, not one opponent, so it's advice for your team in general rather than for the next fight.
 
 > [!NOTE]
-> `LEARN` works in FireRed, LeafGreen, Ruby, Sapphire and Emerald (the original games) so far. Hacks change too many moves for the advice to be right there yet.
+> `LEARN` gives its advice in FireRed, LeafGreen, Ruby, Sapphire and Emerald (the original games) so far. Hacks change too many moves for the advice to be right there yet.
+>
+> In the DS games (Platinum, HeartGold, SoulSilver, Black, White, Black 2, White 2 and the hacks on them) and the English Red, Blue, Yellow, Gold, Silver and Crystal, `LEARN` lists the next moves it learns by level and the TMs and HMs in your bag it can learn, read from your cart, without the verdicts.
 
 The verdicts follow `BATTLE HINTS` in SETTINGS. With it off, `LEARN` still lists what the Pokémon can learn and the move details, but without the verdicts and reasons.
 

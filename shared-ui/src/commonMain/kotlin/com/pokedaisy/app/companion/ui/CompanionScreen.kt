@@ -438,7 +438,7 @@ fun CompanionScreen(
         // The move advice (PARTY > LEARN, a TM's party row on ITEMS): the original games for now.
         val learnContext = snapshot.pokedex?.tables
             ?.takeIf { com.pokedaisy.app.companion.data.MoveLearning.available(it, snapshot.guideTables) }
-            ?.let { LearnContext(it, snapshot.guideTables, snapshot.items, hintsOn) }
+            ?.let { LearnContext(it, snapshot.guideTables, snapshot.items, hintsOn && com.pokedaisy.app.companion.data.MoveLearning.advises) }
         // FOE DETAILS: the button's last state, for every battle after.
         var foeDetails by remember { mutableStateOf(settings?.foeDetails ?: false) }
         val current = if (selectedLabel in tabs || selectedLabel in hiddenTabs) selectedLabel else tabs[0]

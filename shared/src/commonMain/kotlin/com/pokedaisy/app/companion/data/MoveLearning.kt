@@ -15,7 +15,9 @@ data class TmLearner(val index: Int, val fit: TmFit, val advice: MoveAdvice?)
  * can learn ([options], the summary's CAN LEARN page), and who a TM suits ([learners], the ITEMS
  * tab). Reads the ROM (learnsets, gTMHMMoves, the TM compatibility bits), so - like [DexDetails] -
  * it runs on Compose's IO dispatcher and keeps what it worked out for the UI to start from.
- * Only for the original games for now ([movesAreVanilla]): their TM items are 289..346.
+ * The advice is for the original games only ([movesAreVanilla]: their TM items are 289..346, their moves' effects known);
+ * the DS games ([Gen4DexTables], their learnsets and machines from the cart) and the Game Boy ones ([GbLearnsets]) get the
+ * list alone ([advises] false).
  */
 object MoveLearning {
     /** Upcoming level-up moves listed, at most. */
@@ -24,9 +26,26 @@ object MoveLearning {
     private val optionsCache = LockedMap<List<Any?>, List<LearnOption>>()
     private val learnersCache = LockedMap<List<Any?>, List<TmLearner>>()
 
-    /** Whether the running game gets advice at all (no ROM read). */
+    /** Whether the running game gets the CAN LEARN list at all (no ROM read). */
     fun available(t: PokedexTables?, g: GuideTables?): Boolean =
-        movesAreVanilla && t != null && (hasLearnsets(t, g) || DexDetails.hasTeachable(t))
+        t != null && (t.gen4 != null || GbLearnsets.available(t) || movesAreVanilla && (hasLearnsets(t, g) || DexDetails.hasTeachable(t)))
+
+    /** Whether its options carry a verdict: the advisor knows only the original games' moves ([moveStats]). */
+    val advises: Boolean get() = movesAreVanilla
+
+    /** No verdict: a DS game's options ([advises] false), never drawn. */
+    private fun noAdvice(move: Int) = MoveAdvice(move, Verdict.LEARN, 0, emptyList(), 0f)
+
+    /** A DS bag's TMs / HMs ("TM06", "HM01": the item's own name, as the cart spells it) it can learn, in machine order. */
+    private fun dsMachines(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>, known: Collection<Int>): List<LearnOption> {
+        // By name ("TM06", as the DS carts spell it), or on the Game Boy by the item's id (GbLearnsets.machineLabel).
+        val held = (bag.map { it.name.uppercase().replace(" ", "") } + bag.mapNotNull { GbLearnsets.machineLabel(t, it.itemId) })
+            .filter { MACHINE.matches(it) }.toSet()
+        return DexDetails.teachable(t, g, mon.species).orEmpty()
+            .filter { it.label in held && it.move !in known }
+            .map { LearnOption(it.move, 0, it.label, noAdvice(it.move)) }
+    }
+    private val MACHINE = Regex("^(TM|HM)\\d{2}$")
 
     fun isTm(itemId: Int): Boolean = movesAreVanilla && itemId in VANILLA_ITEM_TM01..VANILLA_ITEM_HM08
 
@@ -58,7 +77,7 @@ object MoveLearning {
     private fun hmMoves(t: PokedexTables): Set<Int> = DexDetails.tmhmMoves(t)?.drop(50)?.toSet() ?: VANILLA_HM_MOVES
 
     private fun optionsKey(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>): List<Any?> =
-        listOf(t, g, activeGame, mon.species, mon.level, mon.moves.map { it.id }, mon.stats?.stats, bag.map { it.itemId }.filter(::isTm).sorted())
+        listOf(t, g, activeGame, mon.species, mon.level, mon.moves.map { it.id }, mon.stats?.stats, bag.map { it.itemId }.filter(::isTm).sorted(), if (advises) null else bag.map { it.name }.sorted())
 
     fun cachedOptions(t: PokedexTables, g: GuideTables?, mon: MonView, bag: List<ItemView>): List<LearnOption>? =
         optionsCache[optionsKey(t, g, mon, bag)]
@@ -76,6 +95,12 @@ object MoveLearning {
         val key = optionsKey(t, g, mon, bag)
         optionsCache[key]?.let { return it }
         if (mon.isEgg || mon.species <= 0 || !available(t, g)) return emptyList()
+        if (!advises) {
+            val known = mon.moves.map { it.id }.filter { it > 0 }
+            val levelUps = upcoming(DexDetails.levelUp(t, g, mon.species).orEmpty(), mon.level, known)
+                .map { LearnOption(it.move, it.level, "", noAdvice(it.move)) }
+            return (levelUps + dsMachines(t, g, mon, bag, known)).also { if (optionsCache.size > 64) optionsCache.clear(); optionsCache[key] = it }
+        }
         val am = adviceMon(mon)
         val hms = hmMoves(t)
         fun advise(move: Int) = MoveAdvisor.advise(am, move, hms)

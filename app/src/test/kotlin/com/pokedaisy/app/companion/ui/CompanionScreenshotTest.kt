@@ -615,6 +615,70 @@ open class CompanionScreenshotTest {
         }
     }
 
+    /** LEARN in Black 2: the next level-up moves and the bag's TMs from the cart, no verdicts (the advice is Gen 3's). */
+    @Test
+    fun partyDetailLearnBlack2() {
+        activeGame = GameKind.BLACK2
+        romLanguage = 'E'
+        romGameCode = ""
+        val rom = java.io.File(java.io.File(java.io.File(RETAIL_ROM_DIR).parentFile, "nds"), "Pokemon - Black Version 2 (USA, Europe) (NDSi Enhanced).nds")
+        val dir = kotlin.io.path.createTempDirectory("nds-art").toFile()
+        try {
+            if (rom.isFile && com.pokedaisy.app.companion.data.NdsArt.extractTo(rom.toOkioPath(), dir.toOkioPath())) com.pokedaisy.app.companion.data.NdsArt.dir = dir.toOkioPath()
+            val t = com.pokedaisy.app.companion.data.readGen5Telemetry(FixtureMemoryReader.load("black2"), com.pokedaisy.app.companion.data.GEN5_BLACK2)
+            val v = buildSnapshotView(t).copy(game = GameKind.BLACK2)
+            v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
+            val tables = v.pokedex?.tables ?: return
+            val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+            // Worked out in the background in the app: here before the frame, so the list shows rather than LOADING.
+            com.pokedaisy.app.companion.data.MoveLearning.options(tables, v.guideTables, v.party[0], v.items)
+            snapshot { AppTheme { MonDetailScreen(v.party, 0, {}, {}, learn = ctx, initialLearnPick = 0) } }
+        } finally {
+            com.pokedaisy.app.companion.data.NdsArt.dir = null
+            dir.deleteRecursively()
+        }
+    }
+
+    /** LEARN in Yellow / Crystal: the next level-up moves and the bag's TMs from the cart (GbLearnsets), no verdicts. */
+    @Test fun partyDetailLearnYellow() = gbLearn(GameKind.YELLOW, "yellow", "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb")
+    @Test fun partyDetailLearnCrystal() = gbLearn(GameKind.CRYSTAL, "crystal", "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
+
+    private fun gbLearn(game: GameKind, fixture: String, romFile: String) {
+        activeGame = game
+        romLanguage = 'E'
+        romGameCode = ""
+        val rom = java.io.File(java.io.File(java.io.File(RETAIL_ROM_DIR).parentFile, "gbc"), romFile)
+        if (!rom.isFile) return
+        val bytes = rom.readBytes()
+        com.pokedaisy.app.companion.data.Gen1Dex.rom = bytes
+        val t = if (game == GameKind.YELLOW) {
+            com.pokedaisy.app.companion.data.Gen1Art.extractTo(bytes, RomArt.dirOverride!!)
+            com.pokedaisy.app.companion.data.readGen1Telemetry(FixtureMemoryReader.load(fixture), com.pokedaisy.app.companion.data.GEN1_YELLOW)
+        } else {
+            com.pokedaisy.app.companion.data.Gen2Art.extractTo(bytes, RomArt.dirOverride!!)
+            com.pokedaisy.app.companion.data.activeGen2 = com.pokedaisy.app.companion.data.GEN2_CRYSTAL
+            com.pokedaisy.app.companion.data.readGen2Telemetry(FixtureMemoryReader.load(fixture), com.pokedaisy.app.companion.data.GEN2_CRYSTAL)
+        }
+        val v = buildSnapshotView(t).copy(game = game)
+        v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
+        val tables = v.pokedex?.tables ?: return
+        val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+        // Worked out in the background in the app: here before the frame, so the list shows rather than LOADING.
+        // The first one with something to learn (Yellow's PIKACHU is Lv100 and learns none of the bag's HMs).
+        val index = v.party.indices.firstOrNull {
+            com.pokedaisy.app.companion.data.MoveLearning.options(tables, v.guideTables, v.party[it], v.items).isNotEmpty()
+        } ?: 0
+        snapshot {
+            AppTheme {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.pokedaisy.app.companion.ui.theme.LocalGameFont provides com.pokedaisy.app.companion.ui.theme.rememberGameFont(game),
+                    com.pokedaisy.app.companion.ui.theme.LocalGameTextScale provides com.pokedaisy.app.companion.ui.theme.gameTextScale(game),
+                    com.pokedaisy.app.companion.ui.theme.LocalGameFontWidth provides com.pokedaisy.app.companion.ui.theme.gameFontWidth(game),
+                ) { MonDetailScreen(v.party, index, {}, {}, learn = ctx, initialLearnPick = 0) }
+            }
+        }
+    }
+
     /** BATTLE STYLE > GEN 5: your turn, then the move plates (the same states the GEN 4 buttons have). */
     @Test fun battleControlsGen5() = gen5Shot(com.pokedaisy.app.companion.data.BATTLE_INPUT_ACTION_SELECT)
 
@@ -1571,6 +1635,7 @@ open class CompanionScreenshotTest {
     @Test fun yellowStates() = yellow("yellow", "STATES")
     @Test fun yellowTweaks() = yellow("yellow", "SETTINGS", page = "TWEAKS")
     @Test fun yellowDexEntry() = yellow("yellow", "DEX", dexEntry = 25)
+    @Test fun yellowDexEntryMoves() = yellow("yellow", "DEX", dexEntry = 1, dexSection = DexSection.MOVES)
 
     // The German, French, Italian and Spanish carts on the English save (yellow_de .. yellow_es).
     private val yellowDe = com.pokedaisy.app.companion.data.GEN1_YELLOW_DE
@@ -1696,6 +1761,8 @@ open class CompanionScreenshotTest {
         guidePage: String? = null,
         /** The save as if it stood on this map (wCurMap): the fixtures are all in a Pokémon Center. */
         onMap: Int? = null,
+        /** The DEX entry on this section (MOVES: the cart's learnsets, GbLearnsets). */
+        dexSection: DexSection = DexSection.INFO,
         itemUse: com.pokedaisy.app.companion.ItemUse? = null,
         settings: com.pokedaisy.app.companion.CompanionSettings = SampleCompanion.Settings(),
         settingsRow: String? = null,
@@ -1744,6 +1811,11 @@ open class CompanionScreenshotTest {
         }
         if (dexEntry != null && dex != null) {
             PokedexSource.entry(dex.tables, dexEntry); PokedexSource.frontSprite(dex.tables, dexEntry)
+            // MOVES is read in the background in the app: here before the frame.
+            if (dexSection == DexSection.MOVES) {
+                com.pokedaisy.app.companion.data.DexDetails.levelUp(dex.tables, v.guideTables, dexEntry)
+                com.pokedaisy.app.companion.data.DexDetails.teachable(dex.tables, v.guideTables, dexEntry)
+            }
             snapshot {
                 AppTheme {
                     androidx.compose.runtime.CompositionLocalProvider(
@@ -1753,6 +1825,7 @@ open class CompanionScreenshotTest {
                     ) {
                         val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
                         ui.open = dexEntry
+                        ui.section = dexSection
                         PokedexEntryScreen(dex, ui, dexEntry)
                     }
                 }
