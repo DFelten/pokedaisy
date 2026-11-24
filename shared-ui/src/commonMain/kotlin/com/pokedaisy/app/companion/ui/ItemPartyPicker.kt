@@ -63,6 +63,8 @@ fun ItemPartyPicker(
     var moveFor by remember(pick) { mutableStateOf(initialMoveSlot?.let { pick.targets.getOrNull(it) }) }
     // A TM's move to forget, asked once more before it's gone for good.
     var forget by remember(pick) { mutableStateOf(initialForget?.let { f -> moveFor?.let { it to f } }) }
+    // A TM / HM: Gen 1's bag keeps them with the rest, so its pick names the move it teaches.
+    val teachesMove = pick.item.pocket == POCKET_TM_HM || pick.move != 0
     CompanionBackHandler(onBack = onCancel)
     // A slot is only what the pick saw: the same Pokémon (by personality, where the party read has it).
     fun targetOf(index: Int, mon: MonView): PartyTarget? =
@@ -95,7 +97,7 @@ fun ItemPartyPicker(
         MovePicker(
             t, party.getOrNull(t.slot), m,
             title = when {
-                pick.item.pocket == POCKET_TM_HM -> "Forget which move?"
+                teachesMove -> "Forget which move?"
                 pick.item.itemId in PP_BOOST_ITEMS && !activeGame.isGen2 && !activeGame.isGen1 -> "Boost PP of which move?"
                 pick.item.itemId == Gen2ItemCalls.PP_UP && activeGame.isGen2 -> "Boost PP of which move?"
                 pick.item.itemId == Gen1ItemCalls.PP_UP && activeGame.isGen1 -> "Boost PP of which move?"
@@ -103,7 +105,7 @@ fun ItemPartyPicker(
             },
             onBack = { moveFor = null },
             onPick = { move ->
-                if (pick.item.pocket == POCKET_TM_HM) forget = t to move else { moveFor = null; onPick(t, move) }
+                if (teachesMove) forget = t to move else { moveFor = null; onPick(t, move) }
             },
         )
     }

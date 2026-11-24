@@ -1171,8 +1171,14 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     into the party struct by pokered's / pokeyellow's item_effects.asm (the moves' base PP read from the cart's Moves table, PP Ups
     kept), wRepelRemainingSteps for a Repel. Yellow's starter Pikachu gets ModifyPikachuHappiness's PIKAHAPPY_USEDITEM for an item up
     to CALCIUM (HappinessChangeTable / PikachuMoods read from the cart) and follows again after a REVIVE (wPikachuSpawnState =
-    PIKACHU_SPAWN_DELAYED). Left out: the vitamins, RARE CANDY, the stones, the BICYCLE, the rods, the ESCAPE ROPE, GIVE / TAKE (Gen 1
-    has no held items). English Red is pokered's build (= the cart); Blue shares its code. The removal was run headless on the German
-    Red cart (three POTIONs out one by one, the emptied slot closed up, the game running on); Yellow and English Red only by their code
-    (no save / cart here). `Gen1ItemUseTest`.
+    PIKACHU_SPAWN_DELAYED). TMs / HMs (ItemUseTMHM): CanLearnTM's bit in the cart's BaseStats by Pokédex number (Red's MEW in
+    MewBaseStats), not known already; LearnMove's slot (the first empty one, else the one picked to forget, never an HM's move) gets the
+    move and its base PP; a TM is spent, an HM stays (checked on the field first); Yellow's starter gets PIKAHAPPY_USEDTMHM and THUNDERBOLT
+    / THUNDER's mood. The BICYCLE (ItemUseBicycle): not surfing, not off where BIT_ALWAYS_ON_BIKE holds the player on it, on only where
+    IsBikeRidingAllowed (ROUTE 23, INDIGO PLATEAU, BikeRidingTilesets read from the cart); wWalkBikeSurfState written, then PlayDefaultMusic
+    and LoadPlayerSpriteGraphics called from the loop; Yellow's Pikachu back on getting off. Left out: the vitamins, RARE CANDY, the stones,
+    the rods, the ESCAPE ROPE, GIVE / TAKE (Gen 1 has no held items). English Red is pokered's build (= the cart); Blue shares its code. The
+    removal was run headless on the German Red cart (three POTIONs out one by one, the emptied slot closed up, the game running on), and
+    the BICYCLE there (on in Vermilion City with the bike sprite and speed, then off); Yellow and English Red only by their code (no save
+    here). `Gen1ItemUseTest`.
 

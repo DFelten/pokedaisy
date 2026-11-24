@@ -39,11 +39,23 @@ class Gen1ItemUseTest {
         var onField = true
         var removeWorks = true
         private var pending: (() -> Unit)? = null
+        val called = mutableListOf<Int>()
 
         init {
             fun put(off: Long, hex: String) = hex.chunked(2).forEachIndexed { i, h -> cart[off + i] = h.toInt(16).toByte() }
-            put(0x0E * 0x4000L, "01002800ff23" + "02003200ff19")   // POUND 35 PP, KARATE CHOP 25 PP
+            // POUND 35 PP, KARATE CHOP 25 PP, DOUBLESLAP 10 PP, COMET PUNCH 15 PP
+            put(0x0E * 0x4000L, "01002800ff23" + "02003200ff19" + "03000f00ff0a" + "04001200ff0f")
             calls.pikachu?.let { put(it.happinessTable, HAPPINESS) }
+            val m = calls.machines
+            // TM01 teaches DOUBLESLAP, TM24 (THUNDERBOLT's place) DOUBLESLAP too, HM01 COMET PUNCH.
+            put(m.technicalMachines, "03"); put(m.technicalMachines + 23, "03"); put(m.technicalMachines + 50, "04")
+            put(m.pokedexOrder + 0x99 - 1, "01"); put(m.pokedexOrder + 0x54 - 1, "19"); put(m.pokedexOrder + 0x15 - 1, "97")
+            put(m.pokedexOrder + 0x05 - 1, "02")   // dex 2: no bits
+            // BULBASAUR: TM01 and HM01 (bit 50 = byte 6, bit 2); PIKACHU: TM24; MEW: TM01.
+            put(m.baseStats + 20, "01000000000004")
+            put(m.baseStats + 24 * 28 + 20, "00008000000000")
+            put((m.mewBaseStats ?: (m.baseStats + 150 * 28)) + 20, "01000000000000")
+            put(calls.bike.bikeRidingTilesets.toLong(), "00030b0e11ff")
             this[calls.partyCount + 7] = 0xFF
             this[calls.numBagItems + 1] = 0xFF
         }
@@ -60,8 +72,9 @@ class Gen1ItemUseTest {
             assertEquals(calls.at, at)
             pending?.invoke()
             pending = null
+            called += fn
             if (fn == calls.removeItem) pending = { if (removeWorks) remove(hl.toLong()) }
-            else assertEquals(calls.ret, fn)
+            else assertTrue(fn == calls.ret || fn == calls.bike.playDefaultMusic || fn == calls.bike.loadPlayerSpriteGraphics)
             return true
         }
 
@@ -292,8 +305,121 @@ class Gen1ItemUseTest {
         val calls = GEN1_ITEM_CALLS_RED
         for (id in listOf(0x14, 0x10, 0x0B, 0x35, 0x50, 0x52, 0x4F)) assertTrue(calls.usable(id) && calls.picksMon(id))
         for (id in listOf(0x1E, 0x38, 0x39)) assertTrue(calls.usable(id) && !calls.picksMon(id))
-        for (id in listOf(0x06, 0x28, 0x23, 0x0A, 0x1D, 0x4C)) assertFalse(calls.usable(id))   // BICYCLE, RARE CANDY, HP UP, MOON STONE, ESCAPE ROPE, OLD ROD
+        for (id in listOf(0x28, 0x23, 0x0A, 0x1D, 0x4C)) assertFalse(calls.usable(id))   // RARE CANDY, HP UP, MOON STONE, ESCAPE ROPE, OLD ROD
         assertTrue(calls.picksMove(0x50) && calls.picksMove(0x4F) && !calls.picksMove(0x52))
+        assertTrue(calls.usable(0x06) && !calls.picksMon(0x06))   // BICYCLE: on the spot
+        for (id in listOf(0xC4, 0xC8, 0xC9, 0xFA)) assertTrue(calls.usable(id) && calls.picksMon(id) && calls.picksMove(id))
+        assertEquals(listOf(50, 54, 0, 49, -1, -1), listOf(0xC4, 0xC8, 0xC9, 0xFA, 0xC3, 0xFB).map { Gen1ItemCalls.tmIndex(it) })
+    }
+
+    @Test
+    fun `a TM teaches its move by the base data's bit, into an empty slot with the move's PP, and is spent`() {
+        val calls = GEN1_ITEM_CALLS_RED_DE
+        val g = Game(calls)
+        g.party(50 to 100, 50 to 100, 50 to 100)
+        g[g.mon(1)] = 0x05            // a species without TM01's bit
+        g[g.mon(2) + 9] = 3           // knows DOUBLESLAP already
+        g.bag(0xC9 to 2)
+        val t = calls.targets(g, 0xC9)
+        assertEquals(3, t.move)
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT), t.targets.map { it.verdict })
+        assertTrue(t.targets.all { it.moves.isEmpty() })   // a free slot: nothing to forget
+        assertEquals(ItemUseResult.NO_EFFECT, calls.use(g, 0xC9, on(g, 1), 0).result)
+        assertEquals(ItemUseResult.NO_EFFECT, calls.use(g, 0xC9, on(g, 2), 0).result)
+        assertEquals(2, g.qty(0xC9))
+        assertEquals(ItemUseResult.USED, calls.use(g, 0xC9, on(g, 0), 0).result)
+        assertEquals(listOf(1, 2, 3, 0), (0 until 4).map { g[g.mon(0) + 8 + it] })
+        assertEquals(10, g[g.mon(0) + 0x1D + 2])
+        assertEquals(1, g.qty(0xC9))
+        // Not on the field: nothing taught, nothing spent.
+        g[g.mon(0) + 10] = 0
+        g.onField = false
+        assertEquals(ItemUseResult.FAILED, calls.use(g, 0xC9, on(g, 0), 0).result)
+        assertEquals(0, g[g.mon(0) + 10])
+        assertEquals(1, g.qty(0xC9))
+    }
+
+    @Test
+    fun `with four moves a TM replaces the one picked, never an HM's, and an HM stays in the bag`() {
+        val calls = GEN1_ITEM_CALLS_RED
+        val g = Game(calls)
+        g.party(50 to 100)
+        val m = g.mon(0)
+        g[m + 8] = 1; g[m + 9] = 4; g[m + 10] = 2; g[m + 11] = 2   // POUND, COMET PUNCH (HM01's), KARATE CHOP x2
+        g[m + 0x1D + 2] = 0xC5   // three PP Ups, 5 PP
+        g.bag(0xC9 to 1, 0xC4 to 1)
+        val t = calls.targets(g, 0xC9)
+        assertEquals(listOf(true, false, true, true), t.targets[0].moves)
+        assertEquals(ItemUseResult.NO_EFFECT, calls.use(g, 0xC9, on(g, 0), 1).result)
+        assertEquals(ItemUseResult.USED, calls.use(g, 0xC9, on(g, 0), 2).result)
+        assertEquals(3, g[m + 10])
+        assertEquals(10, g[m + 0x1D + 2])   // the move's PP, the PP Ups gone
+        assertEquals(0, g.qty(0xC9))
+        // HM01: it knows COMET PUNCH already.
+        assertEquals(SlotVerdict.NO_EFFECT, calls.targets(g, 0xC4).targets[0].verdict)
+        g[m + 9] = 0
+        assertEquals(ItemUseResult.USED, calls.use(g, 0xC4, on(g, 0), 0).result)
+        assertEquals(4, g[m + 9])
+        assertEquals(15, g[m + 0x1D + 1])
+        assertEquals(1, g.qty(0xC4))
+    }
+
+    @Test
+    fun `Red's MEW learns by MewBaseStats, Yellow's starter Pikachu is glad of THUNDERBOLT`() {
+        val red = GEN1_ITEM_CALLS_RED
+        val g = Game(red)
+        g.party(50 to 100, species = 0x15)
+        g.bag(0xC9 to 1)
+        assertEquals(SlotVerdict.OK, red.targets(g, 0xC9).targets[0].verdict)
+
+        val calls = GEN1_ITEM_CALLS_YELLOW
+        val y = Game(calls)
+        val pika = calls.pikachu!!
+        y.party(50 to 100, species = 0x54)
+        y[y.mon(0) + 12] = 0x12; y[y.mon(0) + 13] = 0x34
+        y[pika.playerId] = 0x12; y[pika.playerId + 1] = 0x34
+        for (i in 0 until 5) { y[pika.playerName + i] = 0x80 + i; y[y.mons + 6 * 44 + i] = 0x80 + i }
+        y[pika.happiness] = 90
+        y.bag(0xE0 to 1)
+        assertEquals(ItemUseResult.USED, calls.use(y, 0xE0, on(y, 0), 0).result)
+        assertEquals(3, y[y.mon(0) + 10])
+        assertEquals(91, y[pika.happiness])   // PIKAHAPPY_USEDTMHM's row: +1 under 100
+        assertEquals(5, y[pika.emotionModifier])
+        assertEquals(0x85, y[pika.mood])
+    }
+
+    @Test
+    fun `the BICYCLE gets on where the game allows it and off anywhere, with the music and the sprite`() {
+        val calls = GEN1_ITEM_CALLS_YELLOW_DE
+        val b = calls.bike
+        val g = Game(calls)
+        g.bag(0x06 to 1)
+        g[b.curMap] = 0x00; g[b.curMapTileset] = 0x0B   // a tileset in BikeRidingTilesets
+        assertEquals(ItemUseResult.USED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(1, g[b.walkBikeSurfState])
+        assertTrue(b.playDefaultMusic in g.called && b.loadPlayerSpriteGraphics in g.called)
+        assertEquals(1, g.qty(0x06))
+        g[calls.pikachu!!.spawnState] = 7
+        assertEquals(ItemUseResult.USED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(0, g[b.walkBikeSurfState])
+        assertEquals(0, g[calls.pikachu!!.spawnState])
+        // Indoors: no. ROUTE 23: yes.
+        g[b.curMapTileset] = 0x05
+        assertEquals(ItemUseResult.FAILED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(0, g[b.walkBikeSurfState])
+        g[b.curMap] = 0x22
+        assertEquals(ItemUseResult.USED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(1, g[b.walkBikeSurfState])
+        // Cycling Road holds the player on it; surfing, no bike.
+        g[b.statusFlags6] = 1 shl 5
+        assertEquals(ItemUseResult.FAILED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(1, g[b.walkBikeSurfState])
+        g[b.walkBikeSurfState] = 2
+        assertEquals(ItemUseResult.FAILED, calls.use(g, 0x06, null, 0).result)
+        assertEquals(2, g[b.walkBikeSurfState])
+        g.bag()
+        g[b.walkBikeSurfState] = 0
+        assertEquals(ItemUseResult.NONE_LEFT, calls.use(g, 0x06, null, 0).result)
     }
 
     private companion object {
