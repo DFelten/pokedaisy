@@ -78,6 +78,9 @@ class HackSaveTest {
             Triple("Pokemon Glazed (v9.2.0).gba", "Pokemon Glazed (v9.2.0).sav", Gen3SaveFormat.GLAZED),
             Triple("Pokemon Orange Islands.gba", "Pokemon Orange Islands.srm", Gen3SaveFormat.ORANGE_ISLANDS),
             Triple("Pokemon Ultra Violet (v1.22).gba", "Pokemon Ultra Violet (v1.22).sav", Gen3SaveFormat.ULTRA_VIOLET),
+            Triple("Pokemon Recharged Emerald (v2.2.5).gba", "Pokemon Recharged Emerald (v2.2.5).srm", Gen3SaveFormat.RECHARGED_EMERALD_V2_2_5),
+            Triple("Pokemon Recharged Emerald (v2.2.8).gba", "Pokemon Recharged Emerald (v2.2.8).srm", Gen3SaveFormat.RECHARGED_EMERALD_V2_2_8),
+            Triple("Pokemon Recharged Emerald Rebalanced (v2.2.8).gba", "Pokemon Recharged Emerald Rebalanced (v2.2.8).srm", Gen3SaveFormat.RECHARGED_EMERALD_REBALANCED),
         )
         var ran = 0
         for ((romName, saveName, expected) in cases) {
@@ -94,10 +97,26 @@ class HackSaveTest {
             println("${format.label}: ${data.trainerName} money ${data.money} party " +
                 data.party.joinToString { "${data.rules.speciesName(it.mon.species)} Lv${it.level} ${it.mon.moves.map { m -> data.rules.moveName(m) }}" })
             val ed = Gen3SaveEditor(result.save)
+            println("  bag: " + ed.pockets.joinToString { p -> "${p.kind} ${p.stacks.size}/${p.slots} " + p.stacks.take(3).joinToString("+") { "${data.rules.itemName(it.item)}x${it.quantity}" } })
+            println("  addable medicine: " + ed.pockets.firstOrNull { it.kind == PocketKind.MEDICINE }?.let { ed.addable(it.kind).take(5).map { i -> data.rules.itemName(i) } })
             ed.setMoney(4321)
             val again = (Gen3SaveFile.parse(ed.build(), format) as Gen3SaveFile.Parsed.Ok).save
             assertEquals(4321, Gen3SaveData(again).money)
             assertEquals(data.party.map { it.mon.personality }, Gen3SaveData(again).party.map { it.mon.personality })
+            // For booting in the game headless (HACK_SAVE_OUT_DIR=<dir>): 123,456 money, the last party Pokémon Lv30 and
+            // 5 of the first item it doesn't have (in a Medicine pocket where the game has one), written as <format>.sav.
+            System.getenv("HACK_SAVE_OUT_DIR")?.let { dir ->
+                val e2 = Gen3SaveEditor(result.save)
+                val last = data.partyCount - 1
+                if (last >= 0 && data.party[last].level < 30) e2.setLevel(MonRef.Party(last), 30)
+                e2.setMoney(123_456)
+                val pocket = if (format.pockets.any { it.pocket == BagPocket.MEDICINE }) BagPocket.MEDICINE else BagPocket.ITEMS
+                val have = Gen3SaveData(result.save).pocket(pocket).map { it.item }.toSet()
+                val item = data.rules.bagItems(pocket).first { it !in have }
+                println("  boot file: +5 ${data.rules.itemName(item)} in $pocket")
+                e2.addItem(pocket, item, 5)
+                File(dir, "${format.name}.sav").writeBytes(e2.build())
+            }
         }
         assumeTrue("no hack ROM and save here", ran > 0)
     }

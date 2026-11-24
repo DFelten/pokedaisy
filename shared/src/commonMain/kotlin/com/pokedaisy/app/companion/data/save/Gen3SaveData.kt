@@ -205,13 +205,15 @@ class Gen3SaveData(
  * values that can be edited - money, coins, the bag, a Pokémon's held item and moves - only take what [Gen3Legal] says
  * that game allows, and anything else throws before a byte changes.
  */
-/** Gen 3's five pockets in the order Emerald's bag shows them, as the shared pages name them. */
-private val POCKETS = listOf(
-    PocketKind.ITEMS to BagPocket.ITEMS, PocketKind.BALLS to BagPocket.BALLS, PocketKind.TMHM to BagPocket.TMHM,
+/** Gen 3's pockets in the order Emerald's bag shows them (Medicine where a hack added it), as the shared pages name them. */
+private val ALL_POCKETS = listOf(
+    PocketKind.ITEMS to BagPocket.ITEMS, PocketKind.MEDICINE to BagPocket.MEDICINE, PocketKind.BALLS to BagPocket.BALLS, PocketKind.TMHM to BagPocket.TMHM,
     PocketKind.BERRIES to BagPocket.BERRIES, PocketKind.KEY to BagPocket.KEY,
 )
 
 class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
+    /** The pockets this layout has (MEDICINE only in a hack that added it). */
+    private val POCKETS = ALL_POCKETS.filter { (_, p) -> file.format.pockets.any { it.pocket == p } }
     private fun refuseIf(condition: Boolean, why: () -> String) { if (condition) throw SaveEditRefused(why()) }
     private fun refuse(why: String): Nothing = throw SaveEditRefused(why)
 
@@ -287,9 +289,12 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         saveBlock2[f.pokedexOff] = 0       // order: numerical
     }
 
-    private fun dexBit(base: ByteArray, off: Int, national: Int) = (base[off + (national - 1) / 8].toInt() shr ((national - 1) % 8)) and 1 == 1
+    /** A seen / caught bit; [off] -1 (a layout without SaveBlock1's copies, Recharged Emerald's) reads as set. */
+    private fun dexBit(base: ByteArray, off: Int, national: Int) =
+        off < 0 || (base[off + (national - 1) / 8].toInt() shr ((national - 1) % 8)) and 1 == 1
 
     private fun setDexBit(base: ByteArray, off: Int, national: Int) {
+        if (off < 0) return
         val o = off + (national - 1) / 8
         base[o] = (base[o].toInt() or (1 shl ((national - 1) % 8))).toByte()
     }

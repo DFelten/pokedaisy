@@ -44,6 +44,7 @@ object Gen3SaveReader {
         val format: Gen3SaveFormat, val config: () -> com.pokedaisy.app.companion.data.NativeConfig, val family: String,
         /** Edited in place: its tables at this retail cart's addresses. */
         val inPlace: InPlaceBase? = null,
+        val itemLayout: ItemLayout = ItemLayout.VANILLA,
     )
 
     private val HACKS: Map<String, Hack> by lazy {
@@ -57,6 +58,10 @@ object Gen3SaveReader {
                 ULTRA_VIOLET_V1_22_SHA1 to Hack(Gen3SaveFormat.ULTRA_VIOLET, { com.pokedaisy.app.companion.data.NATIVE_ULTRA_VIOLET }, "ultra-violet", InPlaceBase.FIRERED_REV0),
                 ASH_GRAY_V4_5_3_SHA1 to Hack(Gen3SaveFormat.ASH_GRAY, { com.pokedaisy.app.companion.data.NATIVE_ASH_GRAY }, "ash-gray", InPlaceBase.FIRERED_REV0),
                 ASH_GRAY_FORK_BUG_FIX_V1_0_SHA1 to Hack(Gen3SaveFormat.ASH_GRAY, { com.pokedaisy.app.companion.data.NATIVE_ASH_GRAY }, "ash-gray", InPlaceBase.FIRERED_REV0),
+                // One family: the three builds are one game (Rebalanced only changes moves and types).
+                RECHARGED_EMERALD_V2_2_5_SHA1 to Hack(Gen3SaveFormat.RECHARGED_EMERALD_V2_2_5, { com.pokedaisy.app.companion.data.NATIVE_RECHARGED_EMERALD_V2_2_5 }, "recharged-emerald", itemLayout = ItemLayout.RECHARGED),
+                RECHARGED_EMERALD_V2_2_8_SHA1 to Hack(Gen3SaveFormat.RECHARGED_EMERALD_V2_2_8, { com.pokedaisy.app.companion.data.NATIVE_RECHARGED_EMERALD_V2_2_8 }, "recharged-emerald", itemLayout = ItemLayout.RECHARGED),
+                RECHARGED_EMERALD_REBALANCED_V2_2_8_SHA1 to Hack(Gen3SaveFormat.RECHARGED_EMERALD_REBALANCED, { com.pokedaisy.app.companion.data.NATIVE_RECHARGED_EMERALD_REBALANCED_V2_2_8 }, "recharged-emerald", itemLayout = ItemLayout.RECHARGED),
             )
         }
     }
@@ -65,7 +70,7 @@ object Gen3SaveReader {
     private fun loadRules(hack: Hack, rom: RomIdentityReader): Boolean {
         if (Gen3Rules.isInstalled(hack.format)) return true
         return runCatching {
-            val tables = gen3RomTables(hack.config(), hack.family, hack.inPlace) ?: return false
+            val tables = gen3RomTables(hack.config(), hack.family, hack.inPlace, hack.itemLayout) ?: return false
             val bytes = rom.readAll() ?: return false
             Gen3Rules.install(hack.format, RomGen3Rules(bytes, tables).also { it.lastMove })
             true
@@ -77,13 +82,12 @@ object Gen3SaveReader {
      * (Emerald Legacy, whose 120-slot ITEMS pocket moves everything after it, has a layout of its own: [HACKS].)
      * - Emerald Seaglass: pokeemerald-expansion's records (National Dex species ids, experience in 21 bits with a nickname's
      *   11th letter above it, its own shiny odds; GitHub #1167: COLLECTION showed its Pokémon at level 100 and none shiny).
-     * - Recharged Emerald / Recharged Yellow: SaveBlock1s of their own past the bag.
+     * - Recharged Yellow: a SaveBlock1 of its own past the bag (Recharged Emerald's is in [HACKS]).
      * - Clover: FireRed's save under an Emerald header.
      */
     private val NOT_RETAIL_SAVES = with(com.pokedaisy.app.companion.data.TelemetrySampler) {
         setOf(
             EMERALD_SEAGLASS_V3_0_SHA1, CLOVER_V1_3_3_SHA1,
-            RECHARGED_EMERALD_V2_2_5_SHA1, RECHARGED_EMERALD_V2_2_8_SHA1, RECHARGED_EMERALD_REBALANCED_V2_2_8_SHA1,
             RECHARGED_YELLOW_V1_8_0_SHA1, RECHARGED_YELLOW_V1_9_0_SHA1, RECHARGED_YELLOW_V1_9_4_SHA1, RECHARGED_YELLOW_V1_9_7_SHA1,
         )
     }

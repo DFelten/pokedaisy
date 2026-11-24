@@ -29,6 +29,7 @@ the rules of the game it belongs to, not always retail's.
 | Orange Islands (both builds) | `ORANGE_ISLANDS` | the save reads (PIKACHU Lv10) |
 | Ultra Violet v1.22 | `ULTRA_VIOLET` | the save reads (CHARMANDER Lv6) |
 | Ash Gray (both builds) | `ASH_GRAY` | by hash; no save of its own (retail FireRed's boots in it) |
+| Recharged Emerald v2.2.5 / v2.2.8 / Rebalanced v2.2.8 | `RECHARGED_EMERALD_*` (its own SaveBlock1, a Medicine pocket, no seen copies; Rebalanced's 4-byte lead, `blockLead`), its 48-byte gItems with no id (`ItemLayout.RECHARGED`) | all three saves read; edited ones (money, a level, a Medicine item) booted headless in mgba_dump and the game's RAM held each edit |
 | Randomized FireRed / Emerald | retail's, rules from the ROM | over 100 species' learnsets differ from retail's in a UPR output |
 
 `HackSaveTest` (shared androidUnitTest) covers these with the player's ROMs and saves (`-DromDir`), skipping quietly
@@ -47,10 +48,6 @@ without them. `HACK_SAVE_OUT=<file>` writes the edited Legacy save to boot.
   their party records differ per build (language + flags at +0x12, the Mint nature bits, 21-bit EXP in 1.10+), species
   ids past 1000 and their tables are expansion's (gSpeciesInfo, u32 TM lists). Each needs its record layout in
   `Gen3BoxMon` and a rules reader for gSpeciesInfo. Probably one per expansion version.
-- **Recharged Emerald**: its SaveBlock1 differs past the bag (pockets Items 0x560 x60, Key 0x650 x50, Balls 0x718 x32,
-  TMs 0x798 x64, Berries 0x898 x46, Medicine 0x366C x50; flags 0x1344, vars 0x1470; SB1 0x3DA0, SB2 0xF48; Rebalanced +4
-  on both blocks) and keeps no seen1 / seen2 copies, so `Gen3SaveFormat` needs a format without them; its config's
-  pokedex has no evolutions table, which the rules need (pre-evolutions for moves).
 - **Clover**: no species name table found by the scan (FireRed under an Emerald header; names elsewhere).
 - **Rocket Edition, Let's Go**: gBattleMoves repointed and not found by the scan (Rocket Edition added moves 355-486); the
   generated `HackText` tables have the moves, the scan could read them from there.

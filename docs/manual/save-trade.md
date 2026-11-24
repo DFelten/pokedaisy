@@ -92,9 +92,9 @@ The games' own trade rules apply. FireRed and LeafGreen only trade with Ruby, Sa
 
 ### ROM hacks
 
-The editor also opens saves of these ROM hacks: Emerald Legacy, Emerald Kaizo, Glazed, Orange Islands, Ultra Violet and Ash Gray, and a randomized FireRed or Emerald. It reads each one's own rules from the ROM it's played with (its Pokémon, moves, items and who learns what), so it only offers what that hack could really have. A hack's save trades only with another save of the same hack, its `MISSING` follows the hack's own Pokédex, and Pal Park only takes Pokémon from the five original games. A randomized game is still the original game underneath, so it trades with the others as before.
+The editor also opens saves of these ROM hacks: Emerald Legacy, Emerald Kaizo, Recharged Emerald (Rebalanced too), Glazed, Orange Islands, Ultra Violet and Ash Gray, and a randomized FireRed or Emerald. It reads each one's own rules from the ROM it's played with (its Pokémon, moves, items and who learns what), so it only offers what that hack could really have. A hack's save trades only with another save of the same hack, its `MISSING` follows the hack's own Pokédex, and Pal Park only takes Pokémon from the five original games. A randomized game is still the original game underneath, so it trades with the others as before.
 
-Hacks that keep their Pokémon or their bag their own way (Unbound, Radical Red, Recharged Emerald, Seaglass and the like) aren't offered yet.
+Recharged Emerald's `BAG` has its Medicine pocket too. Hacks that keep their Pokémon or their bag their own way (Unbound, Radical Red, Seaglass and the like) aren't offered yet.
 
 ### Trade and back
 

@@ -35,7 +35,7 @@ interface Gen3Rules : SaveGameData {
 
     /** What a Pokémon may be given to hold: bag items but HMs and mail. */
     fun holdable(): List<Int> =
-        listOf(BagPocket.ITEMS, BagPocket.BALLS, BagPocket.TMHM, BagPocket.BERRIES).flatMap { bagItems(it) }
+        listOf(BagPocket.ITEMS, BagPocket.MEDICINE, BagPocket.BALLS, BagPocket.TMHM, BagPocket.BERRIES).flatMap { bagItems(it) }
             .filter { !isHm(it) && !isMail(it) }.distinct().sorted()
 
     /** GetAbilityBySpecies: the second ability when the bit is set and the species has one, else the first. */
@@ -127,7 +127,30 @@ data class Gen3RomTables(
     val speciesNames: Long = 0,
     val moveNames: Long = 0,
     val battleMoves: Long = 0,
+    /** gItems' record shape: its size, where its pocket number sits, and what each number is. */
+    val itemLayout: ItemLayout = ItemLayout.VANILLA,
 )
+
+/**
+ * A struct Item's size, its pocket byte and the pockets by number: vanilla's 44 bytes with the pocket at 0x1A (1 Items,
+ * 2 Poké Balls, 3 TMs, 4 Berries, 5 Key Items), Recharged Emerald's 48 (a u32 price: the pocket at 0x1E, numbered 1 Items,
+ * 2 Medicine, 3 Poké Balls, 4 TMs, 5 Berries, 6 Key Items, as its gBagPockets).
+ */
+class ItemLayout(
+    val size: Int, val pocketOff: Int, val pockets: Map<Int, BagPocket>,
+    /** The record's own id (vanilla's +0x0E), or -1: no id, the table ends at the first record whose pocket isn't one. */
+    val idOff: Int = 0x0E,
+    val nameLength: Int = 14,
+) {
+    companion object {
+        val VANILLA = ItemLayout(44, 0x1A, BagPocket.entries.filter { it != BagPocket.MEDICINE }.associateBy { it.id })
+        /** Recharged Emerald's: an 18-byte name, a u16 price at +0x12, the description at +0x18, no id (408 records in v2.2.8). */
+        val RECHARGED = ItemLayout(
+            48, 0x1E, idOff = -1, nameLength = 18, pockets =
+            mapOf(1 to BagPocket.ITEMS, 2 to BagPocket.MEDICINE, 3 to BagPocket.BALLS, 4 to BagPocket.TMHM, 5 to BagPocket.BERRIES, 6 to BagPocket.KEY),
+        )
+    }
+}
 
 /** A hack's [Gen3Rules], read once from its ROM [rom] at [t]'s tables. */
 class RomGen3Rules(private val rom: ByteArray, private val t: Gen3RomTables) : Gen3Rules {
@@ -157,15 +180,23 @@ class RomGen3Rules(private val rom: ByteArray, private val t: Gen3RomTables) : G
     }
 
     /** gItems' records by id: name, pocket. An unused one keeps ITEM_NONE's id 0 (null here); the table ends at the
-     * first record that is neither its own id nor 0. */
-    private class Item(val name: String, val pocket: Int)
+     * first record that is neither its own id nor 0 (a layout with no id: at the first whose pocket isn't one). */
+    private class Item(val name: String, val pocket: BagPocket?)
     private val itemTable: List<Item?> by lazy {
         val out = ArrayList<Item?>()
         for (i in 0 until 2048) {
-            val base = items + i * ITEM_SIZE
-            if (off(base) + ITEM_SIZE > rom.size) break
-            when (u16a(base + 14)) {
-                i -> out += Item(Gen3Text.decode(rom, off(base), 14).trim(), u8(base + ITEM_POCKET))
+            val l = t.itemLayout
+            val base = items + i * l.size
+            if (off(base) + l.size > rom.size) break
+            val pocket = l.pockets[u8(base + l.pocketOff)]
+            fun item() = Item(Gen3Text.decode(rom, off(base), l.nameLength).trim(), pocket)
+            if (l.idOff < 0) {
+                if (pocket == null) break
+                out += item()
+                continue
+            }
+            when (u16a(base + l.idOff)) {
+                i -> out += item()
                 0 -> out += null
                 else -> break
             }
@@ -212,11 +243,11 @@ class RomGen3Rules(private val rom: ByteArray, private val t: Gen3RomTables) : G
     override fun isHm(item: Int): Boolean = item in Gen3SaveFormat.FIRST_HM until FIRST_TM + TMHM_COUNT
 
     override fun bagItems(pocket: BagPocket): List<Int> = itemTable.indices.filter { id ->
-        id > 0 && id != ITEM_ENIGMA_BERRY && itemTable[id]?.pocket == pocket.id && pocket != BagPocket.KEY &&
+        id > 0 && id != ITEM_ENIGMA_BERRY && itemTable[id]?.pocket == pocket && pocket != BagPocket.KEY &&
             itemTable[id]?.name?.let { it.isNotEmpty() && !it.all { c -> c == '?' } } == true
     }
     override fun pocketOf(item: Int): BagPocket? =
-        itemTable.getOrNull(item)?.pocket?.takeIf { item > 0 && it != BagPocket.KEY.id }?.let { p -> BagPocket.entries.firstOrNull { it.id == p } }
+        itemTable.getOrNull(item)?.pocket?.takeIf { item > 0 && it != BagPocket.KEY }
 
     /** Each species' pre-evolution, from the evolution table. */
     private val preEvolution: IntArray by lazy {
@@ -259,8 +290,6 @@ class RomGen3Rules(private val rom: ByteArray, private val t: Gen3RomTables) : G
 
     companion object {
         private const val BASE_STATS_SIZE = 28
-        private const val ITEM_SIZE = 44
-        private const val ITEM_POCKET = 0x1A
         private const val FIRST_TM = 289
         private const val TMHM_COUNT = 58
         private const val EVOS_PER_MON = 5
@@ -339,16 +368,24 @@ object Gen3RomScan {
  * its Pokédex and GUIDE tables name every table the editor's rules read; gItems is its item descriptions' table.
  * Null when the config lacks one.
  */
-fun gen3RomTables(cfg: com.pokedaisy.app.companion.data.NativeConfig, family: String, inPlace: InPlaceBase? = null): Gen3RomTables? {
+fun gen3RomTables(
+    cfg: com.pokedaisy.app.companion.data.NativeConfig, family: String, inPlace: InPlaceBase? = null,
+    itemLayout: ItemLayout = ItemLayout.VANILLA,
+): Gen3RomTables? {
     val dex = cfg.pokedex ?: return null
     val guide = cfg.guideTables ?: return null
-    if (dex.expansion != null || dex.tmhmLearnsets == 0L || dex.tmhmMoves == 0L || dex.evolutions == 0L) return null
+    // The evolution table: vanilla's, or a layout's of the same shape (5 records of 8 bytes, the target at +4) whose
+    // methods are numbered its own way (Recharged Emerald's) - only the targets are read here.
+    val evolutions = dex.evolutions.takeIf { it != 0L }
+        ?: dex.evoLayout?.takeIf { it.perMon == 5 && it.record == 8 && it.table != 0L }?.table ?: 0L
+    if (dex.expansion != null || dex.tmhmLearnsets == 0L || dex.tmhmMoves == 0L || evolutions == 0L || guide.learnsetPairs) return null
     return Gen3RomTables(
         family = family, speciesInfo = dex.speciesInfo, learnsets = guide.learnsets, tmhmLearnsets = dex.tmhmLearnsets,
-        tmhmMoves = dex.tmhmMoves, evolutions = dex.evolutions, abilityNames = dex.abilityNames,
+        tmhmMoves = dex.tmhmMoves, evolutions = evolutions, abilityNames = dex.abilityNames,
         speciesToNational = dex.speciesToNational, regionalOrder = dex.regionalOrder, regionalCount = dex.regionalCount,
         eggSpecies = cfg.eggSpecies.takeIf { it > 0 } ?: dex.speciesCount, items = inPlace?.items ?: cfg.itemDescs?.base ?: 0,
         speciesNames = inPlace?.speciesNames ?: 0, moveNames = inPlace?.moveNames ?: 0, battleMoves = inPlace?.battleMoves ?: 0,
+        itemLayout = itemLayout,
     )
 }
 

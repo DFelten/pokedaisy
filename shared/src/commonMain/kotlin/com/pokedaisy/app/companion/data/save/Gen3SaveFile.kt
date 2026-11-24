@@ -56,6 +56,9 @@ enum class Gen3SaveFormat(
     val stackMax: Int,
     /** A retail game's layout (its rules the decomps' tables); false = a ROM hack's, its rules read from its ROM ([Gen3Rules]). */
     val retail: Boolean = true,
+    /** Bytes in front of SaveBlock2 and SaveBlock1 the retail struct doesn't have (Recharged Emerald Rebalanced's 4): kept
+     * as read, and the blocks start after them, so every offset here is the struct's own. */
+    val blockLead: Int = 0,
 ) {
     // Offsets from the decomps' global.h (pokeruby / pokeemerald / pokefirered), flag / var ids from their constants.
     RUBY_SAPPHIRE(
@@ -92,6 +95,24 @@ enum class Gen3SaveFormat(
         linkRsFlag = -1, kanto = false, coinsOff = 0x494,
         pockets = pockets(0x560, items = 120, key = 30, balls = 16, tmhm = 64, berries = 46), stackMax = 99, retail = false,
     ),
+    /**
+     * Pokémon Recharged Emerald (v2.2.5 / v2.2.8): retail Emerald's sectors and SaveBlock2 (0x1C more bytes at its end),
+     * its SaveBlock1 up to the bag, then bigger pockets, a Medicine pocket in retail's unused_3598, and no SaveBlock1
+     * copies of the Pokédex's seen bits (scripts/convert_save_recharged_emerald.py has the map). Flags / vars +0xD4 from
+     * retail; its system flags one lower (FLAG_SYS_NATIONAL_DEX 0x895, beside gSaveBlock2Ptr and VAR 0x4046's base in
+     * its IsNationalPokedexEnabled; the game clear flag is 0x863). Blocks taken whole, like Legacy's.
+     */
+    RECHARGED_EMERALD_V2_2_5(
+        "RECHARGED EMERALD", 0xF80, 4 * 0xF80, partyCountOff = 0x234, partyOff = 0x238, moneyOff = 0x490, encryptionKeyOff = 0xAC,
+        flagsOff = 0x1344, varsOff = 0x1470, seen1Off = -1, seen2Off = -1,
+        nationalMagicOff = 0x1A, nationalMagic = 0xDA, nationalVar = 0x4046, nationalVarValue = 0x302, nationalFlag = 0x895,
+        linkRsFlag = -1, kanto = false, coinsOff = 0x494,
+        pockets = pockets(0x560, items = 60, key = 50, balls = 32, tmhm = 64, berries = 46) + PocketLayout(BagPocket.MEDICINE, 0x366C, 50),
+        stackMax = 99, retail = false,
+    ),
+    RECHARGED_EMERALD_V2_2_8("RECHARGED EMERALD", RECHARGED_EMERALD_V2_2_5),
+    /** Recharged Emerald Rebalanced v2.2.8: v2.2.8's blocks with 4 more bytes in front of each ([blockLead]). */
+    RECHARGED_EMERALD_REBALANCED("RECHARGED EMERALD REBALANCED", RECHARGED_EMERALD_V2_2_5, blockLead = 4),
     // Hacks edited in place: their base game's layout, their own rules (species, moves, items, learnsets) from the ROM.
     EMERALD_KAIZO("EMERALD KAIZO", EMERALD),
     GLAZED("GLAZED", EMERALD),
@@ -101,11 +122,11 @@ enum class Gen3SaveFormat(
     ;
 
     /** A hack edited in place in [like]'s layout: the same offsets, its own rules ([retail] false). */
-    constructor(label: String, like: Gen3SaveFormat) : this(
-        label, like.saveBlock2Size, like.saveBlock1Size, like.storageSize, like.partyCountOff, like.partyOff, like.moneyOff,
+    constructor(label: String, like: Gen3SaveFormat, blockLead: Int = like.blockLead) : this(
+        label, like.saveBlock2Size - (blockLead - like.blockLead), like.saveBlock1Size - (blockLead - like.blockLead), like.storageSize, like.partyCountOff, like.partyOff, like.moneyOff,
         like.encryptionKeyOff, like.flagsOff, like.varsOff, like.seen1Off, like.seen2Off, like.nationalMagicOff, like.nationalMagic,
         like.nationalVar, like.nationalVarValue, like.nationalFlag, like.linkRsFlag, like.kanto, like.coinsOff, like.pockets,
-        like.stackMax, retail = false,
+        like.stackMax, retail = false, blockLead = blockLead,
     )
 
     /** What this layout's saves may hold ([Gen3Rules.of]: retail's tables, or a hack's from its ROM). */
@@ -125,8 +146,8 @@ enum class Gen3SaveFormat(
 
     /** sSaveSlotLayout's size for sector [id]: SaveBlock2 in 0, SaveBlock1 in 1-4, PokemonStorage in 5-13. */
     fun chunkSize(id: Int): Int = when (id) {
-        0 -> saveBlock2Size
-        in 1..4 -> chunk(saveBlock1Size, id - 1)
+        0 -> saveBlock2Size + blockLead
+        in 1..4 -> chunk(saveBlock1Size + blockLead, id - 1)
         else -> chunk(storageSize, id - 5)
     }
 
@@ -152,8 +173,9 @@ enum class Gen3SaveFormat(
     }
 }
 
-/** The bag's pockets; [id] is the generated tables' pocket number (bagItems*), KEY's 5 isn't in them (never edited). */
-enum class BagPocket(val id: Int) { ITEMS(1), BALLS(2), TMHM(3), BERRIES(4), KEY(5) }
+/** The bag's pockets; [id] is the generated tables' pocket number (bagItems*), KEY's 5 isn't in them (never edited).
+ * MEDICINE is a hack's (Recharged Emerald's): retail has none. */
+enum class BagPocket(val id: Int) { ITEMS(1), BALLS(2), TMHM(3), BERRIES(4), KEY(5), MEDICINE(6) }
 
 /** A pocket's ItemSlot array ({u16 itemId; u16 quantity}) in SaveBlock1. */
 class PocketLayout(val pocket: BagPocket, val off: Int, val slots: Int)
@@ -181,6 +203,9 @@ class Gen3SaveFile private constructor(
     val storage: ByteArray,
     /** What the save's game knows and allows: its layout's ([Gen3SaveFormat.rules]) or its own ROM's ([Gen3SaveReader]). */
     val rules: Gen3Rules,
+    /** The [Gen3SaveFormat.blockLead] bytes in front of SaveBlock2 / SaveBlock1, as read (written back as they were). */
+    private val lead2: ByteArray = ByteArray(0),
+    private val lead1: ByteArray = ByteArray(0),
 ) {
     enum class SlotStatus { OK, EMPTY, CORRUPT }
 
@@ -208,8 +233,8 @@ class Gen3SaveFile private constructor(
             out.fill(0, base, base + SECTOR)
             val size = format.chunkSize(id)
             val (block, start) = when (id) {
-                0 -> saveBlock2 to 0
-                in 1..4 -> saveBlock1 to (id - 1) * DATA
+                0 -> lead2 + saveBlock2 to 0
+                in 1..4 -> lead1 + saveBlock1 to (id - 1) * DATA
                 else -> storage to (id - 5) * DATA
             }
             block.copyInto(out, base, start, start + size)
@@ -290,8 +315,9 @@ class Gen3SaveFile private constructor(
             val s = slots[pick]
             if (!s.sameCounter) return Parsed.Failed(tr("The save's sectors disagree on its save counter"))
             val other = slots[1 - pick].status
-            val sb2 = ByteArray(format.saveBlock2Size)
-            val sb1 = ByteArray(format.saveBlock1Size)
+            val lead = format.blockLead
+            val sb2 = ByteArray(format.saveBlock2Size + lead)
+            val sb1 = ByteArray(format.saveBlock1Size + lead)
             val storage = ByteArray(format.storageSize)
             for (id in 0 until SECTORS_PER_SLOT) {
                 val base = s.sectorBase[id]
@@ -303,7 +329,10 @@ class Gen3SaveFile private constructor(
                 }
             }
             val rotation = (s.sectorBase[0] / SECTOR) % SECTORS_PER_SLOT
-            return Parsed.Ok(Gen3SaveFile(format, bytes.copyOf(), pick, s.counter, rotation, other, sb2, sb1, storage, rules))
+            return Parsed.Ok(Gen3SaveFile(
+                format, bytes.copyOf(), pick, s.counter, rotation, other, sb2.copyOfRange(lead, sb2.size),
+                sb1.copyOfRange(lead, sb1.size), storage, rules, sb2.copyOf(lead), sb1.copyOf(lead),
+            ))
         }
 
         /** GetSaveValidStatus's pick between two good slots: the larger counter, with its 0xFFFFFFFF -> 0 wrap. */
