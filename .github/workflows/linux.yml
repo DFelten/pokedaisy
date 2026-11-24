@@ -19,24 +19,27 @@ concurrency:
   group: linux-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  # No permission past the workflow's contents: read (Nightly and the Release workflow call this with only that, and a
+  # called job may not ask for more): a pull request's files come from git, its merge commit against the base.
   changes:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
-    permissions:
-      pull-requests: read
     outputs:
       run: ${{ steps.diff.outputs.run }}
     steps:
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 2
+          filter: blob:none
+          sparse-checkout: .github
       - id: diff
         env:
-          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          PR: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
         # The paths a pull request must touch for the builds to run (what the pull_request paths filter was).
         run: |
           if [ "$EVENT" != pull_request ]; then echo run=true >> "$GITHUB_OUTPUT"; exit 0; fi
-          files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" -q '.[].filename')
+          files=$(git diff --name-only HEAD^1 HEAD)
           if printf '%s\n' "$files" | grep -Eq '^(linux/|3ds/core/|libretro/|gamedata/)|^3ds/test/(host_display_test|configs_gen_test)\.c$|^3ds/Makefile$|^3ds/desktop/pd_png\.[^/]*$|^3ds/tools/(gen_tr\.py|tr_3ds\.txt|gen_font\.py)$|^shared/src/commonMain/cpp/pk_savevf\.[^/]*$|^shared/src/commonMain/kotlin/com/pokedaisy/app/companion/i18n/Tr[^/]*\.kt$|^third_party/(mgba|armgba|zlib|dsperate-lr)$|^app/src/main/cpp/nds/pk_nds_field\.[^/]*$|^\.github/workflows/linux\.yml$'; then
             echo run=true >> "$GITHUB_OUTPUT"
           else
