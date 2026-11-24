@@ -1461,17 +1461,19 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private fun followerSupported() = ::engine.isInitialized && (gbFollower() || engine.playback.followerSupported)
 
-    /** FOLLOWER on Crystal / Gold / Silver: the party lead's Pokédex number (their species ids are its Pokédex numbers; null: none). */
+    /** FOLLOWER on Crystal / Gold / Silver / Red / Blue: the party lead's Pokédex number (null: none). */
     @Volatile private var gbFollowerLead: Int? = null
 
-    /** FOLLOWER on Crystal, Gold and Silver (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
+    /** FOLLOWER on Crystal, Gold, Silver, Red and Blue (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
     private fun gbFollower() = romIsGameBoy && gbFollowerIconDir() != null && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
 
-    /** Where the running game's party icons are rebuilt (Crystal's, Gold / Silver's), or null for a game without the follower. */
+    /** Where the running game's party icons are rebuilt (Crystal's, Gold / Silver's, Red / Blue's), or null for a game without the follower. */
     private fun gbFollowerIconDir(): String? = when (com.pokedaisy.app.companion.data.activeGame) {
         com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS
         com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
             com.pokedaisy.app.companion.data.Gen2Art.GOLD_SILVER_ICONS
+        com.pokedaisy.app.companion.data.GameKind.RED, com.pokedaisy.app.companion.data.GameKind.BLUE ->
+            com.pokedaisy.app.companion.data.Gen1Art.RED_BLUE_ICONS
         else -> null
     }
 

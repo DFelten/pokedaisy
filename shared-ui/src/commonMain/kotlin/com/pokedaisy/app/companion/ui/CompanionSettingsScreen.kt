@@ -775,6 +775,8 @@ private fun homeRows(
                         com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> NewFeatures.FOLLOWER_CRYSTAL
                         com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
                             NewFeatures.FOLLOWER_GOLD_SILVER
+                        com.pokedaisy.app.companion.data.GameKind.RED, com.pokedaisy.app.companion.data.GameKind.BLUE ->
+                            NewFeatures.FOLLOWER_RED_BLUE
                         else -> NewFeatures.FOLLOWER
                     },
                 ),

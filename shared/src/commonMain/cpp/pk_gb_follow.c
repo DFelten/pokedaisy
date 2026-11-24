@@ -1,4 +1,4 @@
-// PokeDaisy - FOLLOWER on Pokemon Crystal, Gold and Silver: the party's lead walks a step behind the player, drawn into the finished frame.
+// PokeDaisy - FOLLOWER on Pokemon Crystal, Gold, Silver, Red and Blue: the party's lead walks a step behind the player, drawn into the finished frame.
 // Nothing of the game is written (no RAM, no VRAM, no OAM): the follower is pixels over the picture the core made, so
 // states, saves and RetroAchievements never see it. GPL-3.0 (see NOTICE).
 //
@@ -9,7 +9,9 @@
 // sprites off, the player's sprite gone. Tall grass covers its lower half (its pixels only where the BG is colour 0,
 // as the game's own OBJ-behind-BG priority does to the player), the BG's priority tiles and the window cover it too,
 // and it goes behind the game's sprites unless it stands lower on the screen than the player. Its colours follow the
-// scene: fades and the time of day, read off the player's own OBJ palette.
+// scene: fades and the time of day, read off the player's own OBJ palette. Red and Blue run as a Super Game Boy (a DMG
+// cart): there the icon's three shades go through the game's OBP0 and the SGB palette of the screen's area, as a sprite's
+// would, so their fades and each place's colours come out as the game draws them.
 
 #include "pk_gb_follow.h"
 #include <stdbool.h>
@@ -27,29 +29,46 @@
 #define GBF_PX 64          // the player's 16 x 16 on screen (OAM 0x48 / 0x4C)
 #define GBF_PY 60
 
-// Each cart's RAM (pret/pokecrystal, pret/pokegold; D000+ is WRAM bank 1). Crystal's is the same in rev 0, rev 1,
-// Australia and the German cart, Gold / Silver's in English and German.
+// Each cart's RAM (pret/pokecrystal, pret/pokegold, pret/pokered; D000+ is WRAM bank 1 on the Color). Crystal's is the
+// same in rev 0, rev 1, Australia and the German cart, Gold / Silver's in English and German. Red and Blue keep no
+// object struct: their tile is wXCoord / wYCoord, their grass the player's sprite state (wSpritePlayerStateData2's
+// GRASSPRIORITY), and German Red / Blue are English's + 5 from wOnSGB (CF1B) up, like Gen1Reader's GEN1_RED_DE.
 struct gbf_ram_map {
-    uint16_t playerObj;    // the player's object struct (0x28 bytes, the same layout in both)
-    uint16_t stateFlags;   // wStateFlags: bit 6 while a menu / text is up (Crystal only; 0 = none, Gold / Silver)
+    uint16_t tileX, tileY;     // the player's map tile (Crystal / Gold / Silver: its object struct's +0x12 / +0x13)
+    uint16_t grass;            // a byte whose grassMask bit is set while the player stands in tall grass
+    uint8_t grassMask;
+    uint16_t stateFlags;       // a menu / text up: wStateFlags bit 6 (Crystal), wFontLoaded bit 0 (Red / Blue); 0 = no such flag
+    uint8_t stateMask;
     uint16_t battleMode;
-    uint16_t playerState;  // 0 walk, 1 bike, 2 skate, 4 surf, 8 surf (Pikachu)
+    uint16_t playerState;
+    uint8_t surfA, surfB;      // playerState's surfing values (Crystal / Gold / Silver 4 / 8, Red / Blue's wWalkBikeSurfState 2)
     uint16_t mapGroup, mapNumber;
-    uint16_t vblank;       // hVBlank: 1 = the battle transition's (VBLANK_CUTSCENE)
+    uint16_t vblank;           // hVBlank: 1 = the battle transition's (VBLANK_CUTSCENE); 0 = none
+    uint16_t spritesUpdate;    // wUpdateSpritesEnabled (Red / Blue): 1 on the field, 0xFF from the battle transition on (a
+                               // trainer battle sets wIsInBattle only after it); 0 = none
 };
-static const struct gbf_ram_map gbfCrystal = { 0xD4D6, 0xD0ED, 0xD22D, 0xD95D, 0xDCB5, 0xDCB6, 0xFF9E };
-static const struct gbf_ram_map gbfGoldSilver = { 0xD1FD, 0, 0xD116, 0xD682, 0xDA00, 0xDA01, 0xFFA0 };
+static const struct gbf_ram_map gbfCrystal = {
+    0xD4D6 + 0x12, 0xD4D6 + 0x13, 0xD4D6 + 0x05, 0x08, 0xD0ED, 0x40, 0xD22D, 0xD95D, 4, 8, 0xDCB5, 0xDCB6, 0xFF9E, 0 };
+static const struct gbf_ram_map gbfGoldSilver = {
+    0xD1FD + 0x12, 0xD1FD + 0x13, 0xD1FD + 0x05, 0x08, 0, 0, 0xD116, 0xD682, 4, 8, 0xDA00, 0xDA01, 0xFFA0, 0 };
+static const struct gbf_ram_map gbfRedBlue = {
+    0xD362, 0xD361, 0xC207, 0x80, 0xCFC4, 0x01, 0xD057, 0xD700, 2, 2, 0xD35E, 0xD35E, 0, 0xCFCB };
+static const struct gbf_ram_map gbfRedBlueDe = {
+    0xD367, 0xD366, 0xC207, 0x80, 0xCFC9, 0x01, 0xD05C, 0xD705, 2, 2, 0xD363, 0xD363, 0, 0xCFD0 };
 
 static const struct { uint32_t crc; const struct gbf_ram_map* ram; } gbfCarts[] = {
     { 0x3358E30Au, &gbfCrystal }, { 0xEE6F5188u, &gbfCrystal }, { 0xBB6DD80Cu, &gbfCrystal }, { 0x616D85DEu, &gbfCrystal },
     // Gold, Silver (USA, Europe), Goldene Edition, Silberne Edition
     { 0x6BDE3C3Eu, &gbfGoldSilver }, { 0x8AD48636u, &gbfGoldSilver }, { 0x4889DFAAu, &gbfGoldSilver }, { 0x96C9DB95u, &gbfGoldSilver },
+    // Red, Blue (USA, Europe), Rote Edition, Blaue Edition
+    { 0x9F7FDD53u, &gbfRedBlue }, { 0xD6DA8A1Au, &gbfRedBlue }, { 0x89197825u, &gbfRedBlueDe }, { 0x9C336307u, &gbfRedBlueDe },
 };
 static const struct gbf_ram_map* gbfRam = &gbfCrystal;
 
 static struct {
     bool known, show, have;
     uint32_t icon[2][GBF_W * GBF_H];   // two frames, XBGR with the alpha in the top byte (0 = see-through)
+    uint8_t shade[2][GBF_W * GBF_H];   // the same as a sprite's pixel values 1-3 by brightness (0 = see-through), for a DMG cart
     // the path
     int camX, camY;
     uint8_t lastScx, lastScy, lastMapGroup, lastMapNum, lastTileX, lastTileY;
@@ -128,6 +147,9 @@ void pk_gb_follow_set(const uint32_t* argb) {
             uint32_t c = argb[f * GBF_W * GBF_H + i];
             uint32_t a = c >> 24;
             gbf.icon[f][i] = a < 128 ? 0 : 0xFF000000u | (c & 0xFFu) << 16 | (c & 0xFF00u) | ((c >> 16) & 0xFFu);
+            // Red / Blue's party icons are white, a colour and black (their pixel values 1, 2, 3 through OBP0)
+            int lum = (int) (((c >> 16) & 0xFF) * 30 + ((c >> 8) & 0xFF) * 59 + (c & 0xFF) * 11) / 100;
+            gbf.shade[f][i] = a < 128 ? 0 : lum >= 200 ? 1 : lum >= 64 ? 2 : 3;
         }
     gbf.have = true;
 }
@@ -157,12 +179,18 @@ static void gbf_push(int x, int y, bool grass) {
     gbf.tn++;
 }
 
+/** A battle, or its transition, under way. */
+static bool gbf_inBattle(const struct GB* gb) {
+    return gbf_ram(gb, gbfRam->battleMode) || (gbfRam->vblank && gbf_ram(gb, gbfRam->vblank) == 1) ||
+        (gbfRam->spritesUpdate && gbf_ram(gb, gbfRam->spritesUpdate) != 1);
+}
+
 /** The camera's path this frame: moved, rebased (a redraw with the player where he was) or started again (a warp). */
 static void gbf_track(const struct GB* gb) {
     const uint8_t scx = gb->memory.io[GB_REG_SCX], scy = gb->memory.io[GB_REG_SCY];
     const uint8_t mg = gbf_ram(gb, gbfRam->mapGroup), mn = gbf_ram(gb, gbfRam->mapNumber);
-    const uint8_t px = gbf_ram(gb, gbfRam->playerObj + 0x12), py = gbf_ram(gb, gbfRam->playerObj + 0x13);
-    const bool grass = (gbf_ram(gb, gbfRam->playerObj + 0x05) & 0x08) != 0;
+    const uint8_t px = gbf_ram(gb, gbfRam->tileX), py = gbf_ram(gb, gbfRam->tileY);
+    const bool grass = (gbf_ram(gb, gbfRam->grass) & gbfRam->grassMask) != 0;
     if (!gbf.started) {
         gbf.started = true;
         gbf.camX = gbf.camY = 0;
@@ -173,7 +201,7 @@ static void gbf_track(const struct GB* gb) {
         int tdx = (int) px - gbf.lastTileX, tdy = (int) py - gbf.lastTileY;
         bool tileJump = tdx > 1 || tdx < -1 || tdy > 1 || tdy < -1;
         // a battle scrolls the screen as it slides in and out: none of that is the player walking
-        bool field = (gb->memory.io[GB_REG_LCDC] & 0x80) && !gbf_ram(gb, gbfRam->battleMode) && gbf_ram(gb, gbfRam->vblank) != 1;
+        bool field = (gb->memory.io[GB_REG_LCDC] & 0x80) && !gbf_inBattle(gb);
         if (!field) {
         } else if ((!sameMap || tileJump) && !(gbf.tick - gbf.movedAt <= 2 && dx >= -8 && dx <= 8 && dy >= -8 && dy <= 8)) {
             // a warp (the player stood through its fade): start again. Walking over a map's edge into the next
@@ -225,16 +253,28 @@ static void gbf_place(int* x, int* y, bool* grass) {
     *grass = gbf.tgrass[0];
 }
 
-/** BG colour index at a screen pixel (| 0x80 = the tile has priority over sprites), or -1 under the window. */
-static int gbf_bgIndex(const struct GB* gb, int x, int y) {
+/** BG colour index at a screen pixel (| 0x80 = the tile has priority over sprites), or -1 under the window; its tile's
+ * id and attributes in [tile] / [tileAttr]. With [windowIsScreen] (Red / Blue: with a menu or text up they show the
+ * whole screen, box and all, through the window, WY 0) the window's pixel is read instead, like the BG's. */
+static int gbf_bgIndex(const struct GB* gb, int x, int y, bool windowIsScreen, uint8_t* tile, uint8_t* tileAttr) {
     const uint8_t* io = gb->memory.io;
     const uint8_t* vram = gb->video.vram;
     uint8_t lcdc = io[GB_REG_LCDC];
-    if ((lcdc & 0x20) && y >= io[GB_REG_WY] && x >= (int) io[GB_REG_WX] - 7) return -1;
-    int bx = (x + io[GB_REG_SCX]) & 255, by = (y + io[GB_REG_SCY]) & 255;
-    int map = (lcdc & 0x08) ? 0x1C00 : 0x1800;
+    int bx, by, map;
+    if ((lcdc & 0x20) && y >= io[GB_REG_WY] && x >= (int) io[GB_REG_WX] - 7) {
+        if (!windowIsScreen) return -1;
+        bx = x - ((int) io[GB_REG_WX] - 7);
+        by = y - io[GB_REG_WY];
+        map = (lcdc & 0x40) ? 0x1C00 : 0x1800;
+    } else {
+        bx = (x + io[GB_REG_SCX]) & 255;
+        by = (y + io[GB_REG_SCY]) & 255;
+        map = (lcdc & 0x08) ? 0x1C00 : 0x1800;
+    }
     int cell = map + (by >> 3) * 32 + (bx >> 3);
     uint8_t id = vram[cell], attr = vram[0x2000 + cell];
+    *tile = id;
+    *tileAttr = attr;
     int base = (lcdc & 0x10) ? id * 16 : 0x1000 + (int8_t) id * 16;
     if (attr & 0x08) base += 0x2000;
     int row = by & 7, col = bx & 7;
@@ -303,9 +343,14 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
     }
     const uint8_t lcdc = gb->memory.io[GB_REG_LCDC];
     if (!(lcdc & 0x80) || !(lcdc & 0x02)) { gbf_hidden("objects off"); return; }
-    if (gbf_ram(gb, gbfRam->battleMode) || gbf_ram(gb, gbfRam->vblank) == 1) { gbf_hidden("battle"); return; }
+    if (gbf_inBattle(gb)) { gbf_hidden("battle"); return; }
     uint8_t state = gbf_ram(gb, gbfRam->playerState);
-    if (state == 4 || state == 8) { gbf_hidden("surfing"); return; }
+    if (state == gbfRam->surfA || state == gbfRam->surfB) { gbf_hidden("surfing"); return; }
+    // a Super Game Boy's screen frozen or blanked (MASK_EN): the game shows no live picture
+    const struct GBVideoSoftwareRenderer* sr = (const struct GBVideoSoftwareRenderer*) gb->video.renderer;
+    const bool dmg = !(gb->model & GB_MODEL_CGB);
+    const bool sgb = dmg && (gb->model & GB_MODEL_SGB);
+    if (sgb && sr->d.sgbRenderMode) { gbf_hidden("sgb mask"); return; }
     if (gbf.walked == 0) { gbf_hidden("waiting for a step"); return; }
     int px, py;
     bool grass;
@@ -315,9 +360,10 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
     uint8_t mask[GBF_H][GBF_W];
     int pal = 0;
     if (!gbf_spriteMask(gb, x0, y0, mask, &pal)) { gbf_hidden("no player sprite"); return; }
-    // a menu / text box up: Crystal says so in wStateFlags; Gold / Silver keep no such flag, so there the font's tiles
-    // always stay over it (their map tiles in VRAM bank 0 end at 0x5F, the font's start at 0x60)
-    bool textUp = !gbfRam->stateFlags || (gbf_ram(gb, gbfRam->stateFlags) & 0x40) != 0;
+    // a menu / text box up: Crystal says so in wStateFlags, Red / Blue in wFontLoaded; Gold / Silver keep no such flag,
+    // so there the font's tiles always stay over it (their map tiles end at 0x5F, the font's start at 0x60; Red / Blue's
+    // tilesets too, their text box frame being 0x79-0x7E and the letters 0x80 up)
+    bool textUp = !gbfRam->stateFlags || (gbf_ram(gb, gbfRam->stateFlags) & gbfRam->stateMask) != 0;
     bool front = y0 > GBF_PY;
     // The scene's light off the player's palette: colour 0 against the day's (27, 31, 27) for fades to black and
     // the night, colour 3 (black by day) for fades to white.
@@ -332,6 +378,7 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
     // two poses, the other one each tile walked (half steps looked hectic): still while the player stands
     int frame = (int) (gbf.pathPx / 16) & 1;
     const uint32_t* icon = gbf.icon[frame];
+    const uint8_t* shade = gbf.shade[frame];
     bool flip = gbf.facing == 3;
     snprintf(gbf.why, sizeof gbf.why, "shown");
     gbf.sx = x0;
@@ -345,18 +392,26 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
             uint32_t c = icon[j * GBF_W + (flip ? GBF_W - 1 - i : i)];
             if (!c) continue;
             if (!front && mask[j][i]) continue;
-            int bg = gbf_bgIndex(gb, x, y);
+            uint8_t tileId, tileAttr;
+            int bg = gbf_bgIndex(gb, x, y, dmg, &tileId, &tileAttr);
             if (bg < 0) continue;                                   // the window over it
             if ((bg & 0x80) && (bg & 3)) continue;                  // a BG tile with priority
             if (grass && j >= GBF_H / 2 && (bg & 3)) continue;         // tall grass round its feet
-            if (textUp) {
-                // a menu / text box: its frame and letters (tiles 0x60 and up in VRAM bank 0) stay over it; a map tile
-                // from bank 1 can have such an id too, and doesn't
-                const uint8_t* io = gb->memory.io;
-                int bx = (x + io[GB_REG_SCX]) & 255, by = (y + io[GB_REG_SCY]) & 255;
-                int map = (lcdc & 0x08) ? 0x1C00 : 0x1800;
-                int cell = map + (by >> 3) * 32 + (bx >> 3);
-                if (gb->video.vram[cell] >= 0x60 && !(gb->video.vram[0x2000 + cell] & 0x08)) continue;
+            // a menu / text box: its frame and letters (tiles 0x60 and up in VRAM bank 0) stay over it; a map tile
+            // from bank 1 can have such an id too, and doesn't
+            if (textUp && tileId >= 0x60 && !(tileAttr & 0x08)) continue;
+            if (dmg) {
+                // a DMG cart: the shade through OBP0, then the screen's palette there (the SGB's attribute for this
+                // 8 x 8 area, as GBVideoSoftwareRendererFinishScanline picks it)
+                int p = 0;
+                if (sgb) {
+                    p = sr->d.sgbAttributes[(x >> 5) + 5 * (y >> 3)];
+                    p >>= 6 - ((x / 4) & 0x6);
+                    p = (p & 3) << 2;
+                }
+                uint32_t dc = (uint32_t) sr->palette[p | sr->lookup[0x20 + shade[j * GBF_W + (flip ? GBF_W - 1 - i : i)]]];
+                video[y * stride + x] = dc | 0xFF000000u;
+                continue;
             }
             int r = (int) (c & 0xFF) * mr >> 8, g = (int) ((c >> 8) & 0xFF) * mg >> 8, b = (int) ((c >> 16) & 0xFF) * mb >> 8;
             r = r + (255 - r) * wr / 255;
