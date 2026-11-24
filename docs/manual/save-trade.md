@@ -6,7 +6,7 @@ order: 8
 keywords: [3ds, nintendo 3ds, heartgold, soulsilver, platinum, diamond, pearl, ds save, nds save, save editor, edit save, editor, pc boxes, boxes, trade saves, trade, trading, transfer, move pokemon between games, bag, money, coins, held item, moves, save file, ivs, evs, nature, ability, shiny, gender, level, nickname, rename, friendship, pokedex, event, ticket, mystery gift, release, sort, search, party, pal park, migrate, migration, gba to ds, missing, what am i missing, complete pokedex, living dex, pokedex helper, trade back, trade and back, trade evolution, evolve by trade, collection, all my pokemon, every save, find a pokemon, poke transfer, poketransfer, black, white, black 2, white 2, gen 5, transfer lab]
 ---
 
-PokeDaisy can open a game's save file while the game is closed: you can tidy its PC, change your Pokémon, or move Pokémon between two of your games, the way a trade would. It works with FireRed, LeafGreen, Emerald, Ruby and Sapphire saves (and ROM hacks that kept their save layout; hacks that store their Pokémon their own way, like Seaglass, Recharged Emerald or Emerald Legacy, aren't offered), in English and the other Western languages, and with HeartGold, SoulSilver, Platinum, Black, White, Black 2 and White 2 saves on the DS (see [On the DS](#on-the-ds)). The 3DS app has it too (see [On the 3DS](#on-the-3ds)).
+PokeDaisy can open a game's save file while the game is closed: you can tidy its PC, change your Pokémon, or move Pokémon between two of your games, the way a trade would. It works with FireRed, LeafGreen, Emerald, Ruby and Sapphire saves (and some ROM hacks, see [ROM hacks](#rom-hacks)), in English and the other Western languages, and with HeartGold, SoulSilver, Platinum, Black, White, Black 2 and White 2 saves on the DS (see [On the DS](#on-the-ds)). The 3DS app has it too (see [On the 3DS](#on-the-3ds)).
 
 Everything the editor offers is something the game itself could have: a nature, a level or a move your Pokémon could really have, never a value the game would never make.
 
@@ -89,6 +89,12 @@ Diamond, Pearl, Platinum, HeartGold and SoulSilver trade with each other (not wi
 Black, White, Black 2 and White 2 trade with each other the same way. A Pokémon holding an item Black and White don't have (some of the sequels' newer items) can't go to them. The pair that only evolves when traded for each other evolves when you trade one for the other with `TRADE`, not when one is just sent over.
 
 The games' own trade rules apply. FireRed and LeafGreen only trade with Ruby, Sapphire and Emerald after the island part of their story, a game without its National Pokédex yet only takes Pokémon from its own regional one, and a party has to keep at least one Pokémon that isn't an egg. A Pokémon that evolves when traded evolves when it arrives, as it would with a cable. If you'd rather trade inside the games themselves, see [Link play](link-play.md).
+
+### ROM hacks
+
+The editor also opens saves of these ROM hacks: Emerald Legacy, Emerald Kaizo, Glazed, Orange Islands, Ultra Violet and Ash Gray, and a randomized FireRed or Emerald. It reads each one's own rules from the ROM it's played with (its Pokémon, moves, items and who learns what), so it only offers what that hack could really have. A hack's save trades only with another save of the same hack, its `MISSING` follows the hack's own Pokédex, and Pal Park only takes Pokémon from the five original games. A randomized game is still the original game underneath, so it trades with the others as before.
+
+Hacks that keep their Pokémon or their bag their own way (Unbound, Radical Red, Recharged Emerald, Seaglass and the like) aren't offered yet.
 
 ### Trade and back
 

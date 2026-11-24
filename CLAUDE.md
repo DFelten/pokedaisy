@@ -2544,6 +2544,7 @@ languages' Diamond / Pearl. The 3DS port has the Gen 3 editor (every page) and t
 (rerun it after changing `SaveTablesGen.kt` / `SaveSpeciesGen.kt` / `SpeciesDexGen.kt`; `make -C 3ds test-save` fails while it's stale). Its TRAINER > MISSING (`pd_missing_list` / `pd_missing_add`:
 the other GBA saves read one by one) lists the gaps and where to get each, without opening the trade for you (the library's pages would have to
 switch under it); TRADE AND BACK is `pd_trade_back`. No Pal Park there: the 3DS app reads no DS save.
+**ROM hacks in the editor** (2026-11-25, `docs/plans/save-editor-hacks.md`): a save carries its `Gen3Rules` (`Gen3SaveReader.formatFor` / `rulesFor`): retail's generated tables, a known hack's read from its ROM (Legacy, Kaizo, Glazed, Orange Islands, Ultra Violet, Ash Gray: `Gen3SaveReader.HACKS`), a randomized / in-place-edited English FireRed or Emerald its own ROM's at retail's addresses. Trades link one `family` only; Pal Park takes `RETAIL` only. CFRU / expansion / Recharged: not yet (the plan says why).
 **PAL PARK** (TOOLS, `EXTRA_PAL_PARK`; `save/PalPark.kt`, `ui/PalParkScreen.kt`, NEW tag `PAL_PARK`, 2026-11-16): six Pokémon from a GBA save's PC into an
 HG / SS / Platinum save, by pret/pokeplatinum's own migration (decompiled: `src/main_menu/gba_migrator.c`'s rules, `gba_pokemon.c`'s
 BoxMonGBAToBoxMon, then scrcmd_catching_show.c's store with UpdateMonStatusAndTrainerInfo case 2 = met at Pal Park (55) today at its level;
