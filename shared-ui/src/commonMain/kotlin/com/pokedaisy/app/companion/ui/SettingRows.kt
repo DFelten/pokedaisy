@@ -235,6 +235,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "RIVAL LOOK" to "rival look rival costume outfit skin sprite appearance dress up brendan may other hero opponent",
     "PLAYER LOOK" to "player look hero heroine character protagonist trainer costume outfit skin sprite appearance swap play as another game red leaf brendan may",
     "NUZLOCKE" to "nuzlocke challenge hardcore run tracker encounter first catch per route area death dead faint permadeath graveyard dupes clause",
+    "LEVEL UP ALL" to "level up all raise train exp experience grind catch up party box boxes pc highest next boss cap evolve new moves",
     "TRADE EVOS" to "trade evolutions trading evolve evolves evolution evolutions traded link cable friend second game without trading held item",
     "INSTANT TEXT" to "instant text speed fast dialogue dialog words letters message box skip immediately faster",
     "RIDE ON" to "ride on bike bicycle motorcycle motorbike scooter vespa moped vehicle cycling replace bike look mach acro",
@@ -304,7 +305,7 @@ val SETTINGS_PAGES: Map<String, List<String>> = mapOf(
     // helper of that kind goes here.
     QOL_PAGE to listOf(
         "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "QUICK HATCH", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP",
+        "EXP SHARE", "LEVEL CAP", "LEVEL UP ALL", "TRADE EVOS", "QUICK HATCH", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP",
         "FIELD POISON",
     ),
 )

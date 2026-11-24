@@ -145,6 +145,7 @@ fun CompanionSettingsScreen(
     // TOUCH CONTROLS > SKINS: the imported skins (read on the way in) and their pick-list.
     val touchSkinUi = remember { TouchSkinUi() }
     val touchSkins = remember(settings, page, settings?.touchRevision) { if (page == Page.TOUCH) settings?.touchSkins.orEmpty() else emptyList() }
+    var levelUp by remember { mutableStateOf<LevelUpStep?>(null) }
 
     // The games' own spelling: "POKéMON", not "POKÉMON".
     val gameName = settings?.gameName?.uppercase()?.replace('É', 'é') ?: ""
@@ -208,7 +209,8 @@ fun CompanionSettingsScreen(
                         listOf(groupTitle(tk("GAME")), SettingRow(tk("PLAYS AS"), game, subtitle = "Which game this ROM is read as",
                             opensPage = true, labelBadge = settings.gamePickBadge) { onPlaysAs() })
                     }.orEmpty() + homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
-                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
+                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } },
+                        { startLevelUp(settings) { levelUp = it } })
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
                         // The groups and pages where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
                         .let { rows ->
@@ -356,7 +358,8 @@ fun CompanionSettingsScreen(
                     // BATTLE and QUALITY OF LIFE: HOME's own rows, on a page of their own (SETTINGS_PAGES).
                     Page.BATTLE, Page.QOL -> settingsPageRows(
                         homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
-                            { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } }),
+                            { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } },
+                            { startLevelUp(settings) { levelUp = it } }),
                         if (page == Page.BATTLE) BATTLE_PAGE else QOL_PAGE,
                     ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.SPEED -> speedRows(settings, { tick++ }, { selector = it }) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
@@ -556,6 +559,7 @@ fun CompanionSettingsScreen(
             OptionConfirm(title, message, tk("OK"), m, onConfirm = { cheatNotice = null },
                 onDismiss = { cheatNotice = null }, cancelLabel = null)
         }
+        settings?.let { s -> levelUp?.let { step -> LevelUpAllFlow(s, step, m) { levelUp = it } } }
         confirm?.let { c ->
             OptionConfirm(
                 c.title, c.message, c.confirmLabel, m,
@@ -712,6 +716,7 @@ private fun homeRows(
     navigate: (Page) -> Unit,
     select: (Selector) -> Unit,
     askLock: (CoopLockAsk) -> Unit = {},
+    levelUpAll: () -> Unit = {},
 ): List<SettingRow> {
     fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
     val rateLabels = FF_RATES.map(::rateLabel)
@@ -943,6 +948,11 @@ private fun homeRows(
         ) {
             if (s.wildPinSupported) { s.setWildPin(!s.wildPin); changed() }
         },
+        // The whole party and PC brought up to one level (LevelUpAll.kt), only in a game whose records it knows.
+        if (s.levelUpAllSupported) SettingRow(
+            tk("LEVEL UP ALL"), null, labelBadge = NewFeatures.badge(NewFeatures.LEVEL_UP_ALL),
+            subtitle = "Bring your party and PC up to one level",
+        ) { levelUpAll() } else null,
         // A new wild foe made shiny at these odds before its battle draws it (ShinyOdds.kt; the versions it knows by hash).
         SettingRow(
             tk("SHINY ODDS"), if (s.shinyOddsSupported) shinyOddsLabel(s.shinyOdds) else tk("N/A"), setting = SharedSetting.SHINY_ODDS,

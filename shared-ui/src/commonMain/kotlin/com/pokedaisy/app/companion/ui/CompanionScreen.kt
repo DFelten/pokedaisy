@@ -826,7 +826,7 @@ fun CompanionScreen(
                             boxesUi.swapAnim?.let { BoxSwapAnimation(it, snapshot.pokedex?.tables, onDone = { boxesUi.swapAnim = null }) }
                             BoxSwapNotice(boxesUi)
                         } else if (tab == "DEX" && dex != null) {
-                            val holdings = remember(snapshot.party, pcBoxes) { com.pokedaisy.app.companion.data.dexHoldings(snapshot.party, pcBoxes) }
+                            val holdings = remember(snapshot.party, pcBoxes, snapshot.boxSpecies) { com.pokedaisy.app.companion.data.dexHoldings(snapshot.party, pcBoxes, snapshot.boxSpecies) }
                             if (paneKey == "DEX/DETAIL") {
                                 PokedexEntryScreen(
                                     dex, dexUi, lastDexEntry.value, guide = snapshot.guideTables, holdings = holdings,
