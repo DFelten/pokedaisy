@@ -119,7 +119,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Team Rocket Dragonsden | 2026 3.0.9, 3.1 (Spanish) | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
 | Too Many Types 2 | 1.5.2 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | — | — | — | ✅ ¹⁹ | — | — | ✅ | — |
 | Ultra Violet | 1.22 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
-| Unbound | 2.1.1.1, 2.1.1.1 French, 2.1.1.1 Italian (patch v7) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ ⁴⁰ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| Unbound | 2.1.1.1, 2.1.1.1 French, 2.1.1.1 Italian (patch v7), 2.1.1.1 Spanish (v1.25, No ZA) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ ⁴⁰ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
 | Wishes of Tomorrow | 1.2.6 | — | ✅ ²¹ | ✅ ²¹ | ✅ ²¹ | — | — | — | — | — | — ²¹ | — | — | — | — | — | — | ◐ ³⁶ | — |
 | Unknown FireRed / Emerald hacks edited in place | any (proven by code) | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | — | — | — | ◐ ³⁰ | ◐ ³⁰ | — | — | — | — | — | — | — | — ³⁶ | — |
 
@@ -1018,7 +1018,7 @@ against the app's recorded cards (`make -C 3ds test-card`), the GUIDE's boss tea
 
 | Game | DEX | CARD | GUIDE |
 | ---- | :-: | :--: | :---: |
-| Unbound 2.1.1.1 (and the French fan translation) | ✅ | ✅ | ✅ ²⁶ |
+| Unbound 2.1.1.1 (and the French, Italian and Spanish fan translations) | ✅ | ✅ | ✅ ²⁶ |
 | Lazarus | ✅ | ✅ | ✅ ²⁹ |
 | Recharged Yellow 1.8.0 | ✅ | ✅ | ✅ ²⁸ |
 | Recharged Yellow 1.9.x | ✅ | ✅ | ✅ ²⁸ |

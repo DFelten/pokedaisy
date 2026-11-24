@@ -82,6 +82,14 @@ private val UNBOUND_IT by lazy {
         englishMapSecs = { mapSecDataUnbound }, englishMoves = { moveDataUnbound })
 }
 
+// Pokémon Unbound v2.1.1.1's Spanish translation (gen_unbound_fr_tables.py, v1.25 "No ZA"): the same, moves to 922.
+const val UNBOUND_ES_TEXT = "UNBOUND_ES"
+private val UNBOUND_ES by lazy {
+    GameText({ speciesNamesUnboundEs }, { moveNamesUnboundEs }, { itemNamesUnboundEs },
+        natureNamesUnboundEs, { mapSecNamesUnboundEs }, { IntArray(0) },
+        englishMapSecs = { mapSecDataUnbound }, englishMoves = { moveDataUnbound })
+}
+
 // Pokémon Emerald Kaizo v2.0 (gen_emerald_lang_tables.py kaizo): English Emerald edited in place - its own moves (29
 // replaced, 217 rebalanced: names, types and powers from its gBattleMoves) under English's names for the rest. Not a
 // game code: the hack keeps retail's header (BPEE), so NATIVE_EMERALD_KAIZO names it.
@@ -116,6 +124,7 @@ fun gameText(code: String): GameText? = when (code) {
     "BPEJ" -> EMERALD_JA
     UNBOUND_FR_TEXT -> UNBOUND_FR
     UNBOUND_IT_TEXT -> UNBOUND_IT
+    UNBOUND_ES_TEXT -> UNBOUND_ES
     KAIZO_TEXT -> EMERALD_KAIZO
     "APSD" -> YELLOW_DE_TEXT
     "APAD", "APED" -> RED_BLUE_DE_TEXT

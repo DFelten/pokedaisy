@@ -194,6 +194,7 @@ class HackGuidesTest {
     private val quetzalEs = Game("Pokemon Quetzal (Alpha 9.0) (Spanish).gba", GameKind.QUETZAL, NATIVE_QUETZAL_ES, "quetzal_es")
     private val unboundFr = Game("Pokemon Unbound (v2.1.1.1) (French).gba", GameKind.UNBOUND, NATIVE_UNBOUND_FR, "unbound_fr")
     private val unboundIt = Game("Pokemon Unbound (v2.1.1.1) (Italian v7).gba", GameKind.UNBOUND, NATIVE_UNBOUND_IT, "unbound_it")
+    private val unboundEs = Game("Pokemon Unbound (v2.1.1.1) (Spanish v1.25) (No ZA).gba", GameKind.UNBOUND, NATIVE_UNBOUND_ES, "unbound_es")
 
     /** Orange Islands: its four gym leaders and DRAKE (trainers 1-5), the next one on the save, HERE and WHERE IS. */
     @Test fun `orange islands`() {
@@ -399,6 +400,10 @@ class HackGuidesTest {
         load(unboundIt)?.let { rom ->
             assertTrue(guideTablesMatchRom(rom, unboundIt.t))
             assertEquals(listOf(15, 16), GuideRomSource.party(unboundIt.t, 719)!!.map { it.level })
+        }
+        load(unboundEs)?.let { rom ->
+            assertTrue(guideTablesMatchRom(rom, unboundEs.t))
+            assertEquals(listOf(15, 16), GuideRomSource.party(unboundEs.t, 719)!!.map { it.level })
         }
     }
 

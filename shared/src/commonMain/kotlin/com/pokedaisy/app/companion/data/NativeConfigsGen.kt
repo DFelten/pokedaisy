@@ -5957,6 +5957,17 @@ val NATIVE_UNBOUND_IT = NATIVE_UNBOUND_WITH_DEX.copy(
     pokedex = POKEDEX_UNBOUND_IT,
 )
 
+// Pokémon Unbound v2.1.1.1 ES - the Spanish fan translation v1.25, its "No ZA" build (sha1 e7573638…): Italian's case
+// again, every literal pool holding English's word (only the text's strings repointed) and English's save booting in it
+// (`unbound_es`). Names in Spanish (UNBOUND_ES_TEXT, gen_unbound_fr_tables.py); its POKéDEX page is metric with a
+// decimal comma ("Alt. ??,? m" / "Peso", headless). The other v1.25 build adds Legends Z-A's Mega Evolutions and
+// moves the species, base stats, icons, dex and gItems with them: not supported.
+val NATIVE_UNBOUND_ES = NATIVE_UNBOUND_WITH_DEX.copy(
+    language = 'S',
+    gameCode = UNBOUND_ES_TEXT,
+    pokedex = POKEDEX_UNBOUND_ES,
+)
+
 // ---- gamedata/gen3/hacks/wishes.toml ----
 
 // Pokémon Wishes of Tomorrow v1.2.6 (32 MB, BPEE, sha1 60182b93…; FlatFoot Labs): pokeemerald-expansion 1.15.3 (its RHHEXP

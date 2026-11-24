@@ -81,6 +81,14 @@ class HackPokedexTest {
         assertEquals(setOf(443), dex.caught)
     }
 
+    /** Unbound ES (v1.25, No ZA): the same flags and save. */
+    @Test
+    fun `Unbound ES - seen 4, caught 1`() {
+        val dex = state("unbound_es", NATIVE_UNBOUND_ES)
+        assertEquals(4 to 1, dex.seen.size to dex.caught.size)
+        assertEquals(setOf(443), dex.caught)
+    }
+
     /** Orange Islands: FireRed's flags - its continue screen said POKéDEX 2 (PIKACHU and the MEWTWO it starts with). */
     @Test
     fun `Orange Islands - two caught`() {

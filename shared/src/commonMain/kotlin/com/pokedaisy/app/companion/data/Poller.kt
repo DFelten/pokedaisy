@@ -573,6 +573,7 @@ class TelemetrySampler {
                 UNBOUND_V2_1_1_1_SHA1 -> kind = GameKind.UNBOUND
                 UNBOUND_V2_1_1_1_FR_SHA1 -> { kind = GameKind.UNBOUND; nativeCfg = NATIVE_UNBOUND_FR }
                 UNBOUND_V2_1_1_1_IT_SHA1 -> { kind = GameKind.UNBOUND; nativeCfg = NATIVE_UNBOUND_IT }
+                UNBOUND_V2_1_1_1_ES_SHA1 -> { kind = GameKind.UNBOUND; nativeCfg = NATIVE_UNBOUND_ES }
                 GAIA_V3_2_SHA1 -> { kind = GameKind.GAIA; nativeCfg = NATIVE_GAIA_V3_2 }
                 RADICAL_RED_V4_1_SHA1 -> { kind = GameKind.RADICAL_RED; nativeCfg = NATIVE_RADICAL_RED_V4_1 }
                 ODYSSEY_V4_1_1_SHA1 -> { kind = GameKind.ODYSSEY; nativeCfg = NATIVE_ODYSSEY }
@@ -1064,6 +1065,8 @@ class TelemetrySampler {
         const val UNBOUND_V2_1_1_1_FR_SHA1 = "0ce2a880aa097f1dce4e1db8ee513d0e82d15859"
         // Its Italian fan translation (giacomo-spadoni/pokemon-unbound-ita, patch v7): the same, Italian text.
         const val UNBOUND_V2_1_1_1_IT_SHA1 = "8114e0f81eb3581f699c74a5891c7b75a130269d"
+        // Its Spanish fan translation v1.25, the "No ZA" build (text in place; the other build moved its data tables).
+        const val UNBOUND_V2_1_1_1_ES_SHA1 = "e7573638cd25aa455b933090775de42338a0dcd7"
         // Pokémon Gaia v3.2 - see NATIVE_GAIA_V3_2 in NativeReader.kt for the
         // verification this address reuse is based on.
         const val GAIA_V3_2_SHA1 = "d5b1e77975fcda831e0e9a7b527906bf3f40ecd0"
@@ -1469,7 +1472,7 @@ class TelemetrySampler {
             EMERALD_MWISBEST_V1_0_SHA1,
             SOULGOLD_V1_1_4_SHA1, SOULGOLD_V1_2_SHA1, SOULGOLD_V1_2B_SHA1, SOULGOLD_V1_2C_SHA1, GLAZED_V9_2_0_SHA1, IMPERIUM_V1_3_1_SHA1,
             SOULGOLD_V1_2_1_SHA1, SOULGOLD_V1_2_1B_SHA1,
-            QUETZAL_V9_0_ALPHA_SHA1, QUETZAL_V9_0_ALPHA_ES_SHA1, QUETZAL_V9_1_ALPHA_SHA1, QUETZAL_V9_1_ALPHA_ES_SHA1, UNBOUND_V2_1_1_1_FR_SHA1, UNBOUND_V2_1_1_1_IT_SHA1,
+            QUETZAL_V9_0_ALPHA_SHA1, QUETZAL_V9_0_ALPHA_ES_SHA1, QUETZAL_V9_1_ALPHA_SHA1, QUETZAL_V9_1_ALPHA_ES_SHA1, UNBOUND_V2_1_1_1_FR_SHA1, UNBOUND_V2_1_1_1_IT_SHA1, UNBOUND_V2_1_1_1_ES_SHA1,
             QUETZAL_V0_8_4_ALPHA_SHA1, QUETZAL_V0_8_4_ALPHA_ES_SHA1, MOEMON_QUETZAL_V0_8_4_ALPHA_Hotfix_SHA1,
             MOEMON_QUETZAL_V0_8_4_ALPHA_ES_Hotfix_SHA1,
             ORANGE_ISLANDS_V5_7_BETA_SHA1, ORANGE_ISLANDS_UNVERSIONED_SHA1,

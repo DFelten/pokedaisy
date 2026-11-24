@@ -133,6 +133,7 @@ object BestEffort {
             Candidate("UNBOUND", GameKind.UNBOUND, NATIVE_UNBOUND_WITH_DEX, FIRERED, "Pokémon Unbound"),
             Candidate("UNBOUND_FR", GameKind.UNBOUND, NATIVE_UNBOUND_FR, FIRERED, "Pokémon Unbound (FR)"),
             Candidate("UNBOUND_IT", GameKind.UNBOUND, NATIVE_UNBOUND_IT, FIRERED, "Pokémon Unbound (IT)"),
+            Candidate("UNBOUND_ES", GameKind.UNBOUND, NATIVE_UNBOUND_ES, FIRERED, "Pokémon Unbound (ES)"),
             Candidate("GAIA_V3_2", GameKind.GAIA, NATIVE_GAIA_V3_2, FIRERED, "Pokémon Gaia"),
             Candidate("RADICAL_RED_V4_1", GameKind.RADICAL_RED, NATIVE_RADICAL_RED_V4_1, FIRERED, "Pokémon Radical Red"),
             Candidate("ODYSSEY", GameKind.ODYSSEY, NATIVE_ODYSSEY, FIRERED, "Pokémon Odyssey"),

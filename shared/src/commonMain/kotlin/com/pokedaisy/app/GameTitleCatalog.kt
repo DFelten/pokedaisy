@@ -136,6 +136,7 @@ object GameTitleCatalog {
         "ae5d88bb823a8f9d0d07e8784da2376ff7c1ae43" to "Moemon Quetzal",
         "0ce2a880aa097f1dce4e1db8ee513d0e82d15859" to "Pokémon Unbound",
         "8114e0f81eb3581f699c74a5891c7b75a130269d" to "Pokémon Unbound",
+        "e7573638cd25aa455b933090775de42338a0dcd7" to "Pokémon Unbound",
         "7eca3ef1580e21b96027b721ecd3ba1aa36a6ea2" to "Pokémon Clover",
         "d2440fd6bae5a12dfc3cecc129b9bbff22d74b2e" to "Pokémon Elysium (Part A)",
         "71bf40178a1f5c69dc1c22099623434ba1e74318" to "Pokémon Elysium (Part B)",

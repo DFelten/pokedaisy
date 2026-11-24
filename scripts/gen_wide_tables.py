@@ -110,6 +110,8 @@ HACKS = [
          save="unbound_fr", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
     dict(name="Unbound v2.1.1.1 IT", sha1="8114e0f81eb3581f699c74a5891c7b75a130269d", family="FR", mapped=True,
          save="unbound_it", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
+    dict(name="Unbound v2.1.1.1 ES", sha1="e7573638cd25aa455b933090775de42338a0dcd7", family="FR", mapped=True,
+         save="unbound_es", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
     dict(name="Radical Red v4.1", sha1="964f951a0fdaf209e4ea1344883ef0d557bb3a80", family="FR", mapped=True,
          save="radical_red", a=dict(MAP_GROUPS=0x083526A8, OBJ_GFX_INFO=0x08EB1000, OBJ_GFX_TABLES=0x091468CC,
                                     OBJ_GFX_TABLE_MAX=0xFE, **CFRU_FLAGS)),

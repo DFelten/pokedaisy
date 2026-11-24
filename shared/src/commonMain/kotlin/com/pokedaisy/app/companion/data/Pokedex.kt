@@ -278,6 +278,15 @@ val POKEDEX_UNBOUND_IT = POKEDEX_UNBOUND.copy(
     probeCategory = "Seed",
 )
 
+/** Unbound v2.1.1.1 ES (v1.25, No ZA): English's tables, the dex text translated in place - metric with a decimal comma
+ * ("Pokémon ...", "Alt. ??,? m", "Peso ???,? kg": headless, the game's own POKéDEX). */
+val POKEDEX_UNBOUND_ES = POKEDEX_UNBOUND.copy(
+    categoryPrefix = "Pokémon",
+    categorySuffix = "",
+    metric = true,
+    probeCategory = "Semilla",
+)
+
 /** Ruby (rev 1 and rev 2 share every address): Emerald's flag rules,
  * seen copies at SaveBlock1+0x938/+0x3A8C, two-page dex text. */
 val POKEDEX_RUBY = PokedexTables(
