@@ -844,12 +844,13 @@ object Gen2Dex {
  * The Gen 2 front pictures' background gaps the outline closes in (between a tail and the body, inside a coil, between
  * necks), as x, y pairs of a pixel in each, by game and species: POKéMON PICTURES (shared-ui's `paperFilled`) leaves
  * them see-through. Picked by eye from every picture's closed see-through areas (the white ones are bellies, faces and
- * wings too, so no rule tells them apart); only clear cases, areas under 30 pixels not looked at. The German carts'
- * pictures are the English ones. `GoldSilverArtTest` checks each is a closed area in its cart's picture.
+ * wings too, so no rule tells them apart); only clear cases, and areas under 30 pixels only where one showed (Raichu's
+ * behind its ear). The German carts' pictures are the English ones. `GoldSilverArtTest` checks each is a closed area
+ * in its cart's picture.
  */
 private val GEN2_PICTURE_GAPS: Map<GameKind, Map<Int, IntArray>> = mapOf(
     GameKind.GOLD to mapOf(
-        5 to intArrayOf(43, 28), 6 to intArrayOf(39, 30), 26 to intArrayOf(42, 20), 78 to intArrayOf(36, 32),
+        5 to intArrayOf(43, 28), 6 to intArrayOf(39, 30), 26 to intArrayOf(42, 20, 33, 20), 78 to intArrayOf(36, 32),
         85 to intArrayOf(34, 17), 148 to intArrayOf(39, 20), 239 to intArrayOf(43, 42),
     ),
     GameKind.SILVER to mapOf(
@@ -857,7 +858,7 @@ private val GEN2_PICTURE_GAPS: Map<GameKind, Map<Int, IntArray>> = mapOf(
         141 to intArrayOf(48, 29),
     ),
     GameKind.CRYSTAL to mapOf(
-        5 to intArrayOf(45, 27), 6 to intArrayOf(39, 30), 26 to intArrayOf(43, 20), 141 to intArrayOf(48, 29),
+        5 to intArrayOf(45, 27), 6 to intArrayOf(39, 30), 26 to intArrayOf(43, 20, 34, 20), 141 to intArrayOf(48, 29),
         239 to intArrayOf(43, 42),
     ),
 )

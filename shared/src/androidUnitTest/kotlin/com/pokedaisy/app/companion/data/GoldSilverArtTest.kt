@@ -38,7 +38,7 @@ class GoldSilverArtTest {
 
     /**
      * Every [gen2PictureGaps] pixel sits in a closed see-through area of its cart's front picture (one the border can't
-     * reach), of 30 pixels or more: a moved picture or a typo would leave a belly or a face see-through instead.
+     * reach), of 8 pixels or more: a moved picture or a typo would leave a belly or a face see-through instead.
      */
     @Test
     fun `picture gaps are closed areas of each cart's picture`() {
@@ -64,13 +64,13 @@ class GoldSilverArtTest {
                                 if (nx in 0..55 && ny in 0..55 && px[ny * 56 + nx] ushr 24 == 0) stack.add(ny * 56 + nx)
                         }
                         assertTrue("$game $s: reaches the border", !edge)
-                        assertTrue("$game $s: ${seen.size} pixels", seen.size >= 30)
+                        assertTrue("$game $s: ${seen.size} pixels", seen.size >= 8)
                         checked++
                     }
                 }
             }
         } finally { Gen1Dex.rom = null }
-        assertEquals(18, checked)
+        assertEquals(20, checked)
     }
 
     @Test
