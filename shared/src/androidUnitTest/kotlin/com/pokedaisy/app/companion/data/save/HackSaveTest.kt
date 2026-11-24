@@ -58,5 +58,13 @@ class HackSaveTest {
         assertEquals(null, d2.mismatch())
         assertEquals(123_456, d2.money)
         if (data.partyCount > 1) assertEquals(lead.mon.personality, d2.mon(BoxSlot(13, 29)).personality)
+        // For booting in the game headless (HACK_SAVE_OUT=<file>): the lead Lv30, 123,456 money, 5 POKé BALLS.
+        System.getenv("HACK_SAVE_OUT")?.let { path ->
+            val e2 = Gen3SaveEditor(file)
+            e2.setLevel(MonRef.Party(0), 30)
+            e2.setMoney(123_456)
+            e2.addItem(BagPocket.BALLS, 4, 5)
+            File(path).writeBytes(e2.build())
+        }
     }
 }
