@@ -3540,6 +3540,16 @@ metric = true
 decimalPoint = '.'
 probeCategory = 'Graine'
 
+# Unbound v2.1.1.1 ES (v1.25, No ZA): the same, "Pokémon Semilla", "Alt. ??,? m" (headless, the game's own POKéDEX).
+[record.POKEDEX_UNBOUND_ES]
+schema = 'gen3_pokedex'
+base = 'POKEDEX_UNBOUND'
+kotlin = false
+categoryPrefix = 'Pokémon'
+categorySuffix = ''
+metric = true
+probeCategory = 'Semilla'
+
 # Unbound v2.1.1.1 IT: English's tables, the dex text translated in place, metric with a decimal comma (the game's
 # own page: "Alt." / "Peso ... kg"). BULBASAUR's category stayed English's "Seed".
 [record.POKEDEX_UNBOUND_IT]

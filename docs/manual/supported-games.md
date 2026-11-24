@@ -34,7 +34,8 @@ Any GBA, Game Boy or DS game plays in PokeDaisy. "Supported" is about the compan
 
 **Nintendo DS:**
 
-- Pokémon Platinum: the USA release (revision 1), and the French, Spanish and German ones (revision 0).
+- Pokémon Platinum: the USA releases (revisions 0 and 1), the European English one (revision 10), and the French, Spanish and German ones (revision 0).
+- Pokémon Diamond and Pearl: the USA releases (revision 5). The companion reads their party, bag, money and the place you're in, with icons from your cart; their Pokédex, guide, map picture and battles come later.
 - Pokémon HeartGold: the USA, German, French, Spanish, Italian, Japanese and Korean releases (revision 0), and the English one sold in Europe (revision 10).
 - Pokémon SoulSilver: the USA, German, French, Spanish, Italian, Japanese and Korean releases (revision 0), and the English one sold in Europe (revision 10).
 - Pokémon Black: the USA / Europe, French, German, Spanish, Italian, Japanese and Korean releases.
@@ -55,12 +56,12 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 
 | Hack | Version |
 | --- | --- |
-| Pokémon Unbound | 2.1.1.1, and its French and Italian translations (the Italian one: patch v7) |
+| Pokémon Unbound | 2.1.1.1, and its French, Italian and Spanish translations (the Italian one: patch v7; the Spanish one: v1.25, its build without the new Mega Evolutions) |
 | Pokémon Radical Red | 4.1 |
 | Pokémon Gaia | 3.2 |
 | Pokémon Odyssey | 4.1.1 |
 | Pokémon Heart and Soul | 2.0.6 |
-| Pokémon Amethyst | 1.3.0 and 1.4.1 |
+| Pokémon Amethyst | 1.3.0, 1.4.1 and 1.4.3 |
 | Celia's Stupid Romhack | 1.1.4 |
 | Pokémon Orange Islands | Beta 5.7, and an older beta |
 | Pokémon Ultra Violet | 1.22 |
@@ -70,12 +71,14 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 | Pokémon Clover | 1.3.3 |
 | Pokémon Elysium (Part A) | 2.5.0 |
 | Pokémon Elysium (Part B) | 2.5.0 |
+| Pokémon Crystal Advance Redux | the 22-11-25 build |
 | Sword and Shield Ultimate Plus | 1.2.1.2, plus its three patches |
 | Pokémon GS Chronicles | 2.7.6 |
-| Pokémon Rhythm | 1.4.0 |
+| Pokémon Rhythm | 1.4.0 and 1.6.0 |
 | Pokémon OAE (the "Oops All" Kanto hack) | 1.3.2 |
-| Pokémon Ceruleum | 1.1.1 |
+| Pokémon Ceruleum | 1.1.1 (both of its builds) |
 | Pokémon RecordKeepers | 1.2.1 |
+| Pokémon Generation 3 Evolved | 1.0.17, 1.0.22 and 1.0.26 |
 | Pokémon Recharged Yellow | 1.8.0, 1.9.0, 1.9.4 and 1.9.7 |
 | Pokémon Lazarus | 2.0 |
 | Emerald Seaglass | 3.0 |
@@ -90,10 +93,11 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 | Super Mariomon | 1.2.1 to 1.3, 1.5.1 and 1.5.2 |
 | Pokémon Recharged Emerald | 2.2.5 and 2.2.8, and Rebalanced 2.2.8 |
 | Pokémon Modern Emerald | 3.6 (types follow the settings you picked when you started your game) |
-| Pokémon Epsilon Emerald | 1.0.0 (a save from Emerald keeps working in it) |
+| Pokémon Epsilon Emerald | 1.0.0 and 1.0.3 (a save from Emerald keeps working in both) |
 | Pokémon Elite Redux | 2.65.3b and 2.65.4.1b |
 | Pokémon Team Rocket Edition: Dragonsden Version | 1.5, and the 2026 edition's 3.0.9 and 3.1 in Spanish (its START menu shows the version) |
 | Pokémon Wishes of Tomorrow | 1.2.6 |
+| Pokémon Heart and Soul Legends | M9.16 (party, bag and map; battles not yet) |
 | Pokémon Dreamstone Mysteries | its one release (the game shows no version) |
 | Pokémon Monomyth | 1.0, 1.1 and 1.2 |
 | Emerald Rogue | 2.2.1-EX |

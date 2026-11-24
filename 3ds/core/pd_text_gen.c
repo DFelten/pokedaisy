@@ -151560,6 +151560,18 @@ const struct pd_text pd_text_unbound_it = {
     .mapsecsRom = true,
 };
 
+const struct pd_text pd_text_unbound_es = {
+    .species = pd_speciesNamesUnbound, .speciesCount = 1294,
+    .items = pd_itemNamesUnbound, .itemsCount = 729,
+    .moves = pd_moveDataUnbound, .movesCount = 923,
+    .typeNames = 0, .typeNamesCount = 0,
+    .typeChart = 0, .typeChartCount = 0,
+    .speciesTypes = 0, .speciesTypesCount = 0,
+    .genderRatios = pd_genderRatiosUnbound, .genderRatiosCount = 1294,
+    .mapsecs = pd_mapSecDataUnbound, .mapsecsCount = 197,
+    .mapsecsRom = true,
+};
+
 const struct pd_text pd_text_celia = {
     .species = pd_speciesNamesCelia, .speciesCount = 411,
     .items = pd_itemNamesCelia, .itemsCount = 484,

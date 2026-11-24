@@ -1171,6 +1171,10 @@ fun battleSwitchAddrsFor(
     // DOWN walked slotId 0 -> 2 -> 3.
     game == com.pokedaisy.app.companion.data.GameKind.CERULEUM ->
         BattleInputController.SwitchAddrs(partyMenu = 0x020372F0L, party = 0x02037748L, grid = true)
+    // Generation 3 Evolved: FireRed's list at its own gPartyMenu (NATIVE_GEN3_EVOLVED, both builds). Headless: a written
+    // POKéMON cell + A opened it, DOWN, A, SHIFT sent slot 1 in (gBattlerPartyIndexes[0] = 1).
+    game == com.pokedaisy.app.companion.data.GameKind.GEN3_EVOLVED ->
+        BattleInputController.SwitchAddrs(partyMenu = 0x020335C0L, party = 0x02033664L)
     game == com.pokedaisy.app.companion.data.GameKind.AMETHYST ->
         BattleInputController.SwitchAddrs(partyMenu = 0x0203B0A0L, party = 0x02024284L, grid = true)
     // Unbound (EN / FR): FireRed's gPartyMenu / gPlayerParty (CFRU keeps its EWRAM) under CFRU's two-column party

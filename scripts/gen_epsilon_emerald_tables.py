@@ -30,6 +30,9 @@ from gen_emerald_lang_tables import CHARS  # noqa: E402
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared", "src", "commonMain", "kotlin",
                    "com", "pokedaisy", "app", "companion", "data", "EpsilonEmeraldGen.kt")
 SHA1 = "8decf0571ba3f17d31c76168346e240a14e248ce"
+# v1.0.3 (sha1 fec5d319..., the author's BPS over retail Emerald): its tables are checked equal to v1.0.0's (the file is
+# written from v1.0.0 only; given v1.0.3, it's compared, the header lines aside).
+SHA1_V1_0_3 = "fec5d3190cf396fa21d4bed815f088289501a78d"
 EMERALD_SHA1 = "f3ae088181bf583e55daf962a92bb46f4f1d07b7"
 B = 0x08000000
 SPECIES_EGG = 446          # a blank record between OBSTAGOON (445) and the UNOWN forms
@@ -144,8 +147,9 @@ def main():
     if len(sys.argv) not in (2, 3):
         sys.exit(__doc__)
     d = open(sys.argv[1], "rb").read()
-    if hashlib.sha1(d).hexdigest() != SHA1:
-        sys.exit("not Pokemon Epsilon Emerald v1.0.0 (sha1 8decf057...)")
+    sha = hashlib.sha1(d).hexdigest()
+    if sha not in (SHA1, SHA1_V1_0_3):
+        sys.exit("not Pokemon Epsilon Emerald v1.0.0 / v1.0.3 (sha1 8decf057... / fec5d319...)")
     t = read(d)
     # What the game shows: CLEFAIRY is Fairy, its chart's FAIRY row hits DRAGON twice, ROOST is 355, TM51 follows HM08.
     assert t["species"][1] == "Bulbasaur" and t["species"][445] == "Obstagoon" and t["types"][35] == (18, 18)
@@ -198,6 +202,12 @@ def main():
            "/** The TM pocket's bits in order: TM01 .. TM50, HM01 .. HM08, TM51 .. TM110 (the TM pocket's items by id). */\n",
            "internal val TM_ITEMS_EPSILON_EMERALD: IntArray = intArrayOf(\n",
            "".join(f"    {', '.join(str(x) for x in t['tm_items'][i:i + 16])},\n" for i in range(0, len(t['tm_items']), 16)), ")\n"]
+    if sha == SHA1_V1_0_3:
+        body = lambda text: [l for l in text.split("\n") if not l.startswith("// ")]
+        with open(OUT, encoding="utf-8") as f:
+            same = body(f.read()) == body("".join(out))
+        print("v1.0.3's tables", "equal v1.0.0's" if same else "DIFFER from v1.0.0's")
+        sys.exit(0 if same else 1)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("".join(out))
     print("wrote", os.path.relpath(OUT), f": {len(t['species'])} species, {sum(1 for v in t['moves'].values() if v[0])} moves, "

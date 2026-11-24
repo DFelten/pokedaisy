@@ -75,3 +75,14 @@ base = 'unbound_with_dex'
 language = 'I'
 gameCode = { ref = 'UNBOUND_IT_TEXT' }
 pokedex = 'POKEDEX_UNBOUND_IT'
+
+# Pokémon Unbound v2.1.1.1 ES - the Spanish fan translation v1.25, its "No ZA" build (sha1 e7573638…): Italian's case
+# again, every literal pool holding English's word (only the text's strings repointed) and English's save booting in it
+# (`unbound_es`). Names in Spanish (UNBOUND_ES_TEXT, gen_unbound_fr_tables.py); its POKéDEX page is metric with a
+# decimal comma ("Alt. ??,? m" / "Peso", headless). The other v1.25 build adds Legends Z-A's Mega Evolutions and
+# moves the species, base stats, icons, dex and gItems with them: not supported.
+[config.unbound_es]
+base = 'unbound_with_dex'
+language = 'S'
+gameCode = { ref = 'UNBOUND_ES_TEXT' }
+pokedex = 'POKEDEX_UNBOUND_ES'

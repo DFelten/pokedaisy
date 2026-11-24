@@ -44,6 +44,7 @@ class RomItemTextTest {
         Case("Pokemon Gaia (v3.2).gba", GameKind.GAIA, NATIVE_GAIA_V3_2, mapOf(13 to "20 points")),
         Case("Pokemon Odyssey (v4.1.1).gba", GameKind.ODYSSEY, NATIVE_ODYSSEY, mapOf(13 to "restores 50 HP")),
         Case("Pokemon Amethyst (v1.4.1).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_1, mapOf(13 to "20 points")),
+        Case("Pokemon Amethyst (v1.4.3).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_3, mapOf(13 to "20 points")),
         // By slot, as the game looks it up (slots 192 / 193 carry a stale itemId 255).
         Case("Pokemon Radical Red (v4.1).gba", GameKind.RADICAL_RED, NATIVE_RADICAL_RED_V4_1,
             mapOf(13 to "20 points", 675 to "special moves", 255 to "Beauty condition")),
@@ -81,6 +82,7 @@ class RomItemTextTest {
         Case("Pokemon Elysium (v2.5.0) (Part A).gba", GameKind.FIRERED, NATIVE_ELYSIUM_A, mapOf(13 to "20 points")),
         Case("Pokemon Elysium (v2.5.0) (Part B).gba", GameKind.FIRERED, NATIVE_ELYSIUM_B, mapOf(13 to "20 points")),
         Case("Pokemon Rhythm (v1.4.0).gba", GameKind.RHYTHM, NATIVE_RHYTHM, mapOf(13 to "20 points")),
+        Case("Pokemon Rhythm (v1.6.0).gba", GameKind.RHYTHM, NATIVE_RHYTHM_V1_6_0, mapOf(13 to "20 points")),
         Case("Pokemon Oops All Eevees (v1.3.2).gba", GameKind.OOPS_ALL_EEVEES, NATIVE_OOPS_ALL_EEVEES, mapOf(13 to "20 points")),
         Case("Pokemon Ash Gray (v4.5.3).gba", GameKind.FIRERED, NATIVE_ASH_GRAY, mapOf(13 to "20 points")),
         // Ghost Grey's RAGECANDYBAR in FireRed's POTION slot.
@@ -109,7 +111,11 @@ class RomItemTextTest {
         // Wishes of Tomorrow's POTION, as its bag screen prints it.
         Case("Pokemon Wishes of Tomorrow (v1.2.6).gba", GameKind.WISHES, NATIVE_WISHES, mapOf(28 to "by 20 points")),
         Case("Pokemon Ceruleum (v1.1.1).gba", GameKind.CERULEUM, NATIVE_CERULEUM, mapOf(28 to "20 points")),
+        Case("Pokemon Ceruleum (v1.1.1) (Alt 1).gba", GameKind.CERULEUM, NATIVE_CERULEUM_ALT, mapOf(28 to "20 points")),
         Case("Pokemon RecordKeepers (v1.2.1).gba", GameKind.RECORDKEEPERS, NATIVE_RECORDKEEPERS, mapOf(28 to "20 points")),
+        Case("Pokemon Generation 3 Evolved (v1.0.22).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED, mapOf(28 to "20 points")),
+        Case("Pokemon Generation 3 Evolved (v1.0.17).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED_V1_0_17, mapOf(28 to "20 points")),
+        Case("Pokemon Generation 3 Evolved (v1.0.26).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED_V1_0_26, mapOf(28 to "20 points")),
         // Monomyth's REPEL and ANTIDOTE, as its bag screen prints them (its own item ids, 32-byte gItems).
         Case("Pokemon Monomyth (v1.0).gba", GameKind.MONOMYTH, NATIVE_MONOMYTH, mapOf(93 to "for 100 steps", 33 to "poisoned")),
         Case("Pokemon Monomyth (v1.1).gba", GameKind.MONOMYTH, NATIVE_MONOMYTH_V1_1, mapOf(93 to "for 100 steps", 33 to "poisoned")),

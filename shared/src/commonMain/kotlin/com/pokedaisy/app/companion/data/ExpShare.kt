@@ -65,8 +65,17 @@ object ExpShare {
     fun dsFind(code: String, rev: Int, dsperate: Boolean, hack: Boolean): Found? = when {
         dsperate || hack -> null
         code == "CPUE" && rev == 1 || rev == 0 && code in setOf("IPKE", "IPGE", "IRBO", "IRAO", "IREO", "IRDO") -> Found(0, emptyList(), ds = true)
+        (code to rev) in GEN4_OTHER_CARTS -> Found(0, emptyList(), ds = true)
         else -> null
     }
+
+    /** The other Gen 4 carts (2026-11-24): their BtlCmd_CalcExpGain is the US carts' code at their own address
+     * (pk_nds_field.cpp's EXP_GEN4_CARTS, found in each one's battle overlay; played on European SoulSilver: OFF / SPLIT /
+     * FULL EXP gave a Pokémon that didn't fight 0 / a quarter / all of a win's EXP). German Platinum isn't on this Mac. */
+    private val GEN4_OTHER_CARTS = setOf(
+        "CPUF" to 0, "CPUS" to 0, "IPKD" to 0, "IPGD" to 0, "IPKF" to 0, "IPGF" to 0, "IPKE" to 10, "IPGE" to 10,
+        "IPKS" to 0, "IPGS" to 0, "IPKI" to 0, "IPGI" to 0, "IPKK" to 0, "IPGK" to 0, "IPKJ" to 0, "IPGJ" to 0,
+    )
 
     private const val ROM_BASE = 0x08000000L
     private const val ANY = -1

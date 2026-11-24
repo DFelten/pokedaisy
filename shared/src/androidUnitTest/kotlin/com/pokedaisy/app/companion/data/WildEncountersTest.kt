@@ -37,6 +37,7 @@ class WildEncountersTest {
         "Pokemon Unbound (v2.1.1.1).gba" to 0x020386DCL,
         "Pokemon Radical Red (v4.1).gba" to 0x020386DCL,
         "Pokemon Amethyst (v1.4.1).gba" to 0x020386DCL,
+        "Pokemon Amethyst (v1.4.3).gba" to 0x020386DCL,
         "Pokemon Sword and Shield Ultimate Plus (v1.2.1.2).gba" to 0x020386DCL,
         // gcc builds (pokeemerald-expansion, Recharged Yellow's pokefirered, R.O.W.E.'s fork): the looser shape.
         "Pokemon Lazarus (v2.0).gba" to 0x0201F5C0L,
@@ -74,6 +75,7 @@ class WildEncountersTest {
         "Pokemon Monomyth (v1.2).gba" to 0L,
         // Epsilon Emerald (gcc): OFF walked 180 steps of Route 101's grass without a battle, NORMAL met one within 20.
         "Pokemon Epsilon Emerald (v1.0.0).gba" to 0x020398E0L,
+        "Pokemon Epsilon Emerald (v1.0.3).gba" to 0x020398E0L,
         "Pokemon Emerald Rogue (v2.2.1-EX).gba" to 0L,
         "Pokemon Quetzal (Alpha 9.0) (English).gba" to 0L,
     )

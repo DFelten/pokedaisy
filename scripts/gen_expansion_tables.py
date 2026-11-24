@@ -79,6 +79,27 @@ GAMES = {
         checks=dict(species={1: "BULBASAUR", 155: "CYNDAQUIL"}, types={1: (13, 4)}, gender={1: 31},
                     items={1: "POKé BALL", 28: "POTION"}, moves={33: (1, 40), 57: (12, 90), 89: (5, 100)}),
     ),
+    # Pokemon Heart and Soul Legends M9.16: Heart and Soul rebuilt on pokeemerald-expansion 1.15.2 (its RHHEXP block:
+    # 1573 species, 848 moves, 901 items). Its GF ROM header names gSpeciesInfo 0x088A3834 (0x10C-byte entries, HnS's),
+    # gItemsInfo 0x08899918 (0x2C, name pointer +0x14) and gMovesInfo 0x0890A7FC (0x44); the chart is Wishes of Tomorrow's
+    # bytes (0x08A07270); the place names HnS's {x, y, w, h, name*} entries (the live gMapHeader in Cherrygrove reads 0x40),
+    # its region map grid HnS's byte for byte (0x08D1DD7C).
+    "hns_legends": dict(
+        suffix="HnsLegends",
+        label="Pokemon Heart and Soul Legends M9.16",
+        sha1="18624b59e398eb1406d236150bfac2c685e84c45",
+        species_name1=0x088A3834 + 0x10C + 0x2C, species_stride=0x10C, species_max=1573,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08899918 + 0x14, items_stride=0x2C, items_desc_off=-8,
+        moves_base=0x0890A7FC, moves_stride=0x44, move_bits_off=0x0A,
+        chart=0x08A07270, chart_n=21,
+        mapsec_base=0x08D1D408, mapsec_name_off=4,
+        region_map=dict(image="hns", layout=0x08D1DD7C, w=28, h=15, ox=1, oy=2, none=0x7D),
+        checks=dict(species={1: "BULBASAUR", 4: "CHARMANDER", 25: "PIKACHU", 155: "CYNDAQUIL", 756: "SHIINOTIC"},
+                    types={1: (13, 4)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "POKé BALL", 2: "GREAT BALL", 28: "POTION"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
     # Pokemon Lazarus v2.0 (splash: "PRET x RHH"). Same gSpeciesInfo field
     # offsets as HnS, 0xD4-byte entries: "Fennekin" -> "Braixen" spacing, and
     # "Pikachu" lands exactly at 25 (no Bulbasaur - the dex is regional, with
@@ -378,6 +399,23 @@ GAMES = {
                     items={1: "Poké Ball", 28: "Potion", 43: "Antidote", 114: "Repel"},
                     moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100), 585: (19, 95)}),
     ),
+    # Ceruleum v1.1.1's other build (sha1 1e27af00...): the same code at the same places (its five battle handlers byte for
+    # byte), its data 0x30 lower (the GF header: gSpeciesInfo 0x08748C58, gItemsInfo 0x086FBC78, gMovesInfo 0x08720044, the
+    # icon palettes 0x08CD27A8; gRegionMapEntries 0x08CE594C; the chart 0x18 lower, 0x083EBFF4); every table equal to the first build's.
+    "ceruleum_alt": dict(
+        suffix="Ceruleum",
+        same_as="ceruleum",
+        label="Pokemon Ceruleum v1.1.1 (its other build)",
+        sha1="1e27af00f8969375428a4393faccc87eebb93dca",
+        species_name1=0x08748DB8 - 0x30, species_stride=0x104, species_max=1526,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x086FBCA8 - 0x30 + 0x14, items_stride=0x2C, items_desc_off=-8,
+        moves_base=0x08720074 - 0x30, moves_stride=0x30, move_bits_off=0x0A,
+        chart=0x083EBFF4, chart_n=21,
+        mapsec_base=0x08CE597C - 0x30, mapsec_name_off=4, mapsec_keep_case=True,
+        checks=dict(species={1: "Natu", 6: "Charizard", 25: "Pikachu"}, types={1: (15, 3)}, gender={1: 127},
+                    growth={1: 3}, items={1: "Poké Ball", 28: "Potion"}, moves={1: (1, 40), 57: (12, 90)}),
+    ),
     # Pokemon RecordKeepers v1.2.1 (Eventide Devs; BPEE, 32 MB, the Hackdex patch over Emerald): a roguelike on a newer
     # pokeemerald-expansion (its PRET x RHH splash) with no RHHEXP block and no GF ROM header, so every table was found by its
     # contents:
@@ -406,6 +444,77 @@ GAMES = {
                     gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
                     items={1: "Poké Ball", 28: "Potion", 43: "Antidote", 114: "Repel"},
                     moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
+    # Pokemon Generation 3 Evolved v1.0.22 (BPRE, 32 MB): pokeemerald-expansion 1.16.3's FireRed build (its RHHEXP block:
+    # 857 moves, 1576 species, 901 items), gcc, no source. Its GF ROM header gives gSpeciesInfo 0x087CA940, gItemsInfo
+    # 0x08778F1C and gMovesInfo 0x087A7850; the shapes are a plain FireRed build of the 1.16.3 tag's (offsetof against its
+    # headers) but for the moves:
+    #  - species: 0x108-byte entries, the name at +0x2C, types +6, genderRatio +0x12, growthRate +0x15 (Wishes' offsets from
+    #    the name). The headless save's party (Charmander, Pikachu, Gengar, Lucario) reads these names at those ids.
+    #  - items: 0x30-byte entries, the name pointer +0x14, the description pointer +0x0C ("Poke Ball" 1, "Potion" 28, "Repel"
+    #    114, "Oran Berry" 520, "TM01" 582 = the save's bag).
+    #  - moves: 0x48-byte entries (the reference's are 0x44: the hack grew them), the name pointer first ("Pound" 1 at
+    #    0x087A7898), +0xA type / power bits as before.
+    #  - chart: the unique [21][21] u32 run whose Normal row is 1x except Rock/Steel 0.5x, Ghost 0x (0x0846CE38).
+    #  - mapsecs: {x, y, w, h, name ptr} from 0x08D95018, 0xDA of them (Emerald's Hoenn ids first, Kanto's from 0x58); the
+    #    save's gMapHeader reads 0x59 = Pallet Town. Its region map picture isn't read yet (the MAP tab names the place).
+    "gen3_evolved": dict(
+        suffix="Gen3Evolved",
+        label="Pokemon Generation 3 Evolved v1.0.22",
+        sha1="558de0902cc92f67d10f0524724a46a37afbe003",
+        species_name1=0x087CA940 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08778F1C + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7850, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846CE38, chart_n=21,
+        mapsec_base=0x08D95018, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        # v1.0.26 fixed its one typo ("Treeasure Beach"): the shared table has the fixed name.
+        mapsec_fixes={152: "Treasure Beach"},
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 6: "Charizard", 25: "Pikachu", 94: "Gengar",
+                             155: "Cyndaquil", 448: "Lucario"},
+                    types={1: (13, 4), 4: (11, 11), 6: (11, 3), 25: (14, 14), 94: (8, 4), 448: (2, 9)},
+                    gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel", 520: "Oran Berry", 582: "TM01"},
+                    moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
+    # v1.0.17: the same game an earlier build, its ROM tables 0x490-0x4E8 lower (the GF header's own pointers: gSpeciesInfo
+    # 0x087CA450, gItemsInfo 0x08778A34, gMovesInfo 0x087A7368; the chart and gRegionMapEntries by their contents). Every
+    # table comes out equal to v1.0.22's, so it runs on those (`same_as`: checked, not written).
+    "gen3_evolved_v1_0_17": dict(
+        suffix="Gen3Evolved",
+        same_as="gen3_evolved",
+        label="Pokemon Generation 3 Evolved v1.0.17",
+        sha1="35dd71e1831e39ca6ac5ec1f76a49eaab9812095",
+        species_name1=0x087CA450 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08778A34 + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7368, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846C950, chart_n=21,
+        mapsec_base=0x08D94DEC - 0x59 * 8 - 4, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        mapsec_fixes={152: "Treasure Beach"},
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 25: "Pikachu", 448: "Lucario"},
+                    types={1: (13, 4), 448: (2, 9)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
+    # v1.0.26: the same game, its ROM tables 0x418-0x668 higher (the GF header's gSpeciesInfo 0x087CAD58, gItemsInfo
+    # 0x0877935C, gMovesInfo 0x087A7C90; the chart and gRegionMapEntries by their contents). Every table comes out equal to
+    # v1.0.22's (`same_as`: checked, not written).
+    "gen3_evolved_v1_0_26": dict(
+        suffix="Gen3Evolved",
+        same_as="gen3_evolved",
+        label="Pokemon Generation 3 Evolved v1.0.26",
+        sha1="26d9feea3e8dde937a6f43ebb24758e515be8a61",
+        species_name1=0x087CAD58 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x0877935C + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7C90, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846D278, chart_n=21,
+        mapsec_base=0x08D95680, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 25: "Pikachu", 448: "Lucario"},
+                    types={1: (13, 4), 448: (2, 9)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
     ),
     # Team Rocket Edition 2026, Spanish v3.1 (its START menu says V.3.1): v3.0.9's RAM word for word (gPlayerParty's 552
     # literal-pool words and the rest), its ROM tables moved: gSpeciesInfo and the icon palettes +0x4BD8 (its GF header's
@@ -683,6 +792,8 @@ def main():
             # mapsec_keep_case: a game whose own names are mixed case (Ceruleum's "Council HQ") keeps them; only its
             # all-caps leftovers (Emerald's / Kanto's) are title-cased.
             mapsecs[i] = s if g.get("mapsec_keep_case") and s != s.upper() else title(s)
+    # A later build's spelling fixes, applied to an earlier build's table so the two agree (`same_as`).
+    mapsecs.update(g.get("mapsec_fixes", {}))
     rm = g.get("region_map")
     if "region_maps" in g:
         # Several region maps, each with its own cursor grid and its own range of mapsec ids (the game's map code

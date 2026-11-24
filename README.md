@@ -228,7 +228,8 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Ruby                           | ES/DE/FR/IT/JP, rev 0-1    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Sapphire                       | USA, rev 0, 1 and 2        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Sapphire                       | ES/DE/FR/IT/JP, rev 0-1    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
-| Platinum (DS)                  | USA rev 1, FR/ES/DE rev 0  |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Platinum (DS)                  | USA rev 0 / 1, Europe rev 10, FR/ES/DE rev 0 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Diamond / Pearl (DS)           | USA rev 5                  |  ✅   | ✅  |   —    | ◐  |   —    |   —   |
 | HeartGold (DS)                 | USA, EU, every language    |  ✅   | ✅  |   —    | ✅  |   ✅    |  ✅   |
 | SoulSilver (DS)                | USA, EU, every language    |  ✅   | ✅  |   —    | ✅  |   ✅    |  ✅   |
 | Black (DS)                     | USA/Europe, every language |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
@@ -245,11 +246,13 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Unbound                        | 2.1.1.1                    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Unbound                        | 2.1.1.1 French             |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Unbound                        | 2.1.1.1 Italian (patch v7) |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Unbound                        | 2.1.1.1 Spanish (v1.25, No ZA) |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Radical Red                    | 4.1                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Gaia                           | 3.2                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Odyssey                        | 4.1.1                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Heart and Soul                 | 2.0.6                      |  ✅   | ✅  |   ✅   | ✅  |   ✅    |  ✅   |
-| Amethyst                       | 1.3.0, 1.4.1               |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Heart and Soul Legends         | M9.16                      |  ✅   | ✅  |   —    | ✅  |   —     |   —   |
+| Amethyst                       | 1.3.0, 1.4.1, 1.4.3        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Celia's Stupid Romhack         | 1.1.4                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Orange Islands                 | Beta 5.7, an older beta    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Ultra Violet                   | 1.22                       |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
@@ -259,12 +262,14 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Clover                         | 1.3.3                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Elysium (Part A)               | 2.5.0                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Elysium (Part B)               | 2.5.0                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
+| Crystal Advance Redux          | 22-11-25 build             |  ✅   | ✅  |   ◐    | ◐   |   —     |   —   |
 | Sword and Shield Ultimate Plus | 1.2.1.2 + its 3 patches    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | GS Chronicles                  | 2.7.6                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
-| Rhythm                         | 1.4.0                      |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |
+| Rhythm                         | 1.4.0, 1.6.0               |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |
 | Oops All Eevees!               | 1.3.2                      |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |
-| Ceruleum                       | 1.1.1                      |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
+| Ceruleum                       | 1.1.1 (2 builds)           |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
 | RecordKeepers                  | 1.2.1                      |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
+| Generation 3 Evolved           | 1.0.17, 1.0.22, 1.0.26     |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
 | Recharged Yellow               | 1.8.0, 1.9.0, 1.9.4, 1.9.7 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Emerald Legacy                 | 1.1.4                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Lazarus                        | 2.0                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
@@ -280,7 +285,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Super Mariomon                 | 1.2.1-1.3, 1.5.1, 1.5.2    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Recharged Emerald              | 2.2.5, 2.2.8, Rebalanced   |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Modern Emerald                 | 3.6                        |  ✅   | ✅  |   ◐    |  ◐  |    —    |   —   |
-| Epsilon Emerald                | 1.0.0                      |  ✅   | ✅  |   ◐    |  ◐  |   ✅    |   ◐   |
+| Epsilon Emerald                | 1.0.0, 1.0.3               |  ✅   | ✅  |   ◐    |  ◐  |   ✅    |   ◐   |
 | Elite Redux                    | 2.65.3b, 2.65.4.1b         |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Team Rocket Dragonsden         | 1.5                        |  ✅   | ✅  |   ◐    |  ◐  |    —    |   ◐   |
 | Team Rocket Dragonsden         | 2026 3.0.9, 3.1 (Spanish)  |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |

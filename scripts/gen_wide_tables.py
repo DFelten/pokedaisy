@@ -110,6 +110,8 @@ HACKS = [
          save="unbound_fr", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
     dict(name="Unbound v2.1.1.1 IT", sha1="8114e0f81eb3581f699c74a5891c7b75a130269d", family="FR", mapped=True,
          save="unbound_it", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
+    dict(name="Unbound v2.1.1.1 ES", sha1="e7573638cd25aa455b933090775de42338a0dcd7", family="FR", mapped=True,
+         save="unbound_es", a=dict(MAP_GROUPS=0x08B70498, MAP_GROUPS_XOR=0x00B749DE, NORMAL_BG3=0, **CFRU_UNBOUND)),
     dict(name="Radical Red v4.1", sha1="964f951a0fdaf209e4ea1344883ef0d557bb3a80", family="FR", mapped=True,
          save="radical_red", a=dict(MAP_GROUPS=0x083526A8, OBJ_GFX_INFO=0x08EB1000, OBJ_GFX_TABLES=0x091468CC,
                                     OBJ_GFX_TABLE_MAX=0xFE, **CFRU_FLAGS)),
@@ -123,6 +125,8 @@ HACKS = [
          save="amethyst", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089B03D8), **CFRU_FLAGS)),
     dict(name="Amethyst v1.4.1", sha1="91291aade04b4b111cd03ae7b6e2ff460e1edd8a", family="FR", mapped=True,
          save="amethyst_v141", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089F2598), **CFRU_FLAGS)),
+    dict(name="Amethyst v1.4.3", sha1="b43db8fec159324f8eef63d779a19d618d30d3c1", family="FR", mapped=True,
+         save="amethyst_v143", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089F430C), **CFRU_FLAGS)),
     dict(name="Orange Islands", sha1="8bac897de515f88e6ce92d0712ce2c018a394b37", family="FR", mapped=True,
          pending="the top tile row differs once the walk turns north (half the walk frames)",
          save="orange_islands", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x08801C80, 0x081A2000, 0x4080))),
@@ -178,6 +182,10 @@ HACKS = [
       for v, sha, save in [("v1.0.1", "20dfaea1d5317cf95fe0b493208edce7d50b865f", "ghost_grey_v101"),
                            ("v1.0.2", "74337272566a74625d6dedefe47d2d153eb48ec1", "ghost_grey_v102"),
                            ("v1.0.4", "0dafc0116b74406a2df491e26ccb40dd362fb0b7", "ghost_grey")]],
+    # Pokémon Crystal Advance Redux (22-11-25): FireRed rev 0 edited in place, rev 0's map groups, its object graphics table
+    # repointed (the pool of rev 0's 0x0839FDB0); booted with its own new game's save.
+    dict(name="Crystal Advance Redux (22-11-25)", sha1="9e8256086f1e41ac137ccd895444e93ee3fc4132", family="FR", mapped=True,
+         save="crystal_advance_redux", a=dict(MAP_GROUPS=0x083526A8, OBJ_GFX_INFO=0x0853F200)),
     # Pokémon Let's Go Pikachu / Eevee (32 MB, each with a Translation Only build): FireRed rev 0 edited in place with rev
     # 0's map groups, its object graphics table repointed (0x0880B9D0, the pool of rev 0's 0x0839FDB0); booted with its own
     # new game's save (lets_go.txt: its long intro, CONTINUE).
@@ -332,6 +340,13 @@ HACKS = [
     dict(name="Epsilon Emerald v1.0.0", sha1="8decf0571ba3f17d31c76168346e240a14e248ce", family="EX32", save="epsilon_emerald",
          boot_file="epsilon_emerald.txt", script=0x088C6621,
          a=dict(VMAP=0x03004580, MAP_HEADER=0x02037F68, MAP_GROUPS=0x08E299DC, SAVE_BLOCK1_PTR=0x0300454C,
+                CAMERA_OFFSET=0x03000E20, OBJECT_EVENTS=0x02038020, SPRITES=0x020206B0, COORD_OFFSET=0x02021BBC,
+                COORD_OFFSET_Y=0x02021BBE, SPRITE_ORDER=0x020217F4, GMAIN=0x03002BE0, CONTROLS_LOCKED=0x03000F2C)),
+    # v1.0.3: v1.0.0's RAM, its ROM moved (gMapGroups +0x808: found through the live gMapHeader's record; its
+    # ScriptContext_SetupScript +0x48).
+    dict(name="Epsilon Emerald v1.0.3", sha1="fec5d3190cf396fa21d4bed815f088289501a78d", family="EX32", save="epsilon_emerald_v1_0_3",
+         boot_file="epsilon_emerald.txt", script=0x088C6669,
+         a=dict(VMAP=0x03004580, MAP_HEADER=0x02037F68, MAP_GROUPS=0x08E2A1E4, SAVE_BLOCK1_PTR=0x0300454C,
                 CAMERA_OFFSET=0x03000E20, OBJECT_EVENTS=0x02038020, SPRITES=0x020206B0, COORD_OFFSET=0x02021BBC,
                 COORD_OFFSET_Y=0x02021BBE, SPRITE_ORDER=0x020217F4, GMAIN=0x03002BE0, CONTROLS_LOCKED=0x03000F2C)),
     # pokeemerald-expansion builds: scripts/find_wide_addrs.py's dumps (gMapHeader, gSaveBlock1Ptr and gMapGroups from

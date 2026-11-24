@@ -308,6 +308,13 @@ val TEAM_ROCKET_V3_BAG_POCKET_ORDER = listOf(
     POCKET_MEGA_STONES,
 )
 
+/** Pokémon Generation 3 Evolved's gBagPockets: seven, {slots*, capacity:10, id:6}, in its bag screen's order (Items,
+ * Medicine, Berries, TMs & HMs, Poké Balls, Power Ups, Key Items); Medicine and Power Ups fold into the app's ITEMS, like the
+ * other hacks' extra pockets. */
+val GEN3_EVOLVED_BAG_POCKET_ORDER = listOf(
+    POCKET_ITEMS, POCKET_ITEMS, POCKET_BERRIES, POCKET_TM_HM, POCKET_POKE_BALLS, POCKET_ITEMS, POCKET_KEY_ITEMS,
+)
+
 /** Pokémon Dreamstone Mysteries' gBagPockets: seven, in its items' own pocket numbers (gItemsInfo +0x41: 1 Items,
  * 2 Medicine, 3 Battle Items, 4 Poké Balls, 5 Berries, 6 TMs, 7 Key Items), as its bag screen's tabs show them; Medicine
  * and Battle Items fold into the app's ITEMS, like the other hacks' extra pockets. */
@@ -727,6 +734,8 @@ val UNBOUND_PC_STORAGE = cfruPcStorage(0x08A769AFL, 0x08A79560L)
 val RADICAL_RED_PC_STORAGE = cfruPcStorage(0x091521D0L, 0x0915514CL)
 val AMETHYST_PC_STORAGE = cfruPcStorage(0x089B6358L, 0x089C419CL)
 val AMETHYST_V141_PC_STORAGE = cfruPcStorage(0x089FFCA8L, 0x08A0DAECL)
+/** v1.4.3: the same, its gBattleMoves and the second table 0x1E10 later (the same literal-pool slots). */
+val AMETHYST_V143_PC_STORAGE = cfruPcStorage(0x08A01AB8L, 0x08A0F8FCL)
 val SWORD_SHIELD_PC_STORAGE = cfruPcStorage(0x094BFA7CL, 0x094C24E8L)
 val GS_CHRONICLES_PC_STORAGE = cfruPcStorage(0x09D10BE3L, 0x09D13854L)
 
@@ -1048,13 +1057,15 @@ private fun Mon.withNativeGender(raw: ByteArray, off: Int, layout: PartyMonLayou
         GameKind.ORANGE_ISLANDS -> genderRatiosOrangeIslands
         GameKind.SWORD_SHIELD -> genderRatiosSwordShield
         GameKind.GS_CHRONICLES -> genderRatiosGsChronicles
-        GameKind.RHYTHM -> genderRatiosRhythm
+        GameKind.RHYTHM -> if (rhythmV160) genderRatiosRhythmV160 else genderRatiosRhythm
         GameKind.OOPS_ALL_EEVEES -> genderRatiosOopsAllEevees
         GameKind.MARIOMON -> if (mariomonV13) genderRatiosMariomonV13 else genderRatiosMariomon
         GameKind.ELITE_REDUX -> genderRatiosEliteRedux
         GameKind.TEAM_ROCKET -> if (teamRocketV3) genderRatiosTeamRocketV3 else genderRatiosTeamRocket
         GameKind.WISHES -> genderRatiosWishes
         GameKind.CERULEUM -> genderRatiosCeruleum
+        GameKind.GEN3_EVOLVED -> genderRatiosGen3Evolved
+        GameKind.HNS_LEGENDS -> genderRatiosHnsLegends
         GameKind.RECORDKEEPERS -> genderRatiosRecordKeepers
         GameKind.MONOMYTH -> genderRatiosMonomyth
         GameKind.DREAMSTONE -> genderRatiosDreamstone

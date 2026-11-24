@@ -871,7 +871,7 @@ private fun bagPaletteFor(game: GameKind, hgssPocket: Int = 0): BagPalette =
 
 private fun lightBagFor(game: GameKind, hgssPocket: Int = 0): BagPalette = when (game) {
     GameKind.EMERALD -> EmeraldBag
-    GameKind.HEART_AND_SOUL -> HeartAndSoulBag
+    GameKind.HEART_AND_SOUL, GameKind.HNS_LEGENDS -> HeartAndSoulBag
     GameKind.UNBOUND -> UnboundBag
     GameKind.AMETHYST -> AmethystBag
     GameKind.RADICAL_RED -> RadicalRedBag

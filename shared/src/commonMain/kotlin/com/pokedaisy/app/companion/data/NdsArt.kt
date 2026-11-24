@@ -38,6 +38,9 @@ object NdsArt {
     /** Renegade Platinum ([RenegadePlatinum]): Platinum's archives with its own icons (in its own palettes), item icons,
      * DEX pages and pictures, kept apart from a retail Platinum's. */
     const val RENEGADE_ICONS = "nds/renegade/pokemon"
+    /** Diamond / Pearl ([isDiamondPearl]): their own icon archive (poke_icon.narc, Platinum's palettes) and item icons. */
+    const val DIAMOND_ICONS = "nds/diamond/pokemon"
+    const val DIAMOND_ITEMS = "nds/diamond/items"
     const val RENEGADE_ITEMS = "nds/renegade/items"
     const val RENEGADE_DEX = "nds/renegade/dex.tsv"
     const val RENEGADE_FRONT = "nds/renegade/front"
@@ -261,7 +264,8 @@ object NdsArt {
         val renegade = platinum && RenegadePlatinum.matches { off, len -> f.read(off, len) }
         val heartfelt = heartGold && HeartfeltGold.matches { off, len -> f.read(off, len) }
         val redux = black2 && Black2Redux.matches { off, len -> f.read(off, len) }
-        if (!platinum && !heartGold && !black && !black2 && !origin) return false
+        val diamondPearl = isDiamondPearl(code)
+        if (!platinum && !heartGold && !black && !black2 && !origin && !diamondPearl) return false
         val marker = dir / when {
             origin -> "nds/originhg-built"
             heartfelt -> "nds/heartfelt-built"
@@ -272,6 +276,7 @@ object NdsArt {
             white -> "nds/white-built"
             black -> "nds/black-built"
             platinum -> "nds/platinum-built"
+            diamondPearl -> "nds/diamond-built"
             else -> "nds/heartgold-built"
         }
         // The Redux builds share a code and revision but not their species' records (Classic, EVless): the DEX's types
@@ -299,11 +304,13 @@ object NdsArt {
             marker.writeText(stamp)
             return true
         }
-        val iconPath = if (platinum) "/poketool/icongra/pl_poke_icon.narc" else "/a/0/2/0"
+        val iconPath = if (platinum) "/poketool/icongra/pl_poke_icon.narc"
+            else if (diamondPearl) "/poketool/icongra/poke_icon.narc" else "/a/0/2/0"
         // Renegade Platinum's icons take palettes of their own (its ARM9's table, [RenegadePlatinum.ICON_PALETTES_OFFSET]).
         val iconPalettes = if (renegade) f.read(RenegadePlatinum.ICON_PALETTES_OFFSET, RenegadePlatinum.ICON_PALETTES_SIZE)
-            else if (platinum) iconPalettesPlatinum else iconPalettesHeartGold
-        val iconDir = if (renegade) RENEGADE_ICONS else if (platinum) PLATINUM_ICONS else HEARTGOLD_ICONS
+            else if (platinum || diamondPearl) iconPalettesPlatinum else iconPalettesHeartGold
+        val iconDir = if (renegade) RENEGADE_ICONS else if (platinum) PLATINUM_ICONS else if (diamondPearl) DIAMOND_ICONS
+            else HEARTGOLD_ICONS
         val narc = Narc(file(f, header, iconPath) ?: return false)
         val palettes = palettes(narc.member(0))
         for (species in 1..EGG) {
@@ -312,15 +319,19 @@ object NdsArt {
             write(dir, "$iconDir/$species.png", icon.png())
         }
         // The bag's item icons: each its own NCGR (32 x 32) and NCLR (one 16-colour palette).
-        file(f, header, if (platinum) "/itemtool/itemdata/item_icon.narc" else "/a/0/1/8")?.let { Narc(it) }?.let { items ->
-            val itemDir = if (renegade) RENEGADE_ITEMS else if (platinum) PLATINUM_ITEMS else HEARTGOLD_ITEMS
-            for ((item, packed) in if (platinum) itemIconsPlatinum else itemIconsHeartGold) {
+        file(f, header, if (platinum || diamondPearl) "/itemtool/itemdata/item_icon.narc" else "/a/0/1/8")?.let { Narc(it) }?.let { items ->
+            val itemDir = if (renegade) RENEGADE_ITEMS else if (platinum) PLATINUM_ITEMS else if (diamondPearl) DIAMOND_ITEMS
+                else HEARTGOLD_ITEMS
+            // Diamond / Pearl's item_icon.narc is its own order ([itemIconsDiamond], pokediamond's sItemIndexMappings).
+            for ((item, packed) in if (platinum) itemIconsPlatinum else if (diamondPearl) itemIconsDiamond else itemIconsHeartGold) {
                 val pal = palettes(items.member(packed and 0xFFFF)).firstOrNull() ?: continue
                 val icon = icon(items.member(packed ushr 16), pal, height = 32) ?: continue
                 write(dir, "$itemDir/$item.png", icon.png())
             }
         }
-        if (platinum) {
+        if (diamondPearl) {
+            // No Town Map or DEX pages yet: their icons only.
+        } else if (platinum) {
             file(f, header, "/graphic/tmap_gra.narc")?.let { townMap(Narc(it), dir) }
             dex(f, header, dir, if (renegade) DEX_RENEGADE else DEX_PLATINUM)
         } else {

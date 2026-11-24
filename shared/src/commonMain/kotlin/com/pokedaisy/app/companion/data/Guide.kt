@@ -169,7 +169,7 @@ data class Boss(
  * its own.
  */
 enum class GuideId {
-    FIRERED, LEAFGREEN, EMERALD, RUBY, SAPPHIRE, HEART_AND_SOUL, UNBOUND, RADICAL_RED, ODYSSEY, GAIA, AMETHYST, AMETHYST_V141, CELIA, GLAZED,
+    FIRERED, LEAFGREEN, EMERALD, RUBY, SAPPHIRE, HEART_AND_SOUL, UNBOUND, RADICAL_RED, ODYSSEY, GAIA, AMETHYST, AMETHYST_V141, AMETHYST_V143, CELIA, GLAZED,
     IMPERIUM, QUETZAL, LAZARUS, SEAGLASS, TMT2, SOULGOLD, ORANGE_ISLANDS,
     // Recharged Yellow v1.9.7, and its earlier releases with their own area data (same guide text).
     RECHARGED_YELLOW, RECHARGED_YELLOW_V180, RECHARGED_YELLOW_V190, RECHARGED_YELLOW_V194,
@@ -211,7 +211,8 @@ fun guideId(game: GameKind?, live: GuideTables?): GuideId? = live?.guide ?: when
     GameKind.CRYSTAL_LEGACY -> GuideId.CRYSTAL_LEGACY
     // A DS game: its guide carries its own tables too (Gen4World).
     // Renegade Platinum runs as PLATINUM, but its wild Pokémon and trainers are its own: no guide.
-    GameKind.PLATINUM -> if (renegadePlatinum) null else GuideId.PLATINUM
+    // Diamond / Pearl run as PLATINUM too, in a world of their own: no guide yet.
+    GameKind.PLATINUM -> if (renegadePlatinum || diamondPearl) null else GuideId.PLATINUM
     // Origin HeartGold runs as HEARTGOLD, but its world isn't HeartGold's (its own wild Pokémon, trainers, story): no guide.
     // So does Heartfelt Gold (hg-engine over the US cart: its own wild Pokémon and trainers).
     // So do Sacred Gold / Storm Silver (Drayano's: their own wild Pokémon and trainers).
@@ -246,7 +247,7 @@ private fun wholeGuide(id: GuideId?): GameGuide? = when (id) {
     GuideId.RADICAL_RED -> GUIDE_RADICAL_RED
     GuideId.ODYSSEY -> GUIDE_ODYSSEY
     GuideId.GAIA -> GUIDE_GAIA
-    GuideId.AMETHYST, GuideId.AMETHYST_V141 -> GUIDE_AMETHYST
+    GuideId.AMETHYST, GuideId.AMETHYST_V141, GuideId.AMETHYST_V143 -> GUIDE_AMETHYST
     GuideId.CELIA -> GUIDE_CELIA
     GuideId.GLAZED -> GUIDE_GLAZED
     GuideId.IMPERIUM -> GUIDE_IMPERIUM

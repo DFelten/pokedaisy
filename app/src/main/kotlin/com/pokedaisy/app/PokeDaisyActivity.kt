@@ -1246,6 +1246,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private fun dsKeyItemsWork(): Boolean = romBlocked == null &&
         !com.pokedaisy.app.companion.data.originHeartGold && !com.pokedaisy.app.companion.data.renegadePlatinum &&
+        !com.pokedaisy.app.companion.data.diamondPearl &&
         com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game) != null
 
     /** A DS game's BIKE / ROD: the item written into the Bag's register (HG / SS: the first slot, the second cleared so Y uses it

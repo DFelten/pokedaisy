@@ -130,6 +130,7 @@ class FlightAreaTest {
             "Pokemon Gaia (v3.2).gba" to FLIGHT_GAIA,
             "Pokemon Amethyst (v1.3.0).gba" to FLIGHT_AMETHYST,
             "Pokemon Amethyst (v1.4.1).gba" to FLIGHT_AMETHYST_V141,
+            "Pokemon Amethyst (v1.4.3).gba" to FLIGHT_AMETHYST_V143,
             "Pokemon Sword and Shield Ultimate Plus (v1.2.1.2) (Casual Patch).gba" to FLIGHT_SWORD_SHIELD,
             "Pokemon GS Chronicles (v2.7.6).gba" to FLIGHT_GS_CHRONICLES,
             "Pokemon Emerald Legacy (v1.1.4).gba" to FLIGHT_EMERALD_LEGACY,

@@ -55,6 +55,23 @@ class AmethystDecodeTest {
     }
 
     @Test
+    fun `v1_4_3 - the v1_3_0 save at the same RAM addresses`() {
+        activeGame = GameKind.AMETHYST
+        amethystV141 = true
+        try {
+            val t = decodeNative("amethyst_v143", NATIVE_AMETHYST_V1_4_3)
+            val mon = t.party.single()
+            assertEquals("Tepig" to 6, speciesName(mon.species) to mon.level)
+            assertEquals(25 to 25, mon.hp to mon.maxHp)
+            assertEquals(10, t.items.size)
+            assertPocketsInRange(t)
+            t.items.forEach { assert('#' !in itemName(it.itemId)) { "item ${it.itemId}" } }
+        } finally {
+            amethystV141 = false
+        }
+    }
+
+    @Test
     fun `moves past Gen 3 have their names (GitHub 96)`() {
         activeGame = GameKind.AMETHYST
         for (v141 in listOf(false, true)) {

@@ -81,6 +81,14 @@ class HackPokedexTest {
         assertEquals(setOf(443), dex.caught)
     }
 
+    /** Unbound ES (v1.25, No ZA): the same flags and save. */
+    @Test
+    fun `Unbound ES - seen 4, caught 1`() {
+        val dex = state("unbound_es", NATIVE_UNBOUND_ES)
+        assertEquals(4 to 1, dex.seen.size to dex.caught.size)
+        assertEquals(setOf(443), dex.caught)
+    }
+
     /** Orange Islands: FireRed's flags - its continue screen said POKéDEX 2 (PIKACHU and the MEWTWO it starts with). */
     @Test
     fun `Orange Islands - two caught`() {
@@ -272,6 +280,14 @@ class HackPokedexTest {
         assertEquals(551, tepig.species)
         assertEquals("Fire Pig", tepig.category)
         assertEquals(340, PokedexSource.nationalOf(t, 551))
+        assertEquals("Seed", PokedexSource.entry(t, 301)!!.category)
+    }
+
+    @Test
+    fun `Amethyst v1_4_3 entries`() = roms("Pokemon Amethyst (v1.4.3).gba", GameKind.AMETHYST, POKEDEX_AMETHYST_V1_4_3) { t ->
+        val tepig = PokedexSource.entry(t, 340)!!
+        assertEquals(551, tepig.species)
+        assertEquals("Fire Pig", tepig.category)
         assertEquals("Seed", PokedexSource.entry(t, 301)!!.category)
     }
 

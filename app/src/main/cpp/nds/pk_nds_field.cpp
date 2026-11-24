@@ -1074,6 +1074,36 @@ const ExpGame EXP_GAMES[] = {
     {6, {{0x021AEEF0, 0x1A09, THUMB_NOP}, {0x021AEF76, 0x1C31, 0x2101}}, 2},   // White 2
 };
 
+// The other Gen 4 carts (2026-11-24): BtlCmd_CalcExpGain is the US carts' code byte for byte in each one's battle overlay
+// (Platinum's 16, HeartGold / SoulSilver's 12; found by its code with the BLs and literal pools masked, one match each),
+// at its own address, the three sites at the same offsets with the same bytes. By the game table's name: the German and
+// French HeartGold / SoulSilver share a table (and an address); Spain's two don't.
+struct ExpGen4Cart { const char* name; uint32_t calcExpGain; };
+const ExpGen4Cart EXP_GEN4_CARTS[] = {
+    {"Platinum (France)", 0x0224201C}, {"Platinum (Spain)", 0x0224203C},
+    {"HeartGold / SoulSilver (Germany)", 0x0223E680}, {"HeartGold / SoulSilver (France)", 0x0223E6C0},
+    {"HeartGold (Europe, rev 10)", 0x0223E6A0}, {"SoulSilver (Europe, rev 10)", 0x0223E6A0},
+    {"HeartGold (Spain)", 0x0223E6C0}, {"SoulSilver (Spain)", 0x0223E6E0},
+    {"HeartGold (Italy)", 0x0223E640}, {"SoulSilver (Italy)", 0x0223E640},
+    {"HeartGold (Korea)", 0x0223F0A4}, {"SoulSilver (Korea)", 0x0223F0A4},
+    {"HeartGold (Japan)", 0x0223DBE8}, {"SoulSilver (Japan)", 0x0223DBE8},
+};
+
+ExpGame gen4CartExp(const PkNdsFieldGame* g)
+{
+    ExpGame e = {};
+    if (!g || !g->name || g->gen == 5) return e;
+    for (const ExpGen4Cart& c : EXP_GEN4_CARTS) {
+        if (strcmp(c.name, g->name) != 0) continue;
+        e.callSet = g->callSet;
+        e.sites[0] = {c.calcExpGain + 0x102, 0x9901, 0x2101};
+        e.sites[1] = {c.calcExpGain + 0x104, 0x1C20, 0x1C00};
+        e.sites[2] = {c.calcExpGain + 0x142, 0x9901, 0x2101};
+        e.n = 3;
+    }
+    return e;
+}
+
 // Gen 5: every foe-side BTL_POKEPARAM's who-fought-it list set to the mask's ids. The main module holds two BTL_POKECONs,
 // the clients' (+0xC8) and the server's (+0xC8 + 0xE8: the EXP routine's, through the server flow's +8), each a party a
 // client from +4, 0x1C bytes apart: { BTL_POKEPARAM* member[6], u32 count }; client 0 the player's, left alone.
@@ -1111,7 +1141,9 @@ bool pk_nds_exp_share_tick(const PkNdsFieldGame* g, int mode, uint32_t mask, boo
 {
     if (!g) return false;
     const ExpGame* e = nullptr;
-    for (const ExpGame& x : EXP_GAMES) if (x.callSet == g->callSet) e = &x;
+    const ExpGame cart = gen4CartExp(g);
+    if (cart.n) e = &cart;
+    else for (const ExpGame& x : EXP_GAMES) if (x.callSet == g->callSet) e = &x;
     if (!e) return false;
     auto r16 = [&](uint32_t a) { return (uint16_t) (read32(a & ~3u) >> ((a & 2) * 8)); };
     // FULL EXP's patch: all of the game's sites the game's (or ours) before anything changes.

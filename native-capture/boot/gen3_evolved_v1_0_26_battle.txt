@@ -1,0 +1,34 @@
+# Generation 3 Evolved v1.0.26: a scripted wild PIDGEY Lv5. Boots like gen3_evolved.txt, then pokes
+# lockall / setwildbattle PIDGEY 5 / dowildbattle / releaseall / end into free EWRAM (0x0203F000) and calls the game's own
+# ScriptContext_SetupScript (0x0820B555) on it; one A past "You encountered a wild Pidgey!" waits on the action menu
+# (FIGHT, here BATTLE, Charmander out).
+wait 300
+press START
+wait 120
+press START
+wait 120
+press START
+wait 150
+press A
+wait 120
+press A
+wait 400
+poke8 0x203f000 0x69
+poke8 0x203f001 0xb6
+poke8 0x203f002 0x10
+poke8 0x203f003 0x0
+poke8 0x203f004 0x5
+poke8 0x203f005 0x0
+poke8 0x203f006 0x0
+poke8 0x203f007 0x0
+poke8 0x203f008 0x0
+poke8 0x203f009 0x0
+poke8 0x203f00a 0x0
+poke8 0x203f00b 0x0
+poke8 0x203f00c 0xb7
+poke8 0x203f00d 0x6b
+poke8 0x203f00e 0x2
+call 0x0820B555 0x0203F000
+wait 1200
+press A
+wait 400

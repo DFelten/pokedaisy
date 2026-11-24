@@ -70,3 +70,15 @@ monIconPaletteIndices = 0x09AD8642
 pokedex = 'POKEDEX_AMETHYST_V1_4_1'
 guideTables = 'GUIDE_TABLES_AMETHYST_V1_4_1'
 handleInputChooseTarget = 0x0890BE01  # its moved target-select handler, found the same way
+
+# Pokemon Amethyst v1.4.3: v1.4.1's RAM (v1.3.0's save loads: `amethyst_v143`), species, item and move names (the
+# Amethyst generator --checks them) and most tables where v1.4.1 has them (CFRU: the same literal-pool slots). Moved:
+# gMoveNames +0x16F4, gBattleMoves and the PC's second table +0x1E10, the ability names +0x16F4, the four trainer tables
+# +0x1E10, the target-select handler +0xD8C; a few abilities, trainer teams and items changed, and its own area data
+# (GuideId.AMETHYST_V143). It still sets amethystV141 (its names are v1.4.1's).
+[config.amethyst_v1_4_3]
+base = 'amethyst_v1_4_1'
+pcStorage = 'AMETHYST_V143_PC_STORAGE'
+pokedex = 'POKEDEX_AMETHYST_V1_4_3'
+guideTables = 'GUIDE_TABLES_AMETHYST_V1_4_3'
+handleInputChooseTarget = 0x0890CB8D

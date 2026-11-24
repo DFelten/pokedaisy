@@ -161,6 +161,7 @@ class RomArtTest {
             "Pokemon Unbound (v2.1.1.1).gba" to "ub", "Pokemon Radical Red (v4.1).gba" to "rr",
             "Pokemon Odyssey (v4.1.1).gba" to "od", "Pokemon Amethyst (v1.3.0).gba" to "am",
             "Pokemon Amethyst (v1.4.1).gba" to "am",
+            "Pokemon Amethyst (v1.4.3).gba" to "am",
         ).filterKeys { File(GBA + it).isFile }
         assumeTrue("no CFRU ROM here", roms.isNotEmpty())
         for ((rom, sub) in roms) {

@@ -34,6 +34,8 @@ object SteamGridDbGames {
         "0ce2a880aa097f1dce4e1db8ee513d0e82d15859" to Game(5274554, "Pokémon Unbound"),
         // And its Italian one (UNBOUND_V2_1_1_1_IT_SHA1).
         "8114e0f81eb3581f699c74a5891c7b75a130269d" to Game(5274554, "Pokémon Unbound"),
+        // And its Spanish one (UNBOUND_V2_1_1_1_ES_SHA1, v1.25 No ZA).
+        "e7573638cd25aa455b933090775de42338a0dcd7" to Game(5274554, "Pokémon Unbound"),
         // Pokémon Gaia v3.2 — SHA1 per Poller.kt's GAIA_V3_2_SHA1.
         "d5b1e77975fcda831e0e9a7b527906bf3f40ecd0" to Game(5345283, "Pokémon Gaia"),
         // Pokémon Radical Red v4.1 — SHA1 per Poller.kt's RADICAL_RED_V4_1_SHA1.

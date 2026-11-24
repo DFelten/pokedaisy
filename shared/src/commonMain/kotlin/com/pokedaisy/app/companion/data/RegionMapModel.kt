@@ -160,6 +160,7 @@ fun activeRegionMap(): RegionMapModel? {
         GameKind.SOULGOLD -> regionLayoutsSoulGold
         GameKind.GLAZED -> regionLayoutsGlazed
         GameKind.HEART_AND_SOUL -> regionLayoutsHns
+        GameKind.HNS_LEGENDS -> regionLayoutsHnsLegends
         GameKind.IMPERIUM -> regionLayoutsImperium
         GameKind.DREAMSTONE -> regionLayoutsDreamstone
         GameKind.WISHES -> regionLayoutsWishes

@@ -278,6 +278,15 @@ val POKEDEX_UNBOUND_IT = POKEDEX_UNBOUND.copy(
     probeCategory = "Seed",
 )
 
+/** Unbound v2.1.1.1 ES (v1.25, No ZA): English's tables, the dex text translated in place - metric with a decimal comma
+ * ("Pokémon ...", "Alt. ??,? m", "Peso ???,? kg": headless, the game's own POKéDEX). */
+val POKEDEX_UNBOUND_ES = POKEDEX_UNBOUND.copy(
+    categoryPrefix = "Pokémon",
+    categorySuffix = "",
+    metric = true,
+    probeCategory = "Semilla",
+)
+
 /** Ruby (rev 1 and rev 2 share every address): Emerald's flag rules,
  * seen copies at SaveBlock1+0x938/+0x3A8C, two-page dex text. */
 val POKEDEX_RUBY = PokedexTables(
@@ -475,6 +484,10 @@ val POKEDEX_AMETHYST_V1_4_1 = POKEDEX_AMETHYST.copy(
     speciesCount = 1294,
     evoLayout = EvoLayout(EvoScheme.CFRU, table = 0x09AAB2FCL, perMon = 16),
 )
+
+/** Amethyst v1.4.3: v1.4.1's dex tables where they were (entries, pictures, base stats, evolutions byte for byte but a few
+ * abilities), the ability names 0x16F4 later. */
+val POKEDEX_AMETHYST_V1_4_3 = POKEDEX_AMETHYST_V1_4_1.copy(abilityNames = 0x0894F410L)
 
 /**
  * Pokémon Gaia v3.2: one dex, national 1-721. Its flags live outside the save
@@ -1353,6 +1366,18 @@ val POKEDEX_EPSILON_EMERALD = POKEDEX_EMERALD.copy(
     levelUpLearnsets = 0x08C2EC80L, tmhmLearnsets = 0, tmhmMoves = 0,
     categorySuffix = "Pokémon", probeCategory = "Seed",
     flags = DexFlags(DexFlagBlock.SAVE_BLOCK_2, 0x60, 0x28, 56, seenOrCaught = true),
+)
+
+/**
+ * Epsilon Emerald v1.0.3: v1.0.0's tables, moved with the rest of its ROM (each found by its bytes, or a pointer table by
+ * what its pointers point at: +0x680 around the base stats, +0x6A0 the evolutions / learnsets, +0x86C the entries and
+ * footprints). The `epsilon_emerald_v1_0_3` save reads the same counts and pages.
+ */
+val POKEDEX_EPSILON_EMERALD_V1_0_3 = POKEDEX_EPSILON_EMERALD.copy(
+    entries = 0x08FD0510L, frontPics = 0x08BEDDD4L, palettes = 0x08BE5D40L, speciesInfo = 0x08C192DCL,
+    speciesToNational = 0x08C150BCL, abilityNames = 0x08C0B11CL, footprints = 0x08FD39D0L, regionalOrder = 0x08C15524L,
+    evoLayout = EvoLayout(EvoScheme.EPSILON_EMERALD, table = 0x08C2966EL, perMon = 7, record = 6),
+    levelUpLearnsets = 0x08C2F320L,
 )
 
 /**

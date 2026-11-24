@@ -41,6 +41,7 @@ MAPSEC_WIDE = ('SoulGold',)
 LATER = {
     'Team Rocket Edition 2026': 'its maps come out scrambled (expansion 1.14 with tilesets of its own), not worked out yet',
     'Ghost Grey': 'blocked at its developer\'s request (BlockedGames.kt)',
+    'Unbound (v2.1.1.1) (Spanish v1.25).gba': 'the Z-A build: its maps don\'t draw (its data tables moved), and the app doesn\'t support it yet',
     'Mario Kart': 'not a Pokemon game',
     '(Pirate)': 'a pirate build, not supported',
     '(Debug Version)': 'a debug build, not supported',

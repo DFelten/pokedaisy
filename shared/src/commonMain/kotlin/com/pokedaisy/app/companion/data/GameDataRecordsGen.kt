@@ -2300,6 +2300,14 @@ val FLIGHT_AMETHYST_V141: FlightFns by lazy {
     )
 }
 
+// Amethyst v1.4.3: v1.4.1's, but CFRU hooks the function after MapGridGetMetatileBehaviorAt now (not one flight calls),
+// which falls inside behaviorAt's 32-byte CRC window. Flown headless on the v1.3.0 save (Anthra Town, up and down).
+val FLIGHT_AMETHYST_V143: FlightFns by lazy {
+    FLIGHT_AMETHYST_V141.copy(
+        codeCrcs = listOf(0x0111A86EL, 0xBAB654BAL, 0x4585C55FL, 0x9F6107A5L, 0xC1C72DBEL, 0x4EAAF898L, 0x4963D7D2L, 0x4963D7D2L, 0x44A073D8L, 0x82667C29L, 0x11B905BAL, 0x20389A3EL),
+    )
+}
+
 val FLIGHT_SWORD_SHIELD: FlightFns by lazy {
     FLIGHT_FIRERED_REV0.copy(
         mapGroups = 0x087B1010L,

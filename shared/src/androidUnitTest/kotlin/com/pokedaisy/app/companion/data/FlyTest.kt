@@ -218,6 +218,7 @@ class FlyTest {
             "Pokemon Radical Red (v4.1).gba" to fieldItemsForGame(GameKind.RADICAL_RED, "BPRE", 0)!!.fly!!,
             "Pokemon Gaia (v3.2).gba" to fieldItemsForGame(GameKind.GAIA, "BPRE", 0)!!.fly!!,
             "Pokemon Amethyst (v1.4.1).gba" to fieldItemsForGame(GameKind.AMETHYST, "BPRE", 0)!!.fly!!,
+            "Pokemon Amethyst (v1.4.3).gba" to fieldItemsForGame(GameKind.AMETHYST, "BPRE", 0)!!.fly!!,
             "Pokemon Orange Islands (Beta 5.7).gba" to fieldItemsForGame(GameKind.ORANGE_ISLANDS, "BPRE", 0)!!.fly!!,
         )
         val more = listOf(

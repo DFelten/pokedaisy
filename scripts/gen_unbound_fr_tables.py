@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Generates the names of Pokémon Unbound v2.1.1.1's French and Italian translations
+"""Generates the names of Pokémon Unbound v2.1.1.1's French, Italian and Spanish translations
 (fan translations of the same release: French sha1 0ce2a880..., Italian v7 sha1
-8114e0f8..., both 32 MB BPRE) from the ROM the user owns (nothing is downloaded),
+8114e0f8..., Spanish v1.25 "No ZA" sha1 e7573638..., all 32 MB BPRE) from the ROM the user owns (nothing is downloaded),
 so the companion shows its names in the translation's language, like the
 other-language Emeralds. The ROM's sha1 picks the language.
 
-    scripts/gen_unbound_fr_tables.py <french or italian rom.gba> [<english rom.gba>]
+    scripts/gen_unbound_fr_tables.py <french, italian or spanish rom.gba> [<english rom.gba>]
 
-Writes shared/src/commonMain/kotlin/.../companion/data/UnboundText{Fr,It}Gen.kt: species,
+Writes shared/src/commonMain/kotlin/.../companion/data/UnboundText{Fr,It,Es}Gen.kt: species,
 move, item, nature and map section names by Unbound's own ids (the translation keeps every
 id, table and RAM address of the English release - it rewrote text in place or
 repointed it). Item descriptions aren't written: the app reads them from the
@@ -32,6 +32,11 @@ The Italian translation (giacomo-spadoni/pokemon-unbound-ita, its patch v7 over
 English: MD5 c0b35748...) rewrote every table in place, moves included (its
 table is English's own, 0x08A40A10, all 998 names, the Max Moves too), and kept
 the header's revision byte at 0.
+
+The Spanish translation v1.25 comes in two builds. "No ZA" is this case again: every
+table in place (moves English's own, to 922: past it the table runs into other text),
+only the text's strings repointed. The other build adds Legends Z-A's Mega Evolutions
+and moves the species, base stats, icons and items with them: not this script's.
 """
 import hashlib
 import os
@@ -45,6 +50,7 @@ OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shared
                        "com", "pokedaisy", "app", "companion", "data")
 SHA1 = "0ce2a880aa097f1dce4e1db8ee513d0e82d15859"
 IT_SHA1 = "8114e0f81eb3581f699c74a5891c7b75a130269d"
+ES_SHA1 = "e7573638cd25aa455b933090775de42338a0dcd7"
 EN_SHA1 = "b4776b82a4c7915d0fadeaa27e013523f99dfd94"
 B = 0x08000000
 SPECIES = 0x0966A98C
@@ -52,6 +58,7 @@ SPECIES_COUNT = 1294
 MOVES_FR, MOVES_EN = 0x081B2980, 0x08A40A10
 MOVES_FR_LAST = 893
 MOVES_IT_LAST = 998
+MOVES_ES_LAST = 922
 ITEMS = 0x08876200
 ITEMS_LAST_SLOT = 728  # English's table ends here (0xFF fill); the translation's text runs on after it
 NATURES = 0x08463E60
@@ -61,6 +68,7 @@ CH = {**CHARS, **LANG_CHARS["fr"]}
 LANGS = {
     SHA1: ("Fr", MOVES_FR, MOVES_FR_LAST, LANG_CHARS["fr"], "FR"),
     IT_SHA1: ("It", MOVES_EN, MOVES_IT_LAST, LANG_CHARS["it"], "IT (Italian v7)"),
+    ES_SHA1: ("Es", MOVES_EN, MOVES_ES_LAST, LANG_CHARS["es"], "ES (Spanish v1.25, No ZA)"),
 }
 
 
@@ -124,11 +132,11 @@ def kmap(name, m):
 def main():
     global CH
     if len(sys.argv) not in (2, 3):
-        sys.exit(f"usage: {sys.argv[0]} <french or italian rom.gba> [<english rom.gba>]")
+        sys.exit(f"usage: {sys.argv[0]} <french, italian or spanish rom.gba> [<english rom.gba>]")
     d = open(sys.argv[1], "rb").read()
     sha = hashlib.sha1(d).hexdigest()
     if sha not in LANGS:
-        sys.exit(f"{sys.argv[1]} isn't Unbound v2.1.1.1 FR (sha1 {SHA1}) or IT v7 (sha1 {IT_SHA1})")
+        sys.exit(f"{sys.argv[1]} isn't Unbound v2.1.1.1 FR (sha1 {SHA1}), IT v7 (sha1 {IT_SHA1}) or ES v1.25 No ZA (sha1 {ES_SHA1})")
     sfx, moves_at, moves_last, chars, label = LANGS[sha]
     CH = {**CHARS, **chars}
     species = {i: n for i in range(1, SPECIES_COUNT) if (n := text(d, SPECIES + 11 * i, 11)) and not n.startswith("?")}
@@ -142,6 +150,12 @@ def main():
         assert item_names[13] == "Potion" and item_names[86] == "Repousse" and item_names[348] == "Boîte Costume"
         assert natures[0] == "Hardi" and natures[24] == "Bizarre"
         assert mapsecs[0x59] == "Bélenbourg" and mapsecs[0x61] == "Plateau Indigo"
+    elif sfx == "Es":
+        assert species[1] == "Bulbasaur" and species[252] == "Huevo" and species[989] == "CódigoCero"
+        assert moves[1] == "Destructor" and moves[33] == "Placaje" and moves[45] == "Gruñido" and moves[922] == "Gig. Fluido"
+        assert item_names[13] == "Poción" and item_names[86] == "Repelente" and item_names[348] == "Caja Trajes"
+        assert natures[0] == "Fuerte" and natures[24] == "Rara"
+        assert mapsecs[0x59] == "Pueblo Bellin" and mapsecs[0x61] == "Meseta Añil"
     else:
         assert species[1] == "Bulbasaur" and species[252] == "Uovo" and species[989] == "Tipo Zero"
         assert moves[1] == "Botta" and moves[33] == "Azione" and moves[45] == "Ruggito"
@@ -161,7 +175,7 @@ def main():
         moved = [s for s in range(1, ITEMS_LAST_SLOT + 1) if u16(e, ITEMS + 44 * s + 14) != u16(d, ITEMS + 44 * s + 14)]
         assert moved == ([87] if sfx == "Fr" else []), moved
     tail = (f"(moves past {moves_last} keep their English names: the translation's table ends there)"
-            if sfx == "Fr" else "(every move, the Max Moves too)")
+            if sfx == "Fr" else "(every move, the Max Moves too)" if sfx == "It" else f"(every move to {moves_last}, the Max Moves too)")
     kt = (f"package com.pokedaisy.app.companion.data\n\n"
           f"// Generated by scripts/gen_unbound_fr_tables.py from Pokémon Unbound v2.1.1.1 {label}\n"
           f"// (sha1 {sha[:8]}...) - do not hand-edit. The translation's own names, by Unbound's ids\n"

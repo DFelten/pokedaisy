@@ -21,6 +21,7 @@ class HackGuidesTest {
     private val gaia = Game("Pokemon Gaia (v3.2).gba", GameKind.GAIA, NATIVE_GAIA_V3_2, "gaia")
     private val amethyst = Game("Pokemon Amethyst (v1.3.0).gba", GameKind.AMETHYST, NATIVE_AMETHYST, "amethyst")
     private val amethyst141 = Game("Pokemon Amethyst (v1.4.1).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_1, "amethyst_v141")
+    private val amethyst143 = Game("Pokemon Amethyst (v1.4.3).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_3, "amethyst_v143")
     private val celia = Game("Pokemon Celia's Stupid Romhack (v1.1.4).gba", GameKind.CELIA, NATIVE_CELIA, "celia")
     private val uvGame = Game("Pokemon Ultra Violet (v1.22).gba", GameKind.FIRERED, NATIVE_ULTRA_VIOLET, "ultra_violet")
     private val swordShield = Game("Pokemon Sword and Shield Ultimate Plus (v1.2.1.2).gba", GameKind.SWORD_SHIELD, NATIVE_SWORD_SHIELD, "sword_shield_up")
@@ -35,7 +36,7 @@ class HackGuidesTest {
     private val gsChronicles = Game("Pokemon GS Chronicles (v2.7.6).gba", GameKind.GS_CHRONICLES, NATIVE_GS_CHRONICLES, "gs_chronicles")
     private val letsGoPikachu = Game("Pokemon Let's Go Pikachu.gba", GameKind.FIRERED, NATIVE_LETS_GO_PIKACHU, "lets_go_pikachu")
     private val letsGoEevee = Game("Pokemon Let's Go Eevee.gba", GameKind.FIRERED, NATIVE_LETS_GO_EEVEE, "lets_go_eevee")
-    private val all = listOf(odyssey, gaia, amethyst, amethyst141, celia, uvGame, swordShield, gsChronicles, rocket, ashGray, ashGrayFork, ghostGrey, ghostGreyV101,
+    private val all = listOf(odyssey, gaia, amethyst, amethyst141, amethyst143, celia, uvGame, swordShield, gsChronicles, rocket, ashGray, ashGrayFork, ghostGrey, ghostGreyV101,
         letsGoPikachu, letsGoEevee)
 
     private fun load(g: Game): RomFileReader? = RomFileReader.load(RETAIL_ROM_DIR + g.rom)?.also {
@@ -45,7 +46,7 @@ class HackGuidesTest {
 
     private fun select(g: Game) {
         activeGame = g.kind
-        amethystV141 = g.cfg === NATIVE_AMETHYST_V1_4_1
+        amethystV141 = g.cfg === NATIVE_AMETHYST_V1_4_1 || g.cfg === NATIVE_AMETHYST_V1_4_3
         fireRedHack = fireRedHackFor(g.cfg)
         emeraldHack = emeraldHackFor(g.cfg)
     }
@@ -84,6 +85,14 @@ class HackGuidesTest {
         assertEquals(3, terrence[1].size)
         assertEquals(638, terrence[2][1].species)
         assertEquals(3, terrence[3].size)
+    }
+
+    /** v1.4.3 moved the four tables again (+0x1E10); TERRENCE is still its first boss, with his own teams. */
+    @Test fun `amethyst v1_4_3 tables`() {
+        assumeTrue(load(amethyst143) != null)
+        val terrence = GUIDE_AMETHYST.bosses.first().teams(noProgress).map { GuideRomSource.party(amethyst143.t, it.second)!! }
+        assertEquals(4, terrence.size)
+        assertTrue(terrence.all { team -> team.isNotEmpty() && team.all { it.species in 1..1293 && it.level in 1..100 } })
     }
 
     /** v1.4.1 moved the four tables; TERRENCE's teams are the same. */
@@ -185,6 +194,7 @@ class HackGuidesTest {
     private val quetzalEs = Game("Pokemon Quetzal (Alpha 9.0) (Spanish).gba", GameKind.QUETZAL, NATIVE_QUETZAL_ES, "quetzal_es")
     private val unboundFr = Game("Pokemon Unbound (v2.1.1.1) (French).gba", GameKind.UNBOUND, NATIVE_UNBOUND_FR, "unbound_fr")
     private val unboundIt = Game("Pokemon Unbound (v2.1.1.1) (Italian v7).gba", GameKind.UNBOUND, NATIVE_UNBOUND_IT, "unbound_it")
+    private val unboundEs = Game("Pokemon Unbound (v2.1.1.1) (Spanish v1.25) (No ZA).gba", GameKind.UNBOUND, NATIVE_UNBOUND_ES, "unbound_es")
 
     /** Orange Islands: its four gym leaders and DRAKE (trainers 1-5), the next one on the save, HERE and WHERE IS. */
     @Test fun `orange islands`() {
@@ -390,6 +400,10 @@ class HackGuidesTest {
         load(unboundIt)?.let { rom ->
             assertTrue(guideTablesMatchRom(rom, unboundIt.t))
             assertEquals(listOf(15, 16), GuideRomSource.party(unboundIt.t, 719)!!.map { it.level })
+        }
+        load(unboundEs)?.let { rom ->
+            assertTrue(guideTablesMatchRom(rom, unboundEs.t))
+            assertEquals(listOf(15, 16), GuideRomSource.party(unboundEs.t, 719)!!.map { it.level })
         }
     }
 

@@ -25,14 +25,14 @@ class BattleCursorTest {
             "soulgold_v121_battle" to NATIVE_SOULGOLD_V1_2_1,
             "emerald_kaizo_battle" to NATIVE_EMERALD_KAIZO, "emerald_mwisbest_battle" to NATIVE_EMERALD_RETAIL, "emerald_legacy_battle" to NATIVE_EMERALD_LEGACY, "radical_red_battle" to NATIVE_RADICAL_RED_V4_1,
             "gaia_battle" to NATIVE_GAIA_V3_2, "glazed_battle" to NATIVE_GLAZED, "lazarus_battle" to NATIVE_LAZARUS,
-            "odyssey_battle" to NATIVE_ODYSSEY, "amethyst_battle" to NATIVE_AMETHYST, "sword_shield_up_battle" to NATIVE_SWORD_SHIELD,
+            "odyssey_battle" to NATIVE_ODYSSEY, "amethyst_battle" to NATIVE_AMETHYST, "amethyst_v143_battle" to NATIVE_AMETHYST_V1_4_3, "crystal_advance_redux_battle" to NATIVE_CRYSTAL_ADVANCE_REDUX, "sword_shield_up_battle" to NATIVE_SWORD_SHIELD,
             "emerald_seaglass_battle" to NATIVE_EMERALD_SEAGLASS, "tmt2_battle" to NATIVE_TMT2, "heart_and_soul_battle" to NATIVE_HEART_AND_SOUL,
             "orange_islands_battle" to NATIVE_ORANGE_ISLANDS, "ultra_violet_battle" to NATIVE_ULTRA_VIOLET, "celia_battle" to NATIVE_CELIA,
             "rocket_edition_battle" to NATIVE_ROCKET_EDITION, "ash_gray_battle" to NATIVE_ASH_GRAY, "ash_gray_fork_battle" to NATIVE_ASH_GRAY,
             "ghost_grey_battle" to NATIVE_GHOST_GREY, "ghost_grey_v101_battle" to NATIVE_GHOST_GREY_V1_0_1,
             "lets_go_pikachu_battle" to NATIVE_LETS_GO_PIKACHU, "lets_go_eevee_battle" to NATIVE_LETS_GO_EEVEE,
             "clover_battle" to NATIVE_CLOVER, "elysium_a_battle" to NATIVE_ELYSIUM_A, "elysium_b_battle" to NATIVE_ELYSIUM_B,
-            "rhythm_battle" to NATIVE_RHYTHM,
+            "rhythm_battle" to NATIVE_RHYTHM, "rhythm_v1_6_0_battle" to NATIVE_RHYTHM_V1_6_0,
             "oops_all_eevees_battle" to NATIVE_OOPS_ALL_EEVEES,
             "recharged_yellow_v180_battle" to NATIVE_RECHARGED_YELLOW_V1_8_0, "recharged_yellow_v190_battle" to NATIVE_RECHARGED_YELLOW_V1_9_0,
             "recharged_yellow_v194_battle" to NATIVE_RECHARGED_YELLOW_V1_9_4, "recharged_yellow_battle" to NATIVE_RECHARGED_YELLOW_V1_9_7,
@@ -50,7 +50,10 @@ class BattleCursorTest {
             "elite_redux_battle" to NATIVE_ELITE_REDUX_V2_65_4_1B, "elite_redux_v2653_battle" to NATIVE_ELITE_REDUX_V2_65_3B,
             "team_rocket_battle" to NATIVE_TEAM_ROCKET, "team_rocket_trainer" to NATIVE_TEAM_ROCKET,
             "wishes_battle" to NATIVE_WISHES, "wishes_trainer" to NATIVE_WISHES,
-            "ceruleum_battle" to NATIVE_CERULEUM,
+            "ceruleum_battle" to NATIVE_CERULEUM, "ceruleum_alt_battle" to NATIVE_CERULEUM_ALT,
+            "gen3_evolved_battle" to NATIVE_GEN3_EVOLVED,
+            "gen3_evolved_v1_0_17_battle" to NATIVE_GEN3_EVOLVED_V1_0_17,
+            "gen3_evolved_v1_0_26_battle" to NATIVE_GEN3_EVOLVED_V1_0_26,
             "dreamstone_battle" to NATIVE_DREAMSTONE, "dreamstone_trainer" to NATIVE_DREAMSTONE,
             "monomyth_battle" to NATIVE_MONOMYTH, "monomyth_trainer" to NATIVE_MONOMYTH,
             "monomyth_v1_1_battle" to NATIVE_MONOMYTH_V1_1, "monomyth_v1_1_trainer" to NATIVE_MONOMYTH_V1_1,
@@ -61,6 +64,7 @@ class BattleCursorTest {
             // Epsilon Emerald: RIGHT / DOWN walk 0 -> 1 -> 3, a written 2 + A opens the party, a written move 1 + A spent its
             // PP (headless, 2026-11-15).
             "epsilon_emerald_battle" to NATIVE_EPSILON_EMERALD,
+            "epsilon_emerald_v1_0_3_battle" to NATIVE_EPSILON_EMERALD_V1_0_3,
         ).forEach { (fixture, cfg) ->
             val ram = FixtureMemoryReader.load(fixture)
             assertEquals(fixture, 0, ram.readCoreMemory(cfg.actionCursor, 1)[0].toInt())

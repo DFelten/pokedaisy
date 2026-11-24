@@ -73,3 +73,26 @@ partyMenu = 0x0203DE3C
 pokedex = 'POKEDEX_EPSILON_EMERALD'
 guideTables = 'GUIDE_TABLES_EPSILON_EMERALD'
 fieldItems = 'FIELD_ITEMS_EPSILON_EMERALD'
+
+# Pokémon Epsilon Emerald v1.0.3 (sha1 fec5d319…; the author's BPS over retail Emerald): v1.0.0's RAM (retail Emerald's save
+# boots to the same party, save blocks and map on ROUTE 114: `epsilon_emerald_v1_0_3`), names, types, moves and chart
+# (gen_epsilon_emerald_tables.py compares them), its ROM moved: each v1.0.0 address found in it by its bytes (ROM pointers and
+# BLs masked), a pointer table by what its pointers point at - code +0x10..+0x80, data +0x680 / +0x6A0 / +0x86C. Its battle
+# handlers are v1.0.0's + 0x10, read live in its own scripted wild battle (`epsilon_emerald_v1_0_3_battle`), where the cursors,
+# gPartyMenu, a written cell + A and the POKéMON switch behaved as in v1.0.0.
+[config.epsilon_emerald_v1_0_3]
+base = 'epsilon_emerald'
+itemDescs = { base = 0x08FEECA4, stride = 36, descOff = 0x14, count = 629 }
+monIconTable = 0x08FE0CD0
+monIconPaletteIndices = 0x08FE15A4
+monIconPaletteTable = 0x08FE17EC
+monIconPalettes = 0x08BE5D40
+itemIconTable = 0x090A38B8
+handleInputChooseAction = 0x08875869
+handleInputChooseMove = 0x088762F9
+completeWhenChoseItem = 0x088783E1
+waitForMonSelection = 0x08878325
+handleInputChooseTarget = 0x08875B95
+pokedex = 'POKEDEX_EPSILON_EMERALD_V1_0_3'
+guideTables = 'GUIDE_TABLES_EPSILON_EMERALD_V1_0_3'
+fieldItems = 'FIELD_ITEMS_EPSILON_EMERALD_V1_0_3'

@@ -2909,6 +2909,18 @@ val NATIVE_AMETHYST_V1_4_1 = NATIVE_AMETHYST.copy(
     handleInputChooseTarget = 0x0890BE01L, // its moved target-select handler, found the same way
 )
 
+// Pokemon Amethyst v1.4.3: v1.4.1's RAM (v1.3.0's save loads: `amethyst_v143`), species, item and move names (the
+// Amethyst generator --checks them) and most tables where v1.4.1 has them (CFRU: the same literal-pool slots). Moved:
+// gMoveNames +0x16F4, gBattleMoves and the PC's second table +0x1E10, the ability names +0x16F4, the four trainer tables
+// +0x1E10, the target-select handler +0xD8C; a few abilities, trainer teams and items changed, and its own area data
+// (GuideId.AMETHYST_V143). It still sets amethystV141 (its names are v1.4.1's).
+val NATIVE_AMETHYST_V1_4_3 = NATIVE_AMETHYST_V1_4_1.copy(
+    pcStorage = AMETHYST_V143_PC_STORAGE,
+    pokedex = POKEDEX_AMETHYST_V1_4_3,
+    guideTables = GUIDE_TABLES_AMETHYST_V1_4_3,
+    handleInputChooseTarget = 0x0890CB8DL,
+)
+
 // ---- gamedata/gen3/hacks/celia.toml ----
 
 // Pokemon Celia's Stupid Romhack v1.1.4 - BPRE rev 0, ~28.7 MB, no source.
@@ -3051,6 +3063,18 @@ val NATIVE_CERULEUM = NATIVE_EMERALD.copy(
     itemIconTable = 0x086FBCCCL, // gItemsInfo[0].iconPic
     itemIconStride = 0x2C,
     itemPalCompressed = false,
+)
+
+// Ceruleum v1.1.1's other build (sha1 1e27af00…, the one some players have): the same code at the same places (its battle
+// handlers byte for byte) and RAM (v1.1.1's save boots to the same party, save blocks, map and bag: `ceruleum_alt`), its data
+// 0x30 lower (the GF header's tables; the chart 0x18), every table equal to the first build's (gen_expansion_tables.py
+// ceruleum_alt). Its cursors and handlers read the same in its own scripted wild battle (`ceruleum_alt_battle`).
+val NATIVE_CERULEUM_ALT = NATIVE_CERULEUM.copy(
+    itemDescs = ItemDescTable(0x086FBC8CL, 0x2C, -8),
+    monIconTable = 0x08748CC0L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x08748CE2L, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08CD27A8L,
+    itemIconTable = 0x086FBC9CL, // gItemsInfo[0].iconPic
 )
 
 // ---- gamedata/gen3/hacks/dreamstone.toml ----
@@ -3438,6 +3462,29 @@ val NATIVE_EPSILON_EMERALD = NativeConfig(
     fieldItems = FIELD_ITEMS_EPSILON_EMERALD,
 )
 
+// Pokémon Epsilon Emerald v1.0.3 (sha1 fec5d319…; the author's BPS over retail Emerald): v1.0.0's RAM (retail Emerald's save
+// boots to the same party, save blocks and map on ROUTE 114: `epsilon_emerald_v1_0_3`), names, types, moves and chart
+// (gen_epsilon_emerald_tables.py compares them), its ROM moved: each v1.0.0 address found in it by its bytes (ROM pointers and
+// BLs masked), a pointer table by what its pointers point at - code +0x10..+0x80, data +0x680 / +0x6A0 / +0x86C. Its battle
+// handlers are v1.0.0's + 0x10, read live in its own scripted wild battle (`epsilon_emerald_v1_0_3_battle`), where the cursors,
+// gPartyMenu, a written cell + A and the POKéMON switch behaved as in v1.0.0.
+val NATIVE_EPSILON_EMERALD_V1_0_3 = NATIVE_EPSILON_EMERALD.copy(
+    itemDescs = ItemDescTable(0x08FEECA4L, 36, 0x14, count = 629),
+    monIconTable = 0x08FE0CD0L,
+    monIconPaletteIndices = 0x08FE15A4L,
+    monIconPaletteTable = 0x08FE17ECL,
+    monIconPalettes = 0x08BE5D40L,
+    itemIconTable = 0x090A38B8L,
+    handleInputChooseAction = 0x08875869L,
+    handleInputChooseMove = 0x088762F9L,
+    completeWhenChoseItem = 0x088783E1L,
+    waitForMonSelection = 0x08878325L,
+    handleInputChooseTarget = 0x08875B95L,
+    pokedex = POKEDEX_EPSILON_EMERALD_V1_0_3,
+    guideTables = GUIDE_TABLES_EPSILON_EMERALD_V1_0_3,
+    fieldItems = FIELD_ITEMS_EPSILON_EMERALD_V1_0_3,
+)
+
 // ---- gamedata/gen3/hacks/gaia.toml ----
 
 // Pokémon Gaia v3.2 - another large (32 MB) BPRE hack, verified 2026-09-20 the
@@ -3505,6 +3552,120 @@ val NATIVE_GAIA_V3_2 = NATIVE_FIRERED_REV0.copy(
     // FireRed's battle menu cursors, checked headless like Unbound's (gaia_battle's README).
     actionCursor = 0x02023FF8L,
     moveCursor = 0x02023FFCL,
+)
+
+// ---- gamedata/gen3/hacks/gen3_evolved.toml ----
+
+// Pokémon Generation 3 Evolved v1.0.22 (32 MB, BPRE rev 0, sha1 558de090…): pokeemerald-expansion 1.16.3's FireRed build (its
+// RHHEXP block: 857 moves, 1576 species, 901 items), gcc, no source. Retail FireRed's save reads as erased in it, so it was
+// mapped headless from a new game played in it (`gen3_evolved`: the intro, then the game's own createmon / additem / setflag
+// through its ScriptContext_SetupScript 0x0820B155, saved in game in the player's bedroom, Pallet Town). Every RAM address is
+// also a literal-pool word of a function matched code for code into a plain FireRed build of the 1.16.3 tag (5,300 of its
+// 13,600 functions: the hack's globals sit a constant few bytes from the reference's, +0x20 in IWRAM's save pointers, +0x1948
+// around gParties), and checked live:
+// - gParties 0x02033664 (the player's party, the foe's 600 bytes on) with gPartiesCount 0x02033654 (one byte each): vanilla's
+//   100-byte encrypted mons with expansion's packing; the egg is species 1576 (gSpeciesInfo's last entry, the header's
+//   NUM_SPECIES).
+// - gSaveBlock1Ptr / 2Ptr 0x030052E0 / 0x030052DC. The hack grew the player's name to 12 letters, so SaveBlock2 moved on past
+//   it: playerGender +0x0D, the encryption key +0xB0 (the reference's +0xAC); money SB1+0x490 XOR it (3000 on a new game).
+//   SaveBlock1's flags / vars +0x1760 / +0x1880 (its GF ROM header's), FireRed's flag numbers (FLAG_SYS_POKEMON_GET 0x828:
+//   the START menu's POKéMON appeared with it). gMain 0x030067DC.
+// - gMapHeader 0x02001B88 (mapsec 0x59 Pallet Town, regionMapSectionId +0x14 a byte), gObjectEvents 0x02001628.
+// - gBagPockets 0x02006C54: seven pockets {slots*, capacity:10, id:6}, quantities XOR the key, in its bag screen's order:
+//   Items, Medicine, Berries, TMs & HMs, Poké Balls, Power Ups, Key Items ([GEN3_EVOLVED_BAG_POCKET_ORDER]: Repel x2, Potion
+//   x5, Oran Berry x4, TM01 x1, Poké Ball x3, as given).
+// - Battle (a scripted wild PIDGEY, `gen3_evolved_battle`): gBattleTypeFlags 0x020000C8, gBattlersCount 0x020000CC,
+//   gBattlerPartyIndexes 0x02000160, gBattlerPositions 0x020001E4, gBattleMons 0x020004FC ([GEN3_EVOLVED_BATTLE_MON]: 0x8C
+//   bytes, otId +0x84: offsetof on the reference), gBattleStruct 0x020000D0 with monToSwitchIntoId at +0x149 (the reference's).
+//   The menus' cursors 0x02000358 / 0x0200035C (RIGHT walked the action cursor 0 -> 1, DOWN to 3; DOWN in the moves 0 -> 2; a
+//   written 1 + A opened the bag, a written 2 + A the party, a written move cell + A used EMBER). gBattlerControllerFuncs
+//   0x03002514: action / move / bag / party read live (0x08064589 / 0x0806358D / 0x08061FDD / 0x08062021). gPartyMenu
+//   0x020335C0 (slotId +9, FireRed's list: DOWN 0 -> 1 -> 2).
+// - Icons: gSpeciesInfo 0x087CA940 (0x108-byte entries, iconSprite +0x68, iconPalIndex +0x8A), gMonIconPaletteTable
+//   0x08D7DDE8 (the GF header's); gItemsInfo 0x08778F1C (0x30-byte entries: icon +0x24, its palette +0x28 plain).
+// Names / types / moves / chart / map sections: scripts/gen_expansion_tables.py gen3_evolved.
+val NATIVE_GEN3_EVOLVED = NATIVE_EMERALD.copy(
+    itemDescs = ItemDescTable(0x08778F30L, 0x30, -8),
+    playerParty = 0x02033664L,
+    playerPartyCount = 0x02033654L,
+    enemyParty = 0x020338BCL,
+    gMain = 0x030067DCL,
+    saveBlock1Ptr = 0x030052E0L,
+    saveBlock2Ptr = 0x030052DCL,
+    encryptionKeyOff = 0xB0L,
+    playerGenderOff = 0x0DL,
+    moneyOff = 0x490L,
+    objectEvents = 0x02001628L,
+    mapHeader = 0x02001B88L,
+    bagPockets = 0x02006C54L,
+    bagPocketCount = 7,
+    bagPocketOrder = GEN3_EVOLVED_BAG_POCKET_ORDER,
+    speciesMask = 0x07FF,
+    moveMask = 0x07FF,
+    ppMask = 0x7F,
+    battleTypeFlags = 0x020000C8L,
+    battlersCount = 0x020000CCL,
+    battlerPartyIndexes = 0x02000160L,
+    battlerPositions = 0x020001E4L,
+    battleMons = 0x020004FCL,
+    battleMonLayout = GEN3_EVOLVED_BATTLE_MON,
+    battleStructPtr = 0x020000D0L,
+    monToSwitchIntoOff = 0x149,
+    actionCursor = 0x02000358L,
+    moveCursor = 0x0200035CL,
+    battlerControllerFuncs = 0x03002514L,
+    handleInputChooseAction = 0x08064589L,
+    handleInputChooseMove = 0x0806358DL,
+    completeWhenChoseItem = 0x08061FDDL,
+    waitForMonSelection = 0x08062021L,
+    partyMenu = 0x020335C0L,
+    eggSpecies = 1576,
+    monIconTable = 0x087CA9A8L, // gSpeciesInfo[0].iconSprite
+    monIconStride = 0x108,
+    monIconPaletteIndices = 0x087CA9CAL, // gSpeciesInfo[0].iconPalIndex
+    monPalIdxStride = 0x108,
+    monPalIdxMask = 0x07,
+    monIconPaletteTable = 0x08D7DDE8L,
+    itemIconTable = 0x08778F40L, // gItemsInfo[0].iconPic
+    itemIconStride = 0x30,
+    itemPalCompressed = false,
+)
+
+// Generation 3 Evolved v1.0.17 (sha1 35dd71e1…): the same game's earlier build. Its RAM is v1.0.22's for everything the
+// companion reads (every literal-pool word of the 5,300 matched functions from gSaveBlock1Ptr to gPartyMenu; only globals
+// past 0x02034900 sit 0x68 lower), and v1.0.22's save loads in it with the same party (`gen3_evolved_v1_0_17`). Its ROM
+// tables sit lower (the GF header: gSpeciesInfo 0x087CA450, gItemsInfo 0x08778A34, the icon palettes 0x08D7D8F0) and equal
+// v1.0.22's (gen_expansion_tables.py gen3_evolved_v1_0_17 checks them). Its battle handlers sit 0xA0 lower, read live from
+// gBattlerControllerFuncs in its own scripted wild battle (`gen3_evolved_v1_0_17_battle`), where the cursors, gPartyMenu and
+// a written cell + A behaved as in v1.0.22.
+val NATIVE_GEN3_EVOLVED_V1_0_17 = NATIVE_GEN3_EVOLVED.copy(
+    itemDescs = ItemDescTable(0x08778A48L, 0x30, -8),
+    monIconTable = 0x087CA4B8L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x087CA4DAL, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08D7D8F0L,
+    itemIconTable = 0x08778A58L, // gItemsInfo[0].iconPic
+    handleInputChooseAction = 0x080644E9L,
+    handleInputChooseMove = 0x080634EDL,
+    completeWhenChoseItem = 0x08061F3DL,
+    waitForMonSelection = 0x08061F81L,
+)
+
+// Generation 3 Evolved v1.0.26 (sha1 26d9feea…): v1.0.22's RAM word for word again (every literal-pool word of the 5,300
+// matched functions), and v1.0.22's save loads in it with the same party (`gen3_evolved_v1_0_26`). Its ROM tables sit
+// 0x418-0x668 higher (the GF header: gSpeciesInfo 0x087CAD58, gItemsInfo 0x0877935C, the icon palettes 0x08D7E450) and equal
+// v1.0.22's but one place name, which it fixed (gen_expansion_tables.py gen3_evolved_v1_0_26 checks them); its battle
+// handlers read live in its own scripted wild battle (`gen3_evolved_v1_0_26_battle`), where the cursors, gPartyMenu, a
+// written cell + A and the POKéMON switch behaved as in v1.0.22.
+val NATIVE_GEN3_EVOLVED_V1_0_26 = NATIVE_GEN3_EVOLVED.copy(
+    itemDescs = ItemDescTable(0x08779370L, 0x30, -8),
+    monIconTable = 0x087CADC0L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x087CADE2L, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08D7E450L,
+    itemIconTable = 0x08779380L, // gItemsInfo[0].iconPic
+    handleInputChooseAction = 0x0806466DL,
+    handleInputChooseMove = 0x080636ADL,
+    completeWhenChoseItem = 0x0806217DL,
+    waitForMonSelection = 0x080621C1L,
 )
 
 // ---- gamedata/gen3/hacks/glazed.toml ----
@@ -3652,6 +3813,67 @@ val NATIVE_HEART_AND_SOUL = NATIVE_EMERALD.copy(
     moveCursor = 0x020003A8L,
     pokedex = POKEDEX_HEART_AND_SOUL,
     guideTables = GUIDE_TABLES_HEART_AND_SOUL,
+)
+
+// ---- gamedata/gen3/hacks/hns_legends.toml ----
+
+// Pokémon Heart and Soul Legends M9.16 (32 MB, BPEE, sha1 18624b59…): Heart and Soul rebuilt on pokeemerald-expansion 1.15.2
+// (its RHHEXP block: 1573 species, 848 moves, 901 items), gcc, no source (GameKind.HNS_LEGENDS). Heart and Soul v2.0.6's save
+// from the Discord folder loads in it (`heart_and_soul_legends`: SHIINOTIC Lv5 21/21 on the game's own party screen, 3000
+// money, Cherrygrove City). Its RAM is laid out unlike the 1.15.2 reference's, so each address is a literal-pool word of the
+// ~1,100 functions matched code for code into a plain Emerald build of the tag (votes in brackets), then read live:
+// gPlayerParty 0x020002D8 [5/5] with gPlayerPartyCount 0x020210B8 [2/2] (one SHIINOTIC, as the game shows), gMain 0x03003650
+// [19/19], gSaveBlock1Ptr / 2Ptr 0x030035C8 / 0x030035C4 [30], the key SB2+0xAC and money SB1+0x494 (3000; SB1's position +4,
+// as HnS's), gObjectEvents 0x020009A8 [19/19], gMapHeader 0x0201FBD0 (mapsec 0x40, Cherrygrove), gBagPockets 0x02020F8C (HnS's
+// six pockets, their capacities byte for byte). Battle isn't read yet: no battle could be captured (its script command table
+// isn't where the other expansion builds keep it), so the battle addresses are left off.
+// Icons: gSpeciesInfo 0x088A3834 (0x10C-byte entries, HnS's: iconSprite +0x6C, iconPalIndex +0x8E), gMonIconPaletteTable
+// 0x0886F8F4 (the GF header's), gItemsInfo 0x08899918 (0x2C, icon +0x24). Names / types / moves / chart / map sections:
+// scripts/gen_expansion_tables.py hns_legends.
+val NATIVE_HNS_LEGENDS = NATIVE_EMERALD.copy(
+    itemDescs = ItemDescTable(0x0889992CL, 0x2C, -8),
+    playerParty = 0x020002D8L,
+    playerPartyCount = 0x020210B8L,
+    enemyParty = 0,
+    gMain = 0x03003650L,
+    saveBlock1Ptr = 0x030035C8L,
+    saveBlock2Ptr = 0x030035C4L,
+    saveBlock1PosOff = 4,
+    moneyOff = 0x494L,
+    objectEvents = 0x020009A8L,
+    mapHeader = 0x0201FBD0L,
+    bagPockets = 0x02020F8CL,
+    bagPocketCount = 6,
+    bagPocketOrder = HNS_BAG_POCKET_ORDER,
+    speciesMask = 0x07FF,
+    moveMask = 0x07FF,
+    ppMask = 0x7F,
+    battleTypeFlags = 0,
+    battlersCount = 0,
+    battlerPartyIndexes = 0,
+    battlerPositions = 0,
+    battleMons = 0,
+    battleStructPtr = 0,
+    actionCursor = 0,
+    moveCursor = 0,
+    battlerControllerFuncs = 0,
+    handleInputChooseAction = 0,
+    handleInputChooseMove = 0,
+    completeWhenChoseItem = 0,
+    waitForMonSelection = 0,
+    handleInputChooseTarget = 0,
+    partyMenu = 0,
+    monIconTable = 0x088A38A0L, // gSpeciesInfo[0].iconSprite
+    monIconStride = 0x10C,
+    monIconPaletteIndices = 0x088A38C2L, // gSpeciesInfo[0].iconPalIndex
+    monPalIdxStride = 0x10C,
+    monPalIdxMask = 0x07,
+    monIconPaletteTable = 0x0886F8F4L,
+    itemIconTable = 0x0889993CL, // gItemsInfo[0].iconPic
+    itemIconStride = 0x2C,
+    itemPalCompressed = false,
+    pokedex = null,
+    guideTables = null,
 )
 
 // ---- gamedata/gen3/hacks/imperium.toml ----
@@ -4906,6 +5128,13 @@ val NATIVE_RHYTHM = NATIVE_FIRERED_REV0.copy(
     moveCursor = 0x02023FFCL,
 )
 
+// Pokémon Rhythm v1.6.0 (sha1 6df2b5dc…): v1.4.0's RAM, and v1.4.0's save loads in it (after a login reward: `rhythm_v1_6_0`);
+// every table where v1.4.0 has it but the moves (gen_cfru_tables.py rhythm_v1_6_0: the same literal-pool slots, gMoveNames
+// 0x08DF7384 / gBattleMoves 0x08DF4540, whose names and powers come out as v1.4.0's), with a few form slots reused (new
+// Dialga / Palkia / Ho-Oh and Mega forms where Vivillon and Zygarde forms were: its own species names, types and gender
+// ratios, `rhythmV160`). Its battle cursors are FireRed's: a written move cell + A spent that move's PP (`rhythm_v1_6_0_battle`).
+val NATIVE_RHYTHM_V1_6_0 = NATIVE_RHYTHM.copy()
+
 // ---- gamedata/gen3/hacks/rowe.toml ----
 
 // R.O.W.E. v2.1.9.1 Experimental (BPEE, 32 MB, BelialClover's own pokeemerald fork - no expansion;
@@ -5638,6 +5867,23 @@ val NATIVE_CLOVER = NATIVE_ULTRA_VIOLET.copy(
     guideTables = GUIDE_TABLES_CLOVER,
 )
 
+// ---- gamedata/gen3/hacks/crystal_advance_redux.toml ----
+
+// Pokémon Crystal Advance Redux (22-11-25 build; 32 MB, FireRed 1.0 rev 0 edited in place, sha1 9e825608…): Johto and Kanto on
+// FireRed's code and RAM, its tables repointed (CrystalAdvanceReduxGen.kt, gen_firered_hack_tables.py crystal_advance_redux:
+// species grown to 753 ids - Gen 1 to 5 picks, its trainer slots 252-260 among them - moves to 511, FAIRY at 23). Its own
+// icon tables (their literal-pool words). The save of it on disk is another build's ("The save file has been deleted"), so
+// its fixtures are a new game played headless (the party and bag given by the game's own script commands, saved in game).
+// No DEX or GUIDE yet: its Pokédex keeps 753 species past FireRed's flag bytes, not mapped.
+val NATIVE_CRYSTAL_ADVANCE_REDUX = NATIVE_ULTRA_VIOLET.copy(
+    monIconTable = 0x0948F6A0L,
+    monIconPaletteIndices = 0x08B204E8L,
+    itemIconTable = 0x09E31D00L,
+    monPalettes = 0x09486B60L,
+    pokedex = null,
+    guideTables = null,
+)
+
 // ---- gamedata/gen3/hacks/elysium.toml ----
 
 // Pokémon Elysium v2.5.0 (black_kaiser; 16 MB each, Hackdex's two BPS patches over FireRed 1.0 rev 0): FireRed rev 0 edited in
@@ -5787,6 +6033,17 @@ val NATIVE_UNBOUND_IT = NATIVE_UNBOUND_WITH_DEX.copy(
     language = 'I',
     gameCode = UNBOUND_IT_TEXT,
     pokedex = POKEDEX_UNBOUND_IT,
+)
+
+// Pokémon Unbound v2.1.1.1 ES - the Spanish fan translation v1.25, its "No ZA" build (sha1 e7573638…): Italian's case
+// again, every literal pool holding English's word (only the text's strings repointed) and English's save booting in it
+// (`unbound_es`). Names in Spanish (UNBOUND_ES_TEXT, gen_unbound_fr_tables.py); its POKéDEX page is metric with a
+// decimal comma ("Alt. ??,? m" / "Peso", headless). The other v1.25 build adds Legends Z-A's Mega Evolutions and
+// moves the species, base stats, icons, dex and gItems with them: not supported.
+val NATIVE_UNBOUND_ES = NATIVE_UNBOUND_WITH_DEX.copy(
+    language = 'S',
+    gameCode = UNBOUND_ES_TEXT,
+    pokedex = POKEDEX_UNBOUND_ES,
 )
 
 // ---- gamedata/gen3/hacks/wishes.toml ----

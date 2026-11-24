@@ -733,6 +733,14 @@ val GUIDE_TABLES_AMETHYST_V1_4_1 = GUIDE_TABLES_AMETHYST.copy(
     altTrainers = listOf(0x08A1861CL, 0x08A02384L, 0x08A0FD08L),
 )
 
+/** Amethyst v1.4.3: v1.4.1's, the four trainer tables 0x1E10 later (their records byte for byte where the parties didn't
+ * change; some teams did); its own area data (AMETHYST_V143: a few items and hidden-item flags differ). */
+val GUIDE_TABLES_AMETHYST_V1_4_3 = GUIDE_TABLES_AMETHYST_V1_4_1.copy(
+    trainers = 0x08A27824L,
+    guide = GuideId.AMETHYST_V143,
+    altTrainers = listOf(0x08A1A42CL, 0x08A04194L, 0x08A11B18L),
+)
+
 /**
  * Celia's Stupid Romhack v1.1.4 (a full pokefirered recompile): everything
  * moved, SaveBlock1's flags 16 bytes later (found by setting the POKéDEX flag
@@ -1073,6 +1081,14 @@ val GUIDE_TABLES_EPSILON_EMERALD = GUIDE_TABLES_EMERALD.copy(
     trainerStride = 0x24,
     wildLayout = WildLayout(stride = 0x18, land = 0, water = 1, rockSmash = 2, fishing = 4),
     mapGroups = 0x08E299DCL,
+)
+
+/** Epsilon Emerald v1.0.3: v1.0.0's, moved (gTrainers +0x680, gWildMonHeaders +0x86C, gMapGroups found through the live
+ * gMapHeader's record and its group's table: +0x808). */
+val GUIDE_TABLES_EPSILON_EMERALD_V1_0_3 = GUIDE_TABLES_EPSILON_EMERALD.copy(
+    trainers = 0x08BFACA4L,
+    wildHeaders = 0x08FB4284L,
+    mapGroups = 0x08E2A1E4L,
 )
 
 /**

@@ -63,7 +63,7 @@ test('DS: Platinum rev 1, HeartGold / SoulSilver, by the header', () => {
   assert.deepEqual(readHeader(nds('CPUE', 1)), { platform: 'nds', code: 'CPUE', rev: 1 });
   const ds = (code, rev) => verdict(data, { ...readHeader(nds(code, rev)), size: 128 * MB, sha1: '0'.repeat(40) });
   assert.deepEqual(ds('CPUE', 1), { status: 'supported', title: 'Pokémon Platinum', family: 'Nintendo DS' });
-  assert.deepEqual(ds('CPUE', 0), { status: 'unsupported', reason: 'revision', base: 'Pokémon Platinum' });
+  assert.deepEqual(ds('CPUE', 2), { status: 'unsupported', reason: 'revision', base: 'Pokémon Platinum' });
   assert.equal(ds('IPKE', 0).title, 'Pokémon HeartGold');
   assert.equal(ds('IPGE', 0).title, 'Pokémon SoulSilver');
   assert.deepEqual(ds('IPKD', 0), { status: 'supported', title: 'Pokémon Goldene Edition HeartGold', family: 'Nintendo DS' });
@@ -76,7 +76,9 @@ test('DS: Platinum rev 1, HeartGold / SoulSilver, by the header', () => {
   assert.deepEqual(ds('IPGF', 0), { status: 'supported', title: 'Pokémon Version Argent SoulSilver', family: 'Nintendo DS' });
   assert.deepEqual(ds('IRBF', 0), { status: 'supported', title: 'Pokémon Version Noire', family: 'Nintendo DS' });
   assert.deepEqual(ds('IRAF', 0), { status: 'supported', title: 'Pokémon Version Blanche', family: 'Nintendo DS' });
-  assert.equal(ds('ADAE', 0).reason, 'ds');
+  // English Diamond is supported at rev 5 only (pret/pokediamond's build).
+  assert.equal(ds('ADAE', 0).reason, 'revision');
+  assert.equal(ds('ADAE', 5).status, 'supported');
 });
 
 test('DS: Origin HeartGold by its code word; without it, a Japanese HeartGold', () => {
@@ -263,6 +265,9 @@ test('DS: the language ports, each at its own revision', () => {
   assert.deepEqual(ds('IPKS', 0), { status: 'supported', title: 'Pokémon Edición Oro HeartGold', family: 'Nintendo DS' });
   assert.deepEqual(ds('CPUS', 0), { status: 'supported', title: 'Pokémon Edición Platino', family: 'Nintendo DS' });
   assert.deepEqual(ds('CPUD', 0), { status: 'supported', title: 'Pokémon Platin-Edition', family: 'Nintendo DS' });
+  // USA Platinum rev 0 and Europe's rev 10 share the US rev 1 cart's code.
+  assert.deepEqual(ds('CPUE', 0), { status: 'supported', title: 'Pokémon Platinum', family: 'Nintendo DS' });
+  assert.deepEqual(ds('CPUE', 10), { status: 'supported', title: 'Pokémon Platinum', family: 'Nintendo DS' });
   assert.deepEqual(ds('IRBI', 0), { status: 'supported', title: 'Pokémon Versione Nera', family: 'Nintendo DS' });
   assert.deepEqual(ds('IRDD', 0), { status: 'supported', title: 'Pokémon Weiße Edition 2', family: 'Nintendo DS' });
   assert.deepEqual(ds('IREF', 1), { status: 'unsupported', reason: 'revision', base: 'Pokémon Version Noire 2' });

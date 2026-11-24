@@ -43,6 +43,7 @@ class RomRegionMapTest {
     @Test fun rhythmHasVedeo() {
         val m = read("Pokemon Rhythm (v1.4.0).gba")
         assertEquals("Notewood Town", m.sections[0x58]!!.name)
+        assertEquals("Notewood Town", read("Pokemon Rhythm (v1.6.0).gba").sections[0x58]!!.name)
     }
 
     /** Oops All Eevees: Kanto, CFRU's FireRed 1.0 region map code. */
@@ -101,6 +102,9 @@ class RomRegionMapTest {
         val m = read("Pokemon Amethyst (v1.4.1).gba")
         assertEquals(0, m.sections[0x98]!!.region)
         assertEquals(1, m.sections[0x99]!!.region)
+        val m3 = read("Pokemon Amethyst (v1.4.3).gba")
+        assertEquals(0, m3.sections[0x98]!!.region)
+        assertEquals(1, m3.sections[0x99]!!.region)
     }
 
     /** Orange Islands: its archipelago over FireRed's four screens (VALENCIA on the second, PUMMELO the third). */
