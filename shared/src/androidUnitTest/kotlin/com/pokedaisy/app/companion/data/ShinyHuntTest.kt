@@ -120,5 +120,14 @@ class ShinyHuntTest {
         assertEquals(view.battleOpponent.single().species, step.shiny?.species)
         // The player's own battler stays as its DVs say.
         assertFalse(view.battlePlayer.single().shiny)
+
+        // A shiny one of the player's is drawn shiny too (POKéMON PICTURES in the BATTLE tab).
+        val ownDvs = GEN2_CRYSTAL.battleMon + 6
+        val ownShiny = object : MemoryReader {
+            override fun readCoreMemory(addr: Long, size: Int): ByteArray = fixture.readCoreMemory(addr, size).also { b ->
+                for (k in 0..1) if (ownDvs + k in addr until addr + size) b[(ownDvs + k - addr).toInt()] = (if (k == 0) 0x2A else 0xAA).toByte()
+            }
+        }
+        assertTrue(buildSnapshotView(readGen2Telemetry(ownShiny, GEN2_CRYSTAL)).battlePlayer.single().shiny)
     }
 }

@@ -499,6 +499,8 @@ fun buildSnapshotView(t: Telemetry): SnapshotView {
                 iconAsset = if (b.shiny) shinyIconAsset(b.species) else spriteAsset("pokemon", b.species),
                 moves = moves,
                 stats = statsFor(b, t.party, usedParty),
+                // POKéMON PICTURES draws it in its shiny colours, as the foe's (buildOpponentMon).
+                shiny = b.shiny,
             )
         }
 
