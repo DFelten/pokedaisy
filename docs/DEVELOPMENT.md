@@ -1758,6 +1758,12 @@ ints), `gbfollowshow`, `gbfollowinfo`.
 **On Gold / Silver** (2026-11-24; English and German by CRC32): the same code over pokegold's RAM (`gbf_ram_map`: the object struct's
 layout is Crystal's, the addresses aren't), icons from `rom-art/gen2/gold_silver/pokemon/`. Gold / Silver keep no TEXT_STATE_F, so their
 font tiles (bank 0, 0x60 and up: their tilesets have at most 0x60 tiles) always stay over the follower.
+**On Red / Blue** (2026-11-24; English and German by CRC32): pokered's RAM (no object struct: wXCoord / wYCoord, the player's
+GRASSPRIORITY at 0xC207, wFontLoaded bit 0 for a menu / text, wWalkBikeSurfState 2 = surfing; German + 5 from wOnSGB up), icons from
+`rom-art/gen1/red_blue/pokemon/`. They run as a Super Game Boy: the icon's colours are turned back into pixel values 1-3 and drawn
+through OBP0 and the SGB attribute of the area (as mGBA's FinishScanline does), so fades and each place's palette come out right.
+With a menu or text up they show the whole screen through the window (WY 0), so the window is read like the BG there. A trainer battle
+sets wIsInBattle only after its transition: wUpdateSpritesEnabled (0xFF from the transition on, 1 on the field) hides it first.
 
 ### Sprite packs (the makeover's graphics in one file)
 
