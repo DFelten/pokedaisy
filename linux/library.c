@@ -1038,8 +1038,11 @@ static void look_save(void) {
 // The save a game plays with, PokeDaisy's own or a shared one. false = none yet.
 static bool save_path(const struct game *g, char *out, size_t size) {
   struct stat st;
-  pd_save_path_named(savesDir, g->path, g->rom, out, size);
-  if (stat(out, &st) && (shared_save_path(g->path, g->rom, out, size) < 1 || stat(out, &st)))
+  char name[256]; // a zip's saves go by its ROM's name, as the game's do (rom_save_name)
+  if (!rom_save_name(g->path, savesDir, name, sizeof name))
+    snprintf(name, sizeof name, "%s", g->rom);
+  pd_save_path_named(savesDir, g->path, name, out, size);
+  if (stat(out, &st) && (shared_save_path(g->path, name, out, size) < 1 || stat(out, &st)))
     return false;
   return st.st_size > 0;
 }

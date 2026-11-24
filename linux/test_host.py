@@ -58,18 +58,24 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     run(d,str(d/'roms/solo.gb'),'--frames','120')
     assert (d/'saves/solo.gb.sav').read_bytes()[:1]==b'\x5a','the ROM-named save did not win'
     (d/'roms/solo.gb').unlink()
-    # A zipped ROM plays as a ROM with the zip's name, its save's too; the DS core gets it as a file.
+    # A zipped ROM plays as the ROM inside, its save named after it (the app's and RetroArch's rule), or after the zip
+    # when only the zip's own name has one; the DS core gets it as a file.
     packed=d/'roms'/'Packed (USA).zip'
     with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.gb','inside.gb')
     run(d,str(packed),'--frames','120')
-    assert (d/'saves/Packed (USA).gb.sav').read_bytes()[:1]==b'\x5a','the zipped ROM did not run'
+    assert (d/'saves/inside.gb.sav').read_bytes()[:1]==b'\x5a','the zipped ROM did not run'
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['inside.gb']
+    (d/'saves/inside.gb.sav').unlink();(d/'saves/Packed (USA).sav').write_bytes(b'\0'*8192)
+    run(d,str(packed),'--frames','120')
+    assert (d/'saves/Packed (USA).sav').read_bytes()[:1]==b'\x5a' and not (d/'saves/inside.gb.sav').exists()
     assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).gb']
+    (d/'saves/Packed (USA).sav').unlink()
     with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.nds','inside.nds')
     run(d,str(packed),'--frames','90','--shot',str(d/'ds-zip.png'))
     w,h,bpp,rows=png_pixels(d/'ds-zip.png')
     mid=rows[h//2][(w//2)*bpp:(w//2)*bpp+3]
     assert mid[0]<60 and mid[1]>200 and mid[2]<60,mid
-    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).nds']
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['inside.nds']
     packed.unlink()
     # diagnostic.gb has diagnostic.gba and .nds beside it: diagnostic.sav could be any of theirs, so it's left alone.
     (d/'saves/diagnostic.gb.sav').rename(d/'saves/diagnostic.sav')
@@ -104,10 +110,11 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     shutil.copy(diag/'diagnostic.gb',gb/'Rzip.gb');(srm/'Rzip.srm').write_bytes(b'#RZIPv1#'+b'\0'*60)
     r=subprocess.run([str(binary),'--data',str(d),str(gb/'Rzip.gb'),'--frames','10'],env=env,capture_output=True,text=True,timeout=60)
     assert r.returncode!=0 and not (d/'saves/Rzip.gb.sav').exists() and (srm/'Rzip.srm').read_bytes()[:8]==b'#RZIPv1#'
-    # A zipped one, and one without a save yet.
-    with zipfile.ZipFile(gb/'Zipped.zip','w') as z:z.write(diag/'diagnostic.gb','inside.gb')
+    # A zipped one, and one without a save yet: RetroArch names it after the ROM inside.
+    with zipfile.ZipFile(gb/'Zipped.zip','w') as z:z.write(diag/'diagnostic.gb','Zipped inside.gb')
     run(d,str(gb/'Zipped.zip'),'--frames','120')
-    assert (srm/'Zipped.srm').read_bytes()[:1]==b'\x5a' and len((srm/'Zipped.srm').read_bytes())==8192
+    assert (srm/'Zipped inside.srm').read_bytes()[:1]==b'\x5a' and len((srm/'Zipped inside.srm').read_bytes())==8192
+    assert not (srm/'Zipped.srm').exists()
     # Its clock is RetroArch's file, left alone while it's the same clock; without one it's PokeDaisy's.
     zero=struct.pack('<q',int(time.time())-5*86400)
     (gb/'Clock.gb').write_bytes(rtc);(srm/'Clock.srm').write_bytes(b'\0'*8192);(srm/'Clock.rtc').write_bytes(zero)

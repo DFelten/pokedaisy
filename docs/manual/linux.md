@@ -217,9 +217,11 @@ and `FONT TYPE`, which picks the companion's letters: `PIXEL SMALL`, the app's s
 
 The program's game list shows the `.gb`, `.gbc`, `.gba` and `.nds` files in the `roms` folder of its data folder (and, on
 PortMaster, the firmware's folders above). A `.zip` with a game inside is listed too and stays zipped: PokeDaisy unpacks a
-copy into the data folder's `unzipped` folder when you play it and keeps only the last one. Its save goes by the zip's
-name: `My Game.zip` with a GBA game inside saves as `My Game.gba.sav`. A game that's there both loose and zipped is listed
-once. `.7z` files have to be unpacked first.
+copy into the data folder's `unzipped` folder when you play it and keeps only the last one (the first time, a big game
+takes a moment, and the list says so). Its save goes by the name of the game inside, as in RetroArch and the Android app:
+`My Pack.zip` holding `My Game.gba` saves as `My Game.gba.sav`, and reads a `My Game.sav` you already have. A save under
+the zip's own name (`My Pack.sav`) is used when there's none under the game's. A game that's there both loose and zipped
+is listed once. `.7z` files have to be unpacked first.
 
 ## The game list
 
@@ -279,6 +281,11 @@ RetroArch's settings and save folder, and only if RetroArch doesn't compress sav
 
 If a shared save can't be used (RetroArch compressed it, or another ROM beside the game has the same name), the game
 doesn't open. Change that, or turn `SHARED SAVES` off.
+
+When RetroArch keeps every console's saves in one folder, two games of different consoles with the same name
+(`My Game.gb` in the Game Boy folder, `My Game.gba` in the GBA one) would both use `My Game.srm`, so neither shares: each
+keeps its save in PokeDaisy's `saves` folder. A save in RetroArch's folder that's too big for the game (another console's)
+is left alone the same way.
 
 Don't have the same game open in both, and don't load an older save state after playing in the other: its save comes back
 with the next save you make.

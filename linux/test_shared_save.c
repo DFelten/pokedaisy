@@ -70,6 +70,17 @@ static void paths(void) {
   assert(!symlink(in("roms/real.srm"), in("saves/gba/L.srm")) && bad("roms/gba/L.gba", "L.gba"));
   put("roms/real.srm", "x", 1);
   assert(is("roms/gba/L.gba", "L.gba", "saves/gba/L.srm"));
+  // A Game Boy game never takes a GBA game's bigger .srm, which it would write over.
+  put("saves/gb/H.srm", big, 0x20000);
+  assert(none("roms/gb/H.gb", "H.gb"));
+  // Two consoles' games of one name whose saves go to one folder: neither shares (PokeDaisy's own save instead).
+  put("roms/gb/F.gb", "x", 1);
+  put("roms/gba/F.gba", "x", 1);
+  assert(is("roms/gb/F.gb", "F.gb", "saves/gb/F.srm") && is("roms/gba/F.gba", "F.gba", "saves/gba/F.srm"));
+  snprintf(saves, sizeof saves, "%s/saves/gb:%s/saves/gb", dir, dir);
+  setenv("POCKET_SAVE_DIRS", saves, 1);
+  assert(none("roms/gb/F.gb", "F.gb") && none("roms/gba/F.gba", "F.gba"));
+  assert(is("roms/gb/A.gb", "A.gb", "saves/gb/A.srm") && is("roms/gba/A.gba", "A.gba", "saves/gb/A.srm"));
   setenv("POCKET_SAVE_DIRS", "", 1);
   assert(none("roms/gba/A.gba", "A.gba"));
   setenv("POCKET_SAVE_DIRS", in("saves/gb"), 1);
@@ -101,9 +112,15 @@ static void retroarch(void) {
                 "sort_savefiles_by_content_enable = \"true\"\r\nsavefile_directory = \"/no\"\r\n"));
   assert(is("roms/gba/N.gba", "N.gba", "home/kept/gba/N.srm") && is("roms/nds/N.nds", "N.nds", "roms/nds/N.sav"));
   assert(access(in("home/kept/gba"), F_OK) && !mkdir(in("home/kept/GBA"), 0755));
-  assert(is("roms/gba/N.gba", "N.gba", "home/kept/GBA/N.srm"));
+  assert(is("roms/gba/N.gba", "N.gba", "home/kept/GBA/N.srm") && is("roms/gba/F.gba", "F.gba", "home/kept/GBA/F.srm"));
   snprintf(text, sizeof text, "savefile_directory = %s/saves\n" UNSORTED, dir);
   assert(config(text) && is("roms/gba/N.gba", "N.gba", "saves/N.srm"));
+  // RetroArch's one folder for every console: gb/F.gb and gba/F.gba would both be F.srm, an archive could hold either.
+  assert(none("roms/gba/F.gba", "F.gba") && none("roms/gb/F.gb", "F.gb"));
+  put("roms/off/O.gba", "x", 1); // the same console's: the same game
+  assert(is("roms/gba/O.gba", "O.gba", "saves/O.srm"));
+  put("roms/gb/K.zip", "x", 1);
+  assert(none("roms/gba/K.gba", "K.gba") && is("roms/gba/Q.gba", "Q.gba", "saves/Q.srm"));
   assert(config("savefiles_in_content_dir = \"true\"\nsavefile_directory = \"/no\"\n" UNSORTED));
   assert(is("roms/gba/N.gba", "N.gba", "roms/gba/N.srm"));
   assert(config("savefiles_in_content_dir = true\nsort_savefiles_by_content_enable = true\n" UNSORTED));

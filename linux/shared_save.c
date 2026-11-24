@@ -16,7 +16,7 @@
 #define lstat stat
 #endif
 
-#define MAX_GB (0x10000 + 512) // the biggest save and a clock: a bigger .sav is another console's game's
+#define MAX_GB (0x10000 + 512) // the biggest save and a clock: a bigger .sav / .srm is another console's game's
 #define MAX_GBA (0x20000 + 512)
 #define MBC3_CLOCK 48u    // mGBA's GBMBCRTCSaveBuffer: 5 clock words, 5 latched ones, when they were latched
 #define GAMBATTE_CLOCK 8u // when the clock read 0
@@ -138,7 +138,8 @@ static int save_dir(int i, const char *romDir, bool ds, char *out, size_t size) 
   return snprintf(out, size, "%s", dir) < (int)size ? 1 : -1;
 }
 
-// 1 = a save, 0 = none there, -1 = one that can't be used, RetroArch's compressed saves included.
+// 1 = a save, 0 = none there, 2 = one too big for the game (another console's), -1 = one that can't be used,
+// RetroArch's compressed saves included.
 static int look(const char *path, long max) {
   struct stat st;
   if (lstat(path, &st))
@@ -150,7 +151,49 @@ static int look(const char *path, long max) {
     fclose(f);
   if (!n || (n == sizeof head && !memcmp(head, "#RZIPv", sizeof head)))
     return -1;
-  return st.st_size <= max;
+  return st.st_size <= max ? 1 : 2;
+}
+
+// The console a ROM file's extension is for: 1 Game Boy, 2 GBA, 3 DS, 0 an archive (could be any), -1 not a ROM.
+static int console_of(const char *ext) {
+  if (!strcasecmp(ext, ".gb") || !strcasecmp(ext, ".gbc"))
+    return 1;
+  if (!strcasecmp(ext, ".gba"))
+    return 2;
+  if (!strcasecmp(ext, ".nds"))
+    return 3;
+  return !strcasecmp(ext, ".zip") || !strcasecmp(ext, ".7z") ? 0 : -1;
+}
+
+static bool same_dir(const char *a, const char *b) {
+  char ra[PATH_MAX], rb[PATH_MAX];
+  return !strcmp(a, b) || (realpath(a, ra) && realpath(b, rb) && !strcmp(ra, rb));
+}
+
+/* A game of another console with this one's base name in another ROM folder whose saves go to the same folder: RetroArch's
+ * one flat save folder gives gb/X.gb and gba/X.gba one X.srm, so it could be that game's. An archive counts (its ROM could
+ * be any console's). Probed by name, not listed: the library asks this for every game. */
+static bool other_console(const char *roms, int self, const char *saveDir, const char *romName, const char *ext) {
+  static const char *const exts[] = {".gb", ".gbc", ".gba", ".nds", ".zip", ".7z",
+                                     ".GB", ".GBC", ".GBA", ".NDS", ".ZIP", ".7Z"};
+  int mine = console_of(ext);
+  char dir[PATH_MAX], theirs[PATH_MAX], file[PATH_MAX + 300];
+  for (int j = 0; nth(roms, j, dir, sizeof dir); j++) {
+    if (j == self || !dir[0])
+      continue;
+    for (size_t k = 0; k < sizeof exts / sizeof *exts; k++) {
+      int console = console_of(exts[k]);
+      if (console == mine ||
+          snprintf(file, sizeof file, "%s/%.*s%s", dir, (int)(ext - romName), romName, exts[k]) >= (int)sizeof file ||
+          access(file, F_OK))
+        continue;
+      for (int ds = 0; ds < 2; ds++)
+        if ((!console || ds == (console == 3)) && save_dir(j, dir, ds, theirs, sizeof theirs) == 1 &&
+            same_dir(theirs, saveDir))
+          return true;
+    }
+  }
+  return false;
 }
 
 int shared_save_path(const char *romPath, const char *romName, char *out, size_t size) {
@@ -173,17 +216,27 @@ int shared_save_path(const char *romPath, const char *romName, char *out, size_t
   int found = save_dir(i, romDir, ds, saveDir, sizeof saveDir);
   if (found < 1)
     return found;
+  // Another console's game would share the file: PokeDaisy's own save then, rather than a guess.
+  if (other_console(roms, i, saveDir, romName, ext))
+    return 0;
+  const long max = ds ? LONG_MAX : strcasecmp(ext, ".gba") ? MAX_GB : MAX_GBA;
   const char *const exts[] = {"srm", "sav", "srm"}; // a new one is RetroArch's, or a standalone DS emulator's
   for (int e = 0; e < 2 + !ds; e++) {
     if (snprintf(out, size, "%s/%.*s.%s", saveDir, (int)(ext - romName), romName, exts[e]) >= (int)size)
       return -1;
-    found = look(out, ds || e != 1 ? LONG_MAX : strcasecmp(ext, ".gba") ? MAX_GB : MAX_GBA);
+    found = look(out, max);
     if (found < 0)
       return -1;
+    if (found == 2) {
+      if (strcmp(exts[e], "sav")) // a .srm too big: another console's game's, which this one would write over
+        return 0;
+      found = 0; // a .sav too big: another emulator's, left alone (the new save is a .srm)
+      continue;
+    }
     if (found)
       break;
   }
-  if (pd_stem_shared(romPath)) // it could be another ROM's
+  if (pd_stem_shared_named(romPath, romName)) // it could be another ROM's
     return -found;
   return access(is_dir(saveDir) ? saveDir : raDir[0] ? raDir : romDir, W_OK) ? -1 : 1;
 }

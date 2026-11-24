@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "pd_fs.h"
+#include "shared_save.h"
 #include "zlib.h"
 
 #define MIN_ROM 0x200u
@@ -19,7 +20,7 @@
 #define CHUNK 4096u // the list reads the first few hundred bytes of every ROM
 
 struct entry {
-  char ext[5];
+  char ext[5], name[256]; // name: its file name in the zip, without the folders; empty when no folder could hold it
   uint32_t crc, packed, size, offset;
   unsigned method;
 };
@@ -105,6 +106,12 @@ static bool find(FILE *f, struct entry *best) {
     if (rank < bestRank || (rank == bestRank && e.size <= best->size))
       continue;
     snprintf(e.ext, sizeof e.ext, "%s", strrchr(name, '.'));
+    // A name no folder can hold (too long, a control character, one Windows refuses) leaves the zip's own.
+    if (snprintf(e.name, sizeof e.name, "%s", name) >= (int)sizeof e.name || name[strcspn(name, "<>:\"|?*")])
+      e.name[0] = 0;
+    for (const char *c = e.name; *c; c++)
+      if ((unsigned char)*c < 0x20)
+        e.name[0] = 0;
     for (char *c = e.ext; *c; c++)
       *c |= 0x20; // lower case
     *best = e;
@@ -176,6 +183,69 @@ static bool read_entry(FILE *f, const struct entry *e, bool (*take)(void *, cons
 static bool named(const char *path, const struct entry *e, char *out, size_t size) {
   const char *name = pd_base_name(path);
   return snprintf(out, size, "%.*s%s", (int)(strrchr(name, '.') - name), name, e->ext) < (int)size;
+}
+
+/* The names a zip's saves may go by, as ROM file names (the host's save for a ROM named N is N.sav, or N's base name .sav):
+ * the app's RomArchive.saveNames. The ROM inside's first (RetroArch names a zipped game's save after the file in the zip:
+ * Pack.zip holding FireRed.gba -> FireRed.srm), then the zip's own (Pack.zip -> Pack.gba: Pack.sav; FireRed.gba.zip ->
+ * FireRed.gba: FireRed.sav, FireRed.gba.sav). */
+static int save_names(const char *path, const struct entry *e, char names[3][256]) {
+  const char *zip = pd_base_name(path);
+  int stem = (int)(strrchr(zip, '.') - zip), count = 0;
+  char own[256], base[256];
+  if (snprintf(own, sizeof own, "%.*s", stem, zip) >= (int)sizeof own)
+    own[0] = 0;
+  const char *ownExt = strrchr(own, '.');
+  bool romExt = ownExt && ownExt != own && rank_of(own) > 0; // FireRed.gba.zip
+  snprintf(base, sizeof base, "%.*s", romExt ? (int)(ownExt - own) : (int)strlen(own), own);
+  if (e->name[0])
+    snprintf(names[count++], 256, "%s", e->name);
+  if (base[0] && snprintf(names[count], 256, "%s%s", base, e->ext) < 256)
+    count++;
+  if (romExt && strcasecmp(ownExt, e->ext) && snprintf(names[count], 256, "%s%s", own, e->ext) < 256)
+    count++;
+  // Each name once.
+  int kept = 0;
+  for (int i = 0; i < count; i++) {
+    bool seen = false;
+    for (int j = 0; j < kept; j++)
+      seen = seen || !strcmp(names[i], names[j]);
+    if (seen)
+      continue;
+    if (i != kept)
+      memcpy(names[kept], names[i], 256);
+    kept++;
+  }
+  return kept;
+}
+
+static bool exists(const char *path) { return !access(path, F_OK); }
+
+// The first of the zip's save names with a save, PokeDaisy's own (in savesDir) or a shared one; else the first.
+static bool pick_name(const char *path, const struct entry *e, const char *savesDir, char *out, size_t size) {
+  char names[3][256], sav[PATH_MAX + 600];
+  int count = save_names(path, e, names);
+  for (int i = 0; i < count; i++) {
+    if (savesDir) {
+      pd_save_path_named(savesDir, path, names[i], sav, sizeof sav);
+      if (exists(sav))
+        return snprintf(out, size, "%s", names[i]) < (int)size;
+    }
+    if (shared_save_path(path, names[i], sav, sizeof sav) == 1 && exists(sav))
+      return snprintf(out, size, "%s", names[i]) < (int)size;
+  }
+  return count && snprintf(out, size, "%s", names[0]) < (int)size;
+}
+
+bool rom_save_name(const char *path, const char *savesDir, char *out, size_t size) {
+  if (!rom_zipped(path))
+    return snprintf(out, size, "%s", pd_base_name(path)) < (int)size;
+  struct entry e = {0};
+  FILE *f = fopen(path, "rb");
+  bool ok = f && find(f, &e) && pick_name(path, &e, savesDir, out, size);
+  if (f)
+    fclose(f);
+  return ok;
 }
 
 bool rom_name(const char *path, char *out, size_t size) {
@@ -252,13 +322,14 @@ static void prune(const char *dir, const char *id, const char *rom) {
     closedir(d);
 }
 
-bool rom_unzip(const char *path, const char *dataDir, char *out, size_t size) {
+bool rom_unzip(const char *path, const char *dataDir, const char *savesDir, void (*unpacking)(void), char *out,
+               size_t size) {
   struct entry e = {0};
   FILE *f = fopen(path, "rb");
   if (!f)
     return false;
   char dir[PATH_MAX], folder[PATH_MAX + 16], tmp[PATH_MAX + 300], id[9], name[256];
-  bool ok = find(f, &e) && named(path, &e, name, sizeof name) &&
+  bool ok = find(f, &e) && pick_name(path, &e, savesDir, name, sizeof name) &&
             snprintf(dir, sizeof dir, "%s/unzipped", dataDir) < (int)sizeof dir;
   snprintf(id, sizeof id, "%08x", (unsigned)e.crc);
   ok = ok && snprintf(folder, sizeof folder, "%s/%s", dir, id) < (int)sizeof folder &&
@@ -274,6 +345,8 @@ bool rom_unzip(const char *path, const char *dataDir, char *out, size_t size) {
   if (have)
     fclose(have);
   if (!whole) {
+    if (unpacking)
+      unpacking();
     pd_mkdir(dir);
     pd_mkdir(folder);
     snprintf(tmp, sizeof tmp, "%s/rom.part", folder);
@@ -284,10 +357,10 @@ bool rom_unzip(const char *path, const char *dataDir, char *out, size_t size) {
       remove(tmp);
   }
   fclose(f);
-  // The copy is alone in its folder: an empty .zip beside it tells pd_save_path what it can't see there, another ROM
-  // beside the zip with its base name.
-  if (ok && pd_stem_shared(path)) {
-    snprintf(tmp, sizeof tmp, "%s/%s", folder, pd_base_name(path));
+  // The copy is alone in its folder: an empty .zip of its base name beside it tells pd_save_path what it can't see there,
+  // another ROM beside the zip with that base name.
+  if (ok && pd_stem_shared_named(path, name)) {
+    snprintf(tmp, sizeof tmp, "%s/%.*s.zip", folder, (int)(strrchr(name, '.') - name), name);
     FILE *mark = fopen(tmp, "wb");
     if (mark)
       fclose(mark);

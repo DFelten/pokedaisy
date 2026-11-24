@@ -2142,11 +2142,21 @@ enum { M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_L
  * (PD_ENV_FRONT_ROWS), RESUME / SAVE / LOAD / SETTINGS / QUIT. */
 static const int MENU_FULL[] = {M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT};
 static const int MENU_SHORT[] = {M_RESUME, M_SAVE, M_LOAD, M_SETTINGS, M_QUIT};
+/* A line over the game list while it waits on something: a zipped game being unpacked (a DS one runs to 512 MB). */
+static const char *libraryBusy;
+static void library_present(struct pd_menu *page);
+static void unpacking_notice(void) {
+  SDL_PumpEvents();
+  libraryBusy = "Unpacking the game...";
+  library_present(NULL);
+  libraryBusy = NULL;
+}
 static void run_game(const char *path, int maxFrames, const char *shot, bool fromList) {
   const char *romPath = path;
   char unzipped[PATH_MAX - 8]; // its name and .sav still fit sav below
   if (rom_zipped(path)) {
-    if (!rom_unzip(path, root, unzipped, sizeof unzipped)) {
+    if (!rom_unzip(path, root, saveFile ? NULL : savesDir, fromList ? unpacking_notice : NULL, unzipped,
+                   sizeof unzipped)) {
       appError = 1;
       notice("Cannot read ROM");
       return;
@@ -2916,6 +2926,10 @@ static void library_present(struct pd_menu *page) {
   struct pd_canvas top;
   pd_canvas_init(&top, w, h, libraryTopPx);
   library_draw_top(&top, KEY_COLOR);
+  if (libraryBusy) { // the host's notice, along the list's bottom
+    pd_fill(&top, 4, h - 30, w - 8, 24, 0x181818);
+    pd_text_fit(&top, 10, h - 26, w - 20, pd_tr(libraryBusy), 0xffffff, PD_NO_SHADOW);
+  }
   if (!libraryTopTexture || libraryTopW != w || libraryTopH != h) {
     if (libraryTopTexture)
       SDL_DestroyTexture(libraryTopTexture);

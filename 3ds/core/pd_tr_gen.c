@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[789] = {
+const struct pd_tr_entry pd_tr_table[790] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -727,6 +727,7 @@ const struct pd_tr_entry pd_tr_table[789] = {
     { "UNSEEN", { "UNSEEN", "INCONNU", "UNBEKANNT", "IGNOTO", "OCULTO", "OCULTO", "OCULTO" } },
     { "UP DOWN: STEP   L R: PAGE   B: BACK", { "UP DOWN: STEP   L R: PAGE   B: BACK", "HAUT BAS : PAS   L R : PAGE   B : RETOUR", "HOCH RUNTER: SCHRITT   L R: SEITE   B: ZURÜCK", "SU GIÙ: PASSO   L R: PAGINA   B: INDIETRO", "ARRIBA ABAJO: PASO   L R: PÁGINA   B: ATRÁS", "CIMA BAIXO: PASSO   L R: PÁGINA   B: VOLTAR", "CIMA BAIXO: PASSO   L R: PÁGINA   B: VOLTAR" } },
     { "USE", { "USE", "UTILISER", "EINSETZEN", "USA", "USAR", "USAR", "USAR" } },
+    { "Unpacking the game...", { "Unpacking the game...", "Décompression du jeu...", "Spiel wird entpackt...", "Estrazione del gioco...", "Descomprimiendo el juego...", "Descompactando o jogo...", "A descompactar o jogo..." } },
     { "Use ", { "Use ", "Utiliser ", "Nutze ", "Usa ", "Usar ", "Usar ", "Usar " } },
     { "Use %s on which POKéMON?", { "Use %s on which POKéMON?", "Utiliser %s sur quel POKéMON ?", "%s bei welchem POKéMON einsetzen?", "Usare %s su quale POKéMON?", "¿Usar %s en qué POKéMON?", "Usar %s em qual POKéMON?", "Usar %s em qual POKéMON?" } },
     { "Use the game's own menu.", { "Use the game's own menu.", "Utilisez le menu du jeu.", "Nutze das Menü des Spiels.", "Usa il menu del gioco.", "Usa el menú del juego.", "Use o menu do jogo.", "Usa o menu do jogo." } },
@@ -793,4 +794,4 @@ const struct pd_tr_entry pd_tr_table[789] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 789;
+const int pd_tr_table_count = 790;

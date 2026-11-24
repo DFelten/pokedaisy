@@ -31,7 +31,9 @@ int main(int argc, char **argv) {
     size_t n = rom_head(path, h, sizeof h);
     printf("%zu %08lx\n", n, crc32(crc32(0, NULL, 0), h, (uInt)n));
   } else if (!strcmp(cmd, "unzip") && argc > 3)
-    puts(rom_unzip(path, argv[3], out, sizeof out) ? out : "-");
+    puts(rom_unzip(path, argv[3], argc > 4 ? argv[4] : NULL, NULL, out, sizeof out) ? out : "-");
+  else if (!strcmp(cmd, "savename") && argc > 3)
+    puts(rom_save_name(path, argv[3], out, sizeof out) ? out : "-");
   else
     return 2;
   return 0;

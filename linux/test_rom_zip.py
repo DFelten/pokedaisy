@@ -34,21 +34,47 @@ with tempfile.TemporaryDirectory(prefix='pd-zip-') as d:
     assert run('name',make(d/'a.zip',('x.nds',rom),('y.gb',other),('y2.gbc',rom)))=='a.gbc'
     assert run('name',make(d/'a.zip',('__MACOSX/x.gba',rom),('._x.gba',rom),('readme.txt',rom),('tiny.gba',b'x'),('x.gb',other)))=='a.gb'
     assert run('name',make(d/'a.zip',('readme.txt',rom)))=='-'
-    # Unpacked under the zip's name, once; another game's copy replaces it, the same ROM's under another name too.
+    # Unpacked under the ROM inside's name, once; another game's copy replaces it.
     z=make(d/'one.zip',('Inside.nds',rom));out=Path(run('unzip',z,data))
-    assert out==data/'unzipped'/crc(rom)/'one.nds' and out.read_bytes()==rom
+    assert out==data/'unzipped'/crc(rom)/'Inside.nds' and out.read_bytes()==rom
     stamp=os.stat(out).st_mtime_ns
     assert Path(run('unzip',z,data))==out and os.stat(out).st_mtime_ns==stamp,'unpacked again'
     out.write_bytes(b'short');assert Path(run('unzip',z,data)).read_bytes()==rom,'a partial copy was kept'
     again=Path(run('unzip',make(d/'again.zip',('Inside.nds',rom)),data))
-    assert again.read_bytes()==rom and [p.name for p in again.parent.iterdir()]==['again.nds']
+    assert again==out and again.read_bytes()==rom and [p.name for p in again.parent.iterdir()]==['Inside.nds']
     out=again
     two=Path(run('unzip',make(d/'two.zip',('Inside.gb',other)),data))
     assert two.read_bytes()==other and not out.exists() and not out.parent.exists()
-    # A ROM beside the zip with the same base name marks the copy (pd_save_path then leaves the shared save alone).
-    (d/'two.gba').write_bytes(rom)
+    # A ROM beside the zip with the copy's base name marks it (pd_save_path then leaves a save of that base name alone).
+    (d/'Inside.gba').write_bytes(rom)
     same=Path(run('unzip',make(d/'two.zip',('Inside.gb',other)),data));assert same.with_suffix('.zip').exists()
-    (d/'two.gba').unlink();run('unzip',d/'two.zip',data);assert not same.with_suffix('.zip').exists()
+    (d/'Inside.gba').unlink();run('unzip',d/'two.zip',data);assert not same.with_suffix('.zip').exists()
+    # The name saves go by (the app's RomArchive.saveNames): the ROM inside's, unless only the zip's own has a save.
+    saves=d/'saves';saves.mkdir();sd=d/'sd';sd.mkdir()
+    pack=make(sd/'Pack.zip',('in/FireRed.gba',rom))
+    assert run('savename',pack,saves)=='FireRed.gba' and run('savename',d/'loose.gba',saves)=='loose.gba'
+    assert Path(run('unzip',pack,data,saves)).name=='FireRed.gba'
+    for own in ('Pack.sav','Pack.gba.sav'):
+        (saves/own).write_bytes(b'x');assert run('savename',pack,saves)=='Pack.gba',own
+        assert Path(run('unzip',pack,data,saves)).name=='Pack.gba',own
+        (saves/'FireRed.sav').write_bytes(b'x');assert run('savename',pack,saves)=='FireRed.gba',own
+        (saves/'FireRed.sav').unlink();(saves/own).unlink()
+    # Pack.sav could be a Pack.gb's beside it: not this game's, so the copy is marked when it goes by Pack.
+    (saves/'Pack.sav').write_bytes(b'x');(sd/'Pack.gb').write_bytes(other)
+    assert run('savename',pack,saves)=='FireRed.gba'
+    (saves/'Pack.gba.sav').write_bytes(b'x');out=Path(run('unzip',pack,data,saves))
+    assert out.name=='Pack.gba' and (out.parent/'Pack.zip').exists()
+    for f in ('Pack.sav','Pack.gba.sav','Pack.gb'):(saves/f if f.endswith('.sav') else sd/f).unlink()
+    # A zip named like a ROM: FireRed.gba.zip goes by FireRed.gba (FireRed.sav, FireRed.gba.sav), X.gb.zip by X.gb too.
+    fr=make(sd/'FireRed.gba.zip',('fr.gba',rom))
+    assert run('savename',fr,saves)=='fr.gba'
+    (saves/'FireRed.sav').write_bytes(b'x');assert run('savename',fr,saves)=='FireRed.gba';(saves/'FireRed.sav').unlink()
+    xgb=make(sd/'X.gb.zip',('in.gbc',other))
+    (saves/'X.gb.sav').write_bytes(b'x');assert run('savename',xgb,saves)=='X.gb.gbc';(saves/'X.gb.sav').unlink()
+    (saves/'X.sav').write_bytes(b'x');assert run('savename',xgb,saves)=='X.gbc';(saves/'X.sav').unlink()
+    # An inside name no folder can hold leaves the zip's.
+    assert run('savename',make(sd/'odd.zip',('a:b.gba',rom)),saves)=='odd.gba'
+    for f in sd.glob('*.zip'):f.unlink()
     # A name inside never leaves the folder, or becomes a file's at all; a comment as long as they get.
     run('crc',make(d/'long.zip',('Long.gba',other),comment=b'x'*65535));assert run('name',d/'long.zip')=='long.gba'
     for name in ('../../evil.gba','..\\..\\evil.gba','/abs/evil.gba'):
