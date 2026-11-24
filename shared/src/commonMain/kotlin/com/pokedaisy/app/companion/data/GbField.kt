@@ -318,6 +318,13 @@ sealed class GbField {
             return if (!free(g)) BoxSwapResult.NOT_NOW else move(calls, cfg)
         }
 
+        /** The party menu's SWITCH ([Gen2BoxCalls.swapParty]) where the bag's PC could open: NOT_NOW otherwise. */
+        fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
+            val calls = boxCalls ?: return PartySwapResult.FAILED
+            if (u8(g, BATTLE_MODE) != 0) return PartySwapResult.IN_BATTLE
+            return if (!free(g)) PartySwapResult.NOT_NOW else calls.swapParty(g, cfg, a, keyA, b, keyB)
+        }
+
         /** CHANGE BOX ([Gen2BoxCalls.changeBox]: a box change saves the game) where the bag's PC could open: NOT_NOW otherwise. */
         fun changeBox(g: GameCalls, to: Int): BoxChangeResult {
             val calls = boxCalls ?: return BoxChangeResult.FAILED
