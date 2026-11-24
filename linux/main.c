@@ -39,6 +39,24 @@
 #include <time.h>
 #include <unistd.h>
 #include "pd_fs.h"
+
+/* Pixel art stays pixel art: every texture scales nearest. SDL_SetTextureScaleMode came in SDL 2.0.12 and older firmware
+   SDL lacks it (ArkOS's: a game start died on the missing symbol), so it's looked up at run time. Without it the texture keeps
+   what SDL_HINT_RENDER_SCALE_QUALITY said when it was made, which is nearest ("0") everywhere but the library's covers. */
+static void texture_nearest(SDL_Texture *t) {
+#ifdef _WIN32
+  SDL_SetTextureScaleMode(t, SDL_ScaleModeNearest); // the SDL2 shipped beside the Windows build
+#else
+  static int (*setScaleMode)(SDL_Texture *, int);
+  static bool looked;
+  if (!looked) {
+    looked = true;
+    *(void **)&setScaleMode = dlsym(RTLD_DEFAULT, "SDL_SetTextureScaleMode");
+  }
+  if (setScaleMode && t)
+    setScaleMode(t, 0); // SDL_ScaleModeNearest
+#endif
+}
 #include "pd_env.h"
 
 #include "library.h"
@@ -925,7 +943,7 @@ static void companion_close_key(int ow, SDL_Rect win, int k) {
     if (!closeTex)
       return;
     SDL_SetTextureBlendMode(closeTex, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureScaleMode(closeTex, SDL_ScaleModeNearest);
+    texture_nearest(closeTex);
     SDL_UpdateTexture(closeTex, NULL, px, CLOSE_KEY * 4);
     closeTexKey = want;
   }
@@ -1425,7 +1443,7 @@ static void frame_texture(void) {
     SDL_SetTextureBlendMode(frameTexture, SDL_BLENDMODE_NONE);
     // Pixel art stays pixel art: the picture and the core's touch panel both scale nearest, so a fractional window size
     // never blurs them. The hint covers backends that ignore the per-texture mode; the mode covers the rest.
-    SDL_SetTextureScaleMode(frameTexture, SDL_ScaleModeNearest);
+    texture_nearest(frameTexture);
   } else
     fprintf(stderr, "Texture: %s\n", SDL_GetError());
 }
@@ -1782,7 +1800,7 @@ static void present_game(const struct pd_menu *menu) {
       panelTexH = panelMsg.src_h;
       if (panelTexture) {
         SDL_SetTextureBlendMode(panelTexture, SDL_BLENDMODE_NONE);
-        SDL_SetTextureScaleMode(panelTexture, SDL_ScaleModeNearest);
+        texture_nearest(panelTexture);
       }
     }
     if (panelTexture) {
@@ -1805,7 +1823,7 @@ static void present_game(const struct pd_menu *menu) {
       hudTexH = hudMsg.src_h;
       if (hudTexture) {
         SDL_SetTextureBlendMode(hudTexture, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureScaleMode(hudTexture, SDL_ScaleModeNearest);
+        texture_nearest(hudTexture);
       }
     }
     if (hudTexture) {
@@ -1844,7 +1862,7 @@ static void present_game(const struct pd_menu *menu) {
       compTexH = compMsg.src_h;
       if (compTexture) {
         SDL_SetTextureBlendMode(compTexture, SDL_BLENDMODE_BLEND); // its corners are see-through
-        SDL_SetTextureScaleMode(compTexture, SDL_ScaleModeNearest);
+        texture_nearest(compTexture);
       }
     }
     if (compTexture) {

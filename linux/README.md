@@ -123,6 +123,23 @@ The package carries the port's art for the firmware's game list (`cover.png`, `s
 draws the cover and marquee; the screenshot is the game list (the library) over made-up games with no covers, taken
 headless with `POCKET_WINDOW=640x480` and `--shot` (no real game's name or art).
 
+### dArkOS / ArkOS without the device
+
+`python3 linux/handheld/check.py --package pokedaisy-portmaster-aarch64.zip` runs a PortMaster package in arm64 Docker
+stand-ins of the RK3326 / RK3566 firmwares' userland (native on Apple silicon): dArkOS (Debian 13, glibc 2.41) and the
+old ArkOS (Ubuntu 19.10, glibc 2.30, SDL 2.0.10, the oldest SDL we meet). The package's own `PokeDaisy.sh` runs in their
+layout (PortMaster in `/opt/system/Tools/PortMaster`, games in `/roms`), then the diagnostic ROMs play through the port's
+binary. `--build` swaps in this checkout's host (built on Debian 11, glibc 2.31). `--rom <game> --save <a copy of its save>`
+also counts the instructions of a real game's frame under valgrind (FireRed / Emerald from a save reach the field with the
+default `--keys`) and scales them to an R36S (Cortex-A35, 1.3 / 1.5 GHz) from the Brick's measured frames. SDL's own count
+is left out: a stand-in renders in software, a device's GPU scales the picture. What it can't show: the Mali / KMS
+display, rotated panels, the real buttons, sleep.
+
+The host needs nothing past SDL 2.0.10: a newer call is looked up at run time (`texture_nearest`), since 1.6.2 died on
+ArkOS's SDL at a game's start (`SDL_SetTextureScaleMode`, 2.0.12). Counted on 2026-11-24 (FireRed from a save, Route 20,
+EXPAND and the HUD at 640x480): armGBA 2.9 M instructions a frame (~7-8 ms on an R36S), FireRed on mGBA 10.3 M (~12 ms),
+Crystal on mGBA 3.4 M (~4 ms); the companion page pauses the game and costs ~0.4 M.
+
 ## TrimUI cross-build and launcher
 
 The checksum-pinned toolchain is AArch64 GCC 8.3 with the TrimUI SDK sysroot.
