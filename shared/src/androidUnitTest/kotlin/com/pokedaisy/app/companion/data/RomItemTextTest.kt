@@ -44,6 +44,7 @@ class RomItemTextTest {
         Case("Pokemon Gaia (v3.2).gba", GameKind.GAIA, NATIVE_GAIA_V3_2, mapOf(13 to "20 points")),
         Case("Pokemon Odyssey (v4.1.1).gba", GameKind.ODYSSEY, NATIVE_ODYSSEY, mapOf(13 to "restores 50 HP")),
         Case("Pokemon Amethyst (v1.4.1).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_1, mapOf(13 to "20 points")),
+        Case("Pokemon Amethyst (v1.4.3).gba", GameKind.AMETHYST, NATIVE_AMETHYST_V1_4_3, mapOf(13 to "20 points")),
         // By slot, as the game looks it up (slots 192 / 193 carry a stale itemId 255).
         Case("Pokemon Radical Red (v4.1).gba", GameKind.RADICAL_RED, NATIVE_RADICAL_RED_V4_1,
             mapOf(13 to "20 points", 675 to "special moves", 255 to "Beauty condition")),

@@ -40,4 +40,17 @@ class Tmt2AmethystBattleTest {
         assertEquals(0 to BATTLE_INPUT_ACTION_SELECT, readNativeBattleInputFast(ram, NATIVE_AMETHYST))
         assertEquals(listOf(840), t.battleFoes.map { it.species })
     }
+
+    @Test
+    fun `Amethyst v1_4_3 - the same Flabebe at v1_3_0's RAM`() {
+        val ram = FixtureMemoryReader.load("amethyst_v143_battle")
+        val t = readNativeTelemetry(ram, NATIVE_AMETHYST_V1_4_3)
+        assertTrue(t.inBattle)
+        val me = t.battleMons[BATTLE_POS_PLAYER_LEFT]
+        assertEquals(551 to 6, me.species to me.level) // Tepig
+        val foe = t.battleMons[BATTLE_POS_OPPONENT_LEFT]
+        assertEquals(840 to 4, foe.species to foe.level) // Flabebe
+        assertEquals(0 to BATTLE_INPUT_ACTION_SELECT, readNativeBattleInputFast(ram, NATIVE_AMETHYST_V1_4_3))
+        assertEquals(listOf(840), t.battleFoes.map { it.species })
+    }
 }

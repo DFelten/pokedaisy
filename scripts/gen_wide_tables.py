@@ -123,6 +123,8 @@ HACKS = [
          save="amethyst", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089B03D8), **CFRU_FLAGS)),
     dict(name="Amethyst v1.4.1", sha1="91291aade04b4b111cd03ae7b6e2ff460e1edd8a", family="FR", mapped=True,
          save="amethyst_v141", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089F2598), **CFRU_FLAGS)),
+    dict(name="Amethyst v1.4.3", sha1="b43db8fec159324f8eef63d779a19d618d30d3c1", family="FR", mapped=True,
+         save="amethyst_v143", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x0839FDB0, 0x089F430C), **CFRU_FLAGS)),
     dict(name="Orange Islands", sha1="8bac897de515f88e6ce92d0712ce2c018a394b37", family="FR", mapped=True,
          pending="the top tile row differs once the walk turns north (half the walk frames)",
          save="orange_islands", a=dict(MAP_GROUPS=0x083526A8, **cfru(0x08801C80, 0x081A2000, 0x4080))),

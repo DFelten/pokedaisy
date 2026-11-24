@@ -734,6 +734,8 @@ val UNBOUND_PC_STORAGE = cfruPcStorage(0x08A769AFL, 0x08A79560L)
 val RADICAL_RED_PC_STORAGE = cfruPcStorage(0x091521D0L, 0x0915514CL)
 val AMETHYST_PC_STORAGE = cfruPcStorage(0x089B6358L, 0x089C419CL)
 val AMETHYST_V141_PC_STORAGE = cfruPcStorage(0x089FFCA8L, 0x08A0DAECL)
+/** v1.4.3: the same, its gBattleMoves and the second table 0x1E10 later (the same literal-pool slots). */
+val AMETHYST_V143_PC_STORAGE = cfruPcStorage(0x08A01AB8L, 0x08A0F8FCL)
 val SWORD_SHIELD_PC_STORAGE = cfruPcStorage(0x094BFA7CL, 0x094C24E8L)
 val GS_CHRONICLES_PC_STORAGE = cfruPcStorage(0x09D10BE3L, 0x09D13854L)
 

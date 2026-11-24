@@ -45,6 +45,7 @@ class LevelCapTest {
             "Pokemon Radical Red (v4.1).gba" to false,
             "Pokemon Unbound (v2.1.1.1).gba" to false,
             "Pokemon Amethyst (v1.4.1).gba" to false,
+            "Pokemon Amethyst (v1.4.3).gba" to false,
             "Pokemon GS Chronicles (v2.7.6).gba" to false,
             // Rewrote the first check.
             "Pokemon Gaia (v3.2).gba" to false,

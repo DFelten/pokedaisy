@@ -923,7 +923,11 @@ private fun fieldItemsByKind(kind: GameKind?, gameCode: String, revision: Int): 
     GameKind.RADICAL_RED -> cfru(0x093C0000L)?.copy(flight = FLIGHT_RADICAL_RED)
     GameKind.ODYSSEY -> cfru(0x083DB028L)?.copy(flight = FLIGHT_ODYSSEY)
     GameKind.GAIA -> cfru(0x083DB028L)?.copy(flight = FLIGHT_GAIA)
-    GameKind.AMETHYST -> cfru(0x0872DB0CL)?.copy(flight = if (amethystV141) FLIGHT_AMETHYST_V141 else FLIGHT_AMETHYST)
+    GameKind.AMETHYST -> cfru(0x0872DB0CL)?.copy(flight = when {
+        activeNativeConfig === NATIVE_AMETHYST_V1_4_3 -> FLIGHT_AMETHYST_V143
+        amethystV141 -> FLIGHT_AMETHYST_V141
+        else -> FLIGHT_AMETHYST
+    })
     GameKind.SWORD_SHIELD -> cfru(0x093C0000L, unholdablePockets = setOf(4))?.copy(flight = FLIGHT_SWORD_SHIELD)
     GameKind.GS_CHRONICLES -> cfru(0x08F70000L)?.copy(flight = FLIGHT_GS_CHRONICLES)
     // The FireRed 1.0 hacks edited in place run as FIRERED: their own flight record by their config (else rev 0's,

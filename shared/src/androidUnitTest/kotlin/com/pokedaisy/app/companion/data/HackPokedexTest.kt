@@ -276,6 +276,14 @@ class HackPokedexTest {
     }
 
     @Test
+    fun `Amethyst v1_4_3 entries`() = roms("Pokemon Amethyst (v1.4.3).gba", GameKind.AMETHYST, POKEDEX_AMETHYST_V1_4_3) { t ->
+        val tepig = PokedexSource.entry(t, 340)!!
+        assertEquals(551, tepig.species)
+        assertEquals("Fire Pig", tepig.category)
+        assertEquals("Seed", PokedexSource.entry(t, 301)!!.category)
+    }
+
+    @Test
     fun `Gaia entries`() = roms("Pokemon Gaia (v3.2).gba", GameKind.GAIA, POKEDEX_GAIA) { t ->
         val chimchar = PokedexSource.entry(t, 390)!!
         assertEquals(443, chimchar.species)
