@@ -748,6 +748,15 @@ change to any of the places listed under "Where it's decided" updates its rows h
     party's bits each frame (fainted ones left out: Gen 1 counts every bit), FULL makes the `cp` a `ret`. Yellow headless (a Lv 2
     Rattata, 16 EXP): the others got 0 / 2 / 16 with OFF / SPLIT / FULL; Crystal and Gold / Silver's places match pret's symbols.
     Every retail cart here, Brown, Yellow Legacy, Crystal Clear, PureRed / PureBlue (not Crystal Legacy, Polished, Prism).
+    MODERN (Gen 2 only, 2026-11-23: `GbGamePatches.expModern`): FULL's `ret` plus three hooks into bank 0F's padding, two passes
+    as Gen 6 pays. The loop's NotFainted check pays only the fighters (wBattleParticipantsIncludingFainted) on the first pass, with
+    their boxes, level ups and moves; at .done one line ("The others gained EXP. Points!", German "Die anderen erhalten auch EP!",
+    two lines of the text box) shows when anyone else is marked, and the loop runs again for them alone: wStringBuffer2 (the amount)
+    halved, no gained box, their level ups and moves kept. The pass is wGivingExperienceToExpShareHolders = 2 (nothing reads that
+    byte; the win code writes 0, then 1 for a held Exp. Share's pass), put back to 0 before ResetBattleParticipants. Played headless on
+    Crystal rev 1 and Kristall: the fighter's box and level up, the line, then the other's level up (+16 / +8); with the Exp. Share
+    held the game's own two passes as with FULL. Found in every retail Gold / Silver / Crystal in English and German
+    (`GbGamePatchesTest`); other languages get the English line. Falls back to FULL where not found.
 
 49. The European FireRed / LeafGreen / Emerald carts' TRAINER CARD (2026-11-18, `CardStyle.KANTO_DE` ... `HOENN_ES`): English's save
     offsets, each cart's own card tiles (their words are drawn in them), FONT_NORMAL, widths and redrawn tilemaps (found by mapping

@@ -1607,6 +1607,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             if (!coopRefuses()) stored.setExpShare(mode)
         }
         override val expShareSupported get() = currentGameOptions()?.expShareSupported == true
+        override val expShareModernSupported get() = currentGameOptions()?.expShareModernSupported == true
         override fun setLevelCap(on: Boolean) {
             if (!coopRefuses()) stored.setLevelCap(on)
         }

@@ -67,6 +67,7 @@ class GameOptions internal constructor(
     val reusableTmsSupported get() = allowed() && discovery.sites.isNotEmpty()
     val hmFreeSupported get() = allowed() && discovery.hm != null
     val expShareSupported get() = allowed() && discovery.exp != null
+    val expShareModernSupported get() = allowed() && discovery.exp?.modern != null
     val expShareActive get() = !closed.value && allowed() && expMetadata.value != null && expMode.value != ExpShare.Mode.OFF
     /** A DS game's EXP SHARE ([ExpShare.Found.ds]: its native side marks the battle and patches FULL EXP itself, each
      * frame): the mode's id while it's on, else 0; [expSharePartyMask] the party it marks. */
@@ -120,8 +121,13 @@ class GameOptions internal constructor(
         desired.update { it.copy(run = found.takeIf { on }) }
     }
     fun setExpShare(found: ExpShare.Found?, mode: ExpShare.Mode) {
-        expMetadata.value = found; expMode.value = mode
-        setFullExp(found, mode == ExpShare.Mode.FULL)
+        // MODERN where the game hasn't got it runs as FULL EXP (a DS game's native side never sees its id).
+        val m = mode.effective(found?.modern != null)
+        expMetadata.value = found; expMode.value = m
+        when (m) {
+            ExpShare.Mode.MODERN -> setFullExp(found?.asModern(), true)
+            else -> setFullExp(found, m == ExpShare.Mode.FULL)
+        }
     }
     /** EXP SHARE found by the host outside [start]'s GBA scan (a DS cart by its header: [ExpShare.dsFind]). */
     fun setExpFound(exp: ExpShare.Found?) {

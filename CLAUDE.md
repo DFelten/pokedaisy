@@ -1099,6 +1099,8 @@ every frame (`ExpShare.mark`, mask from each sample; per frame because the battl
 **LEVEL CAP** (2026-11-14, GAMEPLAY on the companion, `Prefs.levelCap` OFF, NEW tag; `LevelCap.kt`): no Pokémon past the top level of
 the first boss NEXT BOSS has ahead (`LevelCap.next`: the guide's bosses and the ROM's trainer table, worked out on the activity's
 `level-cap` thread every 2 s at most). getexp's two `cmp r0, #100` (before the EXP message; before each one-level step of
+MODERN (2026-11-23, Gold / Silver / Crystal only, `ExpShare.Found.modern`, `GbGamePatches.expModern`): fighters paid first (boxes, level ups), then one
+line, then the rest at half with their level ups only (a second pass of the loop, wGivingExperienceToExpShareHolders = 2); offered only where found (`expShareModernSupported`), a saved MODERN runs as FULL elsewhere (`Mode.effective`).
 Task_GiveExpToMon, which hands the rest back) become `cmp r0, #cap` + `bcc` / `bcs`, a game-option patch re-applied as the cap moves.
 Both it and EXP SHARE take getexp from `ExpShare.getexp`, which wants its address in a command table the code loads: CFRU's hacks keep
 the old getexp but run their own (N/A there). N/A without a NEXT BOSS list (`LevelCap.hasBosses`). Doesn't pause achievements.

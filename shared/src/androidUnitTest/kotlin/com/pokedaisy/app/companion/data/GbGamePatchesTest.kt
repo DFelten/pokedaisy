@@ -46,6 +46,38 @@ class GbGamePatchesTest {
     }
 
     @Test
+    fun `EXP SHARE MODERN - Gen 2's gained box and done hooked, its trampolines and line in the battle bank's padding`() {
+        val carts = listOf(
+            "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc", "Pokemon - Kristall-Edition (Germany).gbc",
+            "Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc",
+            "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc",
+            "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc",
+            "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc")
+        var seen = 0
+        fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
+        for (name in carts) {
+            val r = rom(name) ?: continue
+            seen++
+            val exp = GbGamePatches.find(r)!!.exp!!
+            val m = assertNotNull(name, exp.modern).let { exp.modern!! }
+            assertEquals(name, exp.full.single().addr, m.first().addr)                     // FULL's ret first
+            // Every write but the two hooks goes over the bank's padding, all in bank 0F.
+            assertTrue(name, m.all { (it.addr - tag) / 0x4000 == 0xFL })
+            val hooks = m.filter { p -> p.expect.any { it != 0.toByte() } }
+            assertEquals(name, 1 + 5 + 2 + 1, hooks.size)                                    // the ret, the check (18 bytes), the call (6), the jp
+            // mgba_dump's `rompatch` lines, to play it headless (app/build/exp-modern/<cart>.txt).
+            File("build/exp-modern").apply { mkdirs() }.resolve(name.substringBefore(" (") + ".txt")
+                .writeText(m.joinToString("") { "rompatch %x %s %x %s\n".format(it.addr, hex(it.expect), it.addr, hex(it.value)) })
+        }
+        rom("Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")?.let { r ->
+            val m = GbGamePatches.find(r)!!.exp!!.modern!!
+            val hooks = m.drop(1).filter { p -> p.expect.any { it != 0.toByte() } }.map { it.addr }
+            assertEquals(listOf(0x3EE5A, 0x3EE5E, 0x3EE62, 0x3EE66, 0x3EE6A, 0x3EF0B, 0x3EF0F, 0x3F0B9 + 24).map { tag + it }, hooks)   // the check, the gained box's call, .done's jp
+        }
+        assumeTrue(seen > 0)
+    }
+
+    @Test
     fun `every Game Boy cart here - all three or the ones it has, never a guess`() {
         assumeTrue(dir.isDirectory)
         var n = 0
