@@ -1,4 +1,4 @@
-// PokeDaisy - FOLLOWER on Pokemon Crystal: the party's lead walks a step behind the player, drawn into the finished frame.
+// PokeDaisy - FOLLOWER on Pokemon Crystal, Gold and Silver: the party's lead walks a step behind the player, drawn into the finished frame.
 // Nothing of the game is written (no RAM, no VRAM, no OAM): the follower is pixels over the picture the core made, so
 // states, saves and RetroAchievements never see it. GPL-3.0 (see NOTICE).
 //
@@ -27,16 +27,25 @@
 #define GBF_PX 64          // the player's 16 x 16 on screen (OAM 0x48 / 0x4C)
 #define GBF_PY 60
 
-// Crystal's RAM (pret/pokecrystal; the same in rev 0, rev 1, Australia and the German cart). D000+ is WRAM bank 1.
-#define GBF_PLAYER_OBJ 0xD4D6   // the player's object struct (0x28 bytes)
-#define GBF_STATE_FLAGS 0xD0ED  // wStateFlags: bit 6 while a menu / text is up
-#define GBF_BATTLE_MODE 0xD22D
-#define GBF_PLAYER_STATE 0xD95D // 0 walk, 1 bike, 2 skate, 4 surf, 8 surf (Pikachu)
-#define GBF_MAP_GROUP 0xDCB5
-#define GBF_MAP_NUMBER 0xDCB6
-#define GBF_VBLANK 0xFF9E      // hVBlank: 1 = the battle transition's
+// Each cart's RAM (pret/pokecrystal, pret/pokegold; D000+ is WRAM bank 1). Crystal's is the same in rev 0, rev 1,
+// Australia and the German cart, Gold / Silver's in English and German.
+struct gbf_ram_map {
+    uint16_t playerObj;    // the player's object struct (0x28 bytes, the same layout in both)
+    uint16_t stateFlags;   // wStateFlags: bit 6 while a menu / text is up (Crystal only; 0 = none, Gold / Silver)
+    uint16_t battleMode;
+    uint16_t playerState;  // 0 walk, 1 bike, 2 skate, 4 surf, 8 surf (Pikachu)
+    uint16_t mapGroup, mapNumber;
+    uint16_t vblank;       // hVBlank: 1 = the battle transition's (VBLANK_CUTSCENE)
+};
+static const struct gbf_ram_map gbfCrystal = { 0xD4D6, 0xD0ED, 0xD22D, 0xD95D, 0xDCB5, 0xDCB6, 0xFF9E };
+static const struct gbf_ram_map gbfGoldSilver = { 0xD1FD, 0, 0xD116, 0xD682, 0xDA00, 0xDA01, 0xFFA0 };
 
-static const uint32_t gbfCrcs[] = { 0x3358E30Au, 0xEE6F5188u, 0xBB6DD80Cu, 0x616D85DEu };
+static const struct { uint32_t crc; const struct gbf_ram_map* ram; } gbfCarts[] = {
+    { 0x3358E30Au, &gbfCrystal }, { 0xEE6F5188u, &gbfCrystal }, { 0xBB6DD80Cu, &gbfCrystal }, { 0x616D85DEu, &gbfCrystal },
+    // Gold, Silver (USA, Europe), Goldene Edition, Silberne Edition
+    { 0x6BDE3C3Eu, &gbfGoldSilver }, { 0x8AD48636u, &gbfGoldSilver }, { 0x4889DFAAu, &gbfGoldSilver }, { 0x96C9DB95u, &gbfGoldSilver },
+};
+static const struct gbf_ram_map* gbfRam = &gbfCrystal;
 
 static struct {
     bool known, show, have;
@@ -66,8 +75,8 @@ static inline uint8_t gbf_ram(const struct GB* gb, uint32_t a) {
 }
 
 int pk_gb_follow_knows(uint32_t crc) {
-    for (unsigned i = 0; i < sizeof gbfCrcs / sizeof gbfCrcs[0]; i++)
-        if (gbfCrcs[i] == crc) return 1;
+    for (unsigned i = 0; i < sizeof gbfCarts / sizeof gbfCarts[0]; i++)
+        if (gbfCarts[i].crc == crc) return 1;
     return 0;
 }
 
@@ -101,7 +110,9 @@ void pk_gb_follow_lost(void) {
 }
 
 void pk_gb_follow_configure(uint32_t crc) {
-    gbf.known = pk_gb_follow_knows(crc) != 0;
+    gbf.known = false;
+    for (unsigned i = 0; i < sizeof gbfCarts / sizeof gbfCarts[0]; i++)
+        if (gbfCarts[i].crc == crc) { gbf.known = true; gbfRam = gbfCarts[i].ram; }
     gbf.started = false;
     gbf.tn = 0;
     gbf.walked = 0;
@@ -149,9 +160,9 @@ static void gbf_push(int x, int y, bool grass) {
 /** The camera's path this frame: moved, rebased (a redraw with the player where he was) or started again (a warp). */
 static void gbf_track(const struct GB* gb) {
     const uint8_t scx = gb->memory.io[GB_REG_SCX], scy = gb->memory.io[GB_REG_SCY];
-    const uint8_t mg = gbf_ram(gb, GBF_MAP_GROUP), mn = gbf_ram(gb, GBF_MAP_NUMBER);
-    const uint8_t px = gbf_ram(gb, GBF_PLAYER_OBJ + 0x12), py = gbf_ram(gb, GBF_PLAYER_OBJ + 0x13);
-    const bool grass = (gbf_ram(gb, GBF_PLAYER_OBJ + 0x05) & 0x08) != 0;
+    const uint8_t mg = gbf_ram(gb, gbfRam->mapGroup), mn = gbf_ram(gb, gbfRam->mapNumber);
+    const uint8_t px = gbf_ram(gb, gbfRam->playerObj + 0x12), py = gbf_ram(gb, gbfRam->playerObj + 0x13);
+    const bool grass = (gbf_ram(gb, gbfRam->playerObj + 0x05) & 0x08) != 0;
     if (!gbf.started) {
         gbf.started = true;
         gbf.camX = gbf.camY = 0;
@@ -162,7 +173,7 @@ static void gbf_track(const struct GB* gb) {
         int tdx = (int) px - gbf.lastTileX, tdy = (int) py - gbf.lastTileY;
         bool tileJump = tdx > 1 || tdx < -1 || tdy > 1 || tdy < -1;
         // a battle scrolls the screen as it slides in and out: none of that is the player walking
-        bool field = (gb->memory.io[GB_REG_LCDC] & 0x80) && !gbf_ram(gb, GBF_BATTLE_MODE) && gbf_ram(gb, GBF_VBLANK) != 1;
+        bool field = (gb->memory.io[GB_REG_LCDC] & 0x80) && !gbf_ram(gb, gbfRam->battleMode) && gbf_ram(gb, gbfRam->vblank) != 1;
         if (!field) {
         } else if ((!sameMap || tileJump) && !(gbf.tick - gbf.movedAt <= 2 && dx >= -8 && dx <= 8 && dy >= -8 && dy <= 8)) {
             // a warp (the player stood through its fade): start again. Walking over a map's edge into the next
@@ -292,8 +303,8 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
     }
     const uint8_t lcdc = gb->memory.io[GB_REG_LCDC];
     if (!(lcdc & 0x80) || !(lcdc & 0x02)) { gbf_hidden("objects off"); return; }
-    if (gbf_ram(gb, GBF_BATTLE_MODE) || gbf_ram(gb, GBF_VBLANK) == 1) { gbf_hidden("battle"); return; }
-    uint8_t state = gbf_ram(gb, GBF_PLAYER_STATE);
+    if (gbf_ram(gb, gbfRam->battleMode) || gbf_ram(gb, gbfRam->vblank) == 1) { gbf_hidden("battle"); return; }
+    uint8_t state = gbf_ram(gb, gbfRam->playerState);
     if (state == 4 || state == 8) { gbf_hidden("surfing"); return; }
     if (gbf.walked == 0) { gbf_hidden("waiting for a step"); return; }
     int px, py;
@@ -304,7 +315,9 @@ void pk_gb_follow_frame(struct mCore* core, uint32_t* video, int w, int h, int s
     uint8_t mask[GBF_H][GBF_W];
     int pal = 0;
     if (!gbf_spriteMask(gb, x0, y0, mask, &pal)) { gbf_hidden("no player sprite"); return; }
-    bool textUp = (gbf_ram(gb, GBF_STATE_FLAGS) & 0x40) != 0;
+    // a menu / text box up: Crystal says so in wStateFlags; Gold / Silver keep no such flag, so there the font's tiles
+    // always stay over it (their map tiles in VRAM bank 0 end at 0x5F, the font's start at 0x60)
+    bool textUp = !gbfRam->stateFlags || (gbf_ram(gb, gbfRam->stateFlags) & 0x40) != 0;
     bool front = y0 > GBF_PY;
     // The scene's light off the player's palette: colour 0 against the day's (27, 31, 27) for fades to black and
     // the night, colour 3 (black by day) for fades to white.
