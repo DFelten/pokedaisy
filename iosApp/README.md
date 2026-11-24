@@ -230,11 +230,12 @@ Co-op is off until it ships, as on Android: build with the Xcode setting `POKEDA
 In AltStore Classic, open **Browse → Sources → +** and add:
 
 ```text
-https://raw.githubusercontent.com/lidor30/pokedaisy/altstore/source.json
+https://github.com/lidor30/pokedaisy/releases/latest/download/source.json
 ```
 
 Install **PokeDaisy** from **PokeDaisy Builds**. AltStore Classic handles signing
 and refresh. Back up saves in Files before switching from an Xcode-installed copy.
 
-The AltStore feed follows the latest stable GitHub release. Its iOS build is an
-unsigned device IPA that AltStore Classic signs during installation.
+The AltStore source is a file on the latest stable GitHub release, so it follows each
+stable release and never a beta. The app is an unsigned build that AltStore Classic signs
+during installation.

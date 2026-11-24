@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Generate the AltStore Classic feed from the packaged iOS app."""
+"""Generate the AltStore Classic source (source.json) for a release's PokeDaisy.ipa.
 
+    python3 scripts/generate_altstore_source.py <PokeDaisy.ipa> <tag> > source.json
+
+GITHUB_REPOSITORY and GITHUB_SHA come from the workflow (ios-release.yml). The source is attached to the release beside
+the IPA, and AltStore reads it from releases/latest/download/source.json: the newest stable release, never a beta.
+"""
+
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -12,13 +19,11 @@ from zipfile import ZipFile
 
 def main():
     ipa = Path(sys.argv[1])
+    tag = sys.argv[2]
     repository = os.environ["GITHUB_REPOSITORY"]
     commit = os.environ["GITHUB_SHA"]
-    tag = os.environ["TAG"]
-    published_at = os.environ["PUBLISHED_AT"]
-    raw_url = f"https://raw.githubusercontent.com/{repository}"
     icon_url = (
-        f"{raw_url}/{commit}/iosApp/PokeDaisy/Assets.xcassets/"
+        f"https://raw.githubusercontent.com/{repository}/{commit}/iosApp/PokeDaisy/Assets.xcassets/"
         "AppIcon.appiconset/AppIcon.png"
     )
 
@@ -37,7 +42,7 @@ def main():
     source = {
         "name": "PokeDaisy Builds",
         "identifier": "com.pokedaisy.altstore",
-        "sourceURL": f"{raw_url}/altstore/source.json",
+        "sourceURL": f"https://github.com/{repository}/releases/latest/download/source.json",
         "iconURL": icon_url,
         "apps": [{
             "name": info["CFBundleDisplayName"],
@@ -51,7 +56,7 @@ def main():
                 "version": info["CFBundleShortVersionString"],
                 "buildVersion": info["CFBundleVersion"],
                 "minOSVersion": info["MinimumOSVersion"],
-                "date": published_at,
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "localizedDescription": f"Built from commit {commit[:12]}.",
                 "downloadURL": f"https://github.com/{repository}/releases/download/{tag}/{ipa.name}",
                 "size": ipa.stat().st_size,
