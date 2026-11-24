@@ -30,12 +30,16 @@ file(GLOB PD_CORE CONFIGURE_DEPENDS ../3ds/core/*.c)
 # The host's new game library: the app's own list with covers (linux/library.c), and zlib's puff for its PNGs.
 add_library(pd_puff STATIC ../third_party/zlib/contrib/puff/puff.c)
 target_include_directories(pd_puff PUBLIC ../third_party/zlib/contrib/puff)
+# Zipped ROMs: zlib's inflate (linux/rom_zip.c).
+add_library(pd_inflate STATIC ../third_party/zlib/adler32.c ../third_party/zlib/crc32.c ../third_party/zlib/inffast.c
+  ../third_party/zlib/inflate.c ../third_party/zlib/inftrees.c ../third_party/zlib/zutil.c)
+target_include_directories(pd_inflate PUBLIC ../third_party/zlib)
 # SETTINGS > VERSION: the app's versionName.
 file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../app/build.gradle.kts POCKET_VERSION_LINE REGEX "versionName = ")
 string(REGEX MATCH "\"[^\"]+\"" POCKET_VERSION "${POCKET_VERSION_LINE}")
 # The resource script embeds the manifest (per-monitor DPI awareness): rebuild it when the manifest changes.
 set_source_files_properties(pokedaisy.rc PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/pokedaisy.manifest)
-add_executable(PokeDaisy ../linux/main.c ../linux/library.c ../linux/cover_png.c ../3ds/desktop/pd_png.c ${PD_CORE} pokedaisy.rc)
+add_executable(PokeDaisy ../linux/main.c ../linux/library.c ../linux/cover_png.c ../linux/rom_zip.c ../linux/shared_save.c ../3ds/desktop/pd_png.c ${PD_CORE} pokedaisy.rc)
 target_include_directories(PokeDaisy PRIVATE
   ../3ds/core
   ../third_party/mgba/src/platform/libretro # libretro.h
@@ -51,7 +55,7 @@ if(MINGW)
   target_include_directories(PokeDaisy PRIVATE ../windows/include)
   target_compile_options(PokeDaisy PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/../windows/include/pd_win_compat.h)
 endif()
-target_link_libraries(PokeDaisy PRIVATE pd_puff ${SDL2_LIBRARY})
+target_link_libraries(PokeDaisy PRIVATE pd_puff pd_inflate ${SDL2_LIBRARY})
 set_target_properties(PokeDaisy PROPERTIES WIN32_EXECUTABLE OFF)
 
 # SDL2.dll has to sit beside the game's exe.

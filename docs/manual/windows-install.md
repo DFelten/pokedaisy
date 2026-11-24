@@ -18,7 +18,7 @@ first game.
 
 - **A 64-bit Windows PC.** Windows 10 or 11.
 - **Your own games.** PokeDaisy comes with no games. Use ROMs you dumped yourself from cartridges you own: `.gba`,
-  `.gb`, `.gbc` or `.nds` files, unzipped.
+  `.gb`, `.gbc` or `.nds` files, loose or zipped.
 
 ## Download and start it
 
@@ -67,8 +67,8 @@ they stay as they are.
   `PokeDaisy.exe` from there.
 - **Nothing opens, or it closes at once:** extract the zip to a folder you can write to (not `Program Files`), so
   PokeDaisy can make its `roms` and `saves` folders.
-- **A game isn't listed:** it has to be right in `roms` (not in a folder inside it), unzipped, and end in `.gba`,
-  `.gb`, `.gbc` or `.nds`.
+- **A game isn't listed:** it has to be right in `roms` (not in a folder inside it) and end in `.gba`, `.gb`,
+  `.gbc` or `.nds`, or be a `.zip` with one inside. `.7z` files have to be unpacked.
 - **My save didn't load:** the save needs the ROM's whole file name with `.sav` added, or the ROM's name without its
   extension, in `saves`. Check `saves\pokedaisy-backups` for an older copy.
 - **The controller does nothing:** SDL doesn't know it yet. Put a `gamecontrollerdb.txt` with its mapping in the

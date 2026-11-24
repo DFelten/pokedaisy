@@ -57,15 +57,19 @@ static inline int pd_stem_shared(const char *romPath) {
   return shared;
 }
 
+static inline const char *pd_base_name(const char *path) {
+  const char *slash = strrchr(path, '/'), *back = strrchr(path, '\\');
+  if (back && (!slash || back > slash))
+    slash = back;
+  return slash ? slash + 1 : path;
+}
+
 /* The battery save in DIR for the ROM at romPath: DIR/<name>.sav (the ROM's whole file name), or, when that one isn't
  * there, a save named after the ROM without its extension (DIR/<base>.sav), the way other emulators leave them
  * (pokeblack2.nds -> pokeblack2.sav) - unless another ROM beside it has the same base name, whose save it could be.
- * [out] may name a file that doesn't exist yet: then it is <name>.sav, the name this host writes. */
-static inline void pd_save_path(const char *dir, const char *romPath, char *out, size_t size) {
-  const char *slash = strrchr(romPath, '/'), *back = strrchr(romPath, '\\');
-  if (back && (!slash || back > slash))
-    slash = back;
-  const char *romName = slash ? slash + 1 : romPath;
+ * [out] may name a file that doesn't exist yet: then it is <name>.sav, the name this host writes. romName: romPath's own,
+ * or a zipped ROM's (rom_zip.h). */
+static inline void pd_save_path_named(const char *dir, const char *romPath, const char *romName, char *out, size_t size) {
   snprintf(out, size, "%s/%s.sav", dir, romName);
   FILE *f = fopen(out, "rb");
   if (f) {
@@ -85,6 +89,9 @@ static inline void pd_save_path(const char *dir, const char *romPath, char *out,
     if (!pd_stem_shared(romPath))
       snprintf(out, size, "%s", alt);
   }
+}
+static inline void pd_save_path(const char *dir, const char *romPath, char *out, size_t size) {
+  pd_save_path_named(dir, romPath, pd_base_name(romPath), out, size);
 }
 
 #endif

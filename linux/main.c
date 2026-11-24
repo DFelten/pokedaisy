@@ -35,6 +35,8 @@
 #include "pd_env.h"
 
 #include "library.h"
+#include "rom_zip.h"
+#include "shared_save.h"
 
 /* The cores' file ending: dlopen'd .so objects on Linux, .dll on Windows. */
 #ifdef _WIN32
@@ -696,10 +698,11 @@ static struct {
   int modifier;
   bool fullscreen; // the FULLSCREEN setting (F11 / Alt+Enter on a desktop)
   int panel;       // the PANEL setting: 0 = the window's size, else a preset the core lays out for
+  bool sharedSaves;
   // The desktop window as it was left (windowedHost only): its size, its place (winPlaced), and whether it was maximized.
   int winW, winH, winX, winY;
   bool winPlaced, maximized;
-} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0, 0, 0, 0, 0, false, false};
+} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0, false, 0, 0, 0, 0, false, false};
 static char hostIni[PATH_MAX];
 /* A DS game's L2 / R2 are its companion and screen buttons: with no modifier held for them, its FAST FORWARD and REWIND
  * go back to the stick clicks (R3 / L3), and come back to R2 / L2 when a modifier is picked again. */
@@ -738,6 +741,8 @@ static void host_load(void) {
       hostSet.swapAB = v != 0;
     if (sscanf(line, "fullscreen=%d", &v) == 1)
       hostSet.fullscreen = v != 0;
+    if (sscanf(line, "shared_saves=%d", &v) == 1)
+      hostSet.sharedSaves = v != 0;
     if (sscanf(line, "panel=%d", &v) == 1 && v >= 0 && v < PD_PANEL_PRESETS)
       hostSet.panel = v;
     int a, b;
@@ -780,13 +785,14 @@ static void host_load(void) {
   }
   ds_hotkeys_follow_modifier();
   swapFace = hostSet.swapAB;
+  shared_saves_use(hostSet.sharedSaves);
 }
 static void host_save(void) {
   FILE *f = fopen(hostIni, "w");
   if (!f)
     return;
   fprintf(f, "ff_speed=%d\nrewind=%d\nlcd=%d\nswap_ab=%d\n", hostSet.ffSpeed, hostSet.rewind, hostSet.lcd, hostSet.swapAB);
-  fprintf(f, "fullscreen=%d\npanel=%d\n", hostSet.fullscreen, hostSet.panel);
+  fprintf(f, "fullscreen=%d\npanel=%d\nshared_saves=%d\n", hostSet.fullscreen, hostSet.panel, hostSet.sharedSaves);
   if (hostSet.winW > 0)
     fprintf(f, "window=%dx%d\n", hostSet.winW, hostSet.winH);
   if (hostSet.winPlaced)
@@ -1013,7 +1019,7 @@ static bool write_file(const char *path, const void *d, size_t n, bool sync) {
  * DS path's, and the hosts' before this one): DIR/STEM.backup-YYYYmmdd-HHMMSS.EXT, a new one only when the save data
  * differs from the newest backup's, the newest 10 kept. Every save chip is a multiple of 512 bytes, so what is past the
  * last whole 512 is mGBA's clock footer, which moves every session: a save where only the clock moved is the same save.
- * A save that can't be backed up keeps the game closed. */
+ * A save that can't be backed up keeps the game closed. [name]: STEM, when it isn't the save's. */
 static bool same_save(const unsigned char *a, size_t an, const unsigned char *b, size_t bn) {
   size_t n = an - an % 512;
   if (!n || n != bn - bn % 512)
@@ -1021,7 +1027,7 @@ static bool same_save(const unsigned char *a, size_t an, const unsigned char *b,
   return !memcmp(a, b, n);
 }
 static int newest_first(const void *a, const void *b) { return -strcmp(*(char *const *)a, *(char *const *)b); }
-static bool save_backup(const char *sav, const char *dir) {
+static bool save_backup(const char *sav, const char *name, const char *dir) {
   size_t n;
   unsigned char *d = read_file(sav, &n, 64u << 20);
   if (!d)
@@ -1036,6 +1042,8 @@ static bool save_backup(const char *sav, const char *dir) {
   const char *dot = strrchr(file, '.');
   char stem[512], ext[32] = "sav";
   snprintf(stem, sizeof stem, "%.*s.backup-", dot && dot != file ? (int)(dot - file) : (int)strlen(file), file);
+  if (name)
+    snprintf(stem, sizeof stem, "%.255s.backup-", name);
   if (dot && dot != file)
     snprintf(ext, sizeof ext, "%s", dot + 1);
   char *list[256];
@@ -1984,6 +1992,56 @@ struct save_baseline {
   unsigned char *data;
   size_t size;
 };
+// A save shared with the firmware's emulators keeps what its file holds past the core's save memory, and no clock after
+// it. Its clock is the emulators' file when they have one, or else ownClock.
+static bool sharedSave;
+static char ownClock[PATH_MAX * 2];
+static unsigned char *sharedFile;
+static size_t sharedFileSize;
+static void shared_load(const char *sav) {
+  void *rtc = core.get_memory_data(RETRO_MEMORY_RTC);
+  size_t n = core.get_memory_size(RETRO_MEMORY_SAVE_RAM), rn = rtc ? core.get_memory_size(RETRO_MEMORY_RTC) : 0, cn;
+  free(sharedFile);
+  sharedFile = read_file(sav, &sharedFileSize, 64u << 20);
+  if (sharedFile)
+    save_load(sharedFile, sharedFileSize < n ? sharedFileSize : n);
+  else
+    sharedFileSize = 0;
+  if (!rn || shared_clock_load(sav, rtc, rn, time(NULL)))
+    return;
+  unsigned char *clock = read_file(ownClock, &cn, 4096);
+  if (clock)
+    memcpy(rtc, clock, cn < rn ? cn : rn);
+  else if (sharedFileSize >= n + rn) // mGBA's .sav has it behind the save
+    memcpy(rtc, sharedFile + n, rn);
+  free(clock);
+}
+static bool write_linked(const char *path, const void *d, size_t n, bool sync) {
+  char real[PATH_MAX]; // a link's file, not the link
+  return write_file(realpath(path, real) ? real : path, d, n, sync);
+}
+static bool shared_write(const char *sav, const unsigned char *now, size_t n, const struct save_baseline *copy, bool sync) {
+  size_t mem = core.get_memory_size(RETRO_MEMORY_SAVE_RAM), rn = n - mem;
+  bool ok = true;
+  if (copy->size != n || memcmp(now, copy->data, mem)) {
+    size_t size = mem > sharedFileSize ? mem : sharedFileSize;
+    unsigned char *image = malloc(size);
+    if (!image)
+      return false;
+    if (sharedFileSize)
+      memcpy(image, sharedFile, sharedFileSize);
+    memcpy(image, now, mem);
+    ok = write_linked(sav, image, size, sync);
+    free(image);
+  }
+  if (rn && (copy->size != n || memcmp(now + mem, copy->data + mem, rn))) {
+    unsigned char clock[256];
+    char path[PATH_MAX * 2];
+    size_t size = rn <= sizeof clock ? shared_clock_image(sav, now + mem, rn, clock, path, sizeof path) : 0;
+    ok = (!size || write_linked(path, clock, size, sync)) && write_file(ownClock, now + mem, rn, sync) && ok;
+  }
+  return ok;
+}
 static void sram_write(const char *sav, struct save_baseline *copy, bool sync) {
   static unsigned char *now;
   static size_t nowSize;
@@ -2000,7 +2058,7 @@ static void sram_write(const char *sav, struct save_baseline *copy, bool sync) {
   save_image(now);
   if (n == copy->size && !memcmp(now, copy->data, n))
     return;
-  if (!write_file(sav, now, n, sync)) {
+  if (!(sharedSave ? shared_write(sav, now, n, copy, sync) : write_file(sav, now, n, sync))) {
     notice("Save write failed");
     return;
   }
@@ -2041,13 +2099,10 @@ static const char *core_for(const char *path) {
  * a Game Boy title of Red / Blue / Green / Yellow / Gold / Silver / Crystal and their hacks (not Pinball, the card
  * games or Puzzle Challenge), a DS game code of Diamond / Pearl / Platinum / HeartGold / SoulSilver / Black / White /
  * their sequels. */
-static bool pokemon_rom(const char *path) {
+static bool pokemon_rom(const char *path, const char *name) {
   unsigned char h[0x150];
-  FILE *f = fopen(path, "rb");
-  size_t n = f ? fread(h, 1, sizeof h, f) : 0;
-  if (f)
-    fclose(f);
-  const char *ext = strrchr(path, '.');
+  size_t n = rom_head(path, h, sizeof h);
+  const char *ext = strrchr(name, '.');
   if (!ext)
     return false;
   if (!strcasecmp(ext, ".gba")) {
@@ -2088,6 +2143,16 @@ enum { M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_L
 static const int MENU_FULL[] = {M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT};
 static const int MENU_SHORT[] = {M_RESUME, M_SAVE, M_LOAD, M_SETTINGS, M_QUIT};
 static void run_game(const char *path, int maxFrames, const char *shot, bool fromList) {
+  const char *romPath = path;
+  char unzipped[PATH_MAX - 8]; // its name and .sav still fit sav below
+  if (rom_zipped(path)) {
+    if (!rom_unzip(path, root, unzipped, sizeof unzipped)) {
+      appError = 1;
+      notice("Cannot read ROM");
+      return;
+    }
+    path = unzipped;
+  }
 #ifdef POCKET_DSPERATE
   const char *ext = strrchr(path, '.');
   if (ext && !strcasecmp(ext, ".nds")) {
@@ -2140,6 +2205,28 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     pd_save_path(savesDir, path, sav, sizeof sav);
     snprintf(backups, sizeof backups, "%s/pokedaisy-backups", savesDir);
   }
+  char ownSave[PATH_MAX * 2], shared[PATH_MAX * 2];
+  int share = saveFile || exists(sav) ? 0 : shared_save_path(romPath, name, shared, sizeof shared);
+  char *folder = share > 0 ? strrchr(shared, '/') : NULL;
+  if (folder) {
+    *folder = 0;
+    if (!exists(shared) && pd_mkdir(shared))
+      share = -1;
+    *folder = '/';
+  }
+  if (share < 0) {
+    free(rom);
+    dlclose(core.dl);
+    appError = 1;
+    notice("Shared save can't be used; game not opened");
+    return;
+  }
+  sharedSave = share;
+  if (sharedSave) {
+    snprintf(ownSave, sizeof ownSave, "%s", sav);
+    snprintf(sav, sizeof sav, "%s", shared);
+    snprintf(ownClock, sizeof ownClock, "%s/%s.rtc", savesDir, name);
+  }
   // DS uses L2 for the Companion and R2 for screen switching. Keep the host's DS bindings separate.
   const bool dsGame = !strcmp(coreName, "pokedaisy_ds_libretro" PD_CORE_EXT);
   int *hotkeys = dsGame ? hostSet.dsHotkey : hostSet.hotkey;
@@ -2152,7 +2239,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     if (exists(old) && !exists(ss))
       notice("Your older save state doesn't load in this version");
   }
-  if (!save_backup(sav, backups)) {
+  if (!save_backup(sav, sharedSave ? name : NULL, backups)) {
     free(rom);
     dlclose(core.dl);
     appError = 1;
@@ -2189,10 +2276,16 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   struct save_baseline sramCopy = {0};
   {
     size_t n = save_image(NULL), fn;
-    unsigned char *d = n ? read_file(sav, &fn, 64u << 20) : NULL;
+    if (sharedSave && !n) { // a size not known yet: the file can't be read, so it mustn't be replaced
+      sharedSave = false;
+      snprintf(sav, sizeof sav, "%s", ownSave);
+    }
+    unsigned char *d = n && !sharedSave ? read_file(sav, &fn, 64u << 20) : NULL;
     if (d)
       save_load(d, fn);
     free(d);
+    if (n && sharedSave)
+      shared_load(sav);
     sramCopy.data = n ? malloc(n) : NULL;
     if (sramCopy.data)
       sramCopy.size = save_image(sramCopy.data);
@@ -2640,14 +2733,20 @@ static const char *base_name(const char *p) {
 }
 /* ---- the library (library.c): the host's own SETTINGS rows, and its canvases and covers on the screen ---- */
 static bool libraryKeyboard; // the game list's KEYBOARD row was picked: its loop opens the page
+// SHARED SAVES (3) only with folders to share with, FULLSCREEN (6) only on a desktop (windowedHost).
+static bool sharedFound;
+static int lib_row(int row) { return row >= 3 && !sharedFound ? row + 1 : row; }
 static const char *lib_label(int row) {
-  static const char *const LABELS[] = {"LCD FILTER", "FF SPEED", "REWIND", "A/B BUTTONS", "KEYBOARD", "FULLSCREEN"};
-  return LABELS[row];
+  static const char *const LABELS[] = {"LCD FILTER",  "FF SPEED", "REWIND",    "SHARED SAVES",
+                                       "A/B BUTTONS", "KEYBOARD", "FULLSCREEN"};
+  return LABELS[lib_row(row)];
 }
 static const char *lib_group(int row) {
-  return row == 0 || row == 5 ? "SCREEN" : row < 3 ? "FF / SPEED" : "CONTROLS";
+  row = lib_row(row);
+  return row == 0 || row == 6 ? "SCREEN" : row < 3 ? "FF / SPEED" : row == 3 ? "SAVES" : "CONTROLS";
 }
 static void lib_value(int row, char *out, int len) {
+  row = lib_row(row);
   if (row == 0)
     snprintf(out, (size_t)len, "%s", hostSet.lcd ? "ON" : "OFF");
   else if (row == 1 && hostSet.ffSpeed)
@@ -2657,13 +2756,16 @@ static void lib_value(int row, char *out, int len) {
   else if (row == 2)
     snprintf(out, (size_t)len, "%s", hostSet.rewind ? "ON" : "OFF");
   else if (row == 3)
+    snprintf(out, (size_t)len, "%s", hostSet.sharedSaves ? "ON" : "OFF");
+  else if (row == 4)
     snprintf(out, (size_t)len, "%s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
-  else if (row == 5)
+  else if (row == 6)
     snprintf(out, (size_t)len, "%s", window_is_fullscreen() ? "ON" : "OFF");
   else
     snprintf(out, (size_t)len, "EDIT");
 }
 static void lib_step(int row, int dir) {
+  row = lib_row(row);
   if (row == 0)
     hostSet.lcd = !hostSet.lcd;
   else if (row == 1) {
@@ -2673,9 +2775,13 @@ static void lib_step(int row, int dir) {
     hostSet.ffSpeed = v ? v + 1 : 0;
   } else if (row == 2)
     hostSet.rewind = !hostSet.rewind;
-  else if (row == 3)
+  else if (row == 3) {
+    hostSet.sharedSaves = !hostSet.sharedSaves;
+    shared_saves_use(hostSet.sharedSaves);
+    library_saves();
+  } else if (row == 4)
     hostSet.swapAB = swapFace = !hostSet.swapAB;
-  else if (row == 5) {
+  else if (row == 6) {
     window_set_fullscreen(!window_is_fullscreen()); // saves it
     return;
   } else {
@@ -2687,7 +2793,6 @@ static void lib_step(int row, int dir) {
 #ifndef POCKET_VERSION
 #define POCKET_VERSION "dev"
 #endif
-// FULLSCREEN (row 5) only on a desktop (windowedHost, set before the library opens).
 static struct lib_host libraryHost = {5, lib_label, lib_group, lib_value, lib_step, POCKET_VERSION};
 
 /* The library at a finer grain than the overlay (its 320x240 is the companion's): about 640x480 on a 1280x960 panel. Its
@@ -3008,18 +3113,20 @@ int main(int argc, char **argv) {
       DIR *d = opendir(dir);
       struct dirent *e;
       while (d && (e = readdir(d)) && count < 1024) {
-        if (core_for(e->d_name)) {
-          snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
-          if (!firmware || pokemon_rom(path))
-            paths[count++] = strdup(path);
-        }
+        if (!core_for(e->d_name) && !rom_zipped(e->d_name))
+          continue;
+        char name[256];
+        snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
+        if (rom_name(path, name, sizeof name) && core_for(name) && (!firmware || pokemon_rom(path, name)))
+          paths[count++] = strdup(path);
       }
       if (d)
         closedir(d);
     }
     qsort(paths, count, sizeof(*paths), cmp);
     settings_migrate(); // before the library writes its first settings: an old DATA/settings.ini wins
-    libraryHost.settings = windowedHost ? 6 : 5;
+    sharedFound = shared_saves_find() || hostSet.sharedSaves;
+    libraryHost.settings = 5 + sharedFound + windowedHost;
     library_open(paths, count, root, savesDir, &libraryHost);
     int ticks = 0;
     bool keyPage = false; // the KEYBOARD page over the game list

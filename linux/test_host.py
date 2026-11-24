@@ -3,7 +3,7 @@ test_host.py BINARY CORES_DIR DIAGNOSTICS_DIR. The GB ROM runs on pokedaisy_gbc 
 which has to reach DATA/saves; the GBA ROM runs on pokedaisy_gba (armGBA) and fills its screen red, which has to
 reach the window. The DS ROM fills its top screen green. A second run backs the save up, and the game list draws with no ROM given."""
 from pathlib import Path
-import os,shutil,struct,subprocess,sys,tempfile,time,zlib
+import os,shutil,struct,subprocess,sys,tempfile,time,zipfile,zlib
 
 binary,cores,diag=(Path(a).resolve() for a in sys.argv[1:4])
 
@@ -58,6 +58,19 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     run(d,str(d/'roms/solo.gb'),'--frames','120')
     assert (d/'saves/solo.gb.sav').read_bytes()[:1]==b'\x5a','the ROM-named save did not win'
     (d/'roms/solo.gb').unlink()
+    # A zipped ROM plays as a ROM with the zip's name, its save's too; the DS core gets it as a file.
+    packed=d/'roms'/'Packed (USA).zip'
+    with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.gb','inside.gb')
+    run(d,str(packed),'--frames','120')
+    assert (d/'saves/Packed (USA).gb.sav').read_bytes()[:1]==b'\x5a','the zipped ROM did not run'
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).gb']
+    with zipfile.ZipFile(packed,'w',zipfile.ZIP_DEFLATED) as z:z.write(diag/'diagnostic.nds','inside.nds')
+    run(d,str(packed),'--frames','90','--shot',str(d/'ds-zip.png'))
+    w,h,bpp,rows=png_pixels(d/'ds-zip.png')
+    mid=rows[h//2][(w//2)*bpp:(w//2)*bpp+3]
+    assert mid[0]<60 and mid[1]>200 and mid[2]<60,mid
+    assert [p.name for p in (d/'unzipped').rglob('*') if p.is_file()]==['Packed (USA).nds']
+    packed.unlink()
     # diagnostic.gb has diagnostic.gba and .nds beside it: diagnostic.sav could be any of theirs, so it's left alone.
     (d/'saves/diagnostic.gb.sav').rename(d/'saves/diagnostic.sav')
     (d/'saves/diagnostic.sav').write_bytes(b'\0'*8192)
@@ -74,6 +87,39 @@ with tempfile.TemporaryDirectory(prefix='pd-host-') as d:
     # Each run moves the clock behind the save: that alone makes no new backup (only the save data counts).
     run(d,str(d/'roms/clock.gb'),'--frames','10');time.sleep(1.1);run(d,str(d/'roms/clock.gb'),'--frames','10')
     kept=list((d/'saves/pokedaisy-backups').glob('clock.gb.backup-*.sav'));assert len(kept)==1,kept
+    # A save shared with the firmware's emulators (SHARED SAVES): its file keeps its size and name.
+    gb,srm=d/'firmware/gb',d/'retroarch/gb';gb.mkdir(parents=True);srm.mkdir(parents=True)
+    env.update(POCKET_ROM_DIRS=str(gb),POCKET_SAVE_DIRS=str(srm))
+    shutil.copy(diag/'diagnostic.gb',gb/'Off.gb');run(d,str(gb/'Off.gb'),'--frames','120')
+    assert (d/'saves/Off.gb.sav').exists() and not list(srm.iterdir())
+    with (d/'host.ini').open('a') as f:f.write('shared_saves=1\n')
+    shutil.copy(diag/'diagnostic.gb',gb/'Shared.gb');(srm/'Shared.srm').write_bytes(b'\0'*8192+b'tail')
+    run(d,str(gb/'Shared.gb'),'--frames','120')
+    shared=(srm/'Shared.srm').read_bytes();assert shared[:1]==b'\x5a' and len(shared)==8196 and shared[-4:]==b'tail',len(shared)
+    assert not list((d/'saves').glob('Shared*')) and not list(srm.glob('*.tmp'))
+    assert next((d/'saves/pokedaisy-backups').glob('Shared.gb.backup-*.srm')).read_bytes()[:1]==b'\0'
+    # A new one is the core's size, and a compressed one isn't opened.
+    shutil.copy(diag/'diagnostic.gb',gb/'Next.gb');run(d,str(gb/'Next.gb'),'--frames','120')
+    assert len((srm/'Next.srm').read_bytes())==8192
+    shutil.copy(diag/'diagnostic.gb',gb/'Rzip.gb');(srm/'Rzip.srm').write_bytes(b'#RZIPv1#'+b'\0'*60)
+    r=subprocess.run([str(binary),'--data',str(d),str(gb/'Rzip.gb'),'--frames','10'],env=env,capture_output=True,text=True,timeout=60)
+    assert r.returncode!=0 and not (d/'saves/Rzip.gb.sav').exists() and (srm/'Rzip.srm').read_bytes()[:8]==b'#RZIPv1#'
+    # A zipped one, and one without a save yet.
+    with zipfile.ZipFile(gb/'Zipped.zip','w') as z:z.write(diag/'diagnostic.gb','inside.gb')
+    run(d,str(gb/'Zipped.zip'),'--frames','120')
+    assert (srm/'Zipped.srm').read_bytes()[:1]==b'\x5a' and len((srm/'Zipped.srm').read_bytes())==8192
+    # Its clock is RetroArch's file, left alone while it's the same clock; without one it's PokeDaisy's.
+    zero=struct.pack('<q',int(time.time())-5*86400)
+    (gb/'Clock.gb').write_bytes(rtc);(srm/'Clock.srm').write_bytes(b'\0'*8192);(srm/'Clock.rtc').write_bytes(zero)
+    run(d,str(gb/'Clock.gb'),'--frames','120')
+    assert len((srm/'Clock.srm').read_bytes())==8192 and (srm/'Clock.rtc').read_bytes()==zero
+    (srm/'Clock.rtc').unlink();(srm/'Clock.srm').unlink();run(d,str(gb/'Clock.gb'),'--frames','120')
+    assert len((d/'saves/Clock.gb.rtc').read_bytes())==48 and not (srm/'Clock.rtc').exists()
+    # PokeDaisy's save, when there is one, is still the one it plays.
+    (d/'saves/Shared.gb.sav').write_bytes(b'\0'*8192);before=(srm/'Shared.srm').read_bytes()
+    run(d,str(gb/'Shared.gb'),'--frames','120')
+    assert (d/'saves/Shared.gb.sav').read_bytes()[:1]==b'\x5a' and (srm/'Shared.srm').read_bytes()==before
+    for k in ('POCKET_ROM_DIRS','POCKET_SAVE_DIRS'):del env[k]
     # The GBA ROM on the armGBA core: its grey / olive one-pixel stripes reach the window.
     log=run(d,str(d/'roms/diagnostic.gba'),'--frames','120','--shot',str(d/'gba.png'))
     w,h,bpp,rows=png_pixels(d/'gba.png')

@@ -17,7 +17,7 @@ PokeDaisy también funciona en Linux: en una Steam Deck, un PC con Linux y port�
 
 - **Una Steam Deck, un PC con Linux (x86_64) o una portátil Linux ARM de 64 bits.** En un PC: un Linux con glibc 2.35 o más reciente y SDL2 (SteamOS, Ubuntu 22.04 y posteriores y la mayoría de los escritorios actuales tienen los dos). En una portátil: glibc 2.33 o más reciente, lo que incluye la TrimUI Brick.
 - **Una forma de copiar archivos al dispositivo:** el propio dispositivo, o su tarjeta SD en un ordenador.
-- **Tus propios juegos.** PokeDaisy no incluye ningún juego. Usa ROM que hayas extraído tú de cartuchos que tengas: archivos `.gba`, `.gb`, `.gbc` o `.nds`, sin comprimir.
+- **Tus propios juegos.** PokeDaisy no incluye ningún juego. Usa ROM que hayas extraído tú de cartuchos que tengas: archivos `.gba`, `.gb`, `.gbc` o `.nds`, sueltos o en un `.zip`.
 
 ## Qué archivo descargar
 
@@ -112,7 +112,7 @@ Descarga el zip nuevo y extráelo encima de la carpeta antigua (en NXRedux, de n
 
 - **Permission denied al abrirlo:** el programa de extracción le quitó el permiso de ejecución. En la carpeta, ejecuta `chmod +x pokedaisy-linux`.
 - **Un error que nombra `GLIBC_2.35` o `libSDL2`:** tu Linux es más antiguo de lo que PokeDaisy necesita, o SDL2 no está instalado. Instala SDL2 desde tu distribución (en Ubuntu, `sudo apt install libsdl2-2.0-0`) o prueba un sistema más reciente.
-- **Un juego no aparece en la lista:** tiene que estar directamente en `roms` (no en una carpeta dentro), sin comprimir, y terminar en `.gba`, `.gb`, `.gbc` o `.nds`.
+- **Un juego no aparece en la lista:** tiene que estar directamente en `roms` (no en una carpeta dentro) y terminar en `.gba`, `.gb`, `.gbc` o `.nds`, o ser un `.zip` con un juego dentro. Los archivos `.7z` hay que descomprimirlos.
 - **A y B están al revés:** abre el menú (START y SELECT a la vez, o el botón Guide o Menu), elige `SETTINGS` y pon `A/B BUTTONS` en `SWAPPED`.
 - **Mi partida no se cargó:** la partida necesita el nombre completo del archivo ROM con `.sav` añadido, en `saves`. Busca una copia anterior en `saves/pokedaisy-backups`.
 - **El mando no hace nada:** SDL aún no lo conoce. Pon un `gamecontrollerdb.txt` con su configuración en la carpeta de datos (junto a `roms`).

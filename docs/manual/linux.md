@@ -216,7 +216,10 @@ and `FONT TYPE`, which picks the companion's letters: `PIXEL SMALL`, the app's s
 ## Adding games
 
 The program's game list shows the `.gb`, `.gbc`, `.gba` and `.nds` files in the `roms` folder of its data folder (and, on
-PortMaster, the firmware's folders above). Unzip your games first.
+PortMaster, the firmware's folders above). A `.zip` with a game inside is listed too and stays zipped: PokeDaisy unpacks a
+copy into the data folder's `unzipped` folder when you play it and keeps only the last one. Its save goes by the zip's
+name: `My Game.zip` with a GBA game inside saves as `My Game.gba.sav`. A game that's there both loose and zipped is listed
+once. `.7z` files have to be unpacked first.
 
 ## The game list
 
@@ -244,9 +247,9 @@ The game list speaks the language you pick in the companion's `SETTINGS` > `LANG
 The header's first button opens `SORT BY`: `NAME`, `LAST PLAYED` or `DATE ADDED`; favorites always come first. A game
 that turned up in the last day carries a green `NEW` tag (the games already there the first time aren't tagged).
 `SETTINGS` holds `DARK MODE`, `THEME` and `ASPECT` (shared with the companion in your games) and the program's own
-`LCD FILTER`, `FF SPEED`, `REWIND` and `A/B BUTTONS`. `BUTTON COLORS` paints the button legend like your device's
-buttons: `RED A` (the app's colours) or `GREEN A` (green A, red B, blue X, yellow Y). `TOOLS` lists the save tools that
-are coming to this version.
+`LCD FILTER`, `FF SPEED`, `REWIND`, [`SHARED SAVES`](#moving-a-save-you-already-have) and `A/B BUTTONS`. `BUTTON COLORS`
+paints the button legend like your device's buttons: `RED A` (the app's colours) or `GREEN A` (green A, red B, blue X,
+yellow Y). `TOOLS` lists the save tools that are coming to this version.
 
 **Covers.** A game shows the box art your firmware's scraper saved for it (EmulationStation's `images` folder beside the
 games), and your favorites and last played games from that list come along too. A game without one gets its console's
@@ -267,6 +270,18 @@ too, the way other emulators make them: `saves/FireRed.sav` is found and used fo
 needed, unless another ROM beside it has the same name (`FireRed.gb` next to `FireRed.gba`), when it could be either
 game's. If both are there, the ROM's own name wins. It's the game's own battery save, so a save from another
 emulator works, a RetroArch `.srm` included once it ends in `.sav`. Keep a copy of your old save somewhere else first.
+
+To play one save in both RetroArch and PokeDaisy on PortMaster, turn on `SHARED SAVES` in the game list's `SETTINGS`. A
+game in the firmware's folders then uses RetroArch's save, and a DS game the one beside it. Gold, Silver and Crystal share
+their clock too once RetroArch has played them with Gambatte or mGBA. A game with a save in PokeDaisy's `saves` folder
+keeps that one until you move it out, and playing with the row off makes one. The row is there when PokeDaisy finds
+RetroArch's settings and save folder, and only if RetroArch doesn't compress saves or sort them by core.
+
+If a shared save can't be used (RetroArch compressed it, or another ROM beside the game has the same name), the game
+doesn't open. Change that, or turn `SHARED SAVES` off.
+
+Don't have the same game open in both, and don't load an older save state after playing in the other: its save comes back
+with the next save you make.
 
 Before a game opens, PokeDaisy backs its save up into `saves/pokedaisy-backups` and keeps the newest 10 copies.
 Save states are in `states` and belong to the core that made them: a GBA state from another emulator, or from the
@@ -392,6 +407,8 @@ The program reads a few settings from the environment:
 - `POCKET_FULLSCREEN=1` fills the screen.
 - `POCKET_WINDOW=1280x800` opens a window of that size, to try a handheld's screen on a PC.
 - `POCKET_ROM_DIRS` adds folders to the game list, separated by colons.
+- `POCKET_SAVE_DIRS` gives each of those folders a save folder for `SHARED SAVES`, in the same order, instead of looking
+  in RetroArch's settings. Leave one empty to keep its saves in PokeDaisy.
 - `POCKET_REWIND_MB` sets how much memory rewind may use (32 to start with).
 - `POCKET_CORE_DIR` loads the cores from another folder.
 
