@@ -175,7 +175,7 @@ fun hudWild(enc: MapEncounters?, dex: PokedexState?): List<HudWild> {
     if (enc == null) return emptyList()
     fun national(species: Int) = dex?.let { PokedexSource.nationalOf(it.tables, species) } ?: 0
     return listOf(
-        tk("GRASS / CAVE") to enc.grass, tk("SURFING") to enc.water, tk("ROCK SMASH") to enc.rockSmash,
+        tk("GRASS / CAVE") to enc.grass, tk("SAND") to enc.sand, tk("SURFING") to enc.water, tk("ROCK SMASH") to enc.rockSmash,
         tk("OLD ROD") to enc.oldRod, tk("GOOD ROD") to enc.goodRod, tk("SUPER ROD") to enc.superRod,
     ).flatMap { (method, slots) ->
         slots.groupBy { it.species }.map { (species, s) ->

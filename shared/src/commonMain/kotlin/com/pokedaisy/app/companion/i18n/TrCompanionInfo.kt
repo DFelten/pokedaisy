@@ -30,6 +30,7 @@ internal val trCompanionInfo: Map<String, Tr> = mapOf(
     "THIS MAP" to Tr(ja = "この マップ", fr = "CETTE CARTE", de = "DIESE KARTE", it = "QUESTA MAPPA", es = "ESTE MAPA", br = "ESTE MAPA", pt = "ESTE MAPA", ko = "이 지도"),
     "GRASS / CAVE" to Tr(ja = "くさむら / どうくつ", fr = "HERBES / GROTTE", de = "GRAS / HÖHLE", it = "ERBA / GROTTA", es = "HIERBA / CUEVA", br = "GRAMA / CAVERNA", pt = "ERVA / GRUTA", ko = "풀숲 / 동굴"),
     "SURFING" to Tr(ja = "なみのり", fr = "SURF", de = "SURFER", it = "SURF", es = "SURF", br = "SURFANDO", pt = "A SURFAR", ko = "파도타기"),
+    "SAND" to Tr(ja = "すな", fr = "SABLE", de = "SAND", it = "SABBIA", es = "ARENA", br = "AREIA", pt = "AREIA", ko = "모래"),
     "ROCK SMASH" to Tr(ja = "いわくだき", fr = "ÉCLATE-ROC", de = "ZERTRÜMMERER", it = "SPACCAROCCIA", es = "GOLPE ROCA", br = "QUEBRA-PEDRA", pt = "QUEBRA-PEDRA", ko = "바위깨기"),
     "OLD ROD" to Tr(ja = "ボロのつりざお", fr = "CANNE", de = "ANGEL", it = "AMO VECCHIO", es = "CAÑA VIEJA", br = "VARA VELHA", pt = "VARA VELHA", ko = "낡은낚싯대"),
     "GOOD ROD" to Tr(ja = "いいつりざお", fr = "SUPER CANNE", de = "PROFIANGEL", it = "AMO BUONO", es = "CAÑA BUENA", br = "VARA BOA", pt = "VARA BOA", ko = "좋은낚싯대"),

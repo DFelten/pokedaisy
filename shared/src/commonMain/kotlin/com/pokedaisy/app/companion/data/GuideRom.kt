@@ -128,7 +128,37 @@ fun GuideTables.otherTimeSetOf(group: Int, num: Int, p: SaveProgress?): Int? =
     nightWild?.takeIf { (group shl 8 or num) !in wildSetVars && it.applies(group, num) }?.let { if (it.isNight(p)) 0 else 1 }
 
 /** A WildPokemonHeader's size and the pointer slot (after the 4-byte map id) of each method. */
-data class WildLayout(val stride: Int, val land: Int = 0, val water: Int = 1, val rockSmash: Int = 2, val fishing: Int = 3)
+/** A WildPokemonHeader's own shape: which pointer each method's table is (by its place after the map id), [sand] the
+ * walking-on-sand table some games add (-1 = none), and the game's [odds]. */
+data class WildLayout(
+    val stride: Int, val land: Int = 0, val water: Int = 1, val rockSmash: Int = 2, val fishing: Int = 3,
+    val sand: Int = -1, val odds: WildOdds = WildOdds.GEN3,
+) {
+    /** The header's pointer place for method 0..3 (land, water, rock smash, fishing). */
+    fun place(method: Int) = listOf(land, water, rockSmash, fishing)[method]
+}
+
+/** Each slot's chance in percent, per method, as the game's ChooseWildMonIndex_* rolls them. */
+data class WildOdds(
+    val land: List<Int>, val water: List<Int>, val rockSmash: List<Int>,
+    val oldRod: List<Int>, val goodRod: List<Int>, val superRod: List<Int>, val sand: List<Int> = emptyList(),
+) {
+    companion object {
+        // src/wild_encounter.c's ChooseWildMonIndex_Land / _WaterRock / _Fishing. Fishing: slots 0-1 OLD ROD, 2-4 GOOD ROD, 5-9 SUPER ROD.
+        val GEN3 = WildOdds(
+            land = listOf(20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1), water = listOf(60, 30, 5, 4, 1), rockSmash = listOf(60, 30, 5, 4, 1),
+            oldRod = listOf(70, 30), goodRod = listOf(60, 20, 20), superRod = listOf(40, 40, 15, 4, 1),
+        )
+
+        /** Quetzal's own pickers (Alpha 9 English 0x08108714 land, 0x08108824 water and rock smash, 0x081088C8 the
+         * three-slot sand table, 0x08108948 the rods; the same code in every Alpha 9 / 0.8.4 build, Moemon too). */
+        val QUETZAL = WildOdds(
+            land = listOf(10, 10, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5), water = listOf(35, 25, 20, 15, 5),
+            rockSmash = listOf(35, 25, 20, 15, 5), oldRod = listOf(70, 30), goodRod = listOf(60, 20, 20),
+            superRod = listOf(30, 30, 20, 10, 10), sand = listOf(45, 45, 10),
+        )
+    }
+}
 
 /** [count] flags (or vars) numbered from [firstId], kept at SaveBlock1 + [sb1Off]. */
 data class SaveBank(val firstId: Int, val sb1Off: Long, val count: Int)
@@ -260,20 +290,15 @@ data class MapEncounters(
     /** HEADBUTT on trees (the Game Boy games): the common table and the one rarer trees use. */
     val headbutt: List<EncounterSlot> = emptyList(),
     val headbuttRare: List<EncounterSlot> = emptyList(),
+    /** Walking on sand (Quetzal's beaches and deserts: [WildLayout.sand]). */
+    val sand: List<EncounterSlot> = emptyList(),
 ) {
-    val isEmpty get() = listOf(grass, water, rockSmash, oldRod, goodRod, superRod, headbutt, headbuttRare).all { it.isEmpty() }
+    val isEmpty get() = listOf(grass, water, rockSmash, oldRod, goodRod, superRod, headbutt, headbuttRare, sand).all { it.isEmpty() }
 }
 
 /** A boss's Pokémon, as its trainer data defines it. [moves] are the custom set or the level-up default. */
 data class TrainerMon(val species: Int, val level: Int, val heldItem: Int, val moves: List<Int>)
 
-// src/wild_encounter.c's slot odds (ChooseWildMonIndex_*), per slot.
-private val LAND_ODDS = listOf(20, 20, 10, 10, 10, 10, 5, 5, 4, 4, 1, 1)
-private val WATER_ODDS = listOf(60, 30, 5, 4, 1)
-// Fishing: slots 0-1 OLD ROD, 2-4 GOOD ROD, 5-9 SUPER ROD.
-private val OLD_ROD_ODDS = listOf(70, 30)
-private val GOOD_ROD_ODDS = listOf(60, 20, 20)
-private val SUPER_ROD_ODDS = listOf(40, 40, 15, 4, 1)
 
 /**
  * Reads the GUIDE's ROM tables on demand and caches them. ROM data never
@@ -326,17 +351,9 @@ object GuideRomSource {
             val h = rd(hdr, wildHeaderStride(t))
             // Each method from the chosen time of day, or the first set that has it.
             val sets = listOf(t.wildSet) + (0 until t.wildSets).filter { it != t.wildSet }
-            fun ptr(method: Int) = t.wildLayout?.let { l -> u32le(h, 4 + 4 * listOf(l.land, l.water, l.rockSmash, l.fishing)[method]) }
+            fun ptr(method: Int) = t.wildLayout?.let { l -> u32le(h, 4 + 4 * l.place(method)) }
                 ?: sets.map { u32le(h, 4 + it * wildSetStride(t) + 4 * method) }.firstOrNull { it != 0L } ?: 0L
-            val fishing = slots(ptr(3), 10)
-            MapEncounters(
-                grass = merge(slots(ptr(0), 12), LAND_ODDS),
-                water = merge(slots(ptr(1), 5), WATER_ODDS),
-                rockSmash = merge(slots(ptr(2), 5), WATER_ODDS),
-                oldRod = merge(fishing.take(2), OLD_ROD_ODDS),
-                goodRod = merge(fishing.drop(2).take(3), GOOD_ROD_ODDS),
-                superRod = merge(fishing.drop(5), SUPER_ROD_ODDS),
-            )
+            read(t, h, ::ptr)
         }.onFailure { Logs.w("encounters $group.$num failed", it) }
             .getOrNull()?.also { encounters[key or (set shl 16)] = it }
     }
@@ -350,7 +367,7 @@ object GuideRomSource {
             val h = rd(hdr, wildHeaderStride(t))
             val sets = listOf(t.wildSet) + (0 until t.wildSets).filter { it != t.wildSet }
             val m = method.index
-            val info = t.wildLayout?.let { l -> u32le(h, 4 + 4 * listOf(l.land, l.water, l.rockSmash, l.fishing)[m]) }
+            val info = t.wildLayout?.let { l -> u32le(h, 4 + 4 * l.place(m)) }
                 ?: sets.map { u32le(h, 4 + it * wildSetStride(t) + 4 * m) }.firstOrNull { it != 0L } ?: 0L
             if (!Gfx.inRom(info)) return@runCatching null
             val mons = u32le(rd(info + 4, 4), 0)
@@ -412,17 +429,9 @@ object GuideRomSource {
         val h = rd(hdr, wildHeaderStride(t))
         val sets = if (t.wildLayout != null) 1 else t.wildSets
         return (0 until sets).map { set ->
-            fun ptr(method: Int) = t.wildLayout?.let { l -> u32le(h, 4 + 4 * listOf(l.land, l.water, l.rockSmash, l.fishing)[method]) }
+            fun ptr(method: Int) = t.wildLayout?.let { l -> u32le(h, 4 + 4 * l.place(method)) }
                 ?: u32le(h, 4 + set * wildSetStride(t) + 4 * method)
-            val fishing = slots(ptr(3), 10)
-            MapEncounters(
-                grass = merge(slots(ptr(0), 12), LAND_ODDS),
-                water = merge(slots(ptr(1), 5), WATER_ODDS),
-                rockSmash = merge(slots(ptr(2), 5), WATER_ODDS),
-                oldRod = merge(fishing.take(2), OLD_ROD_ODDS),
-                goodRod = merge(fishing.drop(2).take(3), GOOD_ROD_ODDS),
-                superRod = merge(fishing.drop(5), SUPER_ROD_ODDS),
-            )
+            read(t, h, ::ptr)
         }
     }
 
@@ -548,6 +557,22 @@ object GuideRomSource {
     }
 
     /** A WildPokemonInfo's [count] slots: {u8 min, u8 max, u16 species} each; none for a null pointer. */
+    /** One header's methods: [ptr] gives method 0..3's info pointer, the layout's [WildLayout.sand] its own. */
+    private fun read(t: GuideTables, h: ByteArray, ptr: (Int) -> Long): MapEncounters {
+        val l = t.wildLayout
+        val odds = l?.odds ?: WildOdds.GEN3
+        val fishing = slots(ptr(3), 10)
+        return MapEncounters(
+            grass = merge(slots(ptr(0), 12), odds.land),
+            water = merge(slots(ptr(1), 5), odds.water),
+            rockSmash = merge(slots(ptr(2), 5), odds.rockSmash),
+            oldRod = merge(fishing.take(2), odds.oldRod),
+            goodRod = merge(fishing.drop(2).take(3), odds.goodRod),
+            superRod = merge(fishing.drop(5), odds.superRod),
+            sand = if (l != null && l.sand >= 0) merge(slots(u32le(h, 4 + 4 * l.sand), odds.sand.size), odds.sand) else emptyList(),
+        )
+    }
+
     private fun slots(infoPtr: Long, count: Int): List<Triple<Int, Int, Int>> {
         if (!Gfx.inRom(infoPtr)) return emptyList()
         val monsPtr = u32le(rd(infoPtr + 4, 4), 0)
@@ -796,8 +821,8 @@ val GUIDE_TABLES_IMPERIUM = GuideTables(
  * reads gTrainers 0x084FCCB0 (0x20-byte records: party +4, class +0x10, name +0x13, size +0x1F;
  * 265 = ROXANNE) for ids up to 0x3CD, Johto's table 0x09985F94 for 0x1000+, Kanto's 0x099914E8 for
  * 0x2000+ (altTrainers 0 / 1). Boss parties are 28-byte mons (level +8, species +0xA, item +0xE,
- * moves +0x12). gWildMonHeaders 0x0917A8C4: 353 headers of 28 bytes - land / water / a 3-mon
- * table / rock smash / fishing / unused (Kanto Route 1's land table holds all 8 species its
+ * moves +0x12). gWildMonHeaders 0x0917A8C4: 353 headers of 28 bytes - land / water / sand (3 mons, met
+ * walking on beaches and desert sand: GitHub #1441) / rock smash / fishing / unused (Kanto Route 1's land table holds all 8 species its
  * overworld showed). Flags 0..0xE97 at SaveBlock1+0, 0x1000..0x2FFF at +0x2F2C; vars 0x4000+
  * at +0x1D4, 0x5000+ at +0x332C (GetFlagPointer / GetVarPointer).
  */
@@ -818,7 +843,7 @@ val GUIDE_TABLES_QUETZAL = GuideTables(
     trainerPartyOff = 4,
     trainerMon = TrainerMonLayout(stride = 28, movesOff = 0x12, speciesOff = 0x0A, itemOff = 0x0E, levelOff = 8),
     altTrainers = listOf(0x09985F94L, 0x099914E8L),
-    wildLayout = WildLayout(stride = 28, rockSmash = 3, fishing = 4),
+    wildLayout = WildLayout(stride = 28, rockSmash = 3, fishing = 4, sand = 2, odds = WildOdds.QUETZAL),
     flagBanks = listOf(SaveBank(firstId = 0x1000, sb1Off = 0x2F2C, count = 0x2000)),
     varBanks = listOf(SaveBank(firstId = 0x5000, sb1Off = 0x332C, count = 0x100)),
     mapGroups = 0x089286BCL,

@@ -475,7 +475,7 @@ private fun herePage(
     }
     val methods = if (!hasWild) emptyList() else enc?.let {
         listOf(
-            tk("GRASS / CAVE") to it.grass, tk("SURFING") to it.water, tk("ROCK SMASH") to it.rockSmash,
+            tk("GRASS / CAVE") to it.grass, tk("SAND") to it.sand, tk("SURFING") to it.water, tk("ROCK SMASH") to it.rockSmash,
             tk("OLD ROD") to it.oldRod, tk("GOOD ROD") to it.goodRod, tk("SUPER ROD") to it.superRod,
             tk("HEADBUTT") to it.headbutt, tk("HEADBUTT (RARE TREES)") to it.headbuttRare,
         ).filter { (_, l) -> l.isNotEmpty() }
@@ -483,7 +483,7 @@ private fun herePage(
     // The other time of day's Pokémon that the lists above don't have, each once (its first method's odds).
     val onlyThen = otherTime?.let { o ->
         val now = methods.flatMap { (_, l) -> l.map { it.species } }.toSet()
-        listOf(o.grass, o.water, o.rockSmash, o.oldRod, o.goodRod, o.superRod, o.headbutt, o.headbuttRare)
+        listOf(o.grass, o.sand, o.water, o.rockSmash, o.oldRod, o.goodRod, o.superRod, o.headbutt, o.headbuttRare)
             .flatten().filter { it.species !in now }.distinctBy { it.species }
     }.orEmpty()
 

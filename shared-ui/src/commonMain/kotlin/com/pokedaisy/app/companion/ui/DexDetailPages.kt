@@ -345,6 +345,7 @@ private fun methodLabel(m: WildMethod): String = when (m) {
     WildMethod.OLD_ROD -> tr("OLD ROD")
     WildMethod.GOOD_ROD -> tr("GOOD ROD")
     WildMethod.SUPER_ROD -> tr("SUPER ROD")
+    WildMethod.SAND -> tr("SAND")
 }
 
 // ---- MOVES -------------------------------------------------------------------

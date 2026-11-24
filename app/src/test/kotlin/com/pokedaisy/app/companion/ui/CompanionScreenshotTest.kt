@@ -1001,6 +1001,12 @@ open class CompanionScreenshotTest {
 
     // Heart and Soul's GUIDE from the real save (NEW BARK TOWN, no badges): its
     // area data, FALKNER next, and the WHERE IS generated from the area data.
+    /** Quetzal's HERE on Route 106 (GitHub #1441): the beach's SAND list beside SURFING and the rods, Quetzal's own odds. */
+    @Test fun quetzalGuideHereSand() = retailGuide(
+        "quetzal", com.pokedaisy.app.companion.data.NATIVE_QUETZAL, "Pokemon Quetzal (Alpha 9.0) (English).gba", "HERE",
+        kind = GameKind.QUETZAL, place = { it.copy(mapGroup = 0, mapNum = 21) },
+    )
+
     @Test fun hnsGuideHere() = retailGuide("heart_and_soul", NATIVE_HEART_AND_SOUL, HNS_ROM, "HERE", kind = GameKind.HEART_AND_SOUL)
     @Test fun hnsGuideNextBoss() =
         retailGuide("heart_and_soul", NATIVE_HEART_AND_SOUL, HNS_ROM, "NEXT BOSS", "NEXT BOSS/NEXT: LEADER FALKNER/POKéMON 1/LV 8" to 2, GameKind.HEART_AND_SOUL)
@@ -1037,7 +1043,7 @@ open class CompanionScreenshotTest {
 
     private fun retailGuide(
         fixture: String, cfg: NativeConfig, romFile: String, page: String, open: Pair<String, Int>? = null,
-        kind: GameKind = GameKind.EMERALD,
+        kind: GameKind = GameKind.EMERALD, place: ((SnapshotView) -> SnapshotView)? = null,
     ) {
         val rom = RomFileReader.load(RETAIL_ROM_DIR + romFile) ?: return
         activeGame = kind
@@ -1051,12 +1057,13 @@ open class CompanionScreenshotTest {
         romGameCode = cfg.gameCode
         resetNativeBagCache()
         val v = buildSnapshotView(readNativeTelemetry(rom.withRam(FixtureMemoryReader.load(fixture)), cfg)).copy(game = kind)
+            .let { place?.invoke(it) ?: it }
         PokedexSource.reader = rom
         DecompIconSource.reader = rom
         DecompIconSource.tables = cfg.iconTables
         val live = v.guideTables!!
         GuideRomSource.encounters(live, v.mapGroup, v.mapNum)?.let { e ->
-            (e.grass + e.water + e.oldRod + e.goodRod + e.superRod).forEach { DecompIconSource.get(it.species) }
+            (e.grass + e.sand + e.water + e.oldRod + e.goodRod + e.superRod).forEach { DecompIconSource.get(it.species) }
         }
         v.pokedex?.let { PokedexSource.nationalOf(it.tables, 1) }
         v.progress?.let { p -> gameGuide(guideId(kind, live))?.bosses?.forEach { b -> b.trainers(p).forEach { GuideRomSource.party(live, it) } } }

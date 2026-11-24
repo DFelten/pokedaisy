@@ -148,7 +148,7 @@ data class LevelMove(val level: Int, val move: Int)
 data class TeachMove(val label: String, val move: Int)
 
 /** How a wild Pokémon is met. */
-enum class WildMethod { GRASS, SURF, ROCK_SMASH, OLD_ROD, GOOD_ROD, SUPER_ROD }
+enum class WildMethod { GRASS, SURF, ROCK_SMASH, OLD_ROD, GOOD_ROD, SUPER_ROD, SAND }
 
 /**
  * Where a species can be caught: a region map section, a method, its levels and
@@ -675,6 +675,7 @@ object DexDetails {
                 listOf(
                     WildMethod.GRASS to e.grass, WildMethod.SURF to e.water, WildMethod.ROCK_SMASH to e.rockSmash,
                     WildMethod.OLD_ROD to e.oldRod, WildMethod.GOOD_ROD to e.goodRod, WildMethod.SUPER_ROD to e.superRod,
+                    WildMethod.SAND to e.sand,
                 ).forEach { (method, slots) ->
                     if (slots.isEmpty()) return@forEach
                     val where = mapsec to method

@@ -420,6 +420,25 @@ class HackGuidesTest {
     private val imperium = Game("Pokemon Emerald Imperium (v1.3.1).gba", GameKind.IMPERIUM, NATIVE_IMPERIUM, "imperium")
     private val quetzal = Game("Pokemon Quetzal (Alpha 9.0) (English).gba", GameKind.QUETZAL, NATIVE_QUETZAL, "quetzal")
 
+    /** HERE's SAND (GitHub #1441: Route 106's beach Pokemon were missing): Quetzal's headers keep a three-mon sand table
+     * third, rolled 45 / 45 / 10, and every method has its own odds. Route 106 (0.21) in Alpha 9, the desert cave 26.1 in 0.8.4. */
+    @Test fun `quetzal HERE has the sand and its own odds`() {
+        load(quetzal)?.let {
+            val here = GuideRomSource.encounters(quetzal.t, 0, 21)!!
+            assertEquals(listOf(90 to 45, 771 to 45, 728 to 10), here.sand.map { e -> e.species to e.percent })
+            assertTrue(here.water.isNotEmpty() && here.water.sumOf { e -> e.percent } == 100)
+            val route104 = GuideRomSource.encounters(quetzal.t, 0, 19)!!
+            assertEquals(100, route104.grass.sumOf { e -> e.percent })
+            assertEquals(3, route104.sand.size)
+        }
+        val v084 = Game("Pokemon Quetzal (Alpha 0.8.4) (English).gba", GameKind.QUETZAL, NATIVE_QUETZAL_V084, "quetzal_084")
+        load(v084)?.let {
+            val cave = GuideRomSource.encounters(v084.t, 26, 1)!!
+            assertEquals(listOf(449, 843, 246), cave.sand.map { e -> e.species })
+            assertEquals(listOf(27, 29, 31), cave.sand.map { e -> e.minLevel })
+        }
+    }
+
     /** Every boss team of Imperium's and Quetzal's guides (Quetzal's NORMAL and HARD, three regions' tables). */
     @Test fun `imperium and quetzal tables and teams`() = listOf(imperium, quetzal).forEach { g ->
         val rom = load(g) ?: return@forEach
