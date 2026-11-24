@@ -20,7 +20,7 @@ interface ItemUse {
     /** A Repel's steps in [repelVar]'s value [v]: without a Lure's bit (SoulGold keeps one there), 0 while a Lure works. */
     fun repelSteps(v: Int): Int = v
 
-    /** The party can be reordered here (a GBA game whose party read is known): drag on PARTY, SWITCH in the summary. */
+    /** The party can be reordered here (a GBA game whose party read is known; Gold / Silver / Crystal through their own SWITCH): drag on PARTY, SWITCH in the summary. */
     fun canReorderParty(): Boolean = false
 
     /** Party slots [a] and [b] trade places, as the game's party menu does. */

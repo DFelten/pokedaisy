@@ -662,6 +662,11 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
+    /** Crystal / Gold / Silver's party SWITCH ([com.pokedaisy.app.companion.data.Gen2BoxCalls.swapParty]): its code is checked
+     * with the PC moves' ([gbBoxField]). */
+    private fun gbPartySwapField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? =
+        (gbBoxField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine)?.takeIf { it.boxCalls != null }
+
     @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
 
     /** The Game Boy game's bag USE (Crystal's, Gen2ItemUse.kt), its code checked in the cart once per game. */
@@ -889,6 +894,37 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         ) = sharedItemUse.onGame(com.pokedaisy.app.companion.data.MoveOrderResult.FAILED, done) { s, calls, busy ->
             com.pokedaisy.app.companion.data.reorderMoves(s.fns, slot, personality, from, to, busy, calls)
         }
+        /** Crystal / Gold / Silver's party order: the party menu's own SWITCH ([gbPartySwapField]); every other game's [partyActions]'. */
+        override fun canReorderParty() = if (romIsGameBoy) gbPartySwapField() != null else partyActions.canReorderParty()
+
+        override fun reorderParty(a: Int, b: Int, done: (com.pokedaisy.app.companion.data.PartySwapResult) -> Unit) {
+            if (!romIsGameBoy) return partyActions.reorderParty(a, b, done)
+            val field = gbPartySwapField()
+            val r = rom
+            val party = telemetry.snapshot.value
+            if (field == null || r == null || !::engine.isInitialized || !engine.running) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
+            if (party.inBattle) return done(com.pokedaisy.app.companion.data.PartySwapResult.IN_BATTLE)
+            if (a == b || a !in party.party.indices || b !in party.party.indices) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
+            val keyA = party.party[a].personality
+            val keyB = party.party[b].personality
+            // Mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up first.
+            Thread {
+                if (!gbBoxesBackedUp) {
+                    gbBoxesBackedUp = backUpSaveNow(r)
+                    if (!gbBoxesBackedUp) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED) }
+                }
+                engine.requestFieldItemJob(false) { calls, busy ->
+                    val res = if (busy) com.pokedaisy.app.companion.data.PartySwapResult.NOT_NOW
+                    else runCatching { field.swapParty(calls, a, keyA, b, keyB) }
+                        .getOrElse { Log.e("pokedaisy", "Game Boy party switch failed", it); com.pokedaisy.app.companion.data.PartySwapResult.FAILED }
+                    // A rewind past it would put the party back in RAM but not the mail in SRAM.
+                    if (res == com.pokedaisy.app.companion.data.PartySwapResult.SWAPPED) MgbaCore.pkRewindDrop()
+                    Log.i("pokedaisy", "Game Boy party switch: $res")
+                    runOnUiThread { done(res) }
+                }
+            }.start()
+        }
+
         override fun canSwapBox() = gbBoxField() != null || !romIsGameBoy && partyActions.canSwapBox()
 
         override fun boxMovesCurrentOnly() = romIsGameBoy
