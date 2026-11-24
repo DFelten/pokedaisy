@@ -550,6 +550,13 @@ class Gen1GameUse(
     /** ItemUseEvoStone's first instruction after its DisplayPartyMenu (bank 3). */
     val evoStonePick: Int,
     val evoStoneItemId: Long,
+    /** DisplayPartyMenu's drawing for RARE CANDY, whose level-up message redraws the party menu over its tiles. */
+    val clearSprites: Int,
+    val partyMenuInit: Int,
+    val drawPartyMenu: Int,
+    val partyMenuSavedItem: Long,
+    val partyMenuType: Long,
+    val statusFlags5: Long,
     /** EvosMovesPointerTable (bank 0x0E) as a cart offset: a pointer per internal species id. */
     val evosMoves: Long,
     val signatures: List<Pair<Long, String>>,
@@ -581,9 +588,10 @@ class Gen1GameUse(
     }
 
     /**
-     * The routine for [itemId] at bag place [slot], written at [ROUTINE]: the closing first, then the way in, which pushes
-     * the closing's address and jumps to UseItem, so UseItem returns into the closing. Only the closing has to outlast
-     * UseItem, so it sits lowest, farthest from the stack. Returns (where the call goes, the bytes).
+     * The routine for [itemId] at bag place [slot], written at [ROUTINE]: the closing first, then (for a Pokémon picked
+     * here, [target] / [species]) the pick, then the way in, which pushes the closing's address and jumps to UseItem or the
+     * pick, so the item's routine returns into the closing. What runs after a deep call (the closing, the pick after
+     * RARE CANDY's party menu) sits lowest, farthest from the stack. Returns (where the call goes, the bytes).
      */
     fun routine(itemId: Int, slot: Int, whichPokemon: Long, statusFlags6: Long, target: Int = -1, species: Int = 0): Pair<Int, ByteArray> {
         val b = ArrayList<Int>()
@@ -612,6 +620,27 @@ class Gen1GameUse(
         b[bite] = b.size - (bite + 1)
         b += 0xF1; b += 0xE0; b += H_LOADED_ROM_BANK; b += 0xEA; le(MBC_ROM_BANK)  // pop af; the bank back
         b += 0xC9
+        // The pick: past the party menu, as DisplayPartyMenu leaves things.
+        val pick = ROUTINE + b.size
+        if (target >= 0) {
+            if (itemId == Gen1ItemCalls.RARE_CANDY) {
+                // DisplayPartyMenu but its input: RARE CANDY's message redraws the party menu, which needs its tiles.
+                b += 0xF0; b += H_TILE_ANIMATIONS; b += 0xF5; b += 0xAF; b += 0xE0; b += H_TILE_ANIMATIONS
+                b += 0x3E; b += USE_ITEM_PARTY_MENU; b += 0xEA; le(partyMenuType)
+                b += 0x3E; b += target; b += 0xEA; le(partyMenuSavedItem)   // PartyMenuInit's cursor
+                call(whiteOutWithDelay3)
+                call(clearSprites)
+                call(partyMenuInit)
+                call(drawPartyMenu)
+                b += 0x21; le(statusFlags5); b += 0xCB; b += 0xB6          // res BIT_NO_TEXT_DELAY, [hl]
+                b += 0xF1; b += 0xE0; b += H_TILE_ANIMATIONS
+            }
+            b += 0x3E; b += target; b += 0xEA; le(whichPokemon)          // what DisplayPartyMenu leaves: the Pokémon
+            b += 0x3E; b += species; b += 0xEA; le(curItem)              // and wCurPartySpecies (wCurItem's byte)
+            b += 0x3E; b += ITEM_BANK; b += 0xE0; b += H_LOADED_ROM_BANK; b += 0xEA; le(MBC_ROM_BANK)
+            b += 0xA7                                                    // and a: carry clear, the menu not cancelled
+            b += 0xC3; le((if (stone) evoStonePick else medicinePick).toLong())
+        }
         // The way in.
         val entry = ROUTINE + b.size
         b += 0xF0; b += H_LOADED_ROM_BANK; b += 0xF5                      // ldh a, [hLoadedROMBank]; push af
@@ -626,11 +655,7 @@ class Gen1GameUse(
             b += 0x3E; b += slot; b += 0xF5; b += 0x3E; b += itemId; b += 0xF5      // the routine's pushes: wWhichPokemon, wCurItem
             if (stone) { b += 0xEA; le(evoStoneItemId) }
             b += 0x3E; b += 0xFF; b += 0xEA; le(updateSpritesEnabled)
-            b += 0x3E; b += target; b += 0xEA; le(whichPokemon)          // what DisplayPartyMenu leaves: the Pokémon
-            b += 0x3E; b += species; b += 0xEA; le(curItem)              // and wCurPartySpecies (wCurItem's byte)
-            b += 0x3E; b += ITEM_BANK; b += 0xE0; b += H_LOADED_ROM_BANK; b += 0xEA; le(MBC_ROM_BANK)
-            b += 0xA7                                                    // and a: carry clear, the menu not cancelled
-            b += 0xC3; le((if (stone) evoStonePick else medicinePick).toLong())
+            b += 0xC3; le(pick.toLong())
         }
         return entry to ByteArray(b.size) { b[it].toByte() }
     }
@@ -643,6 +668,8 @@ class Gen1GameUse(
         const val ROUTINE = 0xDF1A
         private const val H_WY = 0xB0
         private const val H_LOADED_ROM_BANK = 0xB8
+        private const val H_TILE_ANIMATIONS = 0xD7
+        private const val USE_ITEM_PARTY_MENU = 1
         private const val MBC_ROM_BANK = 0x2000L
         /** ItemUseMedicine / ItemUseEvoStone's bank. */
         private const val ITEM_BANK = 3
@@ -700,8 +727,12 @@ val GEN1_ITEM_CALLS_RED = Gen1ItemCalls(
         restoreScreenTiles = 0x3DBE, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
         loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
         curItem = 0xCF91L, pseudoItemId = 0xD152L, curOpponent = 0xD059L, fontLoaded = 0xCFC4L, updateSpritesEnabled = 0xCFCBL,
-        medicinePick = 0x5B05, evoStonePick = 0x5A7A, evoStoneItemId = 0xD156L, evosMoves = 0x0E * 0x4000L + (0x705C - 0x4000),
+        medicinePick = 0x5B05, evoStonePick = 0x5A7A, evoStoneItemId = 0xD156L, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD07DL, statusFlags5 = 0xD730L, evosMoves = 0x0E * 0x4000L + (0x705C - 0x4000),
         signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cdbc35cdc0362130d7cb",                               // PartyMenuInit
+            0x14D4L to "21d26c180321e36c",                                       // DrawPartyMenu
             0x03 * 0x4000L + (0x5B02 - 0x4000) to "cdfc13dae15d216bd1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
             0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea91cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
             0x0E * 0x4000L + (0x705C - 0x4000) to "d871e671f2710372",                 // EvosMovesPointerTable
@@ -743,8 +774,12 @@ val GEN1_ITEM_CALLS_RED_DE = Gen1ItemCalls(
         restoreScreenTiles = 0x3DD8, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
         loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
         curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
-        medicinePick = 0x5B09, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, evosMoves = 0x0E * 0x4000L + (0x7064 - 0x4000),
+        medicinePick = 0x5B09, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD082L, statusFlags5 = 0xD735L, evosMoves = 0x0E * 0x4000L + (0x7064 - 0x4000),
         signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cdd635cdda362135d7cb",                               // PartyMenuInit
+            0x14D4L to "21e16c180321f26c",                                       // DrawPartyMenu
             0x03 * 0x4000L + (0x5B06 - 0x4000) to "cdfc13dae55d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
             0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
             0x0E * 0x4000L + (0x7064 - 0x4000) to "e071ee71fa710b72",                 // EvosMovesPointerTable
@@ -790,8 +825,12 @@ val GEN1_ITEM_CALLS_YELLOW = Gen1ItemCalls(
         restoreScreenTiles = 0x3DC2, loadGbPal = 0x1E6F, initMapSprites = 0x3DBA, initMapSpritesBank = 0,
         loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x231C,
         curItem = 0xCF90L, pseudoItemId = 0xD151L, curOpponent = 0xD058L, fontLoaded = 0xCFC3L, updateSpritesEnabled = 0xCFCAL,
-        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD155L, evosMoves = 0x0E * 0x4000L + (0x71E5 - 0x4000),
+        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD155L, clearSprites = 0x0082, partyMenuInit = 0x11EC, drawPartyMenu = 0x12D1,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD07CL, statusFlags5 = 0xD72FL, evosMoves = 0x0E * 0x4000L + (0x71E5 - 0x4000),
         signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x11ECL to "3e01cdd935cdc336212fd7cb",                               // PartyMenuInit
+            0x12D1L to "2175581803218658",                                       // DrawPartyMenu
             0x03 * 0x4000L + (0x58D2 - 0x4000) to "cdc811dae15b216ad1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
             0x03 * 0x4000L + (0x57EC - 0x4000) to "cdc811fa90cfea97cfc1385f",   // ItemUseEvoStone's DisplayPartyMenu and after
             0x0E * 0x4000L + (0x71E5 - 0x4000) to "61736f737b738c73",                 // EvosMovesPointerTable
@@ -835,8 +874,12 @@ val GEN1_ITEM_CALLS_YELLOW_DE = Gen1ItemCalls(
         restoreScreenTiles = 0x3DC7, loadGbPal = 0x1E74, initMapSprites = 0x3DBF, initMapSpritesBank = 0,
         loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x2321,
         curItem = 0xCF95L, pseudoItemId = 0xD156L, curOpponent = 0xD05DL, fontLoaded = 0xCFC8L, updateSpritesEnabled = 0xCFCFL,
-        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD15AL, evosMoves = 0x0E * 0x4000L + (0x71F2 - 0x4000),
+        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD15AL, clearSprites = 0x0082, partyMenuInit = 0x11EC, drawPartyMenu = 0x12D1,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD081L, statusFlags5 = 0xD734L, evosMoves = 0x0E * 0x4000L + (0x71F2 - 0x4000),
         signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x11ECL to "3e01cdde35cdc8362134d7cb",                               // PartyMenuInit
+            0x12D1L to "2184581803219558",                                       // DrawPartyMenu
             0x03 * 0x4000L + (0x58D2 - 0x4000) to "cdc811dae15b216fd1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
             0x03 * 0x4000L + (0x57EC - 0x4000) to "cdc811fa95cfea9ccfc1385f",   // ItemUseEvoStone's DisplayPartyMenu and after
             0x0E * 0x4000L + (0x71F2 - 0x4000) to "6e737c7388739973",                 // EvosMovesPointerTable

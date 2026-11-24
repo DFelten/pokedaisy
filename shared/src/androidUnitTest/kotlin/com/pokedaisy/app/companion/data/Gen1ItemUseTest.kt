@@ -323,26 +323,29 @@ class Gen1ItemUseTest {
         fun hex(item: Int, slot: Int, target: Int = -1, species: Int = 0) =
             c.game.routine(item, slot, c.whichPokemon, c.bike.statusFlags6, target, species).let { (e, b) -> e to b.joinToString("") { "%02x".format(it) } }
         // OLD ROD: UseItem, a bite leaves at once, no whiteout (nothing of the game's drawn over the field).
-        assertEquals(0xDF51 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8" +
-            "ea0020c9f0b8f5060121b670cdf035afea57d13e4cea96cf3e01ea97cf211adfe5c3d630", hex(0x4C, 1))
-        // RARE CANDY on the second Pokémon: its routine past the party menu, the whiteout after its screens.
-        assertEquals(0xDF5E to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cd" +
-            "aa0c3e01ead0cfcd2924f1e0b8ea0020c9f0b8f5060121b670cdf035afea57d13e28ea96cf3e02ea97cf211adfe53e02f53e28f53effead0cf3e01ea97" +
-            "cf3e99ea96cf3e03e0b8ea0020a7c3095b", hex(0x28, 2, 1, 0x99))
+        assertEquals(0xDF51 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8ea0020c9" +
+            "f0b8f5060121b670cdf035afea57d13e4cea96cf3e01ea97cf211adfe5c3d630", hex(0x4C, 1))
+        // RARE CANDY on the second Pokémon: DisplayPartyMenu's drawing without its input (the level-up message redraws the
+        // menu), then its routine past the party menu, the whiteout after its screens.
+        assertEquals(0xDF97 to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01" +
+            "ead0cfcd2924f1e0b8ea0020c9f0d7f5afe0d73e01ea82d03e01ea2bcccdee3dcd8200cd2014cdd4142135d7cbb6f1e0d73e01ea97cf3e" +
+            "99ea96cf3e03e0b8ea0020a7c3095bf0b8f5060121b670cdf035afea57d13e28ea96cf3e02ea97cf211adfe53e02f53e28f53effead0cf" +
+            "c35edf", hex(0x28, 2, 1, 0x99))
         // THUNDER STONE: wEvoStoneItemID too, into ItemUseEvoStone.
-        assertEquals(0xDF5E to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cd" +
-            "aa0c3e01ead0cfcd2924f1e0b8ea0020c9f0b8f5060121b670cdf035afea57d13e21ea96cf3e03ea97cf211adfe53e03f53e21f5ea5bd13effead0cf3e00" +
-            "ea97cf3e54ea96cf3e03e0b8ea0020a7c37a5a", hex(0x21, 3, 0, 0x54))
+        assertEquals(0xDF73 to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01" +
+            "ead0cfcd2924f1e0b8ea0020c93e00ea97cf3e54ea96cf3e03e0b8ea0020a7c37a5af0b8f5060121b670cdf035afea57d13e21ea96cf3e" +
+            "03ea97cf211adfe53e03f53e21f5ea5bd13effead0cfc35edf", hex(0x21, 3, 0, 0x54))
         // HP UP: only its text, so no whiteout.
-        assertEquals(0xDF51 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8" +
-            "ea0020c9f0b8f5060121b670cdf035afea57d13e23ea96cf3e00ea97cf211adfe53e00f53e23f53effead0cf3e00ea97cf3e99ea96cf3e03e0b8ea0020a7" +
-            "c3095b", hex(0x23, 0, 0, 0x99))
-        // The closing (all that outlasts the jump) stays well under the deepest stack seen (0xDF91); the way in only runs
-        // before the game's routine, from the overworld loop's shallow stack.
+        assertEquals(0xDF66 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8ea0020c9" +
+            "3e00ea97cf3e99ea96cf3e03e0b8ea0020a7c3095bf0b8f5060121b670cdf035afea57d13e23ea96cf3e00ea97cf211adfe53e00f53e23" +
+            "f53effead0cfc351df", hex(0x23, 0, 0, 0x99))
+        // The closing and the pick (all that runs after a deep call) stay under the deepest stack seen (0xDF91, inside the
+        // item's routine; the party menu's drawing from the pick goes far less deep); the way in only runs from the
+        // overworld loop's shallow stack (0xDFF5 there, headless).
         for (g in listOf(GEN1_ITEM_CALLS_RED, GEN1_ITEM_CALLS_RED_DE, GEN1_ITEM_CALLS_YELLOW, GEN1_ITEM_CALLS_YELLOW_DE)) {
             for ((item, target) in listOf(0x4C to -1, 0x28 to 5, 0x0A to 5, 0x27 to 5)) {
                 val (e, b) = g.game.routine(item, 19, g.whichPokemon, g.bike.statusFlags6, target, 0xFF)
-                assertTrue(e < 0xDF60 && Gen1GameUse.ROUTINE + b.size < 0xDFB0)
+                assertTrue(e < 0xDFA0 && Gen1GameUse.ROUTINE + b.size < 0xDFD0)
             }
         }
     }
