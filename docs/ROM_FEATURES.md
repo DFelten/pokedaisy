@@ -17,8 +17,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
@@ -1170,4 +1170,11 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     (the ROM's own species), and Monomyth v1.0 / v1.1 (vanilla's wild headers; every v1.1 water / rock smash / fishing
     table checked: 93 / 39 / 87, all valid 5 / 5 / 10 slots, like retail Emerald's 55 / 6 / 53; not v1.2 yet). Headless:
     mgba_dump `romblocks` takes `WildPin.Pin.toText()`'s line.
-
+64. Bag USE on Gold / Silver (2026-11-24, `GEN2_ITEM_CALLS_GOLD` / `_SILVER` / `_GOLD_DE` / `_SILVER_DE` in `Gen2ItemUse.kt`,
+    `GbField.GoldSilver(itemCalls)`; English and German, each by its code): note 62's whole set, the same way, from pret/pokegold's
+    symbols (each function and table found by its bytes in all four carts). Its RAM is its own (wCurItem D002, wCurPartyMon D005,
+    wRepelEffect D9EB, wPlayerState D682, the registered item D681), and the routines run at wStackBottom DF03, not C000. Gold and
+    Silver have no BLUE CARD. Checked headless on all four carts (`GoldItemUseLiveTest`, opt-in `POKEDAISY_GB_LIVE=1`, with the German
+    saves: no English one exists here): a Repel, a Potion, a vitamin, PP UP, HM01 taught, RARE CANDY, a MOON STONE evolution, the bike on
+    and off, a rod and ESCAPE ROPE refused in town; the COIN CASE's text on the German carts only (a German save in an English cart
+    leaves the game's own SELECT COIN CASE broken too).
