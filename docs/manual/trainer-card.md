@@ -27,6 +27,8 @@ The back has the extra records the game keeps for you, like your Hall of Fame de
 
 Crystal's, Gold's and Silver's cards have no back. Its second page shows the gym leaders instead, with your badges turning on their faces as in the game, and a tap goes back to your status. Its Pokédex line shows once you have the Pokédex.
 
+Red's, Blue's and Yellow's card is one screen with nothing on the other side, so it doesn't flip. It shows your name, money and play time over the eight gym leaders, with a badge in place of each one you've beaten.
+
 The card is drawn at the largest whole size that fits the screen, so the pixels stay sharp.
 
 ## Games with a trainer card
@@ -44,6 +46,7 @@ The card is drawn at the largest whole size that fits the screen, so the pixels 
 | Recharged Yellow | FireRed's card with its own pictures, font and wording, and the six Pokémon you picked for the back |
 | Crystal (English and German) | The game's own card with its two pages: your status, and the eight gym leaders with a spinning badge for each one you've beaten |
 | Gold and Silver (English and German) | The game's own card, with the same two pages as Crystal's |
+| Red, Blue and Yellow (English and German) | The game's own card: your name, money and play time, and the eight gym leaders with a badge for each one you've beaten |
 
 Other games don't have a CARD tab yet, including Ruby, Sapphire and the Japanese versions of the original games. Many hacks draw their trainer card in a way of their own that hasn't been mapped.
 
