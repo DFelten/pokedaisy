@@ -17,7 +17,7 @@ package com.pokedaisy.app.companion.data
  *   .EvenlyDivideExpAmongParticipants wBattleParticipantsNotFainted's (`ld a, [nn]; ld b, a; ... srl b; adc d; ... cp 2; ret c`),
  *   and divides the win by them; each Pokémon with its bit set (and HP) gets its share. The byte's address comes from that load
  *   ([Found.exp]: SPLIT sets every bit each frame, like Gen 3's gSentPokesToOpponent); FULL makes the `cp 2` a `ret`, no division.
- *   MODERN (Gen 2, [expModern]): FULL's `ret`, and the ones that didn't fight get half, quietly, with one line for them all.
+ *   MODERN ([expModern], [expModernGen1]): FULL's `ret`, and the ones that didn't fight get half, quietly, with one line for them all.
  * - LOW HP BEEP off: the HUD's low-health check sets the alarm's bit (`ld hl, wLowHealthAlarm; set 7, [hl]`), Gen 1's
  *   DrawPlayerHUDAndHPBar.setLowHealthAlarm, Gen 2's CheckDanger.danger: the `set` two `nop`s. The music then never hears it.
  * - RUNNING SHOES: holding B while walking moves at the bike's speed ([run]). Red / Blue: .moveAhead2's bike check
@@ -68,6 +68,22 @@ object GbGamePatches {
     private const val EXP_CHECK_LEN = 18
     // Its start after the link checks: `call .EvenlyDivideExpAmongParticipants; xor a; ld [wCurPartyMon], a`.
     private val EXP_START = sig("cd????afea????")
+    // MODERN on Gen 1 (pokered / pokeyellow's GainExperience). The loop's flag check: `push hl; ld hl, wPartyGainExpFlags;
+    // ld a, [wWhichPokemon]; ld c, a; ld b, FLAG_TEST; predef FlagActionPredef; ld a, c; and a; pop hl; jp z, .nextMon`.
+    private val EXP1_CHECK = sig("e521????fa????4f06023e??cd????79a7e1ca????")
+    private const val EXP1_CHECK_LEN = 16
+    // Its start: `call DivideExpDataByNumMonsGainingExp; ld hl, wPartyMon1; xor a; ld [wWhichPokemon], a`.
+    private val EXP1_START = sig("cd????21????afea????")
+    // The trainer battle's boost: `ld a, [wIsInBattle]; dec a; call nz, BoostExp; inc hl` x3, then the EXP added from hQuotient.
+    private val EXP1_BOOST = sig("fa????3dc4????23232346f0??ea????803246f0??")
+    // The gained box: `ld a, [wWhichPokemon]; ld hl, wPartyMonNicks; call GetPartyMonName; ld hl, GainedText; call PrintText;
+    // xor a; ld [wMonDataLocation], a`.
+    private val EXP1_PRINT = sig("fa????21????cd????21????cd????afea????")
+    // GainedText: `text_far _GainedText; text_asm; ld a, [wBoostExpByExpAll]; ld hl, WithExpAllText; and a; ret nz; ...`.
+    private val EXP1_GAINED = sig("17??????08fa????21????a7c021????fa????a7c821????c9")
+    // .done: `ld hl, wPartyGainExpFlags; xor a; ld [hl], a; ld a, [wPlayerMonNumber]; ld c, a; ld b, FLAG_SET; push bc; predef;
+    // ld hl, wPartyFoughtCurrentEnemyFlags; xor a; ld [hl], a; pop bc; predef_jump`.
+    private val EXP1_DONE = sig("21????af77fa????4f0601c53e??cd????21????af77c13e??c3????")
     // RUNNING SHOES. Red / Blue's .moveAhead2 check, and DoBikeSpeedup for hJoyHeld (`cp ROUTE_17; jr nz; ldh a, [hJoyHeld]`).
     private val RUN_RED = sig("fa????3d200afa????cb??2003cd????")
     private val RUN_RED_SPEEDUP = sig("fa????a7c0fa????fe1c2005f0??e670c0c3????")
@@ -103,7 +119,7 @@ object GbGamePatches {
             val flags = (rom[at + 1].toInt() and 0xFF) or ((rom[at + 2].toInt() and 0xFF) shl 8)
             val cp = at + s.size - 3
             val full = listOf(InstantText.Write(TAG + cp, rom.copyOfRange(cp, cp + 2), byteArrayOf(0xC9.toByte(), 0)))
-            val modern = if (s === EXP2) expModern(rom, at, flags)?.let { full + it } else null
+            val modern = (if (s === EXP2) expModern(rom, at, flags) else expModernGen1(rom, at, flags))?.let { full + it }
             // C000-CFFF is plain WRAM; D000-DFFF read in WRAM bank 1 (a Color cart may page it), as the readers do.
             val addr = if (flags >= 0xD000) 0x10000L or flags.toLong() else flags.toLong()
             // Gen 1 (EXP1: DivideExpDataByNumMonsGainingExp) keeps wIsInBattle right before wPartyGainExpFlags in every
@@ -316,6 +332,103 @@ object GbGamePatches {
         return pieces(at, all) + pieces(hook0, call(t0, EXP_CHECK_LEN)) + pieces(hook1, call(t1, 6)) +
             pieces(hook2, byteArrayOf(0xC3.toByte(), (cpu(t2) and 0xFF).toByte(), (cpu(t2) shr 8).toByte()))
     }
+
+    /**
+     * MODERN on Gen 1 ([Found.exp]'s other half, pokered / pokeyellow's GainExperience): FULL's `ret` (each one marked gets the
+     * whole win), then the ones that fought get their boxes and level-ups as the game gives them, then one line for the rest,
+     * then theirs. [gain] is wPartyGainExpFlags, which SPLIT marks every frame; the ones that fought are
+     * wPartyFoughtCurrentEnemyFlags' bits (set with the gain bit when a Pokémon goes out, cleared at .done). The pass lives in
+     * wBoostExpByExpAll: 0 the game's first pass (FaintEnemyPokemon zeroes it), 1 the EXP.ALL item's own pass (the game's, kept),
+     * 2 the rest's (its "with EXP.ALL," is only read by the box, which the rest's pass doesn't show).
+     *  - The loop's flag check calls T0: marked and, on the first pass, fought; on the rest's pass, not; the item's pass as the game.
+     *  - `call nz, BoostExp` calls TH: the trainer boost as before, then on the rest's pass hQuotient's EXP halved (stat EXP stays).
+     *  - `ld hl, GainedText; call PrintText` calls T1: no box on the rest's pass.
+     *  - .done's `ld hl, wPartyGainExpFlags` jumps to T2: after the first pass, with anyone marked who didn't fight, the line and
+     *    the loop again as the rest's pass; after that one the byte back to 0; then .done as the game.
+     * All in GainExperience's bank, clear of the other trampolines, in the cart's padding; the line in the cart's language (German
+     * where the gained box says "erhält", else English).
+     */
+    private fun expModernGen1(rom: ByteArray, divide: Int, gain: Int): List<InstantText.Write>? {
+        fun u8(i: Int) = rom[i].toInt() and 0xFF
+        fun u16(i: Int) = u8(i) or (u8(i + 1) shl 8)
+        fun cpu(off: Int) = if (off < 0x4000) off else 0x4000 + off % 0x4000
+        fun lohi(v: Int) = listOf(v and 0xFF, v shr 8)
+        val bank = divide / 0x4000
+        fun inBank(s: IntArray) = hits(rom, s).filter { it / 0x4000 == bank }
+        val restart = inBank(EXP1_START).singleOrNull { u16(it + 1) == cpu(divide) } ?: return null
+        val curMon = u16(restart + 8)
+        val loopCheck = inBank(EXP1_CHECK).singleOrNull { u16(it + 2) == gain && u16(it + 5) == curMon } ?: return null
+        val boost = inBank(EXP1_BOOST).singleOrNull() ?: return null
+        val print = inBank(EXP1_PRINT).singleOrNull { u16(it + 1) == curMon } ?: return null
+        val gained = inBank(EXP1_GAINED).singleOrNull { cpu(it) == u16(print + 10) } ?: return null
+        val done = inBank(EXP1_DONE).singleOrNull { u16(it + 1) == gain } ?: return null
+        if (!(restart < loopCheck && loopCheck < boost && boost < print && print < done && done < divide && divide - restart < 0x400)) return null
+        val boostFn = u16(boost + 5)
+        val printText = u16(print + 13)
+        val q3 = u8(boost + 12)
+        val q2 = u8(boost + 20)
+        val pass = u16(gained + 6)
+        val fought = u16(done + 18)
+        if (q2 != q3 - 1 || listOf(curMon, pass, fought).any { it !in 0xC000..0xDFFF }) return null
+        // The gained box's own words: _GainedText is `text_ram wNameBuffer` (01 nn nn), then `text " ..."`.
+        val far = u8(gained + 3) * 0x4000 + (u16(gained + 1) - 0x4000)
+        val german = far in 0 until rom.size - 8 && (4..7).map { u8(far + it) } == listOf(0x7F, 0xA4, 0xB1, 0xA7)
+        val line = if (german) EXP_LINE_DE else EXP_LINE_EN
+        val size = T0_SIZE + G1_TH_SIZE + G1_T1_SIZE + G1_T2_SIZE + line.size
+        val end = (bank + 1) * 0x4000
+        val at = end - 160 - size
+        if (end > rom.size || run(rom, bank) < size + 160) return null
+        val t0 = at; val th = t0 + T0_SIZE; val t1 = th + G1_TH_SIZE; val t2 = t1 + G1_T1_SIZE; val msg = t2 + G1_T2_SIZE
+        val t = ArrayList<Int>()
+        fun rel(from: Int, to: Int) { t[from] = to - (from + 1) }
+        // T0: the mon's bit in b, then ld a, [gain]; and b; ret z; by the pass: 0 fought, 1 the game's, 2 not fought.
+        t += listOf(0xFA) + lohi(curMon) + listOf(0x3C, 0x4F, 0xAF, 0x37, 0x17, 0x0D, 0x20, 0xFC, 0x47)
+        t += listOf(0xFA) + lohi(gain) + listOf(0xA0, 0xC8, 0xFA) + lohi(pass) + listOf(0xA7, 0x28, 0)
+        val first = t.size - 1
+        t += listOf(0x3D, 0x28, 0)
+        val yes1 = t.size - 1
+        t += listOf(0xFA) + lohi(fought) + listOf(0xA0, 0x28, 0)
+        val yes2 = t.size - 1
+        t += listOf(0xAF, 0xC9)
+        rel(first, t.size)
+        t += listOf(0xFA) + lohi(fought) + listOf(0xA0, 0xC9)
+        rel(yes1, t.size); rel(yes2, t.size)
+        t += listOf(0x3E, 0x01, 0xA7, 0xC9)
+        check(t.size == T0_SIZE)
+        // TH: call nz, BoostExp; ld a, [pass]; cp 2; ret nz; hQuotient + 2 / + 3 (big-endian) halved
+        t += listOf(0xC4) + lohi(boostFn) + listOf(0xFA) + lohi(pass) + listOf(0xFE, 0x02, 0xC0)
+        t += listOf(0xF0, q2, 0xCB, 0x3F, 0xE0, q2, 0xF0, q3, 0x1F, 0xE0, q3, 0xC9)
+        check(t.size == T0_SIZE + G1_TH_SIZE)
+        // T1: ld a, [pass]; cp 2; ret z; ld hl, GainedText; jp PrintText
+        t += listOf(0xFA) + lohi(pass) + listOf(0xFE, 0x02, 0xC8, 0x21) + lohi(cpu(gained)) + listOf(0xC3) + lohi(printText)
+        check(t.size == T0_SIZE + G1_TH_SIZE + G1_T1_SIZE)
+        // T2: ld a, [pass]; and a; jr nz, .after; ld a, [fought]; cpl; ld b, a; ld a, [gain]; and b; jr z, .out
+        t += listOf(0xFA) + lohi(pass) + listOf(0xA7, 0x20, 0)
+        val after = t.size - 1
+        t += listOf(0xFA) + lohi(fought) + listOf(0x2F, 0x47, 0xFA) + lohi(gain) + listOf(0xA0, 0x28, 0)
+        val out1 = t.size - 1
+        // ld hl, the line; call PrintText; ld a, 2; ld [pass], a; jp the loop's start
+        t += listOf(0x21) + lohi(cpu(msg)) + listOf(0xCD) + lohi(printText) + listOf(0x3E, 0x02, 0xEA) + lohi(pass) + listOf(0xC3) + lohi(cpu(restart + 3))
+        // .after: cp 2; jr nz, .out; xor a; ld [pass], a; .out: ld hl, wPartyGainExpFlags; jp .done + 3
+        rel(after, t.size)
+        t += listOf(0xFE, 0x02, 0x20, 0)
+        val out2 = t.size - 1
+        t += listOf(0xAF, 0xEA) + lohi(pass)
+        rel(out1, t.size); rel(out2, t.size)
+        t += listOf(0x21) + lohi(gain) + listOf(0xC3) + lohi(cpu(done + 3))
+        check(t.size == T0_SIZE + G1_TH_SIZE + G1_T1_SIZE + G1_T2_SIZE)
+        val all = ByteArray(t.size + line.size) { if (it < t.size) t[it].toByte() else line[it - t.size] }
+        fun pieces(off: Int, value: ByteArray) = (value.indices step 4).map { i ->
+            val n = minOf(4, value.size - i)
+            InstantText.Write(TAG + off + i, rom.copyOfRange(off + i, off + i + n), value.copyOfRange(i, i + n))
+        }
+        fun jump(op: Int, to: Int, len: Int) = ByteArray(len).also { it[0] = op.toByte(); it[1] = (cpu(to) and 0xFF).toByte(); it[2] = (cpu(to) shr 8).toByte() }
+        return pieces(at, all) + pieces(loopCheck + 1, jump(0xCD, t0, EXP1_CHECK_LEN)) + pieces(boost + 4, jump(0xCD, th, 3)) +
+            pieces(print + 9, jump(0xCD, t1, 6)) + pieces(done, jump(0xC3, t2, 3))
+    }
+    private const val G1_TH_SIZE = 21
+    private const val G1_T1_SIZE = 12
+    private const val G1_T2_SIZE = 45
 
     /** A text for BattleTextbox in Gen 2's charmap: `text`, the lines (`line`, then `cont`), `prompt`. */
     private fun gen2Text(vararg lines: String): ByteArray {
