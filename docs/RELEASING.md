@@ -32,6 +32,11 @@ Put its notes on (`gh release edit v1.2.0 --notes-file <notes>`), then run `3ds.
 missing (below), then publish it: **Publish release** on its page, or `gh release edit v1.2.0 --draft=false`. Publishing starts the **Website** workflow (a full
 release only), and the in-app updater offers the version on the next library open.
 
+- For a stable release, wait for the **iOS app for AltStore Classic** job and check that
+  `PokeDaisy.ipa` and `source.json` are attached before publishing the draft. AltStore
+  reads `releases/latest/download/source.json`, so publishing makes the new IPA the one it
+  offers; nothing is pushed to the repo. Betas get no iOS build.
+
 - Releases are immutable once published: a broken APK can't be swapped, nor a file added,
   only followed by a new version. Everything goes onto the draft.
 

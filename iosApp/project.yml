@@ -28,6 +28,8 @@ targets:
       path: PokeDaisy/Info.plist
       properties:
         CFBundleDisplayName: PokeDaisy
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleURLTypes:
           - CFBundleURLName: PokeDaisy co-op invite
             CFBundleURLSchemes: [pokedaisy]

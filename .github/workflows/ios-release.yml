@@ -1,0 +1,87 @@
+name: iOS app
+# The unsigned iPhone / iPad app (PokeDaisy.ipa) and its AltStore Classic source (source.json). A Debug build for now:
+# Kotlin/Native's Release link of the shared framework ran past 76 minutes on GitHub's 3-core macOS runner (Nov 24),
+# where CI's Debug build takes about 40.
+# The Release workflow calls it for a stable release and attaches both to the draft; AltStore reads the source from
+# releases/latest/download/source.json, so the newest stable release is the one it offers and nothing is pushed to
+# the repo.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The app's version (1.6.3), from the tag
+        type: string
+        required: true
+      upload:
+        description: Attach the IPA and source.json to the tag's draft release
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Unsigned IPA and AltStore source
+    runs-on: macos-15
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - run: git submodule update --init third_party/mgba third_party/rcheevos
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+
+      # A fixed XcodeGen, checked by its SHA-256, not whatever Homebrew has that day.
+      - name: Generate the Xcode project (XcodeGen 2.46.0)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          cd iosApp && "$RUNNER_TEMP/xcodegen/bin/xcodegen"
+
+      - name: Build the unsigned device app
+        run: |
+          xcodebuild -project iosApp/PokeDaisy.xcodeproj -scheme PokeDaisy \
+            -configuration Debug -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/build" ARCHS=arm64 CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" build
+
+      - name: Package the IPA and write the AltStore source
+        run: |
+          app="$RUNNER_TEMP/build/Build/Products/Debug-iphoneos/PokeDaisy.app"
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Info.plist")" = "$VERSION"
+          test "$(plutil -extract CFBundleVersion raw "$app/Info.plist")" = "$GITHUB_RUN_NUMBER"
+          xcrun vtool -show-build "$app/PokeDaisy" | grep -E 'platform[[:space:]]+IOS$'
+          mkdir -p "$RUNNER_TEMP/package/Payload" "$RUNNER_TEMP/distribution"
+          ditto "$app" "$RUNNER_TEMP/package/Payload/PokeDaisy.app"
+          ipa="$RUNNER_TEMP/distribution/PokeDaisy.ipa"
+          (cd "$RUNNER_TEMP/package" && ditto -c -k --keepParent Payload "$ipa")
+          python3 scripts/generate_altstore_source.py "$ipa" "v$VERSION" > "$RUNNER_TEMP/distribution/source.json"
+          ls -l "$RUNNER_TEMP/distribution"
+
+      - if: ${{ !inputs.upload }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pokedaisy-ios
+          path: ${{ runner.temp }}/distribution
+          retention-days: 7
+
+      - name: Attach to the draft
+        if: ${{ inputs.upload }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true
+          gh release upload "v$VERSION" "$RUNNER_TEMP/distribution/PokeDaisy.ipa" "$RUNNER_TEMP/distribution/source.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber

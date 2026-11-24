@@ -217,6 +217,20 @@ jobs:
       tag: ${{ github.ref_name }}
       upload_3dsx: true
 
+  # A stable release's iPhone / iPad app (PokeDaisy.ipa) and its AltStore Classic source.json onto the draft
+  # (ios-release.yml). AltStore reads releases/latest/download/source.json: the newest stable release.
+  ios:
+    name: iOS app for AltStore Classic
+    needs: [verify, publish]
+    # always(), as the jobs below: a skipped job above (rom-tests, checks) would otherwise skip this one too.
+    if: always() && needs.publish.result == 'success' && needs.verify.outputs.prerelease == 'false'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ios-release.yml
+    with:
+      version: ${{ needs.verify.outputs.version }}
+      upload: true
+
   # The Windows zip onto the draft (windows/package.sh's PokeDaisy-<version>-windows-x86_64.zip), built from the tag.
   windows:
     name: Windows zip
