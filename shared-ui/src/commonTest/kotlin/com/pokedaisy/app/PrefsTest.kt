@@ -28,8 +28,19 @@ class PrefsTest {
         assertEquals(100, p.wildEncounters)
         assertEquals(134217729L to 134217733L, p.ffMenuCallbacks("abcd"))
         assertEquals(mapOf("old" to 123L, "group:feature" to 456L), p.newFeatureSince)
-        assertEquals(listOf("PARTY", "MAP"), p.companionTabs)
+        assertEquals(listOf("HOME", "PARTY", "MAP"), p.companionTabs)
         assertTrue(store.batches.isEmpty())
+    }
+
+    @Test fun homeComesFirstOnAPickSavedBeforeItAndStaysOffOnceTakenOff() {
+        val store = Store(mutableMapOf("companion_tabs" to "PARTY,DEX,MAP,ITEMS,GUIDE"))
+        val p = Prefs(store)
+        // Five picked: HOME first, the last one goes under MORE.
+        assertEquals(listOf("HOME", "PARTY", "DEX", "MAP", "ITEMS"), p.companionTabs)
+        // Saved since (HOME taken off): the pick as it is.
+        p.companionTabs = listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE")
+        assertEquals(listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE"), p.companionTabs)
+        assertEquals(listOf("HOME", "PARTY", "DEX", "MAP", "ITEMS"), Prefs(Store()).companionTabs)
     }
 
     @Test fun hostDefaultsNeverOverrideExplicitFalseOrZero() {

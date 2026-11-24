@@ -145,7 +145,7 @@ class DualScreenPresentation(
             back: com.pokedaisy.app.companion.ui.CompanionBack?,
             clickSound: () -> Unit,
             achievements: com.pokedaisy.app.companion.CompanionAchievements?,
-            initialTab: String = "PARTY",
+            initialTab: String = "",
             /** SETTINGS' row to open on ([CompanionScreen]'s initialSettingsRow). */
             initialSettingsRow: String? = null,
             statusBar: (@androidx.compose.runtime.Composable () -> Unit)? = null,

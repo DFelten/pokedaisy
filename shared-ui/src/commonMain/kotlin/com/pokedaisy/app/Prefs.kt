@@ -868,11 +868,29 @@ class Prefs(
 
     /** The companion tabs shown in the bottom screen's tab bar (see
      * [com.pokedaisy.app.companion.COMPANION_TABS]); the rest are
-     * reached from its SETTINGS tab. */
+     * reached from its SETTINGS tab. A pick saved before HOME existed gets HOME first, the last tab past
+     * [com.pokedaisy.app.companion.MAX_BAR_TABS] going under MORE (`companion_tabs_home`: the pick has been saved since,
+     * so a HOME the player took off the bar stays off). */
     var companionTabs: List<String>
-        get() = p.getString("companion_tabs", null)?.split(",")?.filter { it.isNotBlank() }
-            ?: com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS
-        set(v) = p.edit().putString("companion_tabs", v.joinToString(",")).apply()
+        get() {
+            val stored = p.getString("companion_tabs", null)?.split(",")?.filter { it.isNotBlank() }
+                ?: return com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS
+            if (p.getBoolean("companion_tabs_home", false)) return stored
+            return withHomeFirst(stored)
+        }
+        set(v) = p.edit().putString("companion_tabs", v.joinToString(",")).putBoolean("companion_tabs_home", true).apply()
+
+    /** SETTINGS > HOME TAB's cards, in order ([com.pokedaisy.app.companion.HomeCard] ids); empty = every card off. */
+    var homeCards: List<String>
+        get() = p.getString("home_cards", null)?.split(",")?.filter { it.isNotBlank() }
+            ?: com.pokedaisy.app.companion.HomeTab.DEFAULT_CARDS
+        set(v) = p.edit().putString("home_cards", v.joinToString(",")).apply()
+
+    /** HOME's six shortcut places (tab ids, "" = an empty place). */
+    var homeShortcuts: List<String>
+        get() = p.getString("home_shortcuts", null)?.split(",")
+            ?: com.pokedaisy.app.companion.HomeTab.DEFAULT_SHORTCUTS
+        set(v) = p.edit().putString("home_shortcuts", v.joinToString(",")).apply()
 
     /** Games whose GUIDE notice ("written with AI help, may be wrong") was accepted. */
     fun guideNoticeAccepted(game: String): Boolean = game in guideNoticeGames()
@@ -1168,3 +1186,9 @@ class Prefs(
         const val RECENT_CAP = 10   // more than the 3 shown, so deleted ROMs don't starve the row
     }
 }
+
+/** A tab bar picked before HOME existed: HOME first, then the pick, cut to the bar's [com.pokedaisy.app.companion.MAX_BAR_TABS]
+ * (the last one goes under MORE). */
+internal fun withHomeFirst(stored: List<String>): List<String> =
+    (listOf(com.pokedaisy.app.companion.HomeTab.ID) + stored.filter { it != com.pokedaisy.app.companion.HomeTab.ID })
+        .take(com.pokedaisy.app.companion.MAX_BAR_TABS)

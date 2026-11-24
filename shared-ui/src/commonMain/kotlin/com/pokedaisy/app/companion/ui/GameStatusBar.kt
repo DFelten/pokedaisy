@@ -103,7 +103,7 @@ private fun gameCaps(s: String) = s.uppercase().replace('É', 'é')
  * The Pokédollar sign: a P whose stem two bars cross, with the text's
  * one-pixel shadow ('s') right, down and diagonal.
  */
-private val POKE_DOLLAR = withPixelShadow(
+internal val POKE_DOLLAR = withPixelShadow(
     listOf(
         ".oooo.",
         ".o...o",
@@ -118,7 +118,7 @@ private val POKE_DOLLAR = withPixelShadow(
 )
 
 /** A map pin before the location, in the OPTION screen's red. */
-private val MAP_PIN = withPixelShadow(
+internal val MAP_PIN = withPixelShadow(
     listOf(
         ".ooooo.",
         "ooooooo",

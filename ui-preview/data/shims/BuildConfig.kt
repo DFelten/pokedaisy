@@ -20,5 +20,7 @@ object BuildConfig {
     @JvmField var FEATURE_KEEP_BLOCKED = false
     /** Off as in a default build: 3DS games (the n3ds module) aren't in the preview's build. */
     const val FEATURE_N3DS = false
+    /** Off as in a default build: PC fan games are a prototype. */
+    const val FEATURE_PC_GAMES = false
     const val COOP_RELAY_URL = ""
 }

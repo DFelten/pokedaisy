@@ -46,7 +46,12 @@ class PokeDaisyApp : Application() {
         com.pokedaisy.app.companion.ui.theme.AnimatedPictures.host = AndroidAnimatedPictures()
         runCatching { com.pokedaisy.app.companion.ui.theme.CustomLook.load() }
         // Dates and times the device's way (STATES' save times).
-        com.pokedaisy.app.companion.ui.DeviceDates.current = JvmDeviceDates
+        // The clock (HOME's) follows the device's 12 / 24-hour setting, like the status bar's.
+        val app = this
+        com.pokedaisy.app.companion.ui.DeviceDates.current = object : com.pokedaisy.app.companion.ui.DeviceDates by JvmDeviceDates {
+            override fun shortTime(epochMillis: Long): String =
+                android.text.format.DateFormat.getTimeFormat(app).format(java.util.Date(epochMillis))
+        }
         // Cheat codes checked by mGBA's own parser.
         com.pokedaisy.app.cheats.CheatParser.current = com.pokedaisy.app.cheats.MgbaCheatParser
         // The NEW tags' week starts with the first launch of a build that has the feature.

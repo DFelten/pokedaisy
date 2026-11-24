@@ -180,6 +180,12 @@ interface StoredCompanionSettings {
      * the rest open from the MORE tab. See [Prefs.companionTabs]. */
     val companionTabs: List<String>
     fun setCompanionTabs(tabs: List<String>)
+    /** SETTINGS > HOME TAB: the HOME tab's cards, in order (ids, [HomeCard]) - see [com.pokedaisy.app.Prefs.homeCards]. */
+    val homeCards: List<String> get() = HomeTab.DEFAULT_CARDS
+    fun setHomeCards(cards: List<String>) {}
+    /** Its six shortcut places (tab ids, "" = empty) - see [com.pokedaisy.app.Prefs.homeShortcuts]. */
+    val homeShortcuts: List<String> get() = HomeTab.DEFAULT_SHORTCUTS
+    fun setHomeShortcuts(places: List<String>) {}
     /** Whether the GUIDE's "written with AI help" notice was accepted for [game]
      * (a [com.pokedaisy.app.companion.data.GameKind] name). */
     fun guideNoticeAccepted(game: String): Boolean

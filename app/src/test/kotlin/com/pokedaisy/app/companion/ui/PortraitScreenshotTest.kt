@@ -70,6 +70,11 @@ class PortraitScreenshotTest {
     /** The smallest companion: the most room for the touch controls. */
     @Test fun smallest() = paparazzi.snapshot { Scene(PortraitLayout.MIN_RATIO, touchPad = true) }
 
+    /** HOME at the default height (COMPACT), the smallest, and dragged all the way up (TALL). */
+    @Test fun home() = paparazzi.snapshot { Scene(PortraitLayout.DEFAULT_RATIO, touchPad = false, tab = "HOME") }
+    @Test fun homeSmallest() = paparazzi.snapshot { Scene(PortraitLayout.MIN_RATIO, touchPad = true, tab = "HOME") }
+    @Test fun homeTallest() = paparazzi.snapshot { Scene(10f, touchPad = false, tab = "HOME") }
+
     /** Dragged all the way up: everything under the game but the grip's strip, which keeps the companion's room its own. */
     @Test fun tallest() = paparazzi.snapshot { Scene(10f, touchPad = true) }
 

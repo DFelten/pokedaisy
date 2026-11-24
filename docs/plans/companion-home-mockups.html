@@ -1,0 +1,212 @@
+<title>Companion HOME Layouts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Inter:wght@400;600;700&display=swap">
+<style>
+/* Layout: an intro, then every companion screen drawn at one scale (1 GBA pixel = --u CSS px), grouped by the shape HOME takes there. */
+:root {
+  --bg: #eef2fb; --fg: #1b2440; --muted: #5d6b8f; --line: #c9d3ec;
+  --brand: #3d6fe0; --brand-ink: #ffffff;
+  --win: #ffffff; --win-edge: #8fa7e6; --band: #3d6fe0; --cell: #e6edfc;
+  --sea: #7fb2ea; --land: #8fd17e; --land2: #6dbb63; --hp: #3fc35a; --hp-low: #e8b62c; --hp-red: #e2543f;
+  --chip: #d8e2fa; --chip-on: #ffffff; --stage: #b9c9ef;
+  --pixel: "Silkscreen", "Courier New", monospace;
+  --text: "Inter", system-ui, sans-serif;
+  --u: 0.95px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121828; --fg: #e5eaf8; --muted: #9aa6c8; --line: #2c3654;
+  --win: #222c47; --win-edge: #5a74c2; --band: #3d6fe0; --cell: #2b3758;
+  --sea: #2f5c94; --land: #4f8a48; --land2: #3f7539; --chip: #2a3555; --chip-on: #3a4870; --stage: #1a2340; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121828; --fg: #e5eaf8; --muted: #9aa6c8; --line: #2c3654;
+  --win: #222c47; --win-edge: #5a74c2; --band: #3d6fe0; --cell: #2b3758;
+  --sea: #2f5c94; --land: #4f8a48; --land2: #3f7539; --chip: #2a3555; --chip-on: #3a4870; --stage: #1a2340; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--text); line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+header h1 { font-family: var(--pixel); font-weight: 400; font-size: 28px; margin: 0; color: var(--brand); text-wrap: balance; }
+header p { margin: 6px 0 0; max-width: 68ch; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 2px; border: 1px solid var(--win-edge); }
+section h2 { font-family: var(--pixel); font-weight: 400; font-size: 18px; margin: 0 0 4px; letter-spacing: .02em; }
+section > p { margin: 0 0 14px; color: var(--muted); max-width: 72ch; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+.scroll { overflow-x: auto; max-width: 100%; }
+figcaption { font-size: 13px; }
+figcaption b { display: block; font-weight: 700; }
+figcaption small { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* The screen, in GBA pixels. */
+.screen { position: relative; background: var(--stage); border: calc(3 * var(--u)) solid #2a3352; border-radius: calc(6 * var(--u));
+  display: flex; flex-direction: column; overflow: hidden; font-family: var(--pixel); color: var(--fg); }
+.bar { display: flex; gap: calc(2 * var(--u)); padding: calc(3 * var(--u)); background: color-mix(in srgb, var(--brand) 20%, var(--stage)); }
+.chip { flex: 1; display: grid; place-items: center; background: var(--chip); border-radius: calc(3 * var(--u)); font-size: calc(7 * var(--u)); min-width: 0; overflow: hidden; white-space: nowrap; }
+.chip.icon { flex: 0 0 calc(var(--barh) * 0.9); }
+.chip.on { background: var(--chip-on); outline: calc(1.5 * var(--u)) solid var(--brand); }
+.house { width: 55%; aspect-ratio: 1; background: var(--brand);
+  clip-path: polygon(50% 0, 100% 45%, 86% 45%, 86% 100%, 14% 100%, 14% 45%, 0 45%); }
+.gear { width: 50%; aspect-ratio: 1; border-radius: 50%; border: calc(3 * var(--u)) dotted var(--muted); }
+.more { font-size: calc(10 * var(--u)); line-height: 1; }
+.tab { flex: 1; display: grid; gap: calc(4 * var(--u)); padding: calc(4 * var(--u)); min-height: 0; }
+.card { background: var(--win); border: calc(1.5 * var(--u)) solid var(--win-edge); border-radius: calc(4 * var(--u));
+  display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
+.card > .hd { background: var(--band); color: var(--brand-ink); font-size: calc(7 * var(--u)); padding: calc(1.5 * var(--u)) calc(4 * var(--u)); white-space: nowrap; }
+.card > .bd { flex: 1; padding: calc(3 * var(--u)); display: flex; flex-direction: column; gap: calc(2.5 * var(--u)); font-size: calc(7 * var(--u)); min-height: 0; overflow: hidden; }
+.kv { display: flex; justify-content: space-between; gap: calc(4 * var(--u)); white-space: nowrap; }
+.kv i { font-style: normal; color: var(--muted); }
+.line { flex-direction: row; align-items: center; gap: calc(6 * var(--u)); padding: calc(2 * var(--u)) calc(5 * var(--u)); font-size: calc(7 * var(--u)); white-space: nowrap; }
+.badges { display: flex; gap: calc(1.5 * var(--u)); }
+.badges b { width: calc(6 * var(--u)); height: calc(6 * var(--u)); border-radius: 50%; background: var(--line); }
+.badges b.got { background: #e8b62c; }
+
+/* Party. */
+.party { display: grid; gap: calc(2.5 * var(--u)); padding: calc(3 * var(--u)); flex: 1; min-height: 0; }
+.slot { background: var(--cell); border-radius: calc(4 * var(--u)); display: grid; align-items: center;
+  grid-template-columns: auto 1fr; column-gap: calc(3 * var(--u)); padding: calc(2 * var(--u)) calc(3 * var(--u)); min-width: 0; min-height: 0; overflow: hidden; }
+.mon { width: calc(14 * var(--u)); height: calc(14 * var(--u)); border-radius: calc(4 * var(--u)); grid-row: span 2; }
+.nm { font-size: calc(7 * var(--u)); white-space: nowrap; overflow: hidden; display: flex; justify-content: space-between; gap: calc(3 * var(--u)); }
+.nm i { font-style: normal; color: var(--muted); }
+.hpb { height: calc(3 * var(--u)); background: var(--line); border-radius: calc(2 * var(--u)); overflow: hidden; }
+.hpb > b { display: block; height: 100%; background: var(--hp); }
+.slot.mini { grid-template-columns: auto 1fr; padding: calc(1.5 * var(--u)) calc(2 * var(--u)); }
+.slot.mini .mon { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
+
+/* Map. */
+.map .bd { padding: 0; position: relative; background: var(--sea); }
+.isl { position: absolute; background: var(--land); border-radius: calc(3 * var(--u)); box-shadow: inset 0 calc(-2 * var(--u)) 0 var(--land2); }
+.head { position: absolute; width: calc(9 * var(--u)); height: calc(9 * var(--u)); border-radius: 50%; background: #e2543f;
+  border: calc(1.5 * var(--u)) solid #fff; left: 46%; top: 44%; }
+.place { position: absolute; left: 0; top: 0; background: rgba(20,30,60,.7); color: #fff; padding: calc(1.5 * var(--u)) calc(4 * var(--u)); font-size: calc(7 * var(--u)); }
+
+/* Shortcuts. */
+.short { display: flex; gap: calc(3 * var(--u)); }
+.tile { flex: 1; background: var(--win); border: calc(1.5 * var(--u)) solid var(--win-edge); border-radius: calc(4 * var(--u));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1.5 * var(--u));
+  padding: calc(2.5 * var(--u)) calc(1 * var(--u)); font-size: calc(5 * var(--u)); letter-spacing: -0.04em; min-width: 0; overflow: hidden; white-space: nowrap; }
+.tile .ic { width: calc(12 * var(--u)); height: calc(12 * var(--u)); border-radius: calc(3 * var(--u)); }
+.tile.add { border-style: dashed; color: var(--muted); }
+.notes { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 8px; font-size: 14px; max-width: 76ch; }
+.notes h3 { font-family: var(--pixel); font-weight: 400; font-size: 15px; margin: 0; }
+.notes ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>HOME, every companion size</h1>
+    <p>Wireframes for the planned HOME tab, every screen drawn at the same scale: one GBA pixel is the same size in all of them, so you can compare what really fits. Colours and pictures are stand-ins; the real tab uses the companion's own windows, the game's party art and its region map.</p>
+  </header>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--band)"></i>card header band</span>
+    <span><i class="sw" style="background:var(--cell)"></i>party slot</span>
+    <span><i class="sw" style="background:var(--sea)"></i>region map</span>
+    <span><i class="sw" style="background:var(--win)"></i>card / shortcut tile</span>
+  </div>
+  <div id="shapes"></div>
+  <div class="notes">
+    <h3>What the wireframes assume</h3>
+    <ul>
+      <li>HOME is the house chip at the start of the tab bar, outside the five picked tabs; the companion opens on it.</li>
+      <li>The tab bar is 48 GBA px tall, 32 on a short companion (under 316 GBA px).</li>
+      <li>Small cards follow the player's order. A card that doesn't fit is left out on that screen, never cut off. Nothing scrolls.</li>
+      <li>The Retroid Pocket Duo is drawn as the Duo Lite's 1280x960 until its bottom screen is measured.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const MONS = [
+  ["EMBERPUP", 32, 0.9, "#e9774a"], ["BUBBLEFIN", 29, 0.55, "#5aa9e6"], ["SPROUTLING", 30, 1, "#71c45e"],
+  ["VOLTMOUSE", 27, 0.25, "#f0cd3c"], ["WISPLET", 26, 0.8, "#a78be0"], ["PEBBLON", 28, 1, "#a99a85"],
+];
+const ICONS = { BOXES: "#c48a3f", NUZLOCKE: "#d24a4a", CHEEVOS: "#e8b62c", STATES: "#4a9ad2", CARD: "#3d6fe0", GUIDE: "#4caf7d" };
+
+function hp(f) { const c = f < .3 ? "var(--hp-red)" : f < .6 ? "var(--hp-low)" : "var(--hp)"; return `<div class="hpb"><b style="width:${f*100}%;background:${c}"></b></div>`; }
+function slot(m, mini) {
+  const [n, lv, f, col] = m;
+  return mini
+    ? `<div class="slot mini"><div class="mon" style="background:${col}"></div><div class="nm"><i>Lv${lv}</i></div>${hp(f)}</div>`
+    : `<div class="slot"><div class="mon" style="background:${col}"></div><div class="nm"><span>${n}</span><i>Lv${lv}</i></div>${hp(f)}</div>`;
+}
+function party(cols, mini) {
+  const rows = Math.ceil(6 / cols);
+  return `<div class="card" style="grid-area:party"><div class="hd">PARTY</div><div class="party" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr)">${MONS.map(m => slot(m, mini)).join("")}</div></div>`;
+}
+function map() {
+  return `<div class="card map" style="grid-area:map"><div class="bd">
+    <div class="isl" style="left:8%;top:18%;width:38%;height:48%"></div><div class="isl" style="left:40%;top:30%;width:44%;height:40%"></div>
+    <div class="isl" style="left:62%;top:70%;width:22%;height:20%"></div><div class="isl" style="left:14%;top:72%;width:16%;height:16%"></div>
+    <div class="head"></div><div class="place">ROUTE 6</div></div></div>`;
+}
+const CARDS = {
+  TRAINER: `<div class="hd">TRAINER</div><div class="bd"><div class="kv"><i>MONEY</i>¥12,480</div><div class="kv"><i>TIME</i>14:32</div><div class="badges">${"<b class=got></b>".repeat(3)}${"<b></b>".repeat(5)}</div></div>`,
+  BOSS: `<div class="hd">NEXT BOSS</div><div class="bd"><div class="kv"><i>LEADER</i>MARA</div><div class="kv"><i>TOP LV</i>34</div></div>`,
+  HERE: `<div class="hd">HERE</div><div class="bd"><div class="kv"><i>CAUGHT</i>3 of 7</div><div class="badges">${["#71c45e","#a78be0","#f0cd3c","#5aa9e6","#a99a85"].map(c=>`<b style="background:${c};border-radius:2px"></b>`).join("")}</div></div>`,
+  NUZLOCKE: `<div class="hd">NUZLOCKE</div><div class="bd"><div class="kv"><i>ALIVE</i>9</div><div class="kv"><i>FALLEN</i>2</div></div>`,
+  CHEEVOS: `<div class="hd">ACHIEVEMENTS</div><div class="bd"><div class="kv"><i>UNLOCKED</i>18 / 60</div></div>`,
+};
+function card(id, area) { return `<div class="card" style="grid-area:${area}">${CARDS[id]}</div>`; }
+function lineCard(area) {
+  return `<div class="card line" style="grid-area:${area}"><span>¥12,480</span><span class="badges">${"<b class=got></b>".repeat(3)}${"<b></b>".repeat(5)}</span><span style="margin-left:auto">14:32</span><span>▮ 82%</span></div>`;
+}
+function shortcuts(n, labels) {
+  const ids = Object.keys(ICONS).slice(0, n);
+  return `<div class="short" style="grid-area:short">${ids.map(id => `<div class="tile"><div class="ic" style="background:${ICONS[id]}"></div>${labels ? id : ""}</div>`).join("")}</div>`;
+}
+function bar(short) {
+  const chips = ["PARTY", "DEX", "MAP", "BAG", "GUIDE"];
+  return `<div class="bar" style="height:calc(var(--barh) * 1)"><div class="chip icon on"><div class="house"></div></div>${chips.map(c => `<div class="chip">${c}</div>`).join("")}<div class="chip icon"><span class="more">⋯</span></div><div class="chip icon"><div class="gear"></div></div></div>`;
+}
+
+// Each layout: the grid of the tab area and what goes in it.
+const LAYOUTS = {
+  compact: { cols: "36% 1fr", rows: "1fr auto auto", areas: `"party map" "party line" "short short"`, body: () => party(1, true) + map() + lineCard("line") + shortcuts(4, false) },
+  compactMin: { cols: "36% 1fr", rows: "1fr auto", areas: `"party map" "short short"`, body: () => party(1, true) + map() + shortcuts(4, false) },
+  standard: { cols: "1fr 1fr", rows: "1.25fr 1fr auto", areas: `"party map" "party c1" "short short"`, body: () => party(2, false) + map() + `<div style="grid-area:c1;display:grid;grid-template-columns:1fr 1fr;gap:calc(4 * var(--u))">${card("TRAINER","auto")}${card("BOSS","auto")}</div>` + shortcuts(6, true) },
+  standard43: { cols: "1fr 1fr", rows: "1.3fr 0.8fr auto", areas: `"party map" "party c1" "short short"`, body: () => party(2, false) + map() + card("TRAINER", "c1") + shortcuts(6, true) },
+  wide: { cols: "1fr 1.15fr 0.8fr", rows: "1fr auto", areas: `"party map side" "short short short"`, body: () => party(2, false) + map() + `<div style="grid-area:side;display:grid;grid-template-rows:repeat(3,1fr);gap:calc(4 * var(--u))">${card("TRAINER","auto")}${card("BOSS","auto")}${card("HERE","auto")}</div>` + shortcuts(6, true) },
+  tall: { cols: "1fr 1fr", rows: "1.15fr 1fr auto auto auto", areas: `"map map" "party party" "c1 c2" "c3 c4" "short short"`, body: (w) => party(w < 400 ? 2 : 3, false) + map() + card("TRAINER","c1") + card("BOSS","c2") + card("HERE","c3") + card("NUZLOCKE","c4") + shortcuts(6, true) },
+};
+
+const SHAPES = [
+  { name: "COMPACT", text: "Under 316 GBA px tall. The party is a column of six (icon, level, HP), the map takes the rest of the width, one small card shrinks to a line, and the shortcuts lose their names.", screens: [
+    { name: "Anbernic RG DS", sub: "640x480 @1.5 · 320x240 GBA px", w: 320, h: 240, short: true, layout: "compact" },
+    { name: "Phone upright, default height", sub: "1080x940 @2.625 · 360x313", w: 360, h: 313, short: true, layout: "compact" },
+    { name: "Phone upright, smallest", sub: "1080x648 · 360x216", w: 360, h: 216, short: true, layout: "compactMin" },
+  ]},
+  { name: "STANDARD", text: "About 1.1:1 to 1.45:1. Party 2 x 3 with names on the left, the map top right, one or two small cards under it, six named shortcuts along the bottom. The 4:3 screens keep one small card.", screens: [
+    { name: "AYN Thor bottom screen", sub: "1240x1080 @2.75 · 413x360", w: 413, h: 360, layout: "standard" },
+    { name: "Retroid Pocket Duo / Duo Lite", sub: "1280x960 @2.75 · 427x320", w: 427, h: 320, layout: "standard43" },
+    { name: "Retroid Pocket Classic window", sub: "~1090x950 @2.0 · ~363x317", w: 363, h: 317, layout: "standard43" },
+    { name: "RP6 window (text a step smaller)", sub: "~1330x950 @2.3 · ~443x317", w: 443, h: 317, layout: "standard43" },
+  ]},
+  { name: "WIDE", text: "Past 1.6:1. Three columns: party, a bigger map, and a stack of three small cards, with the shortcuts underneath.", screens: [
+    { name: "SWAP SCREENS: Thor top screen", sub: "1920x1080 @2.0 · 640x360", w: 640, h: 360, layout: "wide" },
+  ]},
+  { name: "TALL", text: "Taller than wide. The map runs across the top, the party under it (3 x 2, or 2 x 3 when narrow), small cards two to a row, shortcuts at the bottom.", screens: [
+    { name: "One-screen side panel", sub: "960x1080 @~1.9 · 480x540", w: 480, h: 540, layout: "tall" },
+    { name: "Phone upright, full height", sub: "1080x~1600 · 360x~530", w: 360, h: 530, layout: "tall" },
+    { name: "Side panel on a 4:3 screen", sub: "640x960 · ~320x480", w: 320, h: 480, layout: "tall" },
+  ]},
+];
+
+const out = document.getElementById("shapes");
+out.style.cssText = "display:flex;flex-direction:column;gap:34px";
+for (const s of SHAPES) {
+  const sec = document.createElement("section");
+  sec.innerHTML = `<h2>${s.name}</h2><p>${s.text}</p><div class="row"></div>`;
+  const row = sec.querySelector(".row");
+  for (const sc of s.screens) {
+    const L = LAYOUTS[sc.layout];
+    const barh = sc.short ? 32 : 48;
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<div class="scroll"><div class="screen" style="--barh:calc(${barh} * var(--u));width:calc(${sc.w} * var(--u));height:calc(${sc.h} * var(--u))">
+      ${bar(sc.short)}<div class="tab" style="grid-template-columns:${L.cols};grid-template-rows:${L.rows};grid-template-areas:${L.areas}">${L.body(sc.w)}</div></div></div>
+      <figcaption><b>${sc.name}</b><small>${sc.sub}</small></figcaption>`;
+    row.appendChild(fig);
+  }
+  out.appendChild(sec);
+}
+</script>

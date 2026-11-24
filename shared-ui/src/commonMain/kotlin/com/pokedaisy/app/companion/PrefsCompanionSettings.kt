@@ -164,6 +164,10 @@ class PrefsCompanionSettings(
     override fun setDarkMode(v: Int) { prefs.darkMode = v }
     override val companionTabs get() = prefs.companionTabs
     override fun setCompanionTabs(tabs: List<String>) { prefs.companionTabs = tabs }
+    override val homeCards get() = prefs.homeCards
+    override fun setHomeCards(cards: List<String>) { prefs.homeCards = cards }
+    override val homeShortcuts get() = prefs.homeShortcuts
+    override fun setHomeShortcuts(places: List<String>) { prefs.homeShortcuts = places }
     override fun guideNoticeAccepted(game: String) = prefs.guideNoticeAccepted(game)
     override fun acceptGuideNotice(game: String) = prefs.acceptGuideNotice(game)
     override val touchStyle get() = prefs.touchControlsStyle

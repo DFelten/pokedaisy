@@ -203,6 +203,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "SETTINGS FILE" to "export import backup restore transfer move new device phone reinstall settings file json copy",
     "SAVE STATES" to "states folder screenshots pictures thumbnails by game slots resume move sd card",
     "TAB BAR" to "tabs layout bar order",
+    "HOME TAB" to "home dashboard overview shortcuts cards widgets start page",
     "BATTLE HINTS" to "suggestions recommendations best move tips",
     "BATTLE STYLE" to "battle screen look theme gen 4 gen 5 platinum black white buttons design",
     "BATTLE INFO" to "hide battle info suggestions ratings effectiveness buttons only clean",
@@ -286,7 +287,7 @@ val SETTINGS_GROUPS: List<Pair<String, List<String>>> = listOf(
     "BATTLE" to listOf(
         "BATTLE INFO", "BATTLE HINTS", "BATTLE VIEW", "BATTLE STYLE", "ONE-TAP MOVES", "LAST BALL", "FOE IVS", "BATTLE FOCUS",
     ),
-    "COMPANION" to listOf(BATTLE_PAGE, "SPOILERS", "TAB BAR", "CLICK SOUND", "POKéMON PICTURES", "ITEM POPUPS", "TWEAKS"),
+    "COMPANION" to listOf(BATTLE_PAGE, "SPOILERS", "TAB BAR", "HOME TAB", "CLICK SOUND", "POKéMON PICTURES", "ITEM POPUPS", "TWEAKS"),
     "ACHIEVEMENTS" to listOf("RetroAchievements", "CHALLENGE ICONS", "ACHIEVEMENT POPUPS", "PROGRESS POPUPS"),
     "LIBRARY" to emptyList(),
     "CONTROLS" to emptyList(),

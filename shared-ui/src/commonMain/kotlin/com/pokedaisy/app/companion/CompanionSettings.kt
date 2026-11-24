@@ -565,12 +565,14 @@ interface CompanionSettings : StoredCompanionSettings {
 
 /** Every tab the player can show or hide, in tab-bar order. BATTLE (while a
  * battle runs) and SETTINGS (the way to the hidden ones) are always there.
+ * HOME ([HomeTab]) comes first, so the companion opens on it.
  * CARD (the TRAINER CARD) and ACHIEVEMENTS (RetroAchievements) start off the
  * bar, under the MORE tab. HUNT (SHINY HUNT) only with its flag ([FlaggedFeatures.shinyHunt]). */
 val COMPANION_TABS: List<String> get() = listOfNotNull(
-    "PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "HUNT".takeIf { FlaggedFeatures.shinyHunt }, "CARD", "STATES", "ACHIEVEMENTS",
+    HomeTab.ID, "PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "HUNT".takeIf { FlaggedFeatures.shinyHunt }, "CARD", "STATES", "ACHIEVEMENTS",
 )
-val DEFAULT_COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE")
+/** HOME took GUIDE's place on the bar (GUIDE is under MORE and one of HOME's shortcuts). */
+val DEFAULT_COMPANION_TABS = listOf(HomeTab.ID, "PARTY", "DEX", "MAP", "ITEMS")
 
 /** Tabs next to SETTINGS: six chips in all is as many as fit. During a
  * battle BATTLE takes the last chosen tab's place. */

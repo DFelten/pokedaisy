@@ -3,10 +3,10 @@ title: The companion at a glance
 summary: What the bottom screen shows, how the tab bar works, and what the companion's SETTINGS tab holds.
 section: companion
 order: 1
-keywords: [bottom screen, second screen, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup, tab icons, icons instead of names, icon tabs, tab bar position, tabs on top, tabs on the side, side tabs, compact tabs, smaller tabs]
+keywords: [bottom screen, second screen, home, home tab, dashboard, overview, start page, shortcuts, widgets, tabs, tab bar, overview, back button, click, sound, language, translation, close, restart, reset, gear, more, apps, hidden tabs, extra tabs, grid, player look, hero, heroine, protagonist, character, outfit, costume, skin, sprite, play as, sprite pack, sprites, sprite pack file, sprite zip, makeover pack, fly on, balloon, hot air balloon, helicopter, zeppelin, airship, blimp, vehicle, ride, tips, hints, feature tips, popup, tab icons, icons instead of names, icon tabs, tab bar position, tabs on top, tabs on the side, side tabs, compact tabs, smaller tabs]
 ---
 
-The companion is everything on the bottom screen while a game runs. It reads your game as you play, so your party, bag, location and battles are always up to date without opening a single menu on the top screen. Its party and bag screens are drawn in the game's own style: FireRed's party screen in FireRed, Emerald's in Emerald, and each supported hack's own look where it has one. Everything else takes its look from the Gen 3 summary pages, in PokeDaisy's blue: a blue title strip on a pale blue window, blue section bands, keys for tabs and buttons (the open tab sits pressed in), and facts set out in ruled boxes. A `THEME` other than `POKéDAISY` moves them to its own colour. In Unbound the same menus wear Unbound's own purple and gold.
+The companion is everything on the bottom screen while a game runs. It reads your game as you play, so your party, bag, location and battles are always up to date without opening a single menu on the top screen. Its party and bag screens are drawn in the game's own style: FireRed's party screen in FireRed, Emerald's in Emerald, and each supported hack's own look where it has one. Everything else takes its look from the Gen 3 summary pages, in PokeDaisy's blue: a blue title strip on a pale blue window, blue section bands, keys for tabs and buttons (the open tab sits pressed in), and facts set out in ruled boxes. A `THEME` other than `POKéDAISY` moves them to its own colour. In Unbound the same menus wear Unbound's own purple and gold. The game's party backdrop sits behind the game's own screens (`PARTY`, `BAG`, `BOXES`, the battle, `MAP` and `CARD`); the companion's own pages, like `HOME`, `SETTINGS`, `DEX` and `GUIDE`, sit on your theme's backdrop, as on the top screen. Game Boy games and 3DS games keep their own look on every tab.
 
 You don't have to do anything to start it. Open a supported game and the companion fills in once the game has loaded. On a device with only one screen it lives in a panel beside the game instead (see [Devices](devices.md)).
 
@@ -16,19 +16,41 @@ Along the bottom of the companion is a row of tabs, with `MORE` (a grid of nine 
 
 | Tab | What it shows |
 | --- | --- |
+| `HOME` (the house) | Your party, the map, your money, the clock and the battery in one place, with shortcuts to other tabs. See [HOME](#home) below. |
 | `PARTY` | Your team, and a full summary for each Pokémon. See [Party and summaries](party.md). |
 | `DEX` | Your Pokédex with seen and caught marks. See [Pokédex](dex.md). |
 | `MAP` | The region map with you on it. See [Map](map.md). |
 | `BAG` | Every pocket of your bag. See [Bag](bag.md). |
-| `GUIDE` | Hints, the next boss and what's around you. See [Guide](guide.md). |
 
-A few more are off the bar to begin with and wait under `MORE`: `BOXES` (your [PC boxes](boxes.md), FireRed for now), `CARD` (your [trainer card](trainer-card.md)), `STATES` (save states) and `CHEEVOS` ([RetroAchievements](achievements.md)). So does `NUZLOCKE`, where you can turn on [Nuzlocke](nuzlocke.md) tracking for a game, and `HUNT`, which counts a [shiny hunt](shiny-hunt.md).
+A few more are off the bar to begin with and wait under `MORE`: `GUIDE` ([hints, the next boss and what's around you](guide.md)), `BOXES` (your [PC boxes](boxes.md), FireRed for now), `CARD` (your [trainer card](trainer-card.md)), `STATES` (save states) and `CHEEVOS` ([RetroAchievements](achievements.md)). So does `NUZLOCKE`, where you can turn on [Nuzlocke](nuzlocke.md) tracking for a game, and `HUNT`, which counts a [shiny hunt](shiny-hunt.md).
 
 Some tabs only appear when the game has what they need. `DEX` needs the game's Pokédex data and `GUIDE` needs a guide for that game, so a game without them has fewer tabs. The bag tab also takes the game's own word for it: `PACK` in Gold, Silver, Crystal, Crystal Clear and Prism, `CUBE` in Unbound, `INVENTORY` in R.O.W.E., `POCKETS` in Super Mariomon, `BAG` everywhere else.
 
 ### Before you're in the game
 
-While the game is still on its title screen, its intro or the CONTINUE menu, `PARTY`, `BAG`, `MAP` and `CARD` wait: they show the game's own empty party slots with `PRESS START` blinking, rather than whatever party the game has loaded so far. They fill in as soon as you're walking around or in a battle. A game resumed from where you left it is in the game already, so they show right away. `STATES`, `SETTINGS` and the rest work the whole time, so you can still load a save state from the title screen.
+While the game is still on its title screen, its intro or the CONTINUE menu, `HOME`, `PARTY`, `BAG`, `MAP` and `CARD` wait: they show the game's own empty party slots with `PRESS START` blinking, rather than whatever party the game has loaded so far. They fill in as soon as you're walking around or in a battle. A game resumed from where you left it is in the game already, so they show right away. `STATES`, `SETTINGS` and the rest work the whole time, so you can still load a save state from the title screen.
+
+### HOME
+
+`HOME` is the first tab, the house at the start of the bar, and the companion opens on it. It puts the things you check most on one page, so you don't have to hop between tabs:
+
+- **Your party**: each Pokémon's icon, level and HP bar, with its status. Tap one for its summary.
+- **The map** around you, with your place's name under it. Tap it to open `MAP`.
+- **Trainer**: your money, play time, badges and how many Pokémon your Pokédex has caught and seen. Tap it to open `CARD` (or `DEX` in a game without a card).
+- **Clock and battery**: the time the way your device shows it, and how much battery is left. It steps aside while `STATUS BAR` shows them over the companion.
+- **Shortcuts** along the bottom: up to six tabs one tap away. Out of the box they're `BOXES`, `NUZLOCKE`, `CHEEVOS`, `STATES`, `CARD` and `GUIDE`, each only where your game has it.
+
+HOME fits itself to your screen. On a small one (the RG DS, a phone held upright) the party becomes a column of icons and the shortcuts show icons alone; on a wide one the map gets a column of its own. Nothing scrolls: a card that doesn't fit your screen is left out there.
+
+When you open a tab from HOME, BACK takes you back to HOME.
+
+![The HOME tab: the party on the left, the map and the trainer card on the right, shortcuts along the bottom](shots/companion-home.png "HOME")
+
+To choose what HOME shows, open SETTINGS and tap `HOME TAB` in the COMPANION group. Under CARDS, tap a card to show or hide it, or to move it up or down: the cards are placed in that order. Under SHORTCUTS, tap a place to pick the tab it opens, or `EMPTY`. `RESET TO DEFAULTS` puts everything back. Like the tab bar, your choice is shared by every game.
+
+![The HOME TAB page in the companion's SETTINGS](shots/companion-settings-home.png "SETTINGS > HOME TAB")
+
+Don't want HOME? Hide it in `TAB BAR` like any other tab: it waits under `MORE`, and the companion opens on the first tab you kept.
 
 ### Choosing your tabs
 
