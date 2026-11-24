@@ -854,8 +854,8 @@ private val GEN2_PICTURE_GAPS: Map<GameKind, Map<Int, IntArray>> = mapOf(
         85 to intArrayOf(34, 17), 148 to intArrayOf(39, 20), 239 to intArrayOf(43, 42),
     ),
     GameKind.SILVER to mapOf(
-        5 to intArrayOf(42, 27), 6 to intArrayOf(33, 29), 19 to intArrayOf(36, 31), 85 to intArrayOf(30, 18, 18, 25),
-        141 to intArrayOf(48, 29),
+        5 to intArrayOf(42, 27), 6 to intArrayOf(33, 29), 19 to intArrayOf(36, 31), 26 to intArrayOf(29, 16),
+        85 to intArrayOf(30, 18, 18, 25), 141 to intArrayOf(48, 29),
     ),
     GameKind.CRYSTAL to mapOf(
         5 to intArrayOf(45, 27), 6 to intArrayOf(39, 30), 26 to intArrayOf(43, 20, 34, 20), 141 to intArrayOf(48, 29),
