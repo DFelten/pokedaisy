@@ -41,6 +41,8 @@ object PalPark {
 
     /** Why the two games can't use Pal Park at all, or null. */
     fun linkBlocker(gba: Gen3SaveEditor, gbaGameCode: String, gbaLabel: String, ds: Gen4SaveEditor, dsLabel: String): String? {
+        // A ROM hack's Pokémon are its own species and moves: Pal Park knows the five GBA games'.
+        if (gba.file.rules.family != RETAIL) return tr("Pal Park only takes Pokémon from FireRed, LeafGreen, Ruby, Sapphire and Emerald")
         if (!ds.nationalDex) return tr("{0} needs its National Pokédex for Pal Park", dsLabel)
         if (languageOf(gbaGameCode) != ds.game.gameLanguage) return tr("Pal Park only takes a GBA game in {0}'s language", dsLabel)
         val inPc = (0 until gba.data.boxCount).sumOf { b -> gba.data.boxMons(b).count { !it.isEmpty } }

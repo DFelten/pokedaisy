@@ -29,7 +29,7 @@ class Gen3SaveFileTest {
 
     @Test
     fun readsTheNewerSlotOfEveryFormat() {
-        for (format in Gen3SaveFormat.entries) for (newer in 0..1) {
+        for (format in Gen3SaveFormat.entries.filter { it.retail }) for (newer in 0..1) {
             val save = parse(twoSlots(format, newer), format)
             assertEquals(format.label, newer, save.slot)
             assertEquals(41L, save.counter)
@@ -124,7 +124,7 @@ class Gen3SaveFileTest {
 
     @Test
     fun writingLooksLikeTheGameSaving() {
-        for (format in Gen3SaveFormat.entries) {
+        for (format in Gen3SaveFormat.entries.filter { it.retail }) {
             val before = twoSlots(format, newer = 1, rotation = 13)
             val save = parse(before, format)
             val after = save.withBlocks(save.saveBlock2, save.saveBlock1, save.storage)

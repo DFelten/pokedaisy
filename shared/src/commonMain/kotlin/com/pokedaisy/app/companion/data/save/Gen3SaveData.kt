@@ -28,8 +28,10 @@ class Gen3SaveData(
     private val saveBlock2: ByteArray,
     private val saveBlock1: ByteArray,
     private val storage: ByteArray,
+    /** The game's names, numbers and rules (retail's, or a hack's from its ROM). */
+    val rules: Gen3Rules = format.rules,
 ) : MonSave {
-    constructor(file: Gen3SaveFile) : this(file.format, file.saveBlock2, file.saveBlock1, file.storage)
+    constructor(file: Gen3SaveFile) : this(file.format, file.saveBlock2, file.saveBlock1, file.storage, file.rules)
 
     class Box(val name: String, val mons: List<Gen3BoxMon>)
 
@@ -38,7 +40,7 @@ class Gen3SaveData(
         val alive: Boolean get() = !mon.isEgg && !mon.isBadEgg && hp > 0
     }
 
-    override val game: SaveGameData get() = Gen3GameData
+    override val game: SaveGameData get() = rules
     override val trainerName: String get() = Gen3Text.decode(saveBlock2, 0, 7)
 
     /** The 8 raw name bytes at the start of SaveBlock2 (the game's charset, 0xFF-terminated when short). */
@@ -72,7 +74,7 @@ class Gen3SaveData(
     val party: List<PartyMon> get() = (0 until partyCount.coerceAtMost(PARTY_SIZE)).map {
         val off = format.partyOff + it * PARTY_MON_SIZE
         PartyMon(
-            Gen3BoxMon.read(saveBlock1, off), saveBlock1[off + 0x54].toInt() and 0xFF, u16(saveBlock1, off + PARTY_HP),
+            Gen3BoxMon.read(saveBlock1, off, rules), saveBlock1[off + 0x54].toInt() and 0xFF, u16(saveBlock1, off + PARTY_HP),
             IntArray(6) { s -> u16(saveBlock1, off + PARTY_STATS + s * 2) },
         )
     }
@@ -86,12 +88,13 @@ class Gen3SaveData(
         fun bit(base: ByteArray, off: Int, n: Int) = (base[off + (n - 1) / 8].toInt() shr ((n - 1) % 8)) and 1 == 1
         var seen = 0; var caught = 0; var rSeen = 0; var rCaught = 0
         val regional = HashSet<Int>()
-        for (species in 1 until MAX_SPECIES) {
-            val n = speciesNationalDex.getOrNull(species) ?: continue
-            if (n !in 1..386) continue
-            if (Gen3Trade.inRegionalDex(species, format)) regional += n
+        val r = rules
+        for (species in 1 until r.eggSpecies) {
+            val n = r.nationalDex(species) ?: continue
+            if (n !in 1..r.nationalCount) continue
+            if (r.inRegionalDex(species)) regional += n
         }
-        for (n in 1..386) {
+        for (n in 1..r.nationalCount) {
             val s = bit(saveBlock2, seenOff, n)
             val c = bit(saveBlock2, owned, n)
             if (s) seen++
@@ -119,7 +122,7 @@ class Gen3SaveData(
         Box(Gen3Text.decode(storage, BOX_NAMES_OFF + b * BOX_NAME_SIZE, BOX_NAME_SIZE), List(BOX_SLOTS) { s -> mon(BoxSlot(b, s)) })
     }
 
-    fun mon(at: BoxSlot): Gen3BoxMon = Gen3BoxMon.read(storage, recordOff(at))
+    fun mon(at: BoxSlot): Gen3BoxMon = Gen3BoxMon.read(storage, recordOff(at), rules)
 
     /** The Pokémon at [at] (null past the party), and its level: the party's level byte, a box record's from its EXP. */
     override fun mon(at: MonRef): Pair<Gen3BoxMon, Int>? = when (at) {
@@ -137,7 +140,7 @@ class Gen3SaveData(
         if (count !in 0..PARTY_SIZE) return "party count $count"
         party.forEachIndexed { i, p ->
             if (!p.mon.checksumOk) return "party Pokémon ${i + 1} doesn't decode"
-            if (p.mon.species !in 1..MAX_SPECIES) return "party Pokémon ${i + 1} has species ${p.mon.species}"
+            if (p.mon.species !in 1..rules.eggSpecies) return "party Pokémon ${i + 1} has species ${p.mon.species}"
             if (!p.mon.isEgg && p.level !in 1..100) return "party Pokémon ${i + 1} is level ${p.level}"
         }
         // The game empties the slots past the count (ZeroMonData): zeroes, but the mail field (+0x55) MAIL_NONE, 0xFF -
@@ -150,14 +153,14 @@ class Gen3SaveData(
                 v == 0 || b == MAIL_OFF && v == MAIL_NONE
             }
             // A whole Pokémon left there (a party some tool shrank without clearing) is still this layout's data.
-            if (!empty && !Gen3BoxMon.read(saveBlock1, off).let { it.checksumOk && it.species in 1 until MAX_SPECIES }) {
+            if (!empty && !Gen3BoxMon.read(saveBlock1, off, rules).let { it.checksumOk && it.species in 1 until rules.eggSpecies }) {
                 return "party slot ${i + 1} holds data past the party"
             }
         }
         if (currentBox >= BOXES) return "current box ${currentBox + 1}"
         val records = (0 until BOXES * BOX_SLOTS).map { mon(BoxSlot(it / BOX_SLOTS, it % BOX_SLOTS)) }
         val used = records.count { !it.isEmpty }
-        val unreadable = records.count { !it.isEmpty && (it.isBadEgg || it.species !in 1..MAX_SPECIES) }
+        val unreadable = records.count { !it.isEmpty && (it.isBadEgg || it.species !in 1..rules.eggSpecies) }
         // A save of another layout decodes as noise in nearly every slot; a real one has a Bad Egg at most.
         if (used >= 4 && unreadable * 2 > used) return "$unreadable of $used PC records don't decode"
         // No growth rate goes past 1,640,000 at level 100, and the games stop there: more is another engine's record
@@ -202,13 +205,15 @@ class Gen3SaveData(
  * values that can be edited - money, coins, the bag, a Pokémon's held item and moves - only take what [Gen3Legal] says
  * that game allows, and anything else throws before a byte changes.
  */
-/** Gen 3's five pockets in the order Emerald's bag shows them, as the shared pages name them. */
-private val POCKETS = listOf(
-    PocketKind.ITEMS to BagPocket.ITEMS, PocketKind.BALLS to BagPocket.BALLS, PocketKind.TMHM to BagPocket.TMHM,
+/** Gen 3's pockets in the order Emerald's bag shows them (Medicine where a hack added it), as the shared pages name them. */
+private val ALL_POCKETS = listOf(
+    PocketKind.ITEMS to BagPocket.ITEMS, PocketKind.MEDICINE to BagPocket.MEDICINE, PocketKind.BALLS to BagPocket.BALLS, PocketKind.TMHM to BagPocket.TMHM,
     PocketKind.BERRIES to BagPocket.BERRIES, PocketKind.KEY to BagPocket.KEY,
 )
 
 class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
+    /** The pockets this layout has (MEDICINE only in a hack that added it). */
+    private val POCKETS = ALL_POCKETS.filter { (_, p) -> file.format.pockets.any { it.pocket == p } }
     private fun refuseIf(condition: Boolean, why: () -> String) { if (condition) throw SaveEditRefused(why()) }
     private fun refuse(why: String): Nothing = throw SaveEditRefused(why)
 
@@ -216,7 +221,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     private val saveBlock1 = file.saveBlock1.copyOf()
     private val storage = file.storage.copyOf()
 
-    override val data: Gen3SaveData get() = Gen3SaveData(file.format, saveBlock2, saveBlock1, storage)
+    override val data: Gen3SaveData get() = Gen3SaveData(file.format, saveBlock2, saveBlock1, storage, file.rules)
+    private val rules: Gen3Rules get() = file.rules
     override fun fresh(): MonSaveEditor = Gen3SaveEditor(file)
     override fun snapshot() = EditorSnapshot(listOf(saveBlock2.copyOf(), saveBlock1.copyOf(), storage.copyOf()))
     override fun restore(snapshot: EditorSnapshot) {
@@ -227,8 +233,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     override val boxNameMax: Int get() = Gen3Names.BOX_NAME_MAX
     override fun canWrite(text: String): Boolean = Gen3Names.encodable(text)
     override val canEditItems: Boolean get() = true
-    override fun holdable(): List<Int> = Gen3Legal.holdable(file.format)
-    override fun learnable(at: MonRef): Set<Int> = data.mon(at)?.let { (mon, level) -> Gen3Legal.learnable(file.format, mon.species, level) } ?: emptySet()
+    override fun holdable(): List<Int> = rules.holdable()
+    override fun learnable(at: MonRef): Set<Int> = data.mon(at)?.let { (mon, level) -> rules.learnable(mon.species, level) } ?: emptySet()
 
     override val changed: Boolean get() =
         !saveBlock2.contentEquals(file.saveBlock2) || !saveBlock1.contentEquals(file.saveBlock1) || !storage.contentEquals(file.storage)
@@ -253,7 +259,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     /** Puts a record at [at]: [bytes] must decode (a trade's), or be all zero (the slot emptied, like ZeroBoxMonData). */
     fun putRecord(at: BoxSlot, bytes: ByteArray) {
         require(bytes.size == Gen3BoxMon.SIZE)
-        require(bytes.all { it.toInt() == 0 } || Gen3BoxMon.read(bytes, 0).let { it.checksumOk && !it.isEmpty }) { "not a readable record" }
+        require(bytes.all { it.toInt() == 0 } || Gen3BoxMon.read(bytes, 0, rules).let { it.checksumOk && !it.isEmpty }) { "not a readable record" }
         bytes.copyInto(storage, Gen3SaveData.recordOff(at))
     }
 
@@ -283,9 +289,12 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         saveBlock2[f.pokedexOff] = 0       // order: numerical
     }
 
-    private fun dexBit(base: ByteArray, off: Int, national: Int) = (base[off + (national - 1) / 8].toInt() shr ((national - 1) % 8)) and 1 == 1
+    /** A seen / caught bit; [off] -1 (a layout without SaveBlock1's copies, Recharged Emerald's) reads as set. */
+    private fun dexBit(base: ByteArray, off: Int, national: Int) =
+        off < 0 || (base[off + (national - 1) / 8].toInt() shr ((national - 1) % 8)) and 1 == 1
 
     private fun setDexBit(base: ByteArray, off: Int, national: Int) {
+        if (off < 0) return
         val o = off + (national - 1) / 8
         base[o] = (base[o].toInt() or (1 shl ((national - 1) % 8))).toByte()
     }
@@ -295,7 +304,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
 
     /** GetSetPokedexFlag(FLAG_GET_CAUGHT): owned, and seen in all three copies. */
     fun caught(species: Int): Boolean {
-        val n = speciesNationalDex.getOrNull(species)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: return false
+        val n = rules.nationalDex(species)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: return false
         return dexBit(saveBlock2, ownedOff, n) && dexBit(saveBlock2, seenOff, n) && dexBit(saveBlock1, f.seen1Off, n) && dexBit(saveBlock1, f.seen2Off, n)
     }
 
@@ -304,7 +313,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
      * with Unown's / Spinda's personality kept when it's the first one caught (HandleSetPokedexFlag).
      */
     fun markCaught(species: Int, personality: Long) {
-        val n = speciesNationalDex.getOrNull(species)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: return
+        val n = rules.nationalDex(species)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: return
         val first = !caught(species)
         setDexBit(saveBlock2, seenOff, n)
         setDexBit(saveBlock1, f.seen1Off, n)
@@ -340,7 +349,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         val item = stacks[index].item
         if (quantity == 0) {
             // Key items and HMs are handed out once: without them the game can't go on.
-            require(pocket != BagPocket.KEY && item < Gen3SaveFormat.FIRST_HM) { "item $item stays" }
+            require(pocket != BagPocket.KEY && !rules.isHm(item)) { "item $item stays" }
             stacks.removeAt(index)
         } else {
             requireLegal(pocket, item, quantity)
@@ -360,8 +369,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
 
     private fun requireLegal(pocket: BagPocket, item: Int, quantity: Int) {
         require(pocket != BagPocket.KEY) { "key items aren't edited" }
-        require(Gen3Legal.pocketOf(f, item) == pocket) { "item $item doesn't go in $pocket in ${f.label}" }
-        require(quantity in 1..f.stackMax(pocket, item)) { "$quantity of item $item" }
+        require(rules.pocketOf(item) == pocket) { "item $item doesn't go in $pocket in ${f.label}" }
+        require(quantity in 1..f.stackMax(pocket, item) { rules.isHm(it) }) { "$quantity of item $item" }
     }
 
     /** The pocket packed from its first slot, the rest zeroed (CompactItemsInBagPocket); TMs and berries by id, as the
@@ -403,14 +412,14 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
      * much as its max did (a fainted one stays at 0; Shedinja keeps 1).
      */
     private fun refreshPartyStats(off: Int, fullHp: Boolean = false) {
-        val mon = Gen3BoxMon.read(saveBlock1, off)
+        val mon = Gen3BoxMon.read(saveBlock1, off, rules)
         if (!mon.checksumOk || mon.isEgg && !fullHp) return
         val level = mon.level.coerceIn(1, 100)
-        val stats = Gen3StatCalc.stats(mon, level)
+        val stats = rules.stats(mon, level)
         val oldMax = u16(saveBlock1, off + Gen3SaveData.PARTY_STATS)
         val hp = u16(saveBlock1, off + Gen3SaveData.PARTY_HP)
         val newHp = when {
-            mon.species == Gen3Species.SHEDINJA -> if (hp != 0 || oldMax == 0 || fullHp) 1 else 0
+            mon.species == rules.shedinja -> if (hp != 0 || oldMax == 0 || fullHp) 1 else 0
             fullHp || (hp == 0 && oldMax == 0) -> stats[0]
             hp == 0 -> 0
             else -> (hp + stats[0] - oldMax).coerceIn(1, stats[0])
@@ -487,7 +496,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
                     putRecord(from.at, ByteArray(Gen3BoxMon.SIZE))
                 } else {
                     val leaving = data.party[to.index]
-                    refuseIf(Gen3Legal.isMail(leaving.mon.heldItem)) { tr("A Pokémon holding mail can't go in the PC") }
+                    refuseIf(rules.isMail(leaving.mon.heldItem)) { tr("A Pokémon holding mail can't go in the PC") }
                     refuseIf(mon.isEgg && aliveExcept(to.index) == 0) { tr("That's your last Pokémon able to battle") }
                     val record = partyBytes(to.index).copyOf(Gen3BoxMon.SIZE)
                     writePartyMon(to.index, mon.encode())
@@ -496,7 +505,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
             }
             from is MonRef.Party && to is MonRef.Pc -> {
                 val leaving = requireNotNull(data.party.getOrNull(from.index)) { "nothing there" }
-                refuseIf(Gen3Legal.isMail(leaving.mon.heldItem)) { tr("A Pokémon holding mail can't go in the PC") }
+                refuseIf(rules.isMail(leaving.mon.heldItem)) { tr("A Pokémon holding mail can't go in the PC") }
                 val target = data.mon(to.at)
                 refuseIf(!target.isEmpty && target.isBadEgg) { "a Bad Egg sits there" }
                 val incomingAlive = !target.isEmpty && !target.isEgg
@@ -547,7 +556,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     /** The level the Pokémon at [at] had when the save was read: the editor never takes one below it. */
     override fun levelAsRead(at: MonRef): Int {
         val mon = monAt(at) ?: return 1
-        val read = Gen3SaveData(f, file.saveBlock2, file.saveBlock1, file.storage)
+        val read = Gen3SaveData(f, file.saveBlock2, file.saveBlock1, file.storage, file.rules)
         val was = read.party.firstOrNull { it.mon.personality == mon.personality && it.mon.otId == mon.otId }?.mon
             ?: read.boxes.asSequence().flatMap { it.mons }.firstOrNull { !it.isEmpty && it.personality == mon.personality && it.otId == mon.otId }
         return was?.level ?: mon.level
@@ -557,7 +566,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     override fun setLevel(at: MonRef, level: Int) {
         val (mon, _) = editable(at)
         require(level in levelAsRead(at)..100) { "level $level" }
-        put(at, mon.withChanges(exp = Gen3Species.expForLevel(mon.species, level)))
+        put(at, mon.withChanges(exp = rules.expForLevel(mon.species, level)))
     }
 
     /** IVs 0-31 each, in the game's stat order. */
@@ -604,11 +613,11 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     override fun reroll(at: MonRef, nature: Int?, shiny: Boolean?, gender: Gen3Gender?, abilityNum: Int?) {
         val (mon, _) = editable(at)
         require(nature == null || nature in 0..24) { "nature $nature" }
-        require(abilityNum == null || abilityNum in Gen3Species.abilities(mon.species).indices) { "ability $abilityNum" }
+        require(abilityNum == null || abilityNum in rules.abilities(mon.species).indices) { "ability $abilityNum" }
         val p = Gen3Personality.find(mon, nature, shiny, gender, abilityNum) ?: refuse(tr("No Pokémon like that can exist"))
-        val twoAbilities = Gen3Species.abilities(mon.species).size == 2
+        val twoAbilities = rules.abilities(mon.species).size == 2
         val bit = if (twoAbilities) (p and 1L).toInt() else mon.abilityNum
-        val changed = Gen3BoxMon.read(mon.withChanges(abilityNum = bit), 0).withPersonality(p)
+        val changed = Gen3BoxMon.read(mon.withChanges(abilityNum = bit), 0, rules).withPersonality(p)
         put(at, changed)
     }
 
@@ -627,8 +636,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         val mons = slots.map { record(it) to data.mon(it) }.filter { !it.second.isEmpty }
         val (good, bad) = mons.partition { !it.second.isBadEgg }
         val order = when (by) {
-            BoxSort.DEX -> good.sortedWith(compareBy({ it.second.isEgg }, { speciesNationalDex.getOrElse(it.second.species) { 999 } }, { -it.second.level }))
-            BoxSort.LEVEL -> good.sortedWith(compareBy({ it.second.isEgg }, { -it.second.level }, { speciesNationalDex.getOrElse(it.second.species) { 999 } }))
+            BoxSort.DEX -> good.sortedWith(compareBy({ it.second.isEgg }, { rules.nationalDex(it.second.species) ?: 999 }, { -it.second.level }))
+            BoxSort.LEVEL -> good.sortedWith(compareBy({ it.second.isEgg }, { -it.second.level }, { rules.nationalDex(it.second.species) ?: 999 }))
             BoxSort.NAME -> good.sortedWith(compareBy({ it.second.isEgg }, { name(it.second) }))
         } + bad
         slots.forEachIndexed { i, at ->
@@ -650,7 +659,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     /** Marks every species [species] as seen (all three copies), and caught too when [caught]. */
     fun markDex(species: Iterable<Int>, caught: Boolean) {
         for (s in species) {
-            val n = speciesNationalDex.getOrNull(s)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: continue
+            val n = rules.nationalDex(s)?.takeIf { it in 1..NATIONAL_DEX_COUNT } ?: continue
             setDexBit(saveBlock2, seenOff, n)
             setDexBit(saveBlock1, f.seen1Off, n)
             setDexBit(saveBlock1, f.seen2Off, n)
@@ -678,15 +687,15 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         val d = data
         return POCKETS.map { (kind, p) -> SavePocket(kind, f.pocket(p).slots, d.pocket(p)) }
     }
-    override fun stackMax(kind: PocketKind, item: Int): Int = f.stackMax(bagPocket(kind), item)
+    override fun stackMax(kind: PocketKind, item: Int): Int = f.stackMax(bagPocket(kind), item) { rules.isHm(it) }
     override fun fixedStack(kind: PocketKind, item: Int): Boolean =
-        kind == PocketKind.KEY || (kind == PocketKind.TMHM && item >= Gen3SaveFormat.FIRST_HM)
-    override fun addable(kind: PocketKind): List<Int> = if (kind == PocketKind.KEY) emptyList() else Gen3Legal.bagItems(f, bagPocket(kind))
-    override fun tmMove(item: Int): Int? = Gen3Legal.tmHmMove(item)
+        kind == PocketKind.KEY || (kind == PocketKind.TMHM && rules.isHm(item))
+    override fun addable(kind: PocketKind): List<Int> = if (kind == PocketKind.KEY) emptyList() else rules.bagItems(bagPocket(kind))
+    override fun tmMove(item: Int): Int? = rules.tmHmMove(item)
     override val dex: DexSummary get() {
         val c = data.dexCounts
         return DexSummary(
-            if (f == Gen3SaveFormat.FIRERED_LEAFGREEN) "KANTO" else "HOENN", c.regionalSeen, c.regionalCaught, c.seen, c.caught, nationalDex,
+            if (f.kanto) "KANTO" else "HOENN", c.regionalSeen, c.regionalCaught, c.seen, c.caught, nationalDex,
         )
     }
     override fun setQuantity(kind: PocketKind, index: Int, quantity: Int) = setQuantity(bagPocket(kind), index, quantity)
@@ -696,8 +705,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         POCKETS.firstOrNull { it.first == kind }?.second ?: throw IllegalArgumentException("no $kind pocket in Gen 3")
 
     /** Every species of the games (1-386 in the National Dex), or the regional dex's. */
-    fun allSpecies(regionalOnly: Boolean): List<Int> = (1 until Gen3SaveData.MAX_SPECIES).filter { s ->
-        speciesNationalDex.getOrNull(s)?.let { it in 1..NATIONAL_DEX_COUNT } == true && (!regionalOnly || Gen3Trade.inRegionalDex(s, f))
+    fun allSpecies(regionalOnly: Boolean): List<Int> = (1 until rules.eggSpecies).filter { s ->
+        rules.nationalDex(s)?.let { it in 1..NATIONAL_DEX_COUNT } == true && (!regionalOnly || rules.inRegionalDex(s))
     }
 
     // ---- Events ----
@@ -717,7 +726,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     /** Gives the Pokémon at [at] [item] to hold (0 = nothing): any item [Gen3Legal.holdable] lists, or the one it has. */
     override fun setHeldItem(at: MonRef, item: Int) {
         val (mon, _) = editable(at)
-        require(item == 0 || item == mon.heldItem || item in Gen3Legal.holdable(f)) { "item $item can't be held" }
+        require(item == 0 || item == mon.heldItem || item in rules.holdable()) { "item $item can't be held" }
         require(mon.heldItem !in MAIL_ITEMS) { "mail stays with its letter" }
         put(at, mon.withChanges(heldItem = item))
     }
@@ -728,9 +737,9 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
      */
     override fun setMoves(at: MonRef, moves: List<Int>) {
         val (mon, level) = editable(at)
-        require(moves.size in 1..4 && moves.all { it in 1..Gen3Legal.LAST_MOVE } && moves.toSet().size == moves.size) { "moves $moves" }
+        require(moves.size in 1..4 && moves.all { it in 1..rules.lastMove } && moves.toSet().size == moves.size) { "moves $moves" }
         val known = mon.moves
-        val learnable by lazy { Gen3Legal.learnable(f, mon.species, level) }
+        val learnable by lazy { rules.learnable(mon.species, level) }
         require(moves.all { it in known || it in learnable }) { "a move ${mon.species} can't learn" }
         val ids = IntArray(4)
         val pp = IntArray(4)
@@ -742,7 +751,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
                 pp[i] = mon.pp[was]
                 bonuses = bonuses or (((mon.ppBonuses shr (was * 2)) and 3) shl (i * 2))
             } else {
-                pp[i] = Gen3Legal.basePp(m)
+                pp[i] = rules.basePp(m)
             }
         }
         put(at, mon.withChanges(moves = ids, pp = pp, ppBonuses = bonuses))

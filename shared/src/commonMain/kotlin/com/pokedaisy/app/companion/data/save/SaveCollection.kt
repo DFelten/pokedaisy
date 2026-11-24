@@ -8,7 +8,7 @@ object SaveCollection {
     /** One Pokémon: which save ([source], an index into the saves given), where in it, and its National Dex number. */
     class Item(val source: Int, val at: MonRef, val mon: SaveMon, val level: Int, val national: Int) {
         /** A GBA game's PC Pokémon: what Pal Park takes. */
-        val palParkable: Boolean get() = at is MonRef.Pc && !mon.isEgg && mon is Gen3BoxMon
+        val palParkable: Boolean get() = at is MonRef.Pc && !mon.isEgg && mon is Gen3BoxMon && mon.rules.family == RETAIL
     }
 
     enum class Sort { DEX, LEVEL, GAME }

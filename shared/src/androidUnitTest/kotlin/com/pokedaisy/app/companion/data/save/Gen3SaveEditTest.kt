@@ -207,6 +207,6 @@ class Gen3SaveEditTest {
         assertNull(Gen3Legal.pocketOf(f, ITEM_ENIGMA_BERRY))
         assertTrue(Gen3Legal.holdable(f).let { leftovers in it && tm06 in it && hm01 !in it && orangeMail !in it })
         // MASTER BALL .. PREMIER BALL in every game.
-        for (fmt in Gen3SaveFormat.entries) assertEquals(12, Gen3Legal.bagItems(fmt, BagPocket.BALLS).size)
+        for (fmt in Gen3SaveFormat.entries.filter { it.retail }) assertEquals(12, Gen3Legal.bagItems(fmt, BagPocket.BALLS).size)
     }
 }

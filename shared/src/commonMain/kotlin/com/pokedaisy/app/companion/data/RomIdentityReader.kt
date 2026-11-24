@@ -1,5 +1,6 @@
 package com.pokedaisy.app.companion.data
 
+import okio.buffer
 import okio.*
 
 /** Header and fingerprint rules shared by raw files and Android's archive reader. Reads never require a core. */
@@ -38,6 +39,8 @@ class RomIdentityReader(
         }
     }
     fun sha1(): String? = digest { HashingSource.sha1(it) }
+    /** The whole file (a hack's save rules are read from it once: [com.pokedaisy.app.companion.data.save.Gen3SaveReader]). */
+    fun readAll(): ByteArray? = runCatching { openSource().buffer().use { it.readByteArray() } }.getOrNull()
     fun md5(): String? = digest { HashingSource.md5(it) }
     fun raHash(): String? = if (isNds()) ndsRaHash() else md5()
     fun raConsole(): Int = when {
