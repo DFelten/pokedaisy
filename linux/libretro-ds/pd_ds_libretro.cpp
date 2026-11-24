@@ -1302,7 +1302,8 @@ RETRO_API bool retro_load_game(const retro_game_info* info){
       ds_battle_set_base_pp(ds_move_base_pp(rom,pd_ds::companionGame));
     }
   }
-  {pd_companion none{};pd_ds::companionHost=pd_ds::environment && pd_ds::environment(PD_ENV_SET_COMPANION,&none);}
+  // Only a host that says it draws it (PD_ENV_PROBE): a frontend answering every private command true showed nothing.
+  {pd_companion ask{};ask.active=PD_ENV_PROBE;pd_ds::companionHost=pd_ds::environment && pd_ds::environment(PD_ENV_SET_COMPANION,&ask) && ask.active==1;}
   pd_ds::choose_companion_canvas();
   const auto old_layout=opt("pokedaisy_ds_layout");
   pd_ds::shell.init(dir(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY),

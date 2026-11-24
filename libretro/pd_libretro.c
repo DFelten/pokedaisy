@@ -1417,12 +1417,15 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
   choose_canvas();
   read_options();
   {
+    // Only a host that says it draws them (PD_ENV_PROBE): a frontend answering every private command true kept nothing.
     struct pd_hud probe;
     memset(&probe, 0, sizeof probe);
-    hudHost = realEnv && realEnv(PD_ENV_SET_HUD, &probe);
-    struct pd_companion off;
-    memset(&off, 0, sizeof off);
-    companionHost = realEnv && realEnv(PD_ENV_SET_COMPANION, &off);
+    probe.active = PD_ENV_PROBE;
+    hudHost = realEnv && realEnv(PD_ENV_SET_HUD, &probe) && probe.active == 1;
+    struct pd_companion ask;
+    memset(&ask, 0, sizeof ask);
+    ask.active = PD_ENV_PROBE;
+    companionHost = realEnv && realEnv(PD_ENV_SET_COMPANION, &ask) && ask.active == 1;
     if (companionHost && !compPx) {
       compPx = calloc((size_t)CANVAS_MAX_W * CANVAS_MAX_H, sizeof *compPx);
       compInner = calloc((size_t)CANVAS_MAX_W * CANVAS_MAX_H, sizeof *compInner);
