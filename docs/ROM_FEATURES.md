@@ -748,7 +748,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
     party's bits each frame (fainted ones left out: Gen 1 counts every bit), FULL makes the `cp` a `ret`. Yellow headless (a Lv 2
     Rattata, 16 EXP): the others got 0 / 2 / 16 with OFF / SPLIT / FULL; Crystal and Gold / Silver's places match pret's symbols.
     Every retail cart here, Brown, Yellow Legacy, Crystal Clear, PureRed / PureBlue (not Crystal Legacy, Polished, Prism).
-    MODERN (Gen 2 only, 2026-11-23: `GbGamePatches.expModern`): FULL's `ret` plus three hooks into bank 0F's padding, two passes
+    MODERN (Gen 2, 2026-11-23: `GbGamePatches.expModern`): FULL's `ret` plus three hooks into bank 0F's padding, two passes
     as Gen 6 pays. The loop's NotFainted check pays only the fighters (wBattleParticipantsIncludingFainted) on the first pass, with
     their boxes, level ups and moves; at .done one line ("The others gained EXP. Points!", German "Die anderen erhalten auch EP!",
     two lines of the text box) shows when anyone else is marked, and the loop runs again for them alone: wStringBuffer2 (the amount)
@@ -757,6 +757,17 @@ change to any of the places listed under "Where it's decided" updates its rows h
     Crystal rev 1 and Kristall: the fighter's box and level up, the line, then the other's level up (+16 / +8); with the Exp. Share
     held the game's own two passes as with FULL. Found in every retail Gold / Silver / Crystal in English and German
     (`GbGamePatchesTest`); other languages get the English line. Falls back to FULL where not found.
+    MODERN on Red / Blue / Yellow (2026-11-24, `GbGamePatches.expModernGen1`): the same two passes in GainExperience's bank (0x15 in
+    Red / Blue, the end of its padding), four hooks. The loop's flag check pays on the first pass the marked ones that fought
+    (wPartyFoughtCurrentEnemyFlags, set with the gain bit as a Pokémon goes out), on the rest's pass the marked ones that didn't;
+    `call nz, BoostExp` goes by a trampoline that, on the rest's pass, halves hQuotient's EXP after the boosts (stat EXP stays whole);
+    `ld hl, GainedText; call PrintText` shows no box on that pass; .done's `ld hl, wPartyGainExpFlags` jumps to the line and the second
+    pass. The pass is wBoostExpByExpAll = 2 (FaintEnemyPokemon writes 0 before the first pass and 1 before the EXP.ALL item's; only
+    the gained box reads it), back to 0 after. German carts (their box says "erhält") get the German line. Played headless: Rote
+    Edition and English Red (the German save), English Yellow (a new game with Red's party poked in): the fighter's box and level up,
+    the line, the others' level ups (+23 / +11 each; FULL +23 each); with EXP.ALL in the bag MODERN's passes, then the item's own
+    as the game. Found in Red / Blue / Yellow (USA, Europe), Rote / Blaue Edition (pret's builds of the English carts byte for byte);
+    the hacks on that code aren't checked.
 
 49. The European FireRed / LeafGreen / Emerald carts' TRAINER CARD (2026-11-18, `CardStyle.KANTO_DE` ... `HOENN_ES`): English's save
     offsets, each cart's own card tiles (their words are drawn in them), FONT_NORMAL, widths and redrawn tilemaps (found by mapping

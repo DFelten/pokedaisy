@@ -311,7 +311,7 @@ Normally only the Pokémon that fought gain EXP when you win, so the rest of you
 - **`OFF`** (the default) leaves the game's own rules.
 - **`SPLIT`** counts every Pokémon in your party as having fought: a win's EXP is shared out across the whole team, as the first games' version of this did. Each gets a smaller share, but nobody gets nothing.
 - **`FULL EXP`** gives every Pokémon in your party the EXP the one that fought would have had on its own. The game's own boosts still count: a held item that shares or boosts EXP, and the bonus for a Pokémon from a trade.
-- **`MODERN`** works like the newer games: the Pokémon that fought get all of the EXP and the rest of your team half of it. You see the message and level ups for the ones that fought first, then one line saying the others gained EXP too, then the others' level ups, instead of a message you have to press past for every Pokémon. Only in Gold, Silver and Crystal for now; elsewhere the list doesn't offer it.
+- **`MODERN`** works like the newer games: the Pokémon that fought get all of the EXP and the rest of your team half of it. You see the message and level ups for the ones that fought first, then one line saying the others gained EXP too, then the others' level ups, instead of a message you have to press past for every Pokémon. Only in Red, Blue, Yellow, Gold, Silver and Crystal for now; elsewhere the list doesn't offer it.
 
 Eggs and fainted Pokémon are left out. The game shows each Pokémon's EXP as it comes, level ups and new moves included, and evolves the ones that leveled up once the battle is over. Battles that give no EXP in the game (link battles, the Battle Frontier) still give none.
 

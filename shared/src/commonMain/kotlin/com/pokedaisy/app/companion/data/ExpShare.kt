@@ -29,7 +29,7 @@ object ExpShare {
         OFF(0, tk("OFF")),
         SPLIT(1, tk("SPLIT")),
         FULL(2, tk("FULL EXP")),
-        /** Gen 6's way (Gen 2 carts only so far, [Found.modern]): the ones that fought get all of a win's EXP, the rest half,
+        /** Gen 6's way (Game Boy carts only so far, [Found.modern]): the ones that fought get all of a win's EXP, the rest half,
          * shown as one line for the rest of the party instead of one box each. */
         MODERN(3, tk("MODERN"));
 
@@ -46,7 +46,7 @@ object ExpShare {
      * byte ([width] 1), FULL's `ret`, and the battle byte ([battle]: Gen 1's wIsInBattle, read here; 0 = Gen 2's, which
      * [mark] is given) that says when that byte is the battle's: the same RAM is the field's and the PC's buffer outside
      * one. A DS game ([ds]) has none of them here: its native side (pk_nds.cpp's expShareTick) writes the battle's masks
-     * and patches the battle overlay itself. [modern]: MODERN's writes where the game has them (a Gen 2 cart's,
+     * and patches the battle overlay itself. [modern]: MODERN's writes where the game has them (a Game Boy cart's,
      * [GbGamePatches]), FULL's `ret` among them; null = no MODERN.
      */
     class Found(val sentPokes: Long, val full: List<InstantText.Write>, val width: Int = 2, val ds: Boolean = false, val battle: Long = 0,

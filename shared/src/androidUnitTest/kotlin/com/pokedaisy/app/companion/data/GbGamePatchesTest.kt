@@ -78,6 +78,32 @@ class GbGamePatchesTest {
     }
 
     @Test
+    fun `EXP SHARE MODERN on Red, Blue and Yellow - four hooks into GainExperience's bank, the line in the cart's language`() {
+        val carts = listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb",
+            "Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", "Pokemon - Blue Version (USA, Europe) (SGB Enhanced).gb",
+            "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb")
+        var seen = 0
+        fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
+        for (name in carts) {
+            val r = rom(name) ?: continue
+            seen++
+            val exp = GbGamePatches.find(r)!!.exp!!
+            val m = assertNotNull(name, exp.modern).let { exp.modern!! }
+            assertEquals(name, exp.full.single().addr, m.first().addr)
+            val bank = (exp.full.single().addr - tag) / 0x4000
+            assertTrue(name, m.all { (it.addr - tag) / 0x4000 == bank })
+            val hooks = m.drop(1).filter { p -> p.expect.any { it != 0.toByte() } }
+            assertEquals(name, 4 + 1 + 2 + 1, hooks.size)                                    // the check (16 bytes), the boost's call, the box's (6), .done's jp
+            // "erhalten auch EP!" in German: its "EP!" bytes (84 8F E7) in the trampolines' writes.
+            val all = m.filter { p -> p.expect.none { it != 0.toByte() } }.flatMap { it.value.toList() }.toByteArray()
+            assertEquals(name, "Germany" in name, hex(all).contains("848fe7"))
+            File("build/exp-modern").apply { mkdirs() }.resolve(name.substringBefore(" (") + ".txt")
+                .writeText(m.joinToString("") { "rompatch %x %s %x %s\n".format(it.addr, hex(it.expect), it.addr, hex(it.value)) })
+        }
+        assumeTrue(seen > 0)
+    }
+
+    @Test
     fun `every Game Boy cart here - all three or the ones it has, never a guess`() {
         assumeTrue(dir.isDirectory)
         var n = 0
