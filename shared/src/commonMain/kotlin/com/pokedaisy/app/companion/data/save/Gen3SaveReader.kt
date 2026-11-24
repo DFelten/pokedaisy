@@ -58,6 +58,7 @@ object Gen3SaveReader {
                 ULTRA_VIOLET_V1_22_SHA1 to Hack(Gen3SaveFormat.ULTRA_VIOLET, { com.pokedaisy.app.companion.data.NATIVE_ULTRA_VIOLET }, "ultra-violet", InPlaceBase.FIRERED_REV0),
                 ASH_GRAY_V4_5_3_SHA1 to Hack(Gen3SaveFormat.ASH_GRAY, { com.pokedaisy.app.companion.data.NATIVE_ASH_GRAY }, "ash-gray", InPlaceBase.FIRERED_REV0),
                 ASH_GRAY_FORK_BUG_FIX_V1_0_SHA1 to Hack(Gen3SaveFormat.ASH_GRAY, { com.pokedaisy.app.companion.data.NATIVE_ASH_GRAY }, "ash-gray", InPlaceBase.FIRERED_REV0),
+                FIRERED_ROCKET_EDITION_UNVERSIONED_SHA1 to Hack(Gen3SaveFormat.ROCKET_EDITION, { com.pokedaisy.app.companion.data.NATIVE_ROCKET_EDITION }, "rocket-edition", InPlaceBase.FIRERED_REV0),
                 // One family: the three builds are one game (Rebalanced only changes moves and types).
                 RECHARGED_EMERALD_V2_2_5_SHA1 to Hack(Gen3SaveFormat.RECHARGED_EMERALD_V2_2_5, { com.pokedaisy.app.companion.data.NATIVE_RECHARGED_EMERALD_V2_2_5 }, "recharged-emerald", itemLayout = ItemLayout.RECHARGED),
                 RECHARGED_EMERALD_V2_2_8_SHA1 to Hack(Gen3SaveFormat.RECHARGED_EMERALD_V2_2_8, { com.pokedaisy.app.companion.data.NATIVE_RECHARGED_EMERALD_V2_2_8 }, "recharged-emerald", itemLayout = ItemLayout.RECHARGED),
@@ -70,8 +71,9 @@ object Gen3SaveReader {
     private fun loadRules(hack: Hack, rom: RomIdentityReader): Boolean {
         if (Gen3Rules.isInstalled(hack.format)) return true
         return runCatching {
-            val tables = gen3RomTables(hack.config(), hack.family, hack.inPlace, hack.itemLayout) ?: return false
             val bytes = rom.readAll() ?: return false
+            val tables = gen3RomTables(hack.config(), hack.family, hack.inPlace, hack.itemLayout)
+                ?.let { t -> hack.inPlace?.let { it.follow(bytes, t) ?: return false } ?: t } ?: return false
             Gen3Rules.install(hack.format, RomGen3Rules(bytes, tables).also { it.lastMove })
             true
         }.getOrDefault(false)
@@ -112,8 +114,10 @@ object Gen3SaveReader {
             else if (base == InPlaceBase.FIRERED_REV1) com.pokedaisy.app.companion.data.NATIVE_FIRERED_REV1
             else com.pokedaisy.app.companion.data.NATIVE_FIRERED_REV0_RETAIL
         val rules = runCatching {
-            val tables = gen3RomTables(cfg, RETAIL, base) ?: return format.rules
-            RomGen3Rules(rom.readAll() ?: return format.rules, tables).also { it.lastMove }
+            val bytes = rom.readAll() ?: return format.rules
+            // Its tables where its code points (a rebuild's don't follow: retail's then).
+            val tables = gen3RomTables(cfg, RETAIL, base)?.let { base.follow(bytes, it) } ?: return format.rules
+            RomGen3Rules(bytes, tables).also { it.lastMove }
         }.getOrNull() ?: return format.rules
         key?.let { synchronized(inPlace) { inPlace[it] = rules } }
         return rules

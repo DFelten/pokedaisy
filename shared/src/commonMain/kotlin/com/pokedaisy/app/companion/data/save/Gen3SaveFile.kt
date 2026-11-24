@@ -119,6 +119,7 @@ enum class Gen3SaveFormat(
     ORANGE_ISLANDS("ORANGE ISLANDS", FIRERED_LEAFGREEN),
     ULTRA_VIOLET("ULTRA VIOLET", FIRERED_LEAFGREEN),
     ASH_GRAY("ASH GRAY", FIRERED_LEAFGREEN),
+    ROCKET_EDITION("ROCKET EDITION", FIRERED_LEAFGREEN),
     ;
 
     /** A hack edited in place in [like]'s layout: the same offsets, its own rules ([retail] false). */

@@ -391,10 +391,76 @@ fun gen3RomTables(
 
 /**
  * A retail cart's gSpeciesNames, gMoveNames, gBattleMoves and gItems: where a hack edited in place keeps its own (Glazed
- * renamed and rebalanced in those very tables, so no first entry can find them).
+ * renamed and rebalanced in those very tables, so no first entry can find them) - and [pools], where the cart's code
+ * loads each of its tables from: the Game Freak header's word (0x08000100 on) first, then literal-pool words. A hack
+ * edited in place keeps that code, so the words there point at its tables wherever it moved them (Rocket Edition's
+ * moves, Elysium Part B's species): [follow]. (Found in the retail ROMs by their words equal to each table's address;
+ * sTMHMMoves has no such word and stays where it is.)
  */
-enum class InPlaceBase(val speciesNames: Long, val moveNames: Long, val battleMoves: Long, val items: Long) {
-    EMERALD(0x083185C8, 0x0831977C, 0x0831C898, 0x085839A0),
-    FIRERED_REV0(0x08245EE0, 0x08247094, 0x08250C04, 0x083DB028),
-    FIRERED_REV1(0x08245F50, 0x08247104, 0x08250C74, 0x083DB098),
+enum class InPlaceBase(val speciesNames: Long, val moveNames: Long, val battleMoves: Long, val items: Long, val pools: Map<String, IntArray>) {
+    EMERALD(0x083185C8, 0x0831977C, 0x0831C898, 0x085839A0, mapOf(
+        "speciesInfo" to intArrayOf(0x1bc, 0x17d7c, 0x3a270, 0x3abb8, 0x3ae44, 0x477f8, 0x4a4ec, 0x4cac0),
+        "learnsets" to intArrayOf(0x6930c, 0x693a0, 0x69414, 0x6e1f8, 0x6e250, 0x6e3b4, 0x1a00ac, 0x1a0278),
+        "tmhmLearnsets" to intArrayOf(0x6e048, 0x6e060, 0x6e098, 0x6e0b0),
+        "evolutions" to intArrayOf(0x6d140, 0x6d190, 0x6d234, 0x6d384, 0x70030, 0x13e558),
+        "abilityNames" to intArrayOf(0x1c0, 0x14f0d4, 0x14f854, 0x1c3028),
+        "speciesToNational" to intArrayOf(0x6d448, 0x6d4bc),
+        "regionalOrder" to intArrayOf(0x6d494, 0x6d504),
+        "items" to intArrayOf(0x1c8, 0xd7490, 0xd74b4, 0xd74d8, 0xd74fc, 0xd7520, 0xd7544, 0xd7568),
+        "speciesNames" to intArrayOf(0x144, 0x1644c, 0x17be4, 0x17f28, 0x17f7c, 0x38790, 0x3884c, 0x388e4),
+        "moveNames" to intArrayOf(0x148, 0x59b14, 0x79b54, 0x9b18c, 0xd85f8, 0xd8f34, 0xd9a90, 0xd9e50),
+        "battleMoves" to intArrayOf(0x1cc, 0x33ce8, 0x3a3f0, 0x3a738, 0x3d2a0, 0x3e3f4, 0x3e528, 0x3e678),
+    )),
+    FIRERED_REV0(0x08245EE0, 0x08247094, 0x08250C04, 0x083DB028, mapOf(
+        "speciesInfo" to intArrayOf(0x1bc, 0x12754, 0x12fa8, 0x13230, 0x16a60, 0x1f008, 0x21c28, 0x240b4),
+        "learnsets" to intArrayOf(0x3ea7c, 0x3eb10, 0x3eb84, 0x43dc8, 0x43e20, 0x43f84),
+        "tmhmLearnsets" to intArrayOf(0x43c68, 0x43c80),
+        "evolutions" to intArrayOf(0x42f6c, 0x42fbc, 0x43138, 0x4599c, 0xce8c4),
+        "abilityNames" to intArrayOf(0x1c0, 0xd8004, 0xd8624, 0x1367a0),
+        "speciesToNational" to intArrayOf(0x4323c, 0x432b0),
+        "items" to intArrayOf(0x1c8, 0x9a8d8, 0x9a8fc, 0x9a920, 0x9a944, 0x9a968, 0x9a98c, 0x9a9b0),
+        "speciesNames" to intArrayOf(0x144, 0x11450, 0x1150c, 0x115a4, 0x116bc, 0x34d80, 0x40fec, 0x435dc),
+        "moveNames" to intArrayOf(0x148, 0x308a4, 0x4ef84, 0x6be8c, 0x9b524, 0xbd830, 0xbfaa4, 0xcc914),
+        "battleMoves" to intArrayOf(0x1cc, 0xe3d8, 0x128cc, 0x12ba4, 0x15060, 0x15fbc, 0x160f0, 0x16238),
+    )),
+    FIRERED_REV1(0x08245F50, 0x08247104, 0x08250C74, 0x083DB098, mapOf(
+        "speciesInfo" to intArrayOf(0x1bc, 0x12768, 0x12fbc, 0x13244, 0x16a74, 0x1f01c, 0x21c3c, 0x240c8),
+        "learnsets" to intArrayOf(0x3ea90, 0x3eb24, 0x3eb98, 0x43ddc, 0x43e34, 0x43f98),
+        "tmhmLearnsets" to intArrayOf(0x43c7c, 0x43c94),
+        "evolutions" to intArrayOf(0x42f80, 0x42fd0, 0x4314c, 0x459b0, 0xce8d8),
+        "abilityNames" to intArrayOf(0x1c0, 0xd8018, 0xd8638, 0x136818),
+        "speciesToNational" to intArrayOf(0x43250, 0x432c4),
+        "items" to intArrayOf(0x1c8, 0x9a8ec, 0x9a910, 0x9a934, 0x9a958, 0x9a97c, 0x9a9a0, 0x9a9c4),
+        "speciesNames" to intArrayOf(0x144, 0x11464, 0x11520, 0x115b8, 0x116d0, 0x34d94, 0x41000, 0x435f0),
+        "moveNames" to intArrayOf(0x148, 0x308b8, 0x4ef98, 0x6bea0, 0x9b538, 0xbd844, 0xbfab8, 0xcc928),
+        "battleMoves" to intArrayOf(0x1cc, 0xe3ec, 0x128e0, 0x12bb8, 0x15074, 0x15fd0, 0x16104, 0x1624c),
+    ));
+
+    /**
+     * [t] with every table [pools] names read from [rom]'s own words: the address most of them hold (at least half). Null
+     * when a table's words disagree or point outside the ROM - not this cart's code (a rebuild: the FireRed QoL build),
+     * so its tables can't be found this way.
+     */
+    fun follow(rom: ByteArray, t: Gen3RomTables): Gen3RomTables? {
+        fun at(name: String, fallback: Long): Long? {
+            val offs = pools[name] ?: return fallback
+            val votes = offs.filter { it + 4 <= rom.size }.map { u32(rom, it) }.groupingBy { it }.eachCount()
+            val (addr, n) = votes.maxByOrNull { it.value } ?: return null
+            if (n * 2 < offs.size || addr < 0x08000000L || addr >= 0x08000000L + rom.size) return null
+            return addr
+        }
+        return t.copy(
+            speciesInfo = at("speciesInfo", t.speciesInfo) ?: return null,
+            learnsets = at("learnsets", t.learnsets) ?: return null,
+            tmhmLearnsets = at("tmhmLearnsets", t.tmhmLearnsets) ?: return null,
+            evolutions = at("evolutions", t.evolutions) ?: return null,
+            abilityNames = at("abilityNames", t.abilityNames) ?: return null,
+            speciesToNational = at("speciesToNational", t.speciesToNational) ?: return null,
+            regionalOrder = at("regionalOrder", t.regionalOrder) ?: return null,
+            items = at("items", t.items) ?: return null,
+            speciesNames = at("speciesNames", t.speciesNames) ?: return null,
+            moveNames = at("moveNames", t.moveNames) ?: return null,
+            battleMoves = at("battleMoves", t.battleMoves) ?: return null,
+        )
+    }
 }

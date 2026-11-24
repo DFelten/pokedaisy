@@ -13,7 +13,8 @@ the rules of the game it belongs to, not always retail's.
   guide's learnsets, `itemDescs`' gItems) plus the names and gBattleMoves, which the configs don't carry: found by
   `Gen3RomScan` (a 32 MB ROM) or, for a hack edited in place, retail's own addresses (`InPlaceBase`).
 - A save file carries its rules (`Gen3SaveFile.rules`, `Gen3SaveData.rules`): `Gen3SaveReader.open(path, format,
-  rules)`. `Gen3SaveReader.formatFor` picks a hack's `Gen3SaveFormat` by the ROM's SHA-1 (`HACKS`); `rulesFor` gives a
+  rules)`. A hack edited in place gets its tables where retail's code points (`InPlaceBase.pools`: the Game Freak header's
+  and the literal pools' words, a majority vote; a rebuild's words disagree and it keeps retail's). `Gen3SaveReader.formatFor` picks a hack's `Gen3SaveFormat` by the ROM's SHA-1 (`HACKS`); `rulesFor` gives a
   hack its rules, a non-retail English FireRed / Emerald cart (a randomizer's output, an unknown in-place edit) its own
   ROM's at its base cart's addresses with retail's family, and a retail dump retail's tables.
 - `Gen3Rules.family`: trades only link two saves of one family (`Gen3Trade.linkBlocker`). Retail and randomized carts are
@@ -30,6 +31,7 @@ the rules of the game it belongs to, not always retail's.
 | Ultra Violet v1.22 | `ULTRA_VIOLET` | the save reads (CHARMANDER Lv6) |
 | Ash Gray (both builds) | `ASH_GRAY` | by hash; no save of its own (retail FireRed's boots in it) |
 | Recharged Emerald v2.2.5 / v2.2.8 / Rebalanced v2.2.8 | `RECHARGED_EMERALD_*` (its own SaveBlock1, a Medicine pocket, no seen copies; Rebalanced's 4-byte lead, `blockLead`), its 48-byte gItems with no id (`ItemLayout.RECHARGED`) | all three saves read; edited ones (money, a level, a Medicine item) booted headless in mgba_dump and the game's RAM held each edit |
+| FireRed Rocket Edition | retail FireRed's layout; its moved moves / ability names found by following rev 0's pointers (`InPlaceBase.follow`) | retail FireRed's save (which it boots) reads with its own names and moves; an edited one booted headless with the money and the item |
 | Randomized FireRed / Emerald | retail's, rules from the ROM | over 100 species' learnsets differ from retail's in a UPR output |
 
 `HackSaveTest` (shared androidUnitTest) covers these with the player's ROMs and saves (`-DromDir`), skipping quietly
@@ -49,7 +51,9 @@ without them. `HACK_SAVE_OUT=<file>` writes the edited Legacy save to boot.
   ids past 1000 and their tables are expansion's (gSpeciesInfo, u32 TM lists). Each needs its record layout in
   `Gen3BoxMon` and a rules reader for gSpeciesInfo. Probably one per expansion version.
 - **Clover**: no species name table found by the scan (FireRed under an Emerald header; names elsewhere).
-- **Rocket Edition, Let's Go**: gBattleMoves repointed and not found by the scan (Rocket Edition added moves 355-486); the
-  generated `HackText` tables have the moves, the scan could read them from there.
+- **Let's Go**: 987 species ids, its Pokédex flags out of the save blocks (EWRAM 0x0203C0C8 / 0x0203C133 in RAM): where they
+  land in the file isn't mapped.
+- **Elysium (Parts A / B)**: its SaveBlock1 sector 1 is checksummed over 0xFE8+ bytes (data in the sector's tail, past the
+  0xF80 the format has) and its other chunks are other sizes: a layout of its own to map (its tables follow fine).
 - **Emerald Rogue, Quetzal, R.O.W.E., Monomyth, Mariomon**: their own party structs (the BOXES tab's notes in CLAUDE.md);
   not looked at for the editor.

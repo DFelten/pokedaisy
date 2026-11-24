@@ -78,6 +78,7 @@ class HackSaveTest {
             Triple("Pokemon Glazed (v9.2.0).gba", "Pokemon Glazed (v9.2.0).sav", Gen3SaveFormat.GLAZED),
             Triple("Pokemon Orange Islands.gba", "Pokemon Orange Islands.srm", Gen3SaveFormat.ORANGE_ISLANDS),
             Triple("Pokemon Ultra Violet (v1.22).gba", "Pokemon Ultra Violet (v1.22).sav", Gen3SaveFormat.ULTRA_VIOLET),
+            Triple("Pokemon FireRed Rocket Edition.gba", "Pokemon - FireRed Version (USA, Europe) (Rev 1).srm", Gen3SaveFormat.ROCKET_EDITION),
             Triple("Pokemon Recharged Emerald (v2.2.5).gba", "Pokemon Recharged Emerald (v2.2.5).srm", Gen3SaveFormat.RECHARGED_EMERALD_V2_2_5),
             Triple("Pokemon Recharged Emerald (v2.2.8).gba", "Pokemon Recharged Emerald (v2.2.8).srm", Gen3SaveFormat.RECHARGED_EMERALD_V2_2_8),
             Triple("Pokemon Recharged Emerald Rebalanced (v2.2.8).gba", "Pokemon Recharged Emerald Rebalanced (v2.2.8).srm", Gen3SaveFormat.RECHARGED_EMERALD_REBALANCED),
@@ -134,5 +135,9 @@ class HackSaveTest {
         val learnsDiffer = (1 until 387).count { r.learnable(it, 50) != Gen3SaveFormat.EMERALD.rules.learnable(it, 50) }
         assertTrue(learnsDiffer > 100, "randomized learnsets: $learnsDiffer species differ")
         assertTrue(Gen3SaveReader.rulesFor(reader(retail), Gen3SaveFormat.EMERALD, retail.path) !is RomGen3Rules, "retail keeps its tables")
+        // A rebuild (the FireRed QoL build: pret's code built again, every table moved) isn't this cart's code: its words
+        // don't point where retail's do, so it keeps retail's tables rather than reading the wrong places.
+        val qol = File(roms, "Pokemon FireRed QoL (2026-09-27 build).gba")
+        if (qol.isFile) assertTrue(Gen3SaveReader.rulesFor(reader(qol), Gen3SaveFormat.FIRERED_LEAFGREEN, qol.path) !is RomGen3Rules, "a rebuild keeps retail's")
     }
 }
