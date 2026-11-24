@@ -106,13 +106,17 @@ internal fun MoreScreen(
     }
 }
 
-/** One app on the MORE grid: its coloured icon over its name, in a tab chip's frame. */
+/** One app on the MORE grid (and HOME's shortcuts): its coloured icon over its name ([label] false: the icon alone), in a
+ * tab chip's frame. */
 @Composable
-private fun AppTile(id: String, m: GbaTextMetrics, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+internal fun AppTile(
+    id: String, m: GbaTextMetrics, enabled: Boolean, modifier: Modifier = Modifier, label: Boolean = true, tag: String = "more",
+    onClick: () -> Unit,
+) {
     val u = m.u
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val label = companionTabLabel(id)
+    val name = companionTabLabel(id)
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -126,15 +130,15 @@ private fun AppTile(id: String, m: GbaTextMetrics, enabled: Boolean, modifier: M
                 drawLayeredBox(OptionColors.chipLayers.inPx(px), fill, radius = 3 * px, twoTone = true, low = low)
             }
             .soundClickable(interactionSource = interaction, indication = null, enabled = enabled, onClick = onClick)
-            .semantics { contentDescription = label }
-            .testTag("more-$id")
+            .semantics { contentDescription = name }
+            .testTag("$tag-$id")
             .padding(u * 4),
     ) {
         // The icon takes what the square leaves under it for the name, in whole screen pixels per icon pixel (crisp),
         // three GBA pixels per icon pixel at most.
         val density = LocalDensity.current
         val iconPx = with(density) {
-            val room = minOf(maxWidth.toPx(), maxHeight.toPx() - m.lineHeight.toPx() - (u * 4).toPx())
+            val room = minOf(maxWidth.toPx(), maxHeight.toPx() - if (label) m.lineHeight.toPx() + (u * 4).toPx() else 0f)
             val perPixel = minOf(floor(room / TabIcons.SIZE), floor((u * 3).toPx())).coerceAtLeast(1f)
             perPixel * TabIcons.SIZE
         }
@@ -145,9 +149,9 @@ private fun AppTile(id: String, m: GbaTextMetrics, enabled: Boolean, modifier: M
             } else TabIcons.forTab(id)?.let { icon ->
                 PixelArt(icon.bitmap, icon.palette, Modifier.size(with(density) { iconPx.toDp() }))
             }
-            Spacer(Modifier.height(u * 4))
             // Narrowed letters rather than cut short: NUZLOCKE is the longest name.
-            GbaText(label, OptionColors.label, OptionColors.labelShadow, m, bold = gameBoldLabels() || modernView, maxLines = 1, modifier = Modifier.narrowToFit(m))
+            if (label) Spacer(Modifier.height(u * 4))
+            if (label) GbaText(name, OptionColors.label, OptionColors.labelShadow, m, bold = gameBoldLabels() || modernView, maxLines = 1, modifier = Modifier.narrowToFit(m))
         }
     }
 }

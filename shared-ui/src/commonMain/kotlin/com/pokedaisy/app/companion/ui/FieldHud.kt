@@ -1581,6 +1581,117 @@ private object HudSquare : androidx.compose.ui.layout.LayoutModifier {
 
 // ---- Minimap ------------------------------------------------------------------------------------
 
+/** What a minimap needs, read once: the game's region map and its picture where the player is, their head, a cave's own map. */
+internal class MiniMap(
+    val model: com.pokedaisy.app.companion.data.RegionMapModel?,
+    val bitmap: androidx.compose.ui.graphics.ImageBitmap?,
+    val head: androidx.compose.ui.graphics.ImageBitmap?,
+    val cursor: Color,
+    val black: Boolean,
+    val area: com.pokedaisy.app.companion.data.AreaMap.Area?,
+) {
+    /** Something to draw (a map); else only the place's name. */
+    val drawn: Boolean get() = area != null || (model != null && bitmap != null)
+}
+
+@Composable
+internal fun rememberMiniMap(snapshot: SnapshotView): MiniMap {
+    val gen = rememberArtGeneration()
+    val model = remember(snapshot.game, gen) { activeRegionMap() }
+    val region = model?.sections?.get(snapshot.regionMapSectionId)?.region?.takeIf { it in model.images.indices }
+    val bitmap = regionMapBitmap(region?.let { model.images[it] })
+    val labelStyle = MapLabelStyle.of(snapshot.game)
+    // Black's and White's Town Map: the player's figure, on their place's point (the reader's cell, [blackTownMap]'s points).
+    val black = snapshot.game.isGen5
+    val head = regionMapBitmap(if (black) com.pokedaisy.app.companion.data.NdsArt.gen5Player(snapshot.game) else labelStyle.headAsset(snapshot.playerGender, snapshot.game))
+    // In a cave / building with its own map (AreaMapView.kt), that map unless the player chose the region's.
+    val area = rememberPlayerArea(snapshot)?.takeIf { AreaMapChoice.showsArea(it, com.pokedaisy.app.companion.data.AreaMap.MapId(snapshot.mapGroup, snapshot.mapNum)) }
+    return MiniMap(model, bitmap, head, labelStyle.cursorColor, black, area)
+}
+
+/**
+ * The minimap's picture, [mapW] x [mapH] GBA pixels ([u] each), one map pixel per GBA pixel: the cave's own map, or the
+ * region map round the player with their head in the middle (kept inside the map), and the expand mark (a tap opens the
+ * whole MAP). Nothing when [mm] has no map. The HUD's minimap and HOME's MAP card.
+ */
+@Composable
+internal fun MiniMapPicture(snapshot: SnapshotView, mm: MiniMap, mapW: Int, mapH: Int, u: Dp) {
+    val model = mm.model
+    val bitmap = mm.bitmap
+    val head = mm.head
+    val cursor = mm.cursor
+    val black = mm.black
+    val area = mm.area
+    if (area != null) {
+        Box {
+            HudAreaMap(snapshot, mapW, mapH, u)
+            Box(
+                Modifier.align(Alignment.BottomEnd).padding(u * 2).size(u * 11).background(Color(0x99000000), PixelRoundedShape(u * 2)),
+                contentAlignment = Alignment.Center,
+            ) { PixelIcon(PixelIcons.expand, Color.White, Modifier.size(u * 7)) }
+        }
+    } else if (model != null && bitmap != null) {
+        val tile = (if (black) snapshot.regionMapTile else null)
+            ?: PlayerMapTile.of(model, snapshot.regionMapSectionId, snapshot.x, snapshot.y, snapshot.mapWidth, snapshot.mapHeight, snapshot.mapType)
+        val point = if (black && tile != null) model.pick(0, tile.first, tile.second)?.mapsec?.let { model.points[it] } else null
+        val image = bitmap
+        val headImage = head
+        val crop = remember(bitmap) { regionMapContentBounds(bitmap) }
+        Box(Modifier.size(u * mapW, u * mapH).clip(PixelRoundedShape(u * 2))) {
+            Canvas(Modifier.fillMaxSize()) {
+                val s = u.toPx()
+                val cx = (point?.first ?: tile?.let { it.first * TILE + TILE / 2 } ?: (crop.left + crop.width / 2)).toFloat()
+                val cy = (point?.second ?: tile?.let { it.second * TILE + TILE / 2 } ?: (crop.top + crop.height / 2)).toFloat()
+                val left = (cx - mapW / 2f).coerceIn(crop.left.toFloat(), maxOf(crop.left.toFloat(), crop.right - mapW.toFloat())).toInt()
+                val top = (cy - mapH / 2f).coerceIn(crop.top.toFloat(), maxOf(crop.top.toFloat(), crop.bottom - mapH.toFloat())).toInt()
+                val w = minOf(mapW, crop.right - left)
+                val h = minOf(mapH, crop.bottom - top)
+                // A map smaller than the window sits in its middle.
+                val ox = (mapW - w) / 2f
+                val oy = (mapH - h) / 2f
+                drawImage(
+                    image, srcOffset = IntOffset(left, top), srcSize = IntSize(w, h),
+                    dstOffset = IntOffset((ox * s).toInt(), (oy * s).toInt()),
+                    dstSize = IntSize((w * s).toInt(), (h * s).toInt()), filterQuality = FilterQuality.None,
+                )
+                if (headImage == null && tile != null) {
+                    // No head for this game (Lazarus): the map's own cursor marks the tile instead.
+                    translate(ox * s, oy * s) {
+                        drawMapCursor(
+                            tile.first * TILE - left, tile.second * TILE - top, (tile.first + 1) * TILE - left, (tile.second + 1) * TILE - top,
+                            s, s, big = false, color = cursor,
+                        )
+                    }
+                }
+                if (headImage != null && point != null) {
+                    drawImage(
+                        headImage,
+                        dstOffset = IntOffset(
+                            ((point.first - headImage.width / 2 - left + ox) * s).toInt(),
+                            ((point.second - headImage.height / 2 - top + oy) * s).toInt(),
+                        ),
+                        dstSize = IntSize((headImage.width * s).toInt(), (headImage.height * s).toInt()), filterQuality = FilterQuality.None,
+                    )
+                } else if (headImage != null && tile != null) {
+                    drawImage(
+                        headImage,
+                        dstOffset = IntOffset(
+                            ((tile.first * TILE + TILE / 2 - HEAD / 2 - left + ox) * s).toInt(),
+                            ((tile.second * TILE + TILE / 2 - HEAD / 2 - top + oy) * s).toInt(),
+                        ),
+                        dstSize = IntSize((HEAD * s).toInt(), (HEAD * s).toInt()), filterQuality = FilterQuality.None,
+                    )
+                }
+            }
+            // A tap opens it bigger: the expand mark in the corner says so.
+            Box(
+                Modifier.align(Alignment.BottomEnd).padding(u * 2).size(u * 11).background(Color(0x99000000), PixelRoundedShape(u * 2)),
+                contentAlignment = Alignment.Center,
+            ) { PixelIcon(PixelIcons.expand, Color.White, Modifier.size(u * 7)) }
+        }
+    }
+}
+
 /**
  * The region map around the player, one map pixel per GBA pixel ([mapW] x [mapH] of them), their head in the
  * middle (kept inside the map), and the place's name under it. A tap opens the whole MAP. No map for the game =
@@ -1592,92 +1703,17 @@ private fun HudMiniMap(
     onClick: () -> Unit,
 ) {
     val u = m.u
-    val gen = rememberArtGeneration()
-    val model = remember(snapshot.game, gen) { activeRegionMap() }
-    val region = model?.sections?.get(snapshot.regionMapSectionId)?.region?.takeIf { it in model.images.indices }
-    val bitmap = regionMapBitmap(region?.let { model.images[it] })
-    val labelStyle = MapLabelStyle.of(snapshot.game)
-    // Black's and White's Town Map: the player's figure, on their place's point (the reader's cell, [blackTownMap]'s points).
-    val black = snapshot.game.isGen5
-    val head = regionMapBitmap(if (black) com.pokedaisy.app.companion.data.NdsArt.gen5Player(snapshot.game) else labelStyle.headAsset(snapshot.playerGender, snapshot.game))
-    val cursor = labelStyle.cursorColor
+    val mm = rememberMiniMap(snapshot)
+    val area = mm.area
     val small = rememberGbaTextMetrics(0.75f)
     val name = snapshot.location.mapSecName
-    // In a cave / building with its own map (AreaMapView.kt), that map unless the player chose the region's.
-    val area = rememberPlayerArea(snapshot)?.takeIf { AreaMapChoice.showsArea(it, com.pokedaisy.app.companion.data.AreaMap.MapId(snapshot.mapGroup, snapshot.mapNum)) }
-    if ((model == null || bitmap == null) && area == null && name.isEmpty()) return
+    if (!mm.drawn && name.isEmpty()) return
     Column(
         modifier.hudPanel(u).soundClickable(onClick = onClick).padding(u * 4 + hudEdge(u)).padding(bottom = u),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (area != null) {
-            Box {
-                HudAreaMap(snapshot, mapW, mapH, u)
-                Box(
-                    Modifier.align(Alignment.BottomEnd).padding(u * 2).size(u * 11).background(Color(0x99000000), PixelRoundedShape(u * 2)),
-                    contentAlignment = Alignment.Center,
-                ) { PixelIcon(PixelIcons.expand, Color.White, Modifier.size(u * 7)) }
-            }
-            Spacer(Modifier.height(u * 3))
-        } else if (model != null && bitmap != null) {
-            val tile = (if (black) snapshot.regionMapTile else null)
-                ?: PlayerMapTile.of(model, snapshot.regionMapSectionId, snapshot.x, snapshot.y, snapshot.mapWidth, snapshot.mapHeight, snapshot.mapType)
-            val point = if (black && tile != null) model.pick(0, tile.first, tile.second)?.mapsec?.let { model.points[it] } else null
-            val image = bitmap
-            val headImage = head
-            val crop = remember(bitmap) { regionMapContentBounds(bitmap) }
-            Box(Modifier.size(u * mapW, u * mapH).clip(PixelRoundedShape(u * 2))) {
-                Canvas(Modifier.fillMaxSize()) {
-                    val s = u.toPx()
-                    val cx = (point?.first ?: tile?.let { it.first * TILE + TILE / 2 } ?: (crop.left + crop.width / 2)).toFloat()
-                    val cy = (point?.second ?: tile?.let { it.second * TILE + TILE / 2 } ?: (crop.top + crop.height / 2)).toFloat()
-                    val left = (cx - mapW / 2f).coerceIn(crop.left.toFloat(), maxOf(crop.left.toFloat(), crop.right - mapW.toFloat())).toInt()
-                    val top = (cy - mapH / 2f).coerceIn(crop.top.toFloat(), maxOf(crop.top.toFloat(), crop.bottom - mapH.toFloat())).toInt()
-                    val w = minOf(mapW, crop.right - left)
-                    val h = minOf(mapH, crop.bottom - top)
-                    // A map smaller than the window sits in its middle.
-                    val ox = (mapW - w) / 2f
-                    val oy = (mapH - h) / 2f
-                    drawImage(
-                        image, srcOffset = IntOffset(left, top), srcSize = IntSize(w, h),
-                        dstOffset = IntOffset((ox * s).toInt(), (oy * s).toInt()),
-                        dstSize = IntSize((w * s).toInt(), (h * s).toInt()), filterQuality = FilterQuality.None,
-                    )
-                    if (headImage == null && tile != null) {
-                        // No head for this game (Lazarus): the map's own cursor marks the tile instead.
-                        translate(ox * s, oy * s) {
-                            drawMapCursor(
-                                tile.first * TILE - left, tile.second * TILE - top, (tile.first + 1) * TILE - left, (tile.second + 1) * TILE - top,
-                                s, s, big = false, color = cursor,
-                            )
-                        }
-                    }
-                    if (headImage != null && point != null) {
-                        drawImage(
-                            headImage,
-                            dstOffset = IntOffset(
-                                ((point.first - headImage.width / 2 - left + ox) * s).toInt(),
-                                ((point.second - headImage.height / 2 - top + oy) * s).toInt(),
-                            ),
-                            dstSize = IntSize((headImage.width * s).toInt(), (headImage.height * s).toInt()), filterQuality = FilterQuality.None,
-                        )
-                    } else if (headImage != null && tile != null) {
-                        drawImage(
-                            headImage,
-                            dstOffset = IntOffset(
-                                ((tile.first * TILE + TILE / 2 - HEAD / 2 - left + ox) * s).toInt(),
-                                ((tile.second * TILE + TILE / 2 - HEAD / 2 - top + oy) * s).toInt(),
-                            ),
-                            dstSize = IntSize((HEAD * s).toInt(), (HEAD * s).toInt()), filterQuality = FilterQuality.None,
-                        )
-                    }
-                }
-                // A tap opens it bigger: the expand mark in the corner says so.
-                Box(
-                    Modifier.align(Alignment.BottomEnd).padding(u * 2).size(u * 11).background(Color(0x99000000), PixelRoundedShape(u * 2)),
-                    contentAlignment = Alignment.Center,
-                ) { PixelIcon(PixelIcons.expand, Color.White, Modifier.size(u * 7)) }
-            }
+        if (mm.drawn) {
+            MiniMapPicture(snapshot, mm, mapW, mapH, u)
             Spacer(Modifier.height(u * 3))
         }
         if (name.isNotEmpty()) {

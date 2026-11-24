@@ -137,6 +137,9 @@ object CustomLook {
     /** TAB BAR > SHOW AS ICONS; Compose state. */
     var tabIcons by mutableStateOf(false)
         private set
+    /** SHOW AS PLAIN ICONS: the icons in the tab's one colour ([tabIcons] on too); Compose state. */
+    var tabIconsPlain by mutableStateOf(false)
+        private set
     /** TAB BAR > POSITION / SIZE, MENU BAR / MENU BAR SIZE; Compose state. */
     var tabBarPlace by mutableStateOf(TabBarPlace.BOTTOM)
         private set
@@ -168,6 +171,7 @@ object CustomLook {
         companionBackground = LookBackground.of(store?.companionBackground ?: 0)
         sideBars = SideBars.of(store?.sideBars ?: 0)
         tabIcons = store?.tabIcons ?: false
+        tabIconsPlain = store?.tabIconsPlain ?: false
         tabBarPlace = TabBarPlace.of(store?.tabBarPlace ?: 0)
         tabBarCompact = store?.tabBarCompact ?: false
         menuBarPlace = MenuBarPlace.of(store?.menuBarPlace ?: 0)
@@ -304,9 +308,12 @@ object CustomLook {
         sideBars = choice
     }
 
-    fun changeTabIcons(on: Boolean) {
+    /** SHOW AS: names ([on] false), the icons in their colours, or [plain]: in the tab's one colour. */
+    fun changeTabIcons(on: Boolean, plain: Boolean = false) {
         ThemeStore.current?.tabIcons = on
+        ThemeStore.current?.tabIconsPlain = on && plain
         tabIcons = on
+        tabIconsPlain = on && plain
     }
 
     /** The worn theme's picture for [slot], if it's an added theme that has one. */

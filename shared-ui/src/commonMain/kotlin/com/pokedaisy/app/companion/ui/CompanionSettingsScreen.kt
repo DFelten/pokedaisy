@@ -65,7 +65,7 @@ val STATUS_BAR_PLACES = listOf(tk("OFF"), tk("GAME"), tk("COMPANION"))
 
 fun statusBarLabel(on: Boolean, onCompanion: Boolean) = STATUS_BAR_PLACES[if (!on) 0 else if (onCompanion) 2 else 1]
 
-internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), BATTLE(tk("BATTLE")), QOL(tk("QUALITY OF LIFE")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
+internal enum class Page(val title: String) { HOME(tk("SETTINGS")), TABS(tk("TAB BAR")), HOME_TAB(tk("HOME TAB")), BUTTONS(tk("GAME BUTTONS")), HOTKEYS(tk("HOTKEYS")), SHADERS(tk("SHADERS")), FIELD_HUD(tk("HUD")), QUICK_MENU(tk("QUICK MENU")), TOUCH(tk("TOUCH CONTROLS")), SPEED(tk("SPEED OPTIONS")), DISPLAY(tk("DISPLAY OPTIONS")), BATTLE(tk("BATTLE")), QOL(tk("QUALITY OF LIFE")), OVERLAYS(tk("OVERLAY")), CHEATS(tk("CHEATS")), CHEAT_ADD(tk("ADD CODE")), TWEAKS(tk("TWEAKS")), COOP_PARTNERS(tk("PARTNERS")), HELP(tk("HELP")) }
 
 /** Where BACK from a page goes: SHADERS opens from DISPLAY OPTIONS, the rest from HOME. */
 internal val Page.parent: Page get() = when (this) {
@@ -223,10 +223,16 @@ fun CompanionSettingsScreen(
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> listOf(
                         // SHOW AS: the chips' names, or each tab's icon (RETRO's pixel tiles, MODERN's glyphs).
-                        SettingRow(tk("SHOW AS"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) tk("ICONS") else tk("NAMES"),
-                            labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS), subtitle = "The tabs' names, or their icons") {
-                            com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeTabIcons(!it.tabIcons) }
-                            tick++
+                        // SHOW AS: NAMES, ICONS (their own colours) or PLAIN ICONS (the tab's one colour) - a pick-list, three choices.
+                        com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+                            val now = if (!look.tabIcons) tk("NAMES") else if (look.tabIconsPlain) tk("PLAIN ICONS") else tk("ICONS")
+                            SettingRow(tk("SHOW AS"), now,
+                                labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS), subtitle = "The tabs' names, or their icons") {
+                                selector = Selector(tk("SHOW AS"), listOf(tk("NAMES"), tk("ICONS"), tk("PLAIN ICONS")), now) { pick ->
+                                    look.changeTabIcons(on = pick != tk("NAMES"), plain = pick == tk("PLAIN ICONS"))
+                                    tick++
+                                }
+                            }
                         },
                         // POSITION: a pick-list (four places); SIZE flips NORMAL / COMPACT.
                         com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
@@ -278,6 +284,7 @@ fun CompanionSettingsScreen(
                             tick++
                         }
                     } + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
+                    Page.HOME_TAB -> homeTabRows(settings, availableTabs, { tick++ }) { selector = it } + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     // Every game's buttons, then the game running's own group (TO COMPANION only with two screens).
                     Page.BUTTONS -> GbaControls.Group.entries.filter { it == GbaControls.Group.ALL || settings.buttonGroup.let { g -> g == null || g == it } }.flatMap { group ->
                         val btns = GbaControls.Btn.entries.filter {
@@ -595,6 +602,57 @@ class SettingsUiState(initialPage: String? = null, initialRow: String? = null) {
 }
 
 /** How many chips the player's pick puts in this game's tab bar. */
+/**
+ * SETTINGS > HOME TAB: CARDS (each SHOWN / HIDDEN, MOVE UP / DOWN, from one pick-list; the shown ones first, in their
+ * order) and SHORTCUTS (six places, each a pick-list of the tabs, or EMPTY), RESET TO DEFAULTS.
+ */
+private fun homeTabRows(s: CompanionSettings, available: List<String>, changed: () -> Unit, select: (Selector) -> Unit): List<SettingRow> {
+    val home = com.pokedaisy.app.companion.HomeTab
+    val on = home.cards(s.homeCards)
+    val order = on + com.pokedaisy.app.companion.HomeCard.entries.filter { it !in on }
+    val cards = order.map { card ->
+        val shown = card in on
+        SettingRow(card.label, if (shown) tk("SHOWN") else tk("HIDDEN"), subtitle = when (card) {
+            com.pokedaisy.app.companion.HomeCard.PARTY -> "Tap a POKéMON for its summary"
+            com.pokedaisy.app.companion.HomeCard.MAP -> "The map round you and where you are"
+            com.pokedaisy.app.companion.HomeCard.TRAINER -> "Money, play time, badges, the POKéDEX"
+            com.pokedaisy.app.companion.HomeCard.DEVICE -> "Hidden while the status bar shows them"
+        }) {
+            val ids = on.map { it.id }
+            val options = listOfNotNull(
+                if (shown) tk("HIDE") else tk("SHOW"),
+                tk("MOVE UP").takeIf { shown && ids.indexOf(card.id) > 0 },
+                tk("MOVE DOWN").takeIf { shown && ids.indexOf(card.id) < ids.size - 1 },
+            )
+            select(Selector(card.label, options, "") { pick ->
+                s.setHomeCards(when (pick) {
+                    tk("MOVE UP") -> home.move(ids, card.id, -1)
+                    tk("MOVE DOWN") -> home.move(ids, card.id, 1)
+                    else -> home.toggle(ids, card.id)
+                })
+                changed()
+            })
+        }
+    }
+    val places = home.places(s.homeShortcuts)
+    val targets = home.shortcutTargets
+    val shortcuts = places.mapIndexed { i, id ->
+        SettingRow(tr("SHORTCUT {0}", i + 1), if (id.isEmpty()) tk("EMPTY") else if (id in available) companionTabLabel(id) else tk("N/A")) {
+            val labels = targets.associateBy { companionTabLabel(it) }
+            select(Selector(tr("SHORTCUT {0}", i + 1), listOf(tk("EMPTY")) + labels.keys, if (id.isEmpty()) tk("EMPTY") else companionTabLabel(id)) { pick ->
+                val to = labels[pick].orEmpty()
+                // A tab already in another place moves here (each tab once).
+                s.setHomeShortcuts(places.mapIndexed { j, old -> if (j == i) to else if (to.isNotEmpty() && old == to) "" else old })
+                changed()
+            })
+        }
+    }
+    return listOf(groupTitle(tk("CARDS"))) + cards + listOf(groupTitle(tk("SHORTCUTS"))) + shortcuts +
+        SettingRow(tk("RESET TO DEFAULTS"), null) {
+            s.setHomeCards(home.DEFAULT_CARDS); s.setHomeShortcuts(home.DEFAULT_SHORTCUTS); changed()
+        }
+}
+
 private fun barCount(s: CompanionSettings, available: List<String>) = s.companionTabs.count { it in available }
 
 /** Saves [tabs] in [COMPANION_TABS] order and tells the tab bar. */
@@ -1318,6 +1376,11 @@ private fun homeRows(
         ) { com.pokedaisy.app.companion.Spoilers.set(!com.pokedaisy.app.companion.Spoilers.hiding); changed() }
             .takeIf { com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree },
         SettingRow(tk("TAB BAR"), tr("{0} TABS", barTabs), setting = SharedSetting.TAB_BAR, labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS) ?: NewFeatures.badge(NewFeatures.MORE_TAB) ?: NewFeatures.badge(NewFeatures.BOXES_TAB), opensPage = true, subtitle = "Which tabs sit next to the gear") { navigate(Page.TABS) },
+        // HOME's cards and shortcuts (docs/plans/companion-home.md).
+        SettingRow(
+            tk("HOME TAB"), tr("{0} CARDS", com.pokedaisy.app.companion.HomeTab.cards(s.homeCards).size), opensPage = true,
+            labelBadge = NewFeatures.badge(NewFeatures.HOME_TAB), subtitle = "Its cards and shortcuts",
+        ) { navigate(Page.HOME_TAB) },
         // The game's menu click on every companion button.
         SettingRow(tk("CLICK SOUND"), onOff(s.clickSound), setting = SharedSetting.CLICK_SOUND, labelBadge = s.clickSoundBadge) { s.setClickSound(!s.clickSound); changed() },
         // RetroAchievements' challenge badges and leaderboard values in the corner (GitHub discussion #620).

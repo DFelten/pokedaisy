@@ -412,6 +412,12 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     private var tabs = initialTabs ?: com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS
     override val companionTabs get() = tabs
     override fun setCompanionTabs(tabs: List<String>) { this.tabs = tabs }
+    private var cards = com.pokedaisy.app.companion.HomeTab.DEFAULT_CARDS
+    private var places = com.pokedaisy.app.companion.HomeTab.DEFAULT_SHORTCUTS
+    override val homeCards get() = cards
+    override fun setHomeCards(cards: List<String>) { this.cards = cards }
+    override val homeShortcuts get() = places
+    override fun setHomeShortcuts(places: List<String>) { this.places = places }
     override fun guideNoticeAccepted(game: String) = true
     override fun acceptGuideNotice(game: String) {}
 }
@@ -554,12 +560,14 @@ fun companion(
     partyStorage: Boolean = false,
     /** TAB BAR > SHOW AS ICONS, POSITION, SIZE COMPACT. */
     tabIcons: Boolean = false,
+    /** SHOW AS PLAIN ICONS (with [tabIcons]). */
+    plainIcons: Boolean = false,
     tabPlace: com.pokedaisy.app.companion.ui.theme.TabBarPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM,
     tabCompact: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
-    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons)
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons, plainIcons)
     com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabBar(tabPlace, tabCompact)
     DeviceBattery.status.value = battery
     val sv = snap()
@@ -1848,6 +1856,17 @@ fun main(args: Array<String>) {
         },
     ) else emptyList()
     val all = real + listOf(
+        // HOME (docs/plans/companion-home.md): the cards and shortcuts at this size; -PcompanionW/H/Density for the others.
+        Shot("$g-home", bw, bh, bd, companion("HOME")),
+        // SETTINGS > HOME TAB, and a card's pick-list.
+        Shot("$g-home-settings", bw, bh, bd, companion("SETTINGS", settingsRow = "HOME TAB")) {
+            onAllNodesWithText("HOME TAB", ignoreCase = true).onFirst().performClick()
+        },
+        Shot("$g-home-settings-card", bw, bh, bd, companion("SETTINGS", settingsRow = "HOME TAB")) {
+            onAllNodesWithText("HOME TAB", ignoreCase = true).onFirst().performClick()
+            waitForIdle()
+            onAllNodesWithText("CLOCK AND BATTERY", ignoreCase = true).onFirst().performClick()
+        },
         Shot("$g-party", bw, bh, bd, companion("PARTY")),
         // MY LOOK's picture behind the companion (COMPANION BACKGROUND), in place of the game's backdrop.
         Shot("$g-party-my-look", bw, bh, bd, run {
@@ -1856,6 +1875,8 @@ fun main(args: Array<String>) {
         }),
         // TAB BAR > SHOW AS ICONS: the tabs as their icons (RETRO's pixel tiles; -Pview=MODERN for the glyphs).
         Shot("$g-party-tab-icons", bw, bh, bd, companion("PARTY", tabIcons = true)),
+        // SHOW AS PLAIN ICONS: the same drawings in the tab's one colour.
+        Shot("$g-party-tab-icons-plain", bw, bh, bd, companion("PARTY", tabIcons = true, plainIcons = true)),
         // TAB BAR > POSITION / SIZE: a rail down the left with icons, the top bar compact, a rail on the right with names.
         Shot("$g-party-tabs-left", bw, bh, bd, companion("PARTY", tabIcons = true, tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT)),
         Shot("$g-party-tabs-top-compact", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP, tabCompact = true)),

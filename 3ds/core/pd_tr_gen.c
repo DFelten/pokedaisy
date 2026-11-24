@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[801] = {
+const struct pd_tr_entry pd_tr_table[802] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -271,6 +271,7 @@ const struct pd_tr_entry pd_tr_table[801] = {
     { "HMs are handed out once and stay.", { "HMs are handed out once and stay.", "Les CS sont données une fois et restent.", "VMs gibt es einmal, und sie bleiben.", "Le MN si ricevono una volta e restano.", "Las MO se dan una vez y se quedan.", "MOs são dadas uma vez e ficam.", "As MO são dadas uma vez e ficam." } },
     { "HOENN", { "HOENN", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "HOENN DEX", { "HOENN DEX", "DEX DE HOENN", "HOENN-DEX", "DEX DI HOENN", "DEX DE HOENN", "DEX DE HOENN", "DEX DE HOENN" } },
+    { "HOME", { "HOME", "ACCUEIL", "START", NULL, "INICIO", "INÍCIO", "INÍCIO" } },
     { "HOST", { "HOST", "HÔTE", NULL, NULL, NULL, NULL, NULL } },
     { "HOTKEYS", { "HOTKEYS", "RACCOURCIS", NULL, "TASTI RAPIDI", "ATAJOS", "ATALHOS", "ATALHOS" } },
     { "HOW MANY", { "HOW MANY", "COMBIEN", "WIE VIELE", "QUANTI", "CUÁNTOS", "QUANTOS", "QUANTOS" } },
@@ -805,4 +806,4 @@ const struct pd_tr_entry pd_tr_table[801] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 801;
+const int pd_tr_table_count = 802;

@@ -97,6 +97,9 @@ class SidePanelScreenshotTest {
         Window(SCREEN_W, "BATTLE", BattleButtonsScreenshotTest.battle, BattleButtonsScreenshotTest.input)
     }
 
+    /** HOME in the window. */
+    @Test fun windowHome() = paparazzi.snapshot { Window(SCREEN_W, tab = "HOME") }
+
     /** The window on a 4:3 screen (1440x1080 of the canvas): its X on its corner, no room beside it for the legend. */
     @Test fun windowNarrow() = paparazzi.snapshot {
         Box(Modifier.fillMaxSize().background(Color(0xFF303030))) {

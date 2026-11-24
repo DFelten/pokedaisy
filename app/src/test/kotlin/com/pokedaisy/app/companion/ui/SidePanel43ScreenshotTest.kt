@@ -59,6 +59,7 @@ class SidePanel43ScreenshotTest {
 
     @Test fun party() = paparazzi.snapshot { Window("PARTY") }
 
+    @Test fun home() = paparazzi.snapshot { Window("HOME") }
     @Test fun settings() = paparazzi.snapshot { Window("SETTINGS") }
 
     /** The game at its largest whole scale under the window (5x is 1200x800), dimmed, with the window over it. */

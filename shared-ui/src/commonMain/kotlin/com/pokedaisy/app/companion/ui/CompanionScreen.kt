@@ -108,9 +108,9 @@ fun CompanionScreen(
     slots: com.pokedaisy.app.companion.StateSlots? = null,
     settings: com.pokedaisy.app.companion.CompanionSettings? = null,
     battleInput: com.pokedaisy.app.companion.BattleInput? = null,
-    /** Tab shown first ("PARTY", "DEX", "MAP", "ITEMS", "CARD", "STATES", "SETTINGS", "MORE") - for
-     * screenshot tests, which can't tap the tab bar. */
-    initialTab: String = "PARTY",
+    /** Tab shown first ("HOME", "PARTY", "DEX", "MAP", "ITEMS", "CARD", "STATES", "SETTINGS", "MORE") - for
+     * screenshot tests, which can't tap the tab bar. Empty = the bar's first tab (HOME, unless the player took it off). */
+    initialTab: String = "",
     /** Party index whose summary is open on the PARTY tab - for screenshot tests too. */
     initialMonIndex: Int? = null,
     /** The CARD tab opens on the card's back - for screenshot tests too. */
@@ -156,6 +156,8 @@ fun CompanionScreen(
     var selectedLabel by remember { mutableStateOf(initialTab) }
     // Where BACK from a tab opened from MORE (or the GUIDE notice's GO BACK) returns.
     var backTab by remember { mutableStateOf("PARTY") }
+    // The tab HOME opened (a card's, a shortcut's): BACK there returns to HOME. Any other way to a tab clears it.
+    var homeReturn by remember { mutableStateOf<String?>(null) }
     // SETTINGS' page / row / scroll, kept while other tabs are open.
     val settingsUi = remember { SettingsUiState(initialSettingsPage, initialSettingsRow) }
     // A tapped achievement popup: the achievement to open ACHIEVEMENTS on, and the tab BACK returns to.
@@ -390,7 +392,7 @@ fun CompanionScreen(
                     if (selectedLabel != "BATTLE") preBattleTab = selectedLabel
                     selectedLabel = "BATTLE"
                 } else {
-                    selectedLabel = preBattleTab ?: "PARTY"
+                    selectedLabel = preBattleTab ?: ""
                     preBattleTab = null
                 }
                 if (battle) battleShowControls = opensOnButtons
@@ -467,9 +469,15 @@ fun CompanionScreen(
             selectedLabel = "MORE"; detailIndex = null; showSuggestions = false; showBattleStats = false; dexUi.open = null
             dexBackToParty = null
         }
+        // BACK from a tab HOME opened goes back to HOME (registered after MORE's, so it wins for a MORE tab HOME opened).
+        CompanionBackHandler(enabled = homeReturn != null && current == homeReturn) {
+            homeReturn = null
+            selectedLabel = com.pokedaisy.app.companion.HomeTab.ID; detailIndex = null; dexUi.open = null; dexBackToParty = null
+        }
         // A chip's tap (PARTY's own included) closes an open summary; BATTLE's also returns to the controls.
         val openTab: (String) -> Unit = { title ->
             popupReturn = null
+            homeReturn = null
             if (title != current) backTab = current
             selectedLabel = title; detailIndex = null; showSuggestions = false; showBattleStats = false; dexUi.open = null
             dexBackToParty = null
@@ -511,7 +519,13 @@ fun CompanionScreen(
             } else if (game == null) {
                 AppBackdrop()
             } else {
-                GameBackdrop(game)
+                // The game's party art only behind the game's own screens (party, bag, boxes, battle, map, card, the waiting
+                // party); the app's own screens (HOME, SETTINGS, DEX, GUIDE, STATES, MORE...) sit on the theme's backdrop
+                // (the user's call, 2026-11-24: the party art didn't fit them). A Game Boy or 3DS game keeps its own look.
+                val gameArt = game.isGameBoyGame || game.isN3ds || current in GAME_ART_TABS || GameStart.waiting && current in WAITING_TABS
+                val themeShown by androidx.compose.animation.core.animateFloatAsState(if (gameArt) 0f else 1f, tween(200), label = "theme-backdrop")
+                if (themeShown < 1f) GameBackdrop(game)
+                if (themeShown > 0f) Box(Modifier.fillMaxSize().graphicsLayer { alpha = themeShown }) { ThemeBackdrop() }
                 // The BATTLE tab: the DS battle screens' mint and Poké Ball (a Game Boy game keeps its own plain look).
                 val battleBackdrop by androidx.compose.animation.core.animateFloatAsState(
                     if (current == "BATTLE" && !game.isGameBoyGame) 1f else 0f, tween(220), label = "battle-backdrop",
@@ -563,6 +577,7 @@ fun CompanionScreen(
                             when (title) {
                                 "SETTINGS" -> IconTabChip(PixelIcons.gear, tr("Settings"), selectedIdx == i, open, cell, slot = i, side = true)
                                 "MORE" -> IconTabChip(PixelIcons.more, tr("MORE"), selectedIdx == i, open, cell.testTag("tab-MORE"), slot = i, side = true)
+                                com.pokedaisy.app.companion.HomeTab.ID -> IconTabChip(PixelIcons.home, tr("HOME"), selectedIdx == i, open, cell.testTag("tab-HOME"), slot = i, side = true)
                                 else -> {
                                     val usable = !snapshot.unsupported || snapshot.blocked != null || title == "ACHIEVEMENTS"
                                     TabChip(companionTabLabel(title), selectedIdx == i && usable, cell.testTag("tab-$title"), enabled = usable, slot = i, id = title, onClick = open)
@@ -594,6 +609,9 @@ fun CompanionScreen(
                             IconTabChip(PixelIcons.gear, tr("Settings"), selectedIdx == i, open, slot = i)
                         } else if (title == "MORE") {
                             IconTabChip(PixelIcons.more, tr("MORE"), selectedIdx == i, open, Modifier.testTag("tab-MORE"), slot = i)
+                        } else if (title == com.pokedaisy.app.companion.HomeTab.ID) {
+                            // HOME: the house, like the gear at the other end.
+                            IconTabChip(PixelIcons.home, tr("HOME"), selectedIdx == i, open, Modifier.testTag("tab-HOME"), slot = i)
                         } else {
                             // A blocked game's tabs can be opened: each shows its notice (the reason and its link).
                             val usable = !snapshot.unsupported || snapshot.blocked != null || title == "ACHIEVEMENTS"
@@ -857,6 +875,17 @@ fun CompanionScreen(
                         } else if (tab == "CARD" && card != null && cardArt?.style == card.style) {
                             // The game's own card fills the tab, over the backdrop.
                             TrainerCardScreen(card, cardArt, Modifier.fillMaxSize(), initialBack = initialCardBack)
+                        } else if (tab == com.pokedaisy.app.companion.HomeTab.ID) {
+                            // HOME (docs/plans/companion-home.md): the player's cards and shortcuts, each opening its tab.
+                            val homeCards = com.pokedaisy.app.companion.HomeTab.cards(settings?.homeCards ?: com.pokedaisy.app.companion.HomeTab.DEFAULT_CARDS)
+                            val homeShortcuts = com.pokedaisy.app.companion.HomeTab.shortcuts(settings?.homeShortcuts ?: com.pokedaisy.app.companion.HomeTab.DEFAULT_SHORTCUTS, available)
+                            val fromHome = { id: String -> openTab(id); homeReturn = id }
+                            HomeScreen(
+                                snapshot, homeCards, homeShortcuts, card, statusBarShown = statusBar != null,
+                                onOpenMon = { i -> fromHome("PARTY"); detailIndex = i },
+                                onOpenTab = fromHome,
+                                trainerTab = listOf("CARD", "DEX").firstOrNull { it in available },
+                            )
                         } else if (tab == "MAP") {
                             MapScreen(snapshot, modifier = Modifier.fillMaxSize(), fly = fly)
                         } else if (tab == "PARTY") {
@@ -1131,7 +1160,10 @@ object GameStart {
 private fun foeOpens(slot: Int, seen: List<Int>): Boolean = !com.pokedaisy.app.companion.Spoilers.hiding || slot in seen
 
 /** The tabs that wait for the game ([GameStart]): what they show is the save's. */
-private val WAITING_TABS = setOf("PARTY", "ITEMS", "MAP", "CARD")
+/** Tabs drawn over the game's own party art (the rest, the app's own screens, over the theme's backdrop). */
+private val GAME_ART_TABS = setOf("PARTY", "ITEMS", "BOXES", "BATTLE", "MAP", "CARD")
+
+private val WAITING_TABS = setOf("HOME", "PARTY", "ITEMS", "MAP", "CARD")
 
 /**
  * A tab id's label: the bag tab takes the game's own word from its START menu
@@ -1141,6 +1173,7 @@ private val WAITING_TABS = setOf("PARTY", "ITEMS", "MAP", "CARD")
  */
 internal fun companionTabLabel(id: String): String = when (id) {
     "ACHIEVEMENTS" -> tr("CHEEVOS")
+    "HOME" -> tr("HOME")
     "PARTY" -> tr("PARTY")
     "DEX" -> tr("DEX")
     "MAP" -> tr("MAP")
@@ -1313,14 +1346,21 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
     // TAB BAR > SHOW AS ICONS: the tab's icon (MORE's pixel tile in RETRO, its glyph in MODERN) where it has one.
     if (id != null && com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) {
         val modern = modernView
+        val plain = com.pokedaisy.app.companion.ui.theme.CustomLook.tabIconsPlain
         val glyph = if (modern) ModernGlyph.forTab(id) else null
         val pixel = if (!modern) TabIcons.forTab(id) else null
         if (glyph != null || pixel != null) {
             val tint = if (rainbow != null) rainbow.text else key?.text ?: if (selected) OptionColors.value else OptionColors.label
             TabChipShell(selected, m, modifier.fillMaxHeight().alpha(if (enabled) 1f else 0.4f).semantics { contentDescription = label }, onClick, enabled, rainbow) {
-                // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph in the label's colour, a little larger than a capital.
-                if (glyph != null) ModernIcon(glyph, tint, Modifier.size(m.u * if (LocalTabBarCompact.current) 15 else 22))
-                else PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph a little larger than a capital: its coloured app tile,
+                // or PLAIN ICONS: the glyph / the pixel drawing in the label's one colour.
+                val side = m.u * if (LocalTabBarCompact.current) 15 else 22
+                when {
+                    glyph != null && plain -> ModernIcon(glyph, tint, Modifier.size(side))
+                    glyph != null -> ModernTile(glyph, Modifier.size(side))
+                    plain -> PixelArt(pixel!!.bitmap, plainPalette(pixel.palette, tint), Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                    else -> PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                }
             }
             return
         }
@@ -1337,6 +1377,24 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
         )
     }
 }
+
+/**
+ * TAB BAR > SHOW AS PLAIN ICONS: a [TabIcons] drawing in one colour, [tint]: its dark outline solid, each other colour
+ * the tint a little see-through by how light it was (a light fill faint, a dark one strong), so the drawing keeps its
+ * shapes. Cached per palette and tint.
+ */
+internal fun plainPalette(palette: Map<Char, androidx.compose.ui.graphics.Color>, tint: androidx.compose.ui.graphics.Color): Map<Char, androidx.compose.ui.graphics.Color> =
+    plainPalettes.getOrPut(palette to tint) {
+        palette.mapValues { (_, c) ->
+            if (c.alpha == 0f) c
+            else {
+                val light = 0.299f * c.red + 0.587f * c.green + 0.114f * c.blue
+                tint.copy(alpha = if (light < 0.25f) 1f else (0.95f - light * 0.6f).coerceIn(0.3f, 0.9f))
+            }
+        }
+    }
+
+private val plainPalettes = HashMap<Pair<Map<Char, androidx.compose.ui.graphics.Color>, androidx.compose.ui.graphics.Color>, Map<Char, androidx.compose.ui.graphics.Color>>()
 
 /** The SETTINGS and MORE tabs: a fixed-width chip (narrower than the weighted text tabs)
  * showing only a pixel-art [icon] (the gear, MORE's nine squares) rather than a word. Same
@@ -1483,10 +1541,10 @@ private fun BlockedView(
 }
 
 /** The tabs a 3DS game has so far: its party, its bag and Azahar's states. */
-private val N3DS_TABS = setOf("PARTY", "ITEMS", "STATES")
+private val N3DS_TABS = setOf("HOME", "PARTY", "ITEMS", "STATES")
 
 /** A PC fan game's tabs (PcGameActivity): the party with its summaries, and the bag. */
-private val PC_GAME_TABS = setOf("PARTY", "ITEMS")
+private val PC_GAME_TABS = setOf("HOME", "PARTY", "ITEMS")
 
 /** The data tabs until the first telemetry arrives: a rocking Poké Ball and
  * "LOADING...". [status] (the reader's own message) only shows up if it

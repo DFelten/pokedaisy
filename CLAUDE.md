@@ -371,7 +371,7 @@ DEFAULT; picking a theme with a font wears it (`pickTheme` -> `wearThemeFont`). 
 rule: checked by its bytes, size-capped; `FontFileInfo.problem`, `PictureKind` / `PictureMotion`, the zip's caps in `ThemePackFiles.unzip`).
 SIDE BARS (`SideBars`, `Prefs.sideBars`; GAME SCREEN on both screens): DEFAULT (theme's bar pictures, else the DS blur / black) / BLACK / MY
 PICTURES, drawn by `SideBarsFill` in `sideBarsView` (behind the game in `GameViewportView`, `onContent` gives the game's rect) or inside
-the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / `ModernGlyph`. Several
+the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / MODERN's `ModernTile`; PLAIN ICONS (`tabIconsPlain`, 2026-11-24) the same in the tab's one colour (`plainPalette`, `ModernIcon`). Several
 custom layouts: touch (`TouchControlsStyle.customs` / `customIndex`, `TouchCustom`, prefs `touch_layouts`; EDIT LAYOUT on a preset makes a new
 one, never writes over another) and HUD (`FieldHudStyle.customs` / `custom`, `HudCustom` places per `HudBlock` as shares of the room;
 `HudEditor` over the game from the companion's HUD > EDIT LAYOUT, `CustomHudLayout`). LIBRARY VIEW (`LibraryLayout`, `Prefs.libraryViewMode`
@@ -418,7 +418,9 @@ values and a white row as the cursor, white framed buttons, black-out overlays. 
 `GbaText` sized by `GbaTextMetrics` (whole screen pixels per font pixel, so the pixel
 font stays crisp; `rememberGbaTextMetrics(1f)` for denser secondary text). Companion
 SETTINGS/STATES and the top-screen Library/Settings are all built from these pieces over
-a game backdrop (`GameBackdrop` on the companion, `AppBackdrop` - the website's
+a backdrop (on the companion the game's party art, `GameBackdrop`, only behind the game's own screens - `GAME_ART_TABS`: PARTY, BAG,
+BOXES, BATTLE, MAP, CARD, and a Game Boy / 3DS game's every tab - and the THEME's, `ThemeBackdrop`, behind the app's own: the user's call,
+2026-11-24; `AppBackdrop` - the website's
 `DaisyBackdrop` in the THEME's colours - on the top screen); ITEMS (`ItemsScreen.kt`) is the per-game bag screen in the
 same idiom. PARTY uses the game's own slot (`GbaPartySlot`, generated `PartySlotStyle`s) where one exists; every other game gets a FireRed-like slot drawn from a `PartyPalette` (`PartyScreen.kt`, `partyPaletteFor`) — restyle a game by adding a palette there, like ITEMS' `BagPalette`. Rogue, Gaia, Lazarus, Seaglass and R.O.W.E. have palettes sampled from their party menus (headless: the save's first mon copied into slots 2-3, slot 3 at 0 HP, so normal / selected / fainted all show; `PartySlotColors.band` / per-state `text`, `PartyPalette.empty` cover flat and white-box slots); their bags have `BagPalette`s (TMT2's is `EmeraldBag`; Celia and Gaia match FireRed's). Their backdrop is FireRed's party backdrop recoloured (`backdropColors` in `theme/Theme.kt`: its 3 colours mapped to the game's), or plain stripes until a FireRed ROM has supplied the art. Multi-choice settings open an `OptionSelector` pick-list — never make a row
 cycle through more than two values (exceptions, the user's call: SHADERS > FILTER, GRID and SMOOTHING, and HUD > LAYOUT, LOOK and SIZE
@@ -479,13 +481,14 @@ battle buttons); bags get `BagPalette.night()` (`theme/NightColors.kt`: each col
 yellows lean amber, a dark cream read olive), Yellow's party slots `YellowPartyPaletteNight`, Gen 1 pictures a white card
 (`spritePaper`: their paper is transparent). New colours: read `OptionColors` (or add a getter with both values), never a
 bare white / black fill. Look at it: `gradle render -Pdark=true -Pout=build/shots-dark`, `DarkCompanionScreenshotTest`.
-**Next release's batches** (`companion/FlaggedFeatures.kt`, both off until 1.7.0; `FeatureFlags.settingsPlus` / `modernLook`:
-`-Ppokedaisy.settingsPlus=true` / `modernLook`, or markers `settings-plus` / `modern-look`; ui-preview turns both on, `-PflagsOff=true` off):
+**1.7.0's UI batches** (`companion/FlaggedFeatures.kt`; `FeatureFlags.settingsPlus` / `modernLook`, **on by default since 2026-11-24**
+(the user's call: they ship in 1.7.0 with the HOME tab, so new UI work is built and checked on them); `-Ppokedaisy.settingsPlus=false` /
+`modernLook=false` builds without them, markers `settings-plus` / `modern-look`; ui-preview turns both on, `-PflagsOff=true` off):
 `settingsPlus` = SETTINGS FILE, the SAVE STATES folder and page, per-game settings; `modernLook` = everything of the modern-look merge
 (VIEW, MY LOOK, FONT SIZE, SIDE BARS, tab / menu bar places, kept HUD / touch layouts, library views and pill order, the regrouped
 settings, ScreenScraper on). Off, their rows are left out (`ui/FlaggedRows.kt`'s `flaggedRows`, by label) and their prefs read as before
 (`Prefs` getters); a new row of either goes in `flaggedRows`' lists. Their manual text is already in docs/manual (no release from dev
-before 1.7.0). Flipping them on for 1.7.0: the build defaults (app/build.gradle.kts) to true, or drop the flags.
+before 1.7.0). Dropping the flags altogether is a later clean-up.
 **Per-game settings** (companion SETTINGS > GAME > SETTINGS FOR: ALL GAMES / THIS GAME, NEW tag `GAME_SETTINGS`; 2026-11-23,
 `docs/plans/per-game-settings.md`): a game's own value of a setting is `game.<crc>.<key>` beside the normal key; `GameSettingsStore`
 (`companion/GameSettings.kt`) reads it first and writes there under THIS GAME (or once one exists). Only the game's activity sees them
@@ -520,6 +523,13 @@ glyph is taller than a line). Names follow the game's own casing: `speciesName`/
 — don't `.uppercase()` names in the UI. The per-game look reads the `activeGame` global,
 which Compose can't observe, so `CompanionScreen` is keyed on `SnapshotView.game`.
 
+**HOME tab** (2026-11-24, 1.7.0, `docs/plans/companion-home.md`; NEW tag `HOME_TAB`): the first tab for everyone, a house icon chip
+counted in the bar's five (`Prefs.companionTabs` puts it first on an older pick once, the last tab going under MORE; hideable in TAB BAR);
+the companion opens on the bar's first tab (`initialTab` ""). Cards (`HomeCard`: PARTY, MAP, TRAINER, DEVICE) and six shortcuts (tab ids)
+from SETTINGS > HOME TAB (`Prefs.homeCards` / `homeShortcuts`, shared by every game). `HomeLayouts` (pure, `HomeLayoutTest` over every
+companion size) picks COMPACT / STANDARD / WIDE / TALL from the tab's room in GBA pixels and drops a card that doesn't fit rather than
+scroll; `HomeScreen` draws it from the menus' pieces, the map through the HUD's `MiniMapPicture`. BACK from a tab HOME opened returns to HOME.
+A new card: its `HomeCard`, its heights in `HomeLayouts.cardHeight`, its content in `HomeScreen`, the manual's HOME section.
 **Tab bar + GUIDE**: at most 5 tabs sit next to the SETTINGS gear (`MAX_BAR_TABS`); the
 player picks them in SETTINGS > TAB BAR (`Prefs.companionTabs`, shared by every game — only
 tabs the running game has count). The rest open from **MORE** (`MoreScreen.kt`, the user's design, 2026-10-18): an

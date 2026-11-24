@@ -41,6 +41,7 @@ enum class ModernGlyph(val top: Color, val low: Color) {
     TRANSFER(Color(0xFF52D6C8), Color(0xFF00897B)),
     COLLECTION(Color(0xFFF69BBE), Color(0xFFD5205F)),
     SPRITES(Color(0xFFFFD866), Color(0xFFF2A21C)),
+    HOME(Color(0xFF7FB2FF), Color(0xFF3D6FE0)),
     PARTY(Color(0xFFFF7A7A), Color(0xFFD63838)),
     DEX(Color(0xFFFF9466), Color(0xFFDD4A26)),
     MAP(Color(0xFF66D2A4), Color(0xFF1C9A6A)),
@@ -86,7 +87,7 @@ enum class ModernGlyph(val top: Color, val low: Color) {
     companion object {
         /** A companion tab's glyph (its id, `"ITEMS"`...), null for one without. */
         fun forTab(id: String): ModernGlyph? = when (id) {
-            "PARTY" -> PARTY; "DEX" -> DEX; "MAP" -> MAP; "ITEMS" -> BAG; "BOXES" -> BOXES; "GUIDE" -> GUIDE
+            "HOME" -> HOME; "PARTY" -> PARTY; "DEX" -> DEX; "MAP" -> MAP; "ITEMS" -> BAG; "BOXES" -> BOXES; "GUIDE" -> GUIDE
             "NUZLOCKE" -> NUZLOCKE; "HUNT" -> HUNT; "CARD" -> CARD; "STATES" -> STATES; "ACHIEVEMENTS" -> ACHIEVEMENTS
             "BATTLE" -> BATTLE; "SETTINGS" -> SETTINGS; "MORE" -> MORE
             else -> null
@@ -100,7 +101,7 @@ enum class ModernGlyph(val top: Color, val low: Color) {
         private val PIXEL_TWINS: List<Pair<List<String>, ModernGlyph>> by lazy {
             buildList<Pair<List<String>, ModernGlyph>> {
                 fun put(k: List<String>, v: ModernGlyph) = add(k to v)
-                put(PixelIcons.gear, SETTINGS); put(PixelIcons.more, MORE); put(PixelIcons.arrowUp, ARROW_UP)
+                put(PixelIcons.gear, SETTINGS); put(PixelIcons.more, MORE); put(PixelIcons.home, HOME); put(PixelIcons.arrowUp, ARROW_UP)
                 put(PixelIcons.back, BACK); put(PixelIcons.arrowBack, BACK); put(PixelIcons.expand, EXPAND)
                 put(PixelIcons.shrink, SHRINK); put(PixelIcons.filter, FILTER); put(PixelIcons.star, STAR); put(PixelIcons.starOutline, STAR_OUTLINE)
                 put(PixelIcons.clock, CLOCK); put(PixelIcons.close, CLOSE); put(PixelIcons.check, CHECK)
@@ -259,6 +260,12 @@ fun DrawScope.drawGlyph(glyph: ModernGlyph, c: Color) {
             circle(8.5f, 7.5f, 2f)
             circle(12.5f, 7f, 0.9f); circle(15f, 7f, 0.9f)
             rrect(7f, 11f, 10f, 6.5f, 1.2f, fill = false, sw = 1.6f)
+        }
+        ModernGlyph.HOME -> {
+            // A house: its roof, walls, a door.
+            path { m(3f, 11f); l(12f, 3.5f); l(21f, 11f) }
+            path { m(5.5f, 9.5f); l(5.5f, 19f); q(5.5f, 20.5f, 7f, 20.5f); l(17f, 20.5f); q(18.5f, 20.5f, 18.5f, 19f); l(18.5f, 9.5f) }
+            rrect(10f, 14f, 4f, 6.5f, 1f)
         }
         ModernGlyph.MAP -> {
             // A folded map with a pin.

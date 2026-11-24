@@ -11,6 +11,9 @@ fun interface DeviceDates {
     /** [epochMillis] as the device's short date and time ("11/14/26, 3:05 PM"). */
     fun shortDateTime(epochMillis: Long): String
 
+    /** [epochMillis]'s time alone, the device's way ("3:05 PM" / "15:05"): HOME's clock. */
+    fun shortTime(epochMillis: Long): String = shortDateTime(epochMillis).substringAfterLast(' ')
+
     companion object {
         /** Set by the app at start (and by ui-preview / the screenshot tests). */
         @Volatile var current: DeviceDates? = null

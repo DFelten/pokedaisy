@@ -337,6 +337,8 @@ object NewFeatures {
     const val MOVING_BACKGROUNDS = "moving_backgrounds"
     /** SIDE BARS: black or the player's pictures beside a game that doesn't fill the screen. */
     const val SIDE_BARS = "side_bars"
+    /** The companion's HOME tab and SETTINGS > HOME TAB (docs/plans/companion-home.md). */
+    const val HOME_TAB = "home_tab"
     /** TAB BAR > SHOW AS: the companion's tabs as icons. */
     const val TAB_ICONS = "tab_icons"
     /** TAB BAR > POSITION / SIZE and the library's MENU BAR / MENU BAR SIZE. */
@@ -443,7 +445,7 @@ object NewFeatures {
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
         TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS, SHINY_HUNT, SPOILER_FREE,
-        WILD_PIN, QUICK_HATCH, FOLLOWER_GOLD_SILVER, FOLLOWER_RED_BLUE,
+        WILD_PIN, QUICK_HATCH, FOLLOWER_GOLD_SILVER, FOLLOWER_RED_BLUE, HOME_TAB,
     )
 
     private const val DAYS = 7

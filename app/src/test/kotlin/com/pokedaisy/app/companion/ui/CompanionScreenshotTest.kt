@@ -231,6 +231,14 @@ open class CompanionScreenshotTest {
         }
     }
 
+    /** HOME (docs/plans/companion-home.md): the party, map, trainer card and clock, the shortcuts; DuoLite / RgDs / Wide re-run it. */
+    @Test fun home() = snapshot {
+        CompanionScreen(
+            SampleCompanion.snapshot, SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "HOME",
+            achievements = SampleCompanion.Achievements(SampleCompanion.achievementsState),
+        )
+    }
+
     /** MORE, left of the gear: the tabs off the bar (CARD, STATES; CHEEVOS with RetroAchievements) as app icons. */
     @Test fun more() = snapshot {
         CompanionScreen(

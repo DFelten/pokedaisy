@@ -436,7 +436,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     private var mainCompanion: View? = null
     private var mainCompanionOwner: ComposeHostOwner? = null
     /** The companion a swap opens on: SETTINGS when the swap came from there. */
-    private var companionStartTab = "PARTY"
+    private var companionStartTab = ""
     /** ...and SETTINGS' row it opens on (SWAP SCREENS after a swap), the same one time. */
     private var companionStartRow: String? = null
 
@@ -3438,7 +3438,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             }
         }.onFailure { Log.w("pokedaisy", "presentation failed", it) }.getOrNull()
         if (presentation != null) SecondScreenHolder.open(this, target)
-        companionStartTab = "PARTY"
+        companionStartTab = ""
         companionStartRow = null
         if (presentation == null && swap) {
             // The game has to be somewhere: back here, the companion beside it.

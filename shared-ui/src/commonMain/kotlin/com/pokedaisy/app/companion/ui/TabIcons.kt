@@ -282,6 +282,29 @@ internal object TabIcons {
         mapOf('k' to OUTLINE, 'w' to Color(0xFFD8D8E0), 'y' to Color(0xFFF8C830), 'b' to Color(0xFF8A5A2A)),
     )
 
+    /** A house, red roof, its door and windows: HOME. */
+    val home = TabIcon(
+        listOf(
+            "................",
+            ".......kk.......",
+            "......krrk......",
+            ".....krrrrk.....",
+            "....krrrrrrk....",
+            "...krrrrrrrrk...",
+            "..krrrrrrrrrrk..",
+            ".kkkkkkkkkkkkkk.",
+            "..kwwwwwwwwwwk..",
+            "..kwuuwwwwuuwk..",
+            "..kwuuwkkwuuwk..",
+            "..kwwwkbbkwwwk..",
+            "..kwwwkbbkwwwk..",
+            "..kwwwkbbkwwwk..",
+            "..kkkkkkkkkkkk..",
+            "................",
+        ),
+        mapOf('k' to OUTLINE, 'r' to Color(0xFFE05048), 'w' to Color(0xFFF8E8B8), 'u' to Color(0xFF58A8F0), 'b' to Color(0xFFA0683A)),
+    )
+
     /** Three sparkles, the big one gold: the HUNT tab (a shiny's shine). */
     val sparkles = TabIcon(
         listOf(
@@ -307,6 +330,7 @@ internal object TabIcons {
 
     /** A tab id's icon; null for a tab without one (BATTLE and SETTINGS never sit on the MORE grid). */
     fun forTab(id: String): TabIcon? = when (id) {
+        "HOME" -> home
         "PARTY" -> party
         "DEX" -> dex
         "MAP" -> map

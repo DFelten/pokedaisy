@@ -56,6 +56,7 @@ class WindowRpcScreenshotTest {
     }
 
     @Test fun party() = paparazzi.snapshot { Window("PARTY") }
+    @Test fun home() = paparazzi.snapshot { Window("HOME") }
     @Test fun settings() = paparazzi.snapshot { Window("SETTINGS") }
     @Test fun map() = paparazzi.snapshot { Window("MAP") }
     @Test fun bag() = paparazzi.snapshot { Window("ITEMS") }

@@ -87,9 +87,10 @@ android {
         // ScreenScraper (game media, its setup step and the update's popup): off until the app has its developer login
         // (FeatureFlags.screenScraper).
         buildConfigField("boolean", "FEATURE_SCREENSCRAPER", featureFlag("screenScraper").toString())
-        // The two batches for the next release (FeatureFlags.settingsPlus / modernLook, companion.FlaggedFeatures): off until it.
-        buildConfigField("boolean", "FEATURE_SETTINGS_PLUS", featureFlag("settingsPlus").toString())
-        buildConfigField("boolean", "FEATURE_MODERN_LOOK", featureFlag("modernLook").toString())
+        // The two UI batches (FeatureFlags.settingsPlus / modernLook, companion.FlaggedFeatures): on for 1.7.0, with HOME.
+        // -Ppokedaisy.settingsPlus=false / modernLook=false still builds without them.
+        buildConfigField("boolean", "FEATURE_SETTINGS_PLUS", featureFlag("settingsPlus", default = true).toString())
+        buildConfigField("boolean", "FEATURE_MODERN_LOOK", featureFlag("modernLook", default = true).toString())
         buildConfigField("boolean", "FEATURE_SHINY_HUNT", featureFlag("shinyHunt").toString())
         buildConfigField("boolean", "FEATURE_SPOILER_FREE", featureFlag("spoilerFree").toString())
         // CO-OP (the connection to a paired partner): off until the feature ships (FeatureFlags.coop).

@@ -10,4 +10,8 @@ object JvmDeviceDates : DeviceDates {
 
     // A DateFormat isn't thread-safe; the screens call this from more than one composition.
     override fun shortDateTime(epochMillis: Long): String = synchronized(shortDateTime) { shortDateTime.format(Date(epochMillis)) }
+
+    private val shortTime: DateFormat by lazy { DateFormat.getTimeInstance(DateFormat.SHORT) }
+
+    override fun shortTime(epochMillis: Long): String = synchronized(shortTime) { shortTime.format(Date(epochMillis)) }
 }

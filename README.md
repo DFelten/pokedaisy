@@ -59,8 +59,9 @@ a dual-screen handheld it gets the bottom screen; on one screen it opens over th
   </tr>
 </table>
 
-Also **BAG** (use and give items), **NUZLOCKE** (keeps score of a run), **CARD**, **STATES** (10 save-state slots) and
-**ACHIEVEMENTS** (RetroAchievements). You pick which tabs sit on the bar.
+It opens on **HOME**: your party, the map, money, play time, badges, the clock and the battery on one page, with shortcuts to
+the tabs you use most, laid out for your screen. Also **BAG** (use and give items), **NUZLOCKE** (keeps score of a run), **CARD**,
+**STATES** (10 save-state slots) and **ACHIEVEMENTS** (RetroAchievements). You pick which tabs sit on the bar and what HOME shows.
 
 ## On the game screen
 

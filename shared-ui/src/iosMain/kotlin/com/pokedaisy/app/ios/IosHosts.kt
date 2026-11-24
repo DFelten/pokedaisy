@@ -161,7 +161,7 @@ internal object FoundationDates : DeviceDates {
 
     private val clock = NSDateFormatter().apply { timeStyle = NSDateFormatterShortStyle }
 
-    fun shortTime(epochMillis: Long): String =
+    override fun shortTime(epochMillis: Long): String =
         clock.stringFromDate(NSDate.dateWithTimeIntervalSince1970(epochMillis / 1000.0))
 }
 

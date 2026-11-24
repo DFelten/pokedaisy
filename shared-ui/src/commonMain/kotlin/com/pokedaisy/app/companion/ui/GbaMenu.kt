@@ -1267,6 +1267,17 @@ fun AppBackdrop(
     }
 }
 
+/**
+ * The theme's backdrop behind the companion's own screens (HOME, SETTINGS, DEX, GUIDE...): MY LOOK's companion picture,
+ * else VIEW MODERN's page, else the website's ([DaisyBackdrop]) in the THEME's colours, as on the top screen.
+ */
+@Composable
+fun ThemeBackdrop() {
+    if (com.pokedaisy.app.companion.ui.theme.LookBackdrop(companion = true, scrim = OptionColors.backdropScrim)) return
+    if (modernView) { ModernBackdrop(); return }
+    DaisyBackdrop(false)
+}
+
 /** A text input in the title window's look (white, grey frame), pixel font: one line, or
  * [minLines] and more. [password] hides what's typed and keeps the keyboard from learning
  * it, with an eye at the end to show / hide it; [code] asks for capitals with no suggestions

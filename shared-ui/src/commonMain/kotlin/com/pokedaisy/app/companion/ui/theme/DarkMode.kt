@@ -81,6 +81,10 @@ interface ThemeStore {
     var tabIcons: Boolean
         get() = false
         set(value) {}
+    /** TAB BAR > SHOW AS PLAIN ICONS ([CustomLook.tabIconsPlain]). */
+    var tabIconsPlain: Boolean
+        get() = false
+        set(value) {}
     /** TAB BAR > POSITION / SIZE and MENU BAR / MENU BAR SIZE ([CustomLook.tabBarPlace] and the rest). */
     var tabBarPlace: Int
         get() = 0

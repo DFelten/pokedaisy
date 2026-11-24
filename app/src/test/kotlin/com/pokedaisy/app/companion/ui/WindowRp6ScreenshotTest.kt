@@ -66,6 +66,8 @@ class WindowRp6ScreenshotTest {
 
     @Test fun partyNormal() = paparazzi.snapshot { Window { Tab("PARTY") } }
 
+    @Test fun homeCompact() = paparazzi.snapshot { Window(compact = true) { Tab("HOME") } }
+
     @Test fun settingsCompact() = paparazzi.snapshot { Window(compact = true) { Tab("SETTINGS") } }
 
     @Test fun settingsNormal() = paparazzi.snapshot { Window { Tab("SETTINGS") } }
