@@ -33,6 +33,22 @@ class Gen2ItemUseTest {
     }
 
     @Test
+    fun `Gold and Silver's code and tables are in their four carts, each only its own`() {
+        fun Gen2ItemCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        val carts = listOf(
+            "Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_GOLD,
+            "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_SILVER,
+            "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_GOLD_DE,
+            "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_SILVER_DE,
+        ).map { (name, calls) -> File(dir, name) to calls }
+        assumeTrue("no Gold / Silver cart", carts.any { it.first.isFile })
+        val all = carts.map { it.second } + GEN2_ITEM_CALLS_CRYSTAL + GEN2_ITEM_CALLS_CRYSTAL_DE
+        for ((f, calls) in carts) if (f.isFile) for (other in all) assertEquals(f.name, other === calls, other.on(f))
+        assertTrue(GbField.Gold.itemCalls === GEN2_ITEM_CALLS_GOLD && GbField.Silver.itemCalls === GEN2_ITEM_CALLS_SILVER &&
+            GbField.GoldDe.itemCalls === GEN2_ITEM_CALLS_GOLD_DE && GbField.SilverDe.itemCalls === GEN2_ITEM_CALLS_SILVER_DE)
+    }
+
+    @Test
     fun `the German cart's friendship changes are the English one's`() {
         val en = File(dir, "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
         val de = File(dir, "Pokemon - Kristall-Edition (Germany).gbc")
