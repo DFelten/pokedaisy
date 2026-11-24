@@ -12,7 +12,10 @@ import kotlin.test.assertTrue
  * off. Nothing outside the tab, nothing on top of anything, every slot / tile / map big enough, and the shape each gets.
  */
 class HomeLayoutTest {
-    private class Screen(val name: String, val w: Float, val h: Float, val short: Boolean, val shape: Shape, val text: HomeLayouts.Text)
+    // [tabH]: the tab's room; HOME's status bar (one small line in a title window, ~30 GBA px with its gap) comes off it.
+    private class Screen(val name: String, val w: Float, tabH: Float, val short: Boolean, val shape: Shape, val text: HomeLayouts.Text) {
+        val h = tabH - 30f
+    }
 
     // The text's sizes in GBA pixels: the main text 4 screen px a font pixel on a 3-px GBA pixel (21.3), 3 with the
     // window's step down or on a 2-px one (16); the small text always one GBA pixel a font pixel (16).
@@ -29,7 +32,8 @@ class HomeLayoutTest {
         Screen("AYN Thor", 413f, 312f, false, Shape.STANDARD, big),
         Screen("RP Classic window", 363f, 270f, false, Shape.STANDARD, stepped),
         Screen("RP6 window", 443f, 270f, false, Shape.STANDARD, stepped),
-        Screen("side panel", 480f, 490f, false, Shape.TALL, big),
+        // About square once the status bar is off: STANDARD.
+        Screen("side panel", 480f, 490f, false, Shape.STANDARD, big),
         Screen("side panel 4:3", 320f, 430f, false, Shape.TALL, big),
         Screen("phone upright, full", 360f, 480f, false, Shape.TALL, stepped),
         Screen("Thor top screen (SWAP SCREENS)", 640f, 312f, false, Shape.WIDE, big),
@@ -98,10 +102,10 @@ class HomeLayoutTest {
         }
     }
 
-    @Test fun theThorKeepsBothSmallCardsAsBoxesAndANamedParty() {
+    @Test fun theThorKeepsTheTrainerCardAsABoxAndANamedParty() {
         val thor = screens.first { it.name == "AYN Thor" }
         val l = HomeLayouts.layout(thor.w, thor.h, false, all, 6, thor.text)
-        assertEquals(listOf(Form.BOX, Form.BOX), l.cards.map { it.form })
+        assertEquals(listOf(Form.BOX), l.cards.map { it.form })
         assertEquals(2, l.partyColumns)
         assertTrue(!l.partyMini)
     }

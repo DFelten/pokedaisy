@@ -44,8 +44,9 @@ import kotlin.time.Clock
 /**
  * The HOME tab (docs/plans/companion-home.md): the player's [cards] where [HomeLayouts] puts them for this screen, the
  * [shortcuts] (tab ids) along the bottom. A party slot opens that Pokémon's summary ([onOpenMon]), a card or a shortcut
- * its tab ([onOpenTab]). [statusBarShown]: the status bar over the companion already shows the clock and the battery,
- * so DEVICE gives way. Built from the menus' own pieces: SUMMARY MINT's windows and cells, MODERN's through them.
+ * its tab ([onOpenTab]). Along the top, a status bar like the game screen's: [gameName], money, the clock and the battery -
+ * left out while STATUS BAR shows the same one over the companion ([statusBarShown]). Built from the menus' own pieces:
+ * SUMMARY MINT's windows and cells, MODERN's through them.
  */
 @Composable
 internal fun HomeScreen(
@@ -54,6 +55,8 @@ internal fun HomeScreen(
     shortcuts: List<String>,
     trainerCard: TrainerCardInfo?,
     statusBarShown: Boolean,
+    /** The game's name, the status bar's first word (the Library's). */
+    gameName: String,
     onOpenMon: (Int) -> Unit,
     onOpenTab: (String) -> Unit,
     /** Where TRAINER goes: CARD where the game has it, else DEX; null = TRAINER opens nothing. */
@@ -70,11 +73,16 @@ internal fun HomeScreen(
         when (c) {
             HomeCard.PARTY -> true
             HomeCard.MAP -> mm.drawn || snapshot.location.mapSecName.isNotEmpty()
-            HomeCard.TRAINER -> money != null || trainerCard != null || snapshot.pokedex != null
-            HomeCard.DEVICE -> !statusBarShown
+            HomeCard.TRAINER -> trainerCard != null || snapshot.pokedex != null
         }
     }
-    BoxWithConstraints(modifier.testTag("home")) {
+    Column(modifier.testTag("home")) {
+    // The status bar: where you are only when the MAP card doesn't say it.
+    if (!statusBarShown) {
+        val place = snapshot.location.mapSecName.takeIf { HomeCard.MAP !in shown && it.isNotEmpty() }?.let { gameCase(it) }
+        HomeStatusBar(gameName, place, money, Modifier.padding(start = u * HomeLayouts.GAP, end = u * HomeLayouts.GAP, top = u * HomeLayouts.GAP))
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val short = LocalShortCompanion.current
         val text = HomeLayouts.Text(line = m.lineHeight / u, small = small.lineHeight / u)
         val w = maxWidth / u
@@ -94,8 +102,7 @@ internal fun HomeScreen(
             }
             HomeSmallCard(p, Modifier.at(p.box), open?.let { { onOpenTab(it) } }) {
                 when (p.card) {
-                    HomeCard.TRAINER -> TrainerCardContent(p.form, money, trainerCard, snapshot, m, small)
-                    HomeCard.DEVICE -> DeviceCardContent(p.form, m, small)
+                    HomeCard.TRAINER -> TrainerCardContent(p.form, trainerCard, snapshot, small)
                     // No map picture for the game: where you are, on one line.
                     HomeCard.MAP -> PlaceLine(snapshot.location.mapSecName, small)
                     else -> {}
@@ -109,6 +116,7 @@ internal fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -161,6 +169,7 @@ private fun HomeSlot(mon: MonView?, index: Int, mini: Boolean, small: GbaTextMet
         // A slot tall enough for it (the Thor's, the side panel's) stacks the icon and level over the name, the HP bar and
         // its numbers; a shorter one puts the icon beside them; [mini] is one row.
         val stacked = !mini && maxHeight >= icon + line * 2 + u * 13
+        val numbers = maxHeight >= line * 3 + u * 8
         when {
             mini -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 SlotIcon(mon, icon, u)
@@ -185,7 +194,8 @@ private fun HomeSlot(mon: MonView?, index: Int, mini: Boolean, small: GbaTextMet
                     }
                 }
             }
-            // The icon beside the name over the level and HP bar: the name has the width to itself.
+            // The icon beside the name over the level and HP bar (and the HP numbers where there's room): the name has the width
+            // to itself.
             else -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 SlotIcon(mon, icon, u)
                 Spacer(Modifier.width(u * 2))
@@ -196,16 +206,22 @@ private fun HomeSlot(mon: MonView?, index: Int, mini: Boolean, small: GbaTextMet
                         Spacer(Modifier.width(u * 3))
                         HudHpBar(mon.hp, mon.maxHp, Modifier.weight(1f).height(u * 5))
                     }
+                    if (!mon.isEgg && numbers) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        GbaText("${mon.hp}/${mon.maxHp}", OptionColors.label, OptionColors.labelShadow, small)
+                    }
                 }
             }
         }
     }
 }
 
-/** The party icon (its status tag, a fainted one faded); it may spill past a short slot, like the game's. */
+/** The party icon (its status tag, a fainted one faded): its 32 x 32 frame's width kept (the sprite fills it), its height
+ * free to spill past a short slot, like the game's. */
 @Composable
 private fun SlotIcon(mon: MonView, icon: Dp, u: Dp) {
-    Box(Modifier.size(icon, icon).wrapContentSize(unbounded = true)) { HudMonIcon(mon, icon, u) }
+    Box(Modifier.size(icon * 32 / 24, icon), contentAlignment = Alignment.Center) {
+        Box(Modifier.wrapContentSize(unbounded = true)) { HudMonIcon(mon, icon, u) }
+    }
 }
 
 /** MAP with no picture for the game: a pin and the place's name. */
@@ -270,41 +286,25 @@ private fun LabelValue(label: String, value: String, small: GbaTextMetrics, modi
     }
 }
 
-/** The Pokédollar sign at the small text's size, then [money]. */
+/** TRAINER: its heading and the play time, the badges, the POKéDEX's count. A LINE: the badges and the play time. */
 @Composable
-private fun Money(money: Long, small: GbaTextMetrics) {
-    val cell = small.lineHeight / 16
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        PixelArt(
-            POKE_DOLLAR, mapOf('o' to OptionColors.label, 's' to OptionColors.labelShadow),
-            Modifier.size(cell * POKE_DOLLAR[0].length, cell * POKE_DOLLAR.size),
-        )
-        Spacer(Modifier.width(cell))
-        GbaText(groupedNumber(money), OptionColors.label, OptionColors.labelShadow, small)
-    }
-}
-
-/** TRAINER: money and play time, the badges, the POKéDEX's count. A LINE: money, badges, play time. */
-@Composable
-private fun TrainerCardContent(form: Form, money: Long?, card: TrainerCardInfo?, snapshot: SnapshotView, m: GbaTextMetrics, small: GbaTextMetrics) {
+private fun TrainerCardContent(form: Form, card: TrainerCardInfo?, snapshot: SnapshotView, small: GbaTextMetrics) {
     val u = small.u
     val time = card?.let { "${it.hours}:${it.minutes.toString().padStart(2, '0')}" }
     val badges = card?.badges
     if (form == Form.LINE) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(u * 6)) {
-            money?.let { Money(it, small) }
             badges?.let { BadgePips(it, small, Modifier.weight(1f).height(u * 6)) } ?: Spacer(Modifier.weight(1f))
             time?.let { GbaText(it, OptionColors.label, OptionColors.labelShadow, small) }
         }
         return
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(u * 2)) {
-        CardHeading(tr("TRAINER"), small)
-        Spacer(Modifier.height(u))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { money?.let { Money(it, small) } }
+            Box(Modifier.weight(1f)) { CardHeading(tr("TRAINER"), small) }
             time?.let { GbaText(it, OptionColors.label, OptionColors.labelShadow, small) }
         }
+        Spacer(Modifier.height(u))
         Box(Modifier.fillMaxWidth().height(small.lineHeight), contentAlignment = Alignment.CenterStart) {
             if (badges != null) BadgePips(badges, small, Modifier.fillMaxWidth().height(u * 7))
         }
@@ -332,27 +332,20 @@ private fun BadgePips(bits: Int, small: GbaTextMetrics, modifier: Modifier) {
     }
 }
 
-/** DEVICE: the clock in big letters and the battery; a LINE puts them side by side. */
+/**
+ * HOME's status bar, the game screen's ([GameStatusBar]): the game's name, where you are (when the MAP card isn't showing
+ * it), money, the clock and the battery. The clock is read again once a second by an infinite transition: a delay loop
+ * never lets Compose tests (ui-preview, Paparazzi) go idle.
+ */
 @Composable
-private fun DeviceCardContent(form: Form, m: GbaTextMetrics, small: GbaTextMetrics) {
-    // Read again once a second, by an infinite transition: a delay loop never lets Compose tests (ui-preview, Paparazzi) go idle.
+private fun HomeStatusBar(gameName: String, location: String?, money: Long?, modifier: Modifier = Modifier) {
     val second by androidx.compose.animation.core.rememberInfiniteTransition(label = "home-clock").animateValue(
         0, 60, Int.VectorConverter,
         androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(60_000, easing = androidx.compose.animation.core.LinearEasing)),
         label = "home-clock-second",
     )
     val time = remember(second) { deviceTime() }
-    if (form == Form.LINE) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            GbaText(time, OptionColors.label, OptionColors.labelShadow, small, modifier = Modifier.weight(1f))
-            BatteryIndicator(small)
-        }
-        return
-    }
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(small.u * 2)) {
-        GbaText(time, OptionColors.value, OptionColors.valueShadow, m)
-        BatteryIndicator(small)
-    }
+    GameStatusBar(gameName, location, money, time, modifier.testTag("home-status"))
 }
 
 private fun deviceTime(): String {

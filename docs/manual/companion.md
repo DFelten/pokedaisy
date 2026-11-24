@@ -32,19 +32,20 @@ While the game is still on its title screen, its intro or the CONTINUE menu, `HO
 
 ### HOME
 
-`HOME` is the first tab, the house at the start of the bar, and the companion opens on it. It puts the things you check most on one page, so you don't have to hop between tabs:
+`HOME` is the first tab, the house at the start of the bar, and the companion opens on it. It puts the things you check most on one page, so you don't have to hop between tabs.
+
+Along its top runs a status bar like the one over the game: your game's name, your money, the time the way your device shows it, and how much battery is left. While `STATUS BAR` already shows that bar over the companion, HOME leaves its own out. Under it come cards:
 
 - **Your party**: each Pokémon's icon, level and HP bar, with its status. Tap one for its summary.
 - **The map** around you, with your place's name under it. Tap it to open `MAP`.
-- **Trainer**: your money, play time, badges and how many Pokémon your Pokédex has caught and seen. Tap it to open `CARD` (or `DEX` in a game without a card).
-- **Clock and battery**: the time the way your device shows it, and how much battery is left. It steps aside while `STATUS BAR` shows them over the companion.
+- **Trainer**: your play time, badges and how many Pokémon your Pokédex has caught and seen. Tap it to open `CARD` (or `DEX` in a game without a card).
 - **Shortcuts** along the bottom: up to six tabs one tap away. Out of the box they're `BOXES`, `NUZLOCKE`, `CHEEVOS`, `STATES`, `CARD` and `GUIDE`, each only where your game has it.
 
 HOME fits itself to your screen. On a small one (the RG DS, a phone held upright) the party becomes a column of icons and the shortcuts show icons alone; on a wide one the map gets a column of its own. Nothing scrolls: a card that doesn't fit your screen is left out there.
 
 When you open a tab from HOME, BACK takes you back to HOME.
 
-![The HOME tab: the party on the left, the map and the trainer card on the right, shortcuts along the bottom](shots/companion-home.png "HOME")
+![The HOME tab: the status bar along the top, the party on the left, the map and the trainer card on the right, shortcuts along the bottom](shots/companion-home.png "HOME")
 
 To choose what HOME shows, open SETTINGS and tap `HOME TAB` in the COMPANION group. Under CARDS, tap a card to show or hide it, or to move it up or down: the cards are placed in that order. Under SHORTCUTS, tap a place to pick the tab it opens, or `EMPTY`. `RESET TO DEFAULTS` puts everything back. Like the tab bar, your choice is shared by every game.
 

@@ -407,7 +407,12 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override fun setCheatEnabled(index: Int, on: Boolean) {
         cheatList = cheatList.toMutableList().also { it[index] = it[index].copy(enabled = on) }
     }
-    override val gameName = "Pokémon FireRed"
+    // The running game's name, as the Library would give it.
+    override val gameName get() = when (activeGame) {
+        GameKind.EMERALD -> "Pokémon Emerald"
+        GameKind.FIRERED -> "Pokémon FireRed"
+        else -> activeGame?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Pokémon FireRed"
+    }
     override val romFileName = "firered-hack.gba"
     private var tabs = initialTabs ?: com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS
     override val companionTabs get() = tabs
@@ -714,6 +719,22 @@ fun battle(state: Int): SnapshotView {
         inBattle = true, battleInputState = state, battlePlayer = listOf(me), battleOpponent = listOf(foe),
         party = s.party.mapIndexed { i, m -> m.copy(personality = 0x1000L + i) },
     )
+}
+
+/** The real save of the <game>_vanilla fixture (FireRed rev 1 / Emerald), read the way the app reads it: HOME's real
+ * party, place, money, card and Pokédex. The party's icons loaded first (the screens load them in the background). */
+fun realSnapshot(): SnapshotView {
+    val (cfg, fixture) = if (activeGame == GameKind.EMERALD) NATIVE_EMERALD_RETAIL to "emerald_vanilla" else NATIVE_FIRERED_REV1 to "firered_vanilla"
+    val t = com.pokedaisy.app.companion.data.readNativeTelemetry(RamFixture(ramFixtures.resolve(fixture)), cfg)
+    // The icons the app reads from the running ROM, read from -Prom's file instead of a core (buildSnapshotView set the tables).
+    val rom = System.getProperty("rom").orEmpty()
+    val icons = com.pokedaisy.app.companion.data.DecompIconSource.tables
+    val real = com.pokedaisy.app.companion.data.buildSnapshotView(t).copy(connected = true, game = activeGame)
+    if (rom.isNotBlank()) {
+        com.pokedaisy.app.companion.data.DecompIconSource.reader = RomFile(File(rom).readBytes())
+        real.party.forEach { com.pokedaisy.app.companion.data.DecompIconSource.get(it.species) }
+    } else com.pokedaisy.app.companion.data.DecompIconSource.tables = icons
+    return real
 }
 
 /** A real shiny battle, read the way the app reads it: the <game>_shiny_battle fixture (a foe SHINY ODDS made shiny,
@@ -1858,6 +1879,8 @@ fun main(args: Array<String>) {
     val all = real + listOf(
         // HOME (docs/plans/companion-home.md): the cards and shortcuts at this size; -PcompanionW/H/Density for the others.
         Shot("$g-home", bw, bh, bd, companion("HOME")),
+        // HOME over the real save (the <game>_vanilla fixture; -Prom for its map and art).
+        Shot("$g-home-real", bw, bh, bd, companion("HOME", snap = ::realSnapshot)),
         // SETTINGS > HOME TAB, and a card's pick-list.
         Shot("$g-home-settings", bw, bh, bd, companion("SETTINGS", settingsRow = "HOME TAB")) {
             onAllNodesWithText("HOME TAB", ignoreCase = true).onFirst().performClick()

@@ -615,8 +615,7 @@ private fun homeTabRows(s: CompanionSettings, available: List<String>, changed: 
         SettingRow(card.label, if (shown) tk("SHOWN") else tk("HIDDEN"), subtitle = when (card) {
             com.pokedaisy.app.companion.HomeCard.PARTY -> "Tap a POKéMON for its summary"
             com.pokedaisy.app.companion.HomeCard.MAP -> "The map round you and where you are"
-            com.pokedaisy.app.companion.HomeCard.TRAINER -> "Money, play time, badges, the POKéDEX"
-            com.pokedaisy.app.companion.HomeCard.DEVICE -> "Hidden while the status bar shows them"
+            com.pokedaisy.app.companion.HomeCard.TRAINER -> "Play time, badges, the POKéDEX"
         }) {
             val ids = on.map { it.id }
             val options = listOfNotNull(
