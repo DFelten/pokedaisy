@@ -14,8 +14,17 @@ class DsExpShareTest {
         }
         assertNull("Renegade Platinum", ExpShare.dsFind("CPUE", 1, dsperate = false, hack = true))
         assertNull("a Redux build", ExpShare.dsFind("IREO", 0, dsperate = false, hack = true))
-        // Platinum rev 0 and the other languages (other addresses): not checked.
-        for ((code, rev) in listOf("CPUE" to 0, "CPUF" to 0, "IPKF" to 0, "IPKD" to 0, "IRBF" to 0, "IREF" to 0))
+        // Platinum rev 0, German Platinum and Gen 5's other languages (other addresses): not checked.
+        for ((code, rev) in listOf("CPUE" to 0, "CPUD" to 0, "IRBF" to 0, "IREF" to 0))
             assertNull("$code rev $rev", ExpShare.dsFind(code, rev, dsperate = false, hack = false))
+    }
+
+    @Test
+    fun `the other Gen 4 carts, found by their code`() {
+        for ((code, rev) in listOf("CPUF" to 0, "CPUS" to 0, "IPKD" to 0, "IPGF" to 0, "IPKE" to 10, "IPGE" to 10, "IPKS" to 0,
+            "IPGI" to 0, "IPKK" to 0, "IPGJ" to 0)) {
+            assertTrue("$code rev $rev", ExpShare.dsFind(code, rev, dsperate = false, hack = false)?.ds == true)
+            assertNull("$code on DSperate", ExpShare.dsFind(code, rev, dsperate = true, hack = false))
+        }
     }
 }
