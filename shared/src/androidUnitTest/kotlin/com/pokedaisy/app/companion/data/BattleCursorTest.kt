@@ -32,7 +32,7 @@ class BattleCursorTest {
             "ghost_grey_battle" to NATIVE_GHOST_GREY, "ghost_grey_v101_battle" to NATIVE_GHOST_GREY_V1_0_1,
             "lets_go_pikachu_battle" to NATIVE_LETS_GO_PIKACHU, "lets_go_eevee_battle" to NATIVE_LETS_GO_EEVEE,
             "clover_battle" to NATIVE_CLOVER, "elysium_a_battle" to NATIVE_ELYSIUM_A, "elysium_b_battle" to NATIVE_ELYSIUM_B,
-            "rhythm_battle" to NATIVE_RHYTHM,
+            "rhythm_battle" to NATIVE_RHYTHM, "rhythm_v1_6_0_battle" to NATIVE_RHYTHM_V1_6_0,
             "oops_all_eevees_battle" to NATIVE_OOPS_ALL_EEVEES,
             "recharged_yellow_v180_battle" to NATIVE_RECHARGED_YELLOW_V1_8_0, "recharged_yellow_v190_battle" to NATIVE_RECHARGED_YELLOW_V1_9_0,
             "recharged_yellow_v194_battle" to NATIVE_RECHARGED_YELLOW_V1_9_4, "recharged_yellow_battle" to NATIVE_RECHARGED_YELLOW_V1_9_7,

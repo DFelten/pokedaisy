@@ -43,6 +43,7 @@ class RomRegionMapTest {
     @Test fun rhythmHasVedeo() {
         val m = read("Pokemon Rhythm (v1.4.0).gba")
         assertEquals("Notewood Town", m.sections[0x58]!!.name)
+        assertEquals("Notewood Town", read("Pokemon Rhythm (v1.6.0).gba").sections[0x58]!!.name)
     }
 
     /** Oops All Eevees: Kanto, CFRU's FireRed 1.0 region map code. */

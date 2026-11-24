@@ -1,0 +1,32 @@
+# Pokemon Rhythm v1.6.0 from v1.4.0's save: rhythm.txt, then A past its login reward ("Thank you for playing the game! Here is
+# your login reward." and the item it gives) to the free field in Notewood Town.
+wait 120
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+press A
+wait 50
+wait 100
+press A
+wait 60
+press A
+wait 60
+press A
+wait 60
+press A
+wait 60

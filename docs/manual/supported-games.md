@@ -73,7 +73,7 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 | Pokémon Elysium (Part B) | 2.5.0 |
 | Sword and Shield Ultimate Plus | 1.2.1.2, plus its three patches |
 | Pokémon GS Chronicles | 2.7.6 |
-| Pokémon Rhythm | 1.4.0 |
+| Pokémon Rhythm | 1.4.0 and 1.6.0 |
 | Pokémon OAE (the "Oops All" Kanto hack) | 1.3.2 |
 | Pokémon Ceruleum | 1.1.1 |
 | Pokémon RecordKeepers | 1.2.1 |

@@ -345,6 +345,11 @@ private inline val frHack get() = runningFireRedHack ?: runningEmeraldHack ?: ru
 private inline val gsChronicles get() = activeGame == GameKind.GS_CHRONICLES
 // Pokémon Rhythm: Vedeo on CFRU, its own names (gen_cfru_tables.py rhythm).
 private inline val rhythm get() = activeGame == GameKind.RHYTHM
+
+/** Rhythm v1.6.0 is running ([NATIVE_RHYTHM_V1_6_0]): v1.4.0's tables but its species names, types and gender ratios
+ * (a few form slots reused). Set with [activeGame] by the Poller. */
+@Volatile
+var rhythmV160 = false
 // Pokémon Oops All Eevees!: Kanto on CFRU, every species an Eevee form (gen_cfru_tables.py oops_all_eevees).
 private inline val oopsAllEevees get() = activeGame == GameKind.OOPS_ALL_EEVEES
 // CFRU-family hacks with CFRU's own type ids (Fairy = 23, as in Unbound) -
@@ -422,6 +427,7 @@ val activeSpeciesNames: Map<Int, String> get() = localText?.species ?: when {
     orangeIslands -> speciesNamesOrangeIslands
     swordShield -> speciesNamesSwordShield
     gsChronicles -> speciesNamesGsChronicles
+    rhythm && rhythmV160 -> speciesNamesRhythmV160
     rhythm -> speciesNamesRhythm
     oopsAllEevees -> speciesNamesOopsAllEevees
     rechargedYellow -> speciesNamesRechargedYellow
@@ -560,6 +566,7 @@ val activeSpeciesTypeData: Map<Int, SpeciesTypes> get() = when {
     orangeIslands -> speciesTypeDataOrangeIslands
     swordShield -> speciesTypeDataSwordShield
     gsChronicles -> speciesTypeDataGsChronicles
+    rhythm && rhythmV160 -> speciesTypeDataRhythmV160
     rhythm -> speciesTypeDataRhythm
     oopsAllEevees -> speciesTypeDataOopsAllEevees
     mariomon -> if (mariomonV13) speciesTypeDataMariomonV13 else speciesTypeDataMariomon

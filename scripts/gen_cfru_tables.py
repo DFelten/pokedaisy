@@ -134,6 +134,27 @@ GAMES = {
                     items={1: "Master Ball", 13: "Potion", 802: "Hisui Rock"},
                     mapsecs={0x58: "Notewood Town", 0x59: "Tremora Town"}),
     ),
+    # Pokemon Rhythm v1.6.0 (the same game's next release, sha1 6df2b5dc...): the same literal-pool slots as v1.4.0's hold its
+    # tables - all where v1.4.0 has them but the moves (gMoveNames 0x08DF7384, gBattleMoves 0x08DF4540, the long names
+    # 0x08DFE72C).
+    "rhythm_v1_6_0": dict(
+        suffix="RhythmV160",
+        label="Pokemon Rhythm v1.6.0",
+        # Its moves, items and map names are v1.4.0's (the generator's output compared); a few form slots changed.
+        only={"SpeciesNames", "SpeciesTypes", "GenderRatios"},
+        sha1="6df2b5dcf6bcea936c643929146b336246c4a210",
+        species_names=0x09E78D00, species_max=1600,
+        base_stats=0x09E8AC00,
+        move_names=0x08DF7384, move_name_len=13, battle_moves=0x08DF4540, moves_max=895,
+        items=0x09E486C0, items_max=805,
+        gender=True,
+        map_names=0x089B9C00,
+        checks=dict(species={1: "Bulbasaur", 25: "Pikachu", 151: "Mew", 1514: "Alcremie"},
+                    types={1: (12, 3), 4: (10, 10)},
+                    moves={33: ("Tackle", 0, 40), 7: ("Fire Punch", 10, 75)},
+                    items={1: "Master Ball", 13: "Potion", 802: "Hisui Rock"},
+                    mapsecs={0x58: "Notewood Town", 0x59: "Tremora Town"}),
+    ),
     # Pokemon Oops All Eevees! v1.3.2 Alpha (kddao16; the author's BPS over FireRed 1.0): Kanto on CFRU with DPE, every species an
     # Eevee form. FireRed 1.0's literal pools: gSpeciesNames 0x096184C0 (to 1267), gBaseStats 0x099778E0, gMoveNames 0x094B3FD4
     # (13 bytes, to RAPID FLOW 895), gBattleMoves 0x094C1790, gItems 0x093C0000 (to 749; slots, since GAY SCARF's .itemId is 256,
@@ -167,7 +188,12 @@ def header(g, what):
             f"// (sha1 {g['sha1'][:8]}...) - do not hand-edit. {what}\n")
 
 
+ONLY = None   # a game's `only`: the files it writes (a later build that differs in a few tables)
+
+
 def write(name, body):
+    if ONLY is not None and not any(name.startswith(t) for t in ONLY):
+        return
     path = os.path.join(OUT_DIR, name)
     with open(path, "w") as f:
         f.write(body)
@@ -178,6 +204,8 @@ def main():
     if len(sys.argv) != 3 or sys.argv[1] not in GAMES:
         sys.exit(f"usage: {sys.argv[0]} <{'|'.join(GAMES)}> <rom.gba>")
     g = GAMES[sys.argv[1]]
+    global ONLY
+    ONLY = g.get("only")
     data = open(sys.argv[2], "rb").read()
     sha1 = hashlib.sha1(data).hexdigest()
     if sha1 != g["sha1"]:

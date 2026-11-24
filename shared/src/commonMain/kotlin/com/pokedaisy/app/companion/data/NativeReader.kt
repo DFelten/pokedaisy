@@ -1055,7 +1055,7 @@ private fun Mon.withNativeGender(raw: ByteArray, off: Int, layout: PartyMonLayou
         GameKind.ORANGE_ISLANDS -> genderRatiosOrangeIslands
         GameKind.SWORD_SHIELD -> genderRatiosSwordShield
         GameKind.GS_CHRONICLES -> genderRatiosGsChronicles
-        GameKind.RHYTHM -> genderRatiosRhythm
+        GameKind.RHYTHM -> if (rhythmV160) genderRatiosRhythmV160 else genderRatiosRhythm
         GameKind.OOPS_ALL_EEVEES -> genderRatiosOopsAllEevees
         GameKind.MARIOMON -> if (mariomonV13) genderRatiosMariomonV13 else genderRatiosMariomon
         GameKind.ELITE_REDUX -> genderRatiosEliteRedux

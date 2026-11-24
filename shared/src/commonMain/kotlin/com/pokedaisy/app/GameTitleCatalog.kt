@@ -139,6 +139,7 @@ object GameTitleCatalog {
         "d2440fd6bae5a12dfc3cecc129b9bbff22d74b2e" to "Pokémon Elysium (Part A)",
         "71bf40178a1f5c69dc1c22099623434ba1e74318" to "Pokémon Elysium (Part B)",
         "b0d6b91356ee4d4c8f8c70020fe0352c391a12e2" to "Pokémon Rhythm",
+        "6df2b5dcf6bcea936c643929146b336246c4a210" to "Pokémon Rhythm",
         "4234507f92101a322aa5c0518a6aa1f1fe807832" to "Pokémon Oops All Eevees!",
         "8bac897de515f88e6ce92d0712ce2c018a394b37" to "Pokémon Orange Islands",
         "d2e3800e69e44c9649c3d9a15dc1cd12c1d90501" to "Pokémon Orange Islands",

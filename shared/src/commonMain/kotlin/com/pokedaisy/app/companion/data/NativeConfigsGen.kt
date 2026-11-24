@@ -5043,6 +5043,13 @@ val NATIVE_RHYTHM = NATIVE_FIRERED_REV0.copy(
     moveCursor = 0x02023FFCL,
 )
 
+// Pokémon Rhythm v1.6.0 (sha1 6df2b5dc…): v1.4.0's RAM, and v1.4.0's save loads in it (after a login reward: `rhythm_v1_6_0`);
+// every table where v1.4.0 has it but the moves (gen_cfru_tables.py rhythm_v1_6_0: the same literal-pool slots, gMoveNames
+// 0x08DF7384 / gBattleMoves 0x08DF4540, whose names and powers come out as v1.4.0's), with a few form slots reused (new
+// Dialga / Palkia / Ho-Oh and Mega forms where Vivillon and Zygarde forms were: its own species names, types and gender
+// ratios, `rhythmV160`). Its battle cursors are FireRed's: a written move cell + A spent that move's PP (`rhythm_v1_6_0_battle`).
+val NATIVE_RHYTHM_V1_6_0 = NATIVE_RHYTHM.copy()
+
 // ---- gamedata/gen3/hacks/rowe.toml ----
 
 // R.O.W.E. v2.1.9.1 Experimental (BPEE, 32 MB, BelialClover's own pokeemerald fork - no expansion;

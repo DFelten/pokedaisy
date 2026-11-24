@@ -373,6 +373,7 @@ class TelemetrySampler {
             soulGoldV12 = base === NATIVE_SOULGOLD_V1_2 || base === NATIVE_SOULGOLD_V1_2B || base === NATIVE_SOULGOLD_V1_2C ||
                 base === NATIVE_SOULGOLD_V1_2_1
             amethystV141 = base === NATIVE_AMETHYST_V1_4_1
+            rhythmV160 = base === NATIVE_RHYTHM_V1_6_0
             eliteRedux265_3 = base === NATIVE_ELITE_REDUX_V2_65_3B
             monomythV1_2 = base === NATIVE_MONOMYTH_V1_2
             teamRocketV3 = base === NATIVE_TEAM_ROCKET_V3 || base === NATIVE_TEAM_ROCKET_V3_1
@@ -583,6 +584,7 @@ class TelemetrySampler {
                 -> { kind = GameKind.SWORD_SHIELD; nativeCfg = NATIVE_SWORD_SHIELD }
                 GS_CHRONICLES_V2_7_6_SHA1 -> { kind = GameKind.GS_CHRONICLES; nativeCfg = NATIVE_GS_CHRONICLES }
                 RHYTHM_V1_4_0_SHA1 -> { kind = GameKind.RHYTHM; nativeCfg = NATIVE_RHYTHM; ramVerified = true }
+                RHYTHM_V1_6_0_SHA1 -> { kind = GameKind.RHYTHM; nativeCfg = NATIVE_RHYTHM_V1_6_0; ramVerified = true }
                 OOPS_ALL_EEVEES_V1_3_2_SHA1 -> { kind = GameKind.OOPS_ALL_EEVEES; nativeCfg = NATIVE_OOPS_ALL_EEVEES; ramVerified = true }
                 GEN3_EVOLVED_V1_0_22_SHA1 -> { kind = GameKind.GEN3_EVOLVED; nativeCfg = NATIVE_GEN3_EVOLVED; ramVerified = true }
                 GEN3_EVOLVED_V1_0_17_SHA1 -> { kind = GameKind.GEN3_EVOLVED; nativeCfg = NATIVE_GEN3_EVOLVED_V1_0_17; ramVerified = true }
@@ -1231,6 +1233,8 @@ class TelemetrySampler {
 
         // Pokémon Rhythm v1.4.0 (Hackdex's xdelta over FireRed 1.0): Vedeo on CFRU, 32 MB.
         const val RHYTHM_V1_4_0_SHA1 = "b0d6b91356ee4d4c8f8c70020fe0352c391a12e2"
+        // v1.6.0: v1.4.0's RAM and most tables (NATIVE_RHYTHM_V1_6_0, rhythmV160).
+        const val RHYTHM_V1_6_0_SHA1 = "6df2b5dcf6bcea936c643929146b336246c4a210"
 
         // Pokémon Generation 3 Evolved (the author's BPS over FireRed 1.0): pokeemerald-expansion 1.16.3's FireRed build, 32 MB.
         // v1.0.17 is the same RAM, its ROM tables a little lower (NATIVE_GEN3_EVOLVED_V1_0_17).
@@ -1466,7 +1470,7 @@ class TelemetrySampler {
             FIRERED_ROCKET_EDITION_UNVERSIONED_SHA1, ASH_GRAY_V4_5_3_SHA1, ASH_GRAY_FORK_BUG_FIX_V1_0_SHA1,
             GHOST_GREY_V1_0_1_SHA1, GHOST_GREY_V1_0_2_SHA1, GHOST_GREY_V1_0_4_SHA1,
             LETS_GO_PIKACHU_UNVERSIONED_SHA1, LETS_GO_PIKACHU_TRANSLATION_ONLY_UNVERSIONED_SHA1, CLOVER_V1_3_3_SHA1,
-            ELYSIUM_V2_5_0_A_SHA1, ELYSIUM_V2_5_0_B_SHA1, RHYTHM_V1_4_0_SHA1, OOPS_ALL_EEVEES_V1_3_2_SHA1,
+            ELYSIUM_V2_5_0_A_SHA1, ELYSIUM_V2_5_0_B_SHA1, RHYTHM_V1_4_0_SHA1, RHYTHM_V1_6_0_SHA1, OOPS_ALL_EEVEES_V1_3_2_SHA1,
             GEN3_EVOLVED_V1_0_22_SHA1, GEN3_EVOLVED_V1_0_17_SHA1, GEN3_EVOLVED_V1_0_26_SHA1,
             LETS_GO_EEVEE_UNVERSIONED_SHA1, LETS_GO_EEVEE_TRANSLATION_ONLY_UNVERSIONED_SHA1,
             ELITE_REDUX_V2_65_3B_SHA1, ELITE_REDUX_V2_65_4_1B_SHA1, TEAM_ROCKET_DRAGONSDEN_V1_5_SHA1,
