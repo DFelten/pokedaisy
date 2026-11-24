@@ -17,8 +17,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
@@ -1084,7 +1084,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     addresses come from its own code (`scripts/find_crystal_card.py`); Kristall's are English's shifted, its top line without
     NAME/. Every frame of both pages matched the games' own card headless, English and German, on the save as it is and with
     everything poked in (`CrystalTrainerCardTest`). Not on Crystal's hacks (Clear, Legacy, Prism, Polished).
-59. FOLLOWER on Crystal (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+59. FOLLOWER on Crystal, Gold and Silver (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
     player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's
@@ -1093,7 +1093,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     tile, the window and, with wStateFlags bit 6, the menu / text tiles (0x60+) cover it; it goes behind the game's sprites
     unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
     Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
-    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Gold / Silver in English and German (2026-11-24): pokegold's
+    RAM, their own party icons; they keep no menu / text flag, so the font's tiles (0x60+) always cover it. Checked headless on Gold and
+    the Goldene Edition: turns, tall grass, the START menu, a wild battle and running from it. Other Game Boy games: no.
 60. MWisBest's "32-bit RTC + Timer RNG Fix" v1.0 of retail Emerald (USA, Europe), 2026-11-22: retail byte for byte but 76
     bytes (AgbMain calls a new routine, one callback pointer, the routine itself in retail's zero space at 0x089C0D00), so it
     runs as retail by its SHA-1 (`EMERALD_MWISBEST_V1_0_SHA1`, retail's config and cursors) and EXPAND / the field reads take

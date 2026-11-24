@@ -1371,17 +1371,24 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private fun followerSupported() = ::engine.isInitialized && (gbFollower() || engine.playback.followerSupported)
 
-    /** FOLLOWER on Crystal: the party lead's Pokédex number (Crystal's species ids are its Pokédex numbers; null: none). */
+    /** FOLLOWER on Crystal / Gold / Silver: the party lead's Pokédex number (their species ids are its Pokédex numbers; null: none). */
     @Volatile private var gbFollowerLead: Int? = null
 
-    /** FOLLOWER on Crystal (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
-    private fun gbFollower() = romIsGameBoy && com.pokedaisy.app.companion.data.activeGame ==
-        com.pokedaisy.app.companion.data.GameKind.CRYSTAL && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
+    /** FOLLOWER on Crystal, Gold and Silver (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
+    private fun gbFollower() = romIsGameBoy && gbFollowerIconDir() != null && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
 
-    /** Crystal's party icon for a Pokédex number (two 16 x 16 frames, rebuilt from the cart into rom-art), or null. */
+    /** Where the running game's party icons are rebuilt (Crystal's, Gold / Silver's), or null for a game without the follower. */
+    private fun gbFollowerIconDir(): String? = when (com.pokedaisy.app.companion.data.activeGame) {
+        com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS
+        com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
+            com.pokedaisy.app.companion.data.Gen2Art.GOLD_SILVER_ICONS
+        else -> null
+    }
+
+    /** The game's party icon for a Pokédex number (two 16 x 16 frames, rebuilt from the cart into rom-art), or null. */
     private fun gbFollowerIcon(dex: Int): IntArray? {
-        val f = com.pokedaisy.app.companion.data.RomArt.dir(filesDir.toOkioPath()) /
-            "${com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS}/$dex.png"
+        val dir = gbFollowerIconDir() ?: return null
+        val f = com.pokedaisy.app.companion.data.RomArt.dir(filesDir.toOkioPath()) / "$dir/$dex.png"
         val bytes = runCatching { okio.FileSystem.SYSTEM.read(f) { readByteArray() } }.getOrNull() ?: return null
         val img = com.pokedaisy.app.companion.data.RomArt.Image.decodePng(bytes) ?: return null
         return img.argb.takeIf { img.width == 16 && img.height == 32 }

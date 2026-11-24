@@ -195,6 +195,8 @@ object NewFeatures {
     const val FOLLOWER = "follower"
     /** FOLLOWER on Crystal (pk_gb_follow.c: the lead's party icon drawn behind the player). */
     const val FOLLOWER_CRYSTAL = "follower_crystal"
+    /** FOLLOWER on Gold and Silver (the same, with their own party icons). */
+    const val FOLLOWER_GOLD_SILVER = "follower_gold_silver"
 
     /** HOTKEYS > COMPANION: opens the companion over the game on one screen (Hotkeys.Action.COMPANION). */
     const val COMPANION_HOTKEY = "companion_hotkey"
@@ -430,7 +432,7 @@ object NewFeatures {
         GAME_LOOK, POKEMON_PICTURES, BETA_UPDATES, FOLLOWER_CRYSTAL, MORE_FONT_SIZES, MY_LOOK,
         THEME_EDITOR, MOVING_BACKGROUNDS, SIDE_BARS, TAB_ICONS, HUD_EDITOR, TOUCH_LAYOUTS, LIBRARY_VIEWS,
         TAB_BAR_PLACE, THEME_COLORS, SETTINGS_FILE, STATES_FOLDER, GAME_SETTINGS, SHINY_HUNT, SPOILER_FREE,
-        WILD_PIN, QUICK_HATCH,
+        WILD_PIN, QUICK_HATCH, FOLLOWER_GOLD_SILVER,
     )
 
     private const val DAYS = 7

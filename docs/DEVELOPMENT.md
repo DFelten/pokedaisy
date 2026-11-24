@@ -1755,6 +1755,9 @@ edge into the next: the map and tile change mid-step), and battle frames don't c
 in battles, with sprites off or no player sprite at OAM (0x48, 0x4C). Grass, BG priority, the window, menu tiles (wStateFlags
 bit 6) and the game's sprites cover it as in the note in docs/ROM_FEATURES.md (58). mgba_dump: `gbfollow CRC FILE` (512 ARGB
 ints), `gbfollowshow`, `gbfollowinfo`.
+**On Gold / Silver** (2026-11-24; English and German by CRC32): the same code over pokegold's RAM (`gbf_ram_map`: the object struct's
+layout is Crystal's, the addresses aren't), icons from `rom-art/gen2/gold_silver/pokemon/`. Gold / Silver keep no TEXT_STATE_F, so their
+font tiles (bank 0, 0x60 and up: their tilesets have at most 0x60 tiles) always stay over the follower.
 
 ### Sprite packs (the makeover's graphics in one file)
 

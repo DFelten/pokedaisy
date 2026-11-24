@@ -754,14 +754,18 @@ private fun homeRows(
                 else select(Selector(tk("TEXT LOOK"), listOf(off) + s.textLooks, s.textLook ?: off) { s.setTextLook(it.takeIf { l -> l != off }) })
             }
         } else null,
-        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt; on Crystal
-        // pk_gb_follow.c with its own party icon).
+        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt; on Crystal,
+        // Gold and Silver pk_gb_follow.c with their own party icons).
         if (s.followerSupported) {
             SettingRow(
                 tk("FOLLOWER"), if (s.followerReady) onOff(s.follower) else tk("N/A"), setting = SharedSetting.FOLLOWER, enabled = s.followerReady,
                 labelBadge = s.followerBadge ?: NewFeatures.badge(
-                    if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL)
-                        NewFeatures.FOLLOWER_CRYSTAL else NewFeatures.FOLLOWER,
+                    when (com.pokedaisy.app.companion.data.activeGame) {
+                        com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> NewFeatures.FOLLOWER_CRYSTAL
+                        com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
+                            NewFeatures.FOLLOWER_GOLD_SILVER
+                        else -> NewFeatures.FOLLOWER
+                    },
                 ),
                 subtitle = if (s.followerReady) null else "Needs a game with following Pokémon too",
             ) { if (s.followerReady) { s.setFollower(!s.follower); changed() } }
