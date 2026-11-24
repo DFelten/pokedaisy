@@ -3713,7 +3713,10 @@ the view's own pixels (`submitGpu` / `swapGpu` in `pk_nds_wide.cpp`) - drawn by 
 and none of the slices' CPU cost; a submission it can't take (a viewport not the whole screen, the list full) draws the
 game's own list for that frame. The margins' 2D (fog layers over the 3D, a battle's BG3, the screen's edge rows carried
 on) is planned per pixel on the CPU as before (`PkNdsWidePlan`: a colour, the 3D alone or under a 2D colour, or a
-screen pixel to repeat, or a battle's 3D over its background / a sprite) and put together by the compositor. The list
+screen pixel to repeat, or a battle's 3D over its background / a sprite) and put together by the compositor. That plan
+reads the 1x copy, two drawn frames old, while the sprites and the screen it repeats are the frame's own: a battle box's
+edge rows are worked out with the sprite rows that copy had (`edgeRowsWas`) and moved by how far the box has moved since
+(`GPU_LAG`; an HP box bobbing a pixel blinked doubled for two frames at every bob, GitHub #1401). The list
 is clipped at the view a flush before it's drawn and shown a frame after that, so a moving window (the look-around, a
 zoom easing out) showed black at its leading edge for two frames: it's built `GPU_HEADROOM` (32) DS pixels wider each
 way, and the renderer draws only the part the window needs at line 215 (`WidePolygonList::Crop*`: the colour texture
