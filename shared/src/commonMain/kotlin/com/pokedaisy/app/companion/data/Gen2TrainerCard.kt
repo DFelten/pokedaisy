@@ -3,7 +3,8 @@ package com.pokedaisy.app.companion.data
 import okio.Path
 
 /**
- * Crystal's TRAINER CARD (the CARD tab), drawn the way pret/pokecrystal's engine/menus/trainer_card.asm builds it: a
+ * Crystal's and Gold / Silver's TRAINER CARD (the CARD tab), drawn the way pret/pokecrystal's (and pret/pokegold's, the
+ * same code but for the picture: see [Tables.rowMajor]) engine/menus/trainer_card.asm builds it: a
  * 20x18 tilemap with its attributes (`_CGB_TrainerCard`), the tiles each page loads and the badges as sprites. Two pages,
  * as in the game: the card's top half (name, ID, money, the player's picture) over STATUS (POKéDEX, PLAY TIME) or over
  * BADGES (the eight Johto leaders, a spinning badge on each one beaten). Its third page (Kanto's) is never reached in the
@@ -13,12 +14,18 @@ import okio.Path
  * [Tables], found in the card's own code: scripts/find_crystal_card.py) into rom-art ([PATH]), where [load] reads them.
  */
 object Gen2TrainerCard {
-    /** The card's pieces in rom-art: one file, written by [Gen2Art.extractTo] for the cart that has a [Tables]. */
-    const val PATH = "gen2/crystal/trainer_card.bin"
+    /** The card's pieces in rom-art: one file per [CardStyle], written by [Gen2Art.extractTo] for the cart that has a [Tables]. */
+    fun path(style: CardStyle) = if (style == CardStyle.GOLD_SILVER) "gen2/gold_silver/trainer_card.bin" else "gen2/crystal/trainer_card.bin"
+
+    /** The Game Boy cards' styles: [Gen2TrainerCard]'s, not [TrainerCardArt]'s. */
+    val STYLES = setOf(CardStyle.CRYSTAL, CardStyle.GOLD_SILVER)
 
     /**
      * Where a Crystal cart keeps what its card draws (bank, address). English rev 0 / rev 1 / AU are pokecrystal.sym's;
-     * German Kristall's are the same code's immediates (find_crystal_card.py).
+     * German Kristall's are the same code's immediates (find_crystal_card.py). Gold / Silver's (pokegold.sym's, German
+     * Goldene / Silberne's by the same script) differ in the picture: one blob with the frame (ChrisPicAndTrainerCardGFX,
+     * [chris] = [kris], [frame] its last 6 tiles) put on the card row by row ([rowMajor]), with no corner tile of its own:
+     * its border puts the picture's tile $04 there ([corner] is that tile), and $1C is a picture tile like the rest.
      */
     class Tables(
         val status: Pair<Int, Int>,       // CardStatusGFX: page 1 copies 86 tiles from here to tile $29 (6 of its own, then LeaderGFX's)
@@ -33,7 +40,10 @@ object Gen2TrainerCard {
         val nameMoney: Pair<Int, Int>,    // TrainerCard_PrintTopHalfOfCard.Name_Money (at 2, 2)
         val nameX: Int,                   // where the player's name goes on row 2 (English 7, after NAME/; German 2: no label)
         val dexPlayTime: Pair<Int, Int>,  // .Dex_PlayTime (at 2, 10)
-        val badgesText: Pair<Int, Int>,   // .Badges (at 10, 15)
+        val badgesText: Pair<Int, Int>,   // .Badges (at 10, 15 in Crystal; Gold at 12, 15 with two spaces less)
+        val badgesX: Int = 10,
+        val rowMajor: Boolean = false,
+        val style: CardStyle = CardStyle.CRYSTAL,
     )
 
     val CRYSTAL_TABLES = Tables(
@@ -51,6 +61,24 @@ object Gen2TrainerCard {
         nameMoney = 0x09 to 0x52F8, nameX = 2, dexPlayTime = 0x09 to 0x5352, badgesText = 0x09 to 0x5362,
     )
 
+    /** Gold and Silver (pokegold.sym: the two are the same here). */
+    val GOLD_SILVER_TABLES = Tables(
+        status = 0x09 to 0x570F, leaders = 0x09 to 0x576F, badges = 0x09 to 0x622F, corner = 0x09 to 0x54BF,
+        chris = 0x09 to 0x547F, kris = 0x09 to 0x547F, frame = 0x09 to 0x56AF,
+        trainerPals = 0x02 to 0x753D, badgePal = 0x02 to 0x6385,
+        nameMoney = 0x09 to 0x524A, nameX = 7, dexPlayTime = 0x09 to 0x52AA, badgesText = 0x09 to 0x52BA, badgesX = 12,
+        rowMajor = true, style = CardStyle.GOLD_SILVER,
+    )
+
+    /** German Goldene / Silberne Edition: English's code, bank 9's data 5 bytes on (its words a few); no NAME/ label. */
+    val GOLD_SILVER_DE_TABLES = Tables(
+        status = 0x09 to 0x5714, leaders = 0x09 to 0x5774, badges = 0x09 to 0x6234, corner = 0x09 to 0x54C4,
+        chris = 0x09 to 0x5484, kris = 0x09 to 0x5484, frame = 0x09 to 0x56B4,
+        trainerPals = 0x02 to 0x753D, badgePal = 0x02 to 0x6385,
+        nameMoney = 0x09 to 0x5253, nameX = 2, dexPlayTime = 0x09 to 0x52AD, badgesText = 0x09 to 0x52BD, badgesX = 10,
+        rowMajor = true, style = CardStyle.GOLD_SILVER,
+    )
+
     // _CGB_TrainerCard's BG palettes, by trainer class: CHRIS (0), FALKNER (KRIS's), BUGSY, WHITNEY, MORTY, CHUCK, JASMINE, PRYCE.
     private val PAL_CLASSES = intArrayOf(0, 1, 3, 2, 4, 7, 6, 5)
 
@@ -59,7 +87,7 @@ object Gen2TrainerCard {
     private const val PAGE_TILES = 86
 
     /** Wiped by a new [extract] layout: a file of another layout is read as none (then rebuilt with the art). */
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     private fun off(t: Pair<Int, Int>) = if (t.first == 0) t.second else t.first * 0x4000 + (t.second - 0x4000)
 
@@ -92,6 +120,8 @@ object Gen2TrainerCard {
         }
         put(cut(t.badgePal, 8))
         out.writeByte(t.nameX)
+        out.writeByte(t.badgesX)
+        out.writeByte(if (t.rowMajor) 1 else 0)
         for (s in listOf(text(t.nameMoney), text(t.dexPlayTime), text(t.badgesText))) {
             out.writeByte(s.size)
             put(s)
@@ -105,11 +135,10 @@ object Gen2TrainerCard {
         val status: ByteArray, val leaders: ByteArray, val badges: ByteArray,
         val bgPals: Array<IntArray>, val badgePal: IntArray,
         val nameX: Int, val nameMoney: ByteArray, val dexPlayTime: ByteArray, val badgesText: ByteArray,
-    ) : CardArt {
-        override val style get() = CardStyle.CRYSTAL
-    }
+        val badgesX: Int, val rowMajor: Boolean, override val style: CardStyle,
+    ) : CardArt
 
-    fun parse(b: ByteArray): Art? = runCatching {
+    fun parse(b: ByteArray, style: CardStyle = CardStyle.CRYSTAL): Art? = runCatching {
         if (b.size < 5 || ((b[0].u shl 24) or (b[1].u shl 16) or (b[2].u shl 8) or b[3].u) != MAGIC || b[4].u != VERSION) return null
         var o = 5
         fun take(n: Int) = b.copyOfRange(o, o + n).also { o += n }
@@ -125,42 +154,60 @@ object Gen2TrainerCard {
         val bgPals = Array(8) { pal(take(8)) }
         val badgePal = pal(take(8))
         val nameX = take(1)[0].u
+        val badgesX = take(1)[0].u
+        val rowMajor = take(1)[0].u != 0
         fun str() = take(take(1)[0].u)
-        Art(font, chris, kris, frame, corner, status, leaders, badges, bgPals, badgePal, nameX, str(), str(), str())
+        Art(font, chris, kris, frame, corner, status, leaders, badges, bgPals, badgePal, nameX, str(), str(), str(), badgesX, rowMajor, style)
     }.getOrNull()
 
-    private val loaded = HashMap<Path, Art>()
+    private val loaded = HashMap<CardStyle, Art>()
     private val loadedLock = kotlinx.atomicfu.locks.SynchronizedObject()
 
-    /** The card art [Gen2Art] cut into rom-art [dir], or null before it has. */
-    fun load(dir: Path): Art? {
-        val f = dir / PATH
+    /** [style]'s card art [Gen2Art] cut into rom-art [dir], or null before it has. */
+    fun load(dir: Path, style: CardStyle): Art? {
+        val f = dir / path(style)
         if (!f.isFile) return null
-        return parse(f.readBytes())?.also { kotlinx.atomicfu.locks.synchronized(loadedLock) { loaded[dir] = it } }
+        return parse(f.readBytes(), style)?.also { kotlinx.atomicfu.locks.synchronized(loadedLock) { loaded[style] = it } }
     }
 
-    /** The last [load]ed card, so a screen can start drawing it without waiting. */
-    fun cached(): Art? = kotlinx.atomicfu.locks.synchronized(loadedLock) { loaded.values.lastOrNull() }
+    /** The last [load]ed card of [style], so a screen can start drawing it without waiting. */
+    fun cached(style: CardStyle): Art? = kotlinx.atomicfu.locks.synchronized(loadedLock) { loaded[style] }
 
     // ---- The save's side: the card's numbers (TrainerCard_PrintTopHalfOfCard, TrainerCard_Page1_PrintDexCaught_GameTime). ----
 
-    private const val PLAYER_ID = 0xD47B      // wPlayerID: big-endian word, then wPlayerName (11 bytes)
-    private const val STATUS_FLAGS = 0xD84C   // wStatusFlags: bit 0 (STATUSFLAGS_POKEDEX_F) = has the POKéDEX
-    private const val JOHTO_BADGES = 0xD857   // wJohtoBadges: bit i = badge i + 1 (ZEPHYRBADGE first)
+    /**
+     * Where a game keeps the card's own numbers (bank 1): wPlayerID (a big-endian word, then wPlayerName, 11 bytes),
+     * wStatusFlags (bit 0, STATUSFLAGS_POKEDEX_F: has the POKéDEX) and wJohtoBadges (bit i = badge i + 1).
+     */
+    class Ram(val playerId: Int, val statusFlags: Int, val johtoBadges: Int, val style: CardStyle)
+
+    /** Crystal and German Kristall (pokecrystal.sym). */
+    val CRYSTAL_RAM = Ram(playerId = 0xD47B, statusFlags = 0xD84C, johtoBadges = 0xD857, style = CardStyle.CRYSTAL)
+    /** Gold / Silver, English and German (pokegold.sym; the German carts keep English's RAM). */
+    val GOLD_SILVER_RAM = Ram(playerId = 0xD1A1, statusFlags = 0xD571, johtoBadges = 0xD57C, style = CardStyle.GOLD_SILVER)
+
+    /** The card's RAM for [cfg], or null for a game without a mapped card. */
+    fun ramFor(cfg: Gen2Config): Ram? = when {
+        cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE -> CRYSTAL_RAM
+        cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg === GEN2_GOLD_DE || cfg === GEN2_SILVER_DE -> GOLD_SILVER_RAM
+        else -> null
+    }
+
     private const val NAME_LEN = 11
 
-    /** What [cfg]'s card shows, or null before a save is up (no player name yet). Crystal and German Kristall share the RAM. */
+    /** What [cfg]'s card shows, or null before a save is up (no player name yet) or for a game without a card. */
     fun read(r: MemoryReader, cfg: Gen2Config): TrainerCardInfo? = runCatching {
-        val head = r.readCoreMemory(wramx(1, PLAYER_ID), 2 + NAME_LEN)
+        val ram = ramFor(cfg) ?: return null
+        val head = r.readCoreMemory(wramx(1, ram.playerId), 2 + NAME_LEN)
         val name = (0 until NAME_LEN).map { head[2 + it].u }.takeWhile { it != EOS }
         // The title screen / a new game before naming: no name, or WRAM that isn't one.
         if (name.isEmpty() || name.size > 10 || name.any { it < 0x7F }) return null
         val t = r.readCoreMemory(cfg.gameTime, 3)
         val m = r.readCoreMemory(cfg.money, 3)
         val dex = r.readCoreMemory(cfg.dexCaught, 32)
-        val hasDex = r.readCoreMemory(wramx(1, STATUS_FLAGS), 1)[0].u and 1 != 0
+        val hasDex = r.readCoreMemory(wramx(1, ram.statusFlags), 1)[0].u and 1 != 0
         TrainerCardInfo(
-            style = CardStyle.CRYSTAL,
+            style = ram.style,
             name = name,
             female = cfg.playerGender >= 0 && r.readCoreMemory(cfg.playerGender, 1)[0].u and 1 != 0,
             trainerId = (head[0].u shl 8) or head[1].u,
@@ -169,7 +216,7 @@ object Gen2TrainerCard {
             money = ((m[0].u.toLong() shl 16) or (m[1].u.toLong() shl 8) or m[2].u.toLong()),
             // CountSetBits into a byte (wNumSetBits): 251 at most.
             dexCaught = if (hasDex) dex.sumOf { b: Byte -> b.u.countOneBits() } and 0xFF else null,
-            badges = r.readCoreMemory(wramx(1, JOHTO_BADGES), 1)[0].u,
+            badges = r.readCoreMemory(wramx(1, ram.johtoBadges), 1)[0].u,
             stars = 0,
             hofDebut = 0,
         )
@@ -216,7 +263,7 @@ object Gen2TrainerCard {
             var y = top
             for (x in 0 until W) put(x, y, 0x23)
             y++
-            put(0, y, 0x23); put(18, y, 0x1C); put(19, y, 0x23)
+            put(0, y, 0x23); put(18, y, if (art.rowMajor) 0x04 else 0x1C); put(19, y, 0x23)
             repeat(rows) { y++; put(0, y, 0x23); put(19, y, 0x23) }
             y++
             put(0, y, 0x23); put(1, y, 0x24); put(19, y, 0x23)
@@ -250,12 +297,13 @@ object Gen2TrainerCard {
         digits(7, 6, card.money, 6, zeros = false, money = true)
         for (x in 1..12) put(x, 3, 0x25)
         put(13, 3, 0x26)
-        for (x in 0 until 5) for (y in 0 until 7) put(14 + x, 1 + y, x * 7 + y)
+        // Crystal's PlaceGraphic goes column by column; Gold's own loop row by row.
+        for (x in 0 until 5) for (y in 0 until 7) put(14 + x, 1 + y, if (art.rowMajor) y * 5 + x else x * 7 + y)
         // The bottom half (TrainerCard_InitBorder over row 8 on).
         border(8, 6)
         if (!badgesPage) {
             string(2, 10, art.dexPlayTime.map { it.u })
-            string(10, 15, art.badgesText.map { it.u })
+            string(art.badgesX, 15, art.badgesText.map { it.u })
             card.dexCaught?.let { digits(15, 10, it.toLong(), 3, zeros = false) }
             digits(11, 12, card.hours.toLong(), 4, zeros = false)
             if (phase >= 4) put(15, 12, SMALL_COLON)
@@ -291,7 +339,7 @@ object Gen2TrainerCard {
             val pal = art.bgPals[attr[ty * W + tx]]
             for (py in 0 until 8) for (px in 0 until 8) {
                 val c = when (t) {
-                    0x1C -> px2(art.corner, 0, px, py)
+                    0x1C -> if (art.rowMajor) px2(pic, t * TILE, px, py) else px2(art.corner, 0, px, py)
                     in 0x00..0x22 -> px2(pic, t * TILE, px, py)
                     in 0x23..0x28 -> px2(art.frame, (t - 0x23) * TILE, px, py)
                     in 0x29..0x7E -> px2(page, (t - 0x29) * TILE, px, py)

@@ -8,17 +8,18 @@ change to any of the places listed under "Where it's decided" updates its rows h
 
 | Game | Version | EXPAND | Battle buttons | One-press picks | POKéMON switch | Field items | FLY | Trainer card | Field reads | Bike / surf | Wild encounters | PC anywhere | Reusable TMs | Player look | Shiny odds | TMs from the bag | FLASH | Area map | Wild pin |
 | ---- | ------- | :----: | :------------: | :-------------: | :------------: | :---------: | :-: | :----------: | :---------: | :---------: | :-------------: | :---------: | :----------: | :---------: | :--------: | :--------------: | :---: | :------: | :------: |
-| Yellow (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
-| Yellow (GB) | DE / FR / IT / ES | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow (GB) | DE (Gelbe Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow (GB) | FR / IT / ES | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
-| Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
-| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
-| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
@@ -1104,7 +1105,20 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     addresses come from its own code (`scripts/find_crystal_card.py`); Kristall's are English's shifted, its top line without
     NAME/. Every frame of both pages matched the games' own card headless, English and German, on the save as it is and with
     everything poked in (`CrystalTrainerCardTest`). Not on Crystal's hacks (Clear, Legacy, Prism, Polished).
-59. FOLLOWER on Crystal (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+    Gold / Silver (2026-11-24, `CardStyle.GOLD_SILVER`, English and German, `gen2/gold_silver/trainer_card.bin`): the same code
+    in pokegold, but the picture and frame are one blob drawn row by row (`Tables.rowMajor`), the border's corner is the
+    picture's tile $04, BADGES sits two tiles right in English, and the RAM is pokegold's (`Gen2TrainerCard.Ram`). Silver's
+    card art is Gold's byte for byte. Checked the same way (`GoldSilverTrainerCardTest`).
+    Red / Blue and Yellow (2026-11-24, `Gen1TrainerCard`, `CardStyle.RED_BLUE` / `YELLOW` and their `_DE`, English and German,
+    `gen1/<style>/trainer_card.bin`): pokered / pokeyellow's DrawTrainerInfo + DrawBadges, one screen (no second page, so no
+    flip): the player's picture (RedPicFront, columns 1-4 of its box after the game's tile shift), NAME / MONEY / TIME and the
+    leaders, a badge for each one beaten, coloured by SET_PAL_TRAINER_CARD (the POKéDEX's palette table: SuperPalettes on
+    Red / Blue, which run as a Super Game Boy; CGBBasePalettes on Yellow) and the cart's own BlkPacket_TrainerCard (Red / Blue's
+    RAINBOWBADGE blocks are a row taller). Addresses from DrawTrainerInfo's immediates (`scripts/find_gen1_card.py`). English
+    Yellow, German Yellow, English Blue and German Red each matched the game's card headless pixel for pixel, with every badge,
+    none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. Not yet: French, Italian
+    and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
+59. FOLLOWER on Crystal, Gold and Silver (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
     player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's
@@ -1113,7 +1127,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     tile, the window and, with wStateFlags bit 6, the menu / text tiles (0x60+) cover it; it goes behind the game's sprites
     unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
     Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
-    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Gold / Silver in English and German (2026-11-24): pokegold's
+    RAM, their own party icons; they keep no menu / text flag, so the font's tiles (0x60+) always cover it. Checked headless on Gold and
+    the Goldene Edition: turns, tall grass, the START menu, a wild battle and running from it. Other Game Boy games: no.
 60. MWisBest's "32-bit RTC + Timer RNG Fix" v1.0 of retail Emerald (USA, Europe), 2026-11-22: retail byte for byte but 76
     bytes (AgbMain calls a new routine, one callback pointer, the routine itself in retail's zero space at 0x089C0D00), so it
     runs as retail by its SHA-1 (`EMERALD_MWISBEST_V1_0_SHA1`, retail's config and cursors) and EXPAND / the field reads take
@@ -1199,3 +1215,38 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     saves: no English one exists here): a Repel, a Potion, a vitamin, PP UP, HM01 taught, RARE CANDY, a MOON STONE evolution, the bike on
     and off, a rod and ESCAPE ROPE refused in town; the COIN CASE's text on the German carts only (a German save in an English cart
     leaves the game's own SELECT COIN CASE broken too).
+65. Bag USE on Red / Blue (English and German) and Yellow (English and German) (2026-11-24, `Gen1ItemCalls` in `Gen1ItemUse.kt`,
+    `GbField.Gen1.bagUse`, each cart by its code): healing items, FULL RESTORE, status cures, REVIVE / MAX REVIVE, ETHER / ELIXER kinds,
+    PP UP and the three Repels, on the field only. The item leaves the bag through the game's own RemoveItemFromInventory (home, called
+    from the overworld loop like the PC: hl = wNumBagItems, wWhichPokemon = its place, wItemQuantity = 1), then the effect is written
+    into the party struct by pokered's / pokeyellow's item_effects.asm (the moves' base PP read from the cart's Moves table, PP Ups
+    kept), wRepelRemainingSteps for a Repel. Yellow's starter Pikachu gets ModifyPikachuHappiness's PIKAHAPPY_USEDITEM for an item up
+    to CALCIUM (HappinessChangeTable / PikachuMoods read from the cart) and follows again after a REVIVE (wPikachuSpawnState =
+    PIKACHU_SPAWN_DELAYED). TMs / HMs (ItemUseTMHM): CanLearnTM's bit in the cart's BaseStats by Pokédex number (Red's MEW in
+    MewBaseStats), not known already; LearnMove's slot (the first empty one, else the one picked to forget, never an HM's move) gets the
+    move and its base PP; a TM is spent, an HM stays (checked on the field first); Yellow's starter gets PIKAHAPPY_USEDTMHM and THUNDERBOLT
+    / THUNDER's mood. The BICYCLE (ItemUseBicycle): not surfing, not off where BIT_ALWAYS_ON_BIKE holds the player on it, on only where
+    IsBikeRidingAllowed (ROUTE 23, INDIGO PLATEAU, BikeRidingTilesets read from the cart); wWalkBikeSurfState written, then PlayDefaultMusic
+    and LoadPlayerSpriteGraphics called from the loop; Yellow's Pikachu back on getting off. The rods and the ESCAPE ROPE (`Gen1GameUse`)
+    run the game's own UseItem: a routine in the stack section's bottom (0xDF1A, past Yellow's CGB palette buffer) saves the ROM bank,
+    calls DisplayTextIDInit, sets wPseudoItemID 0 / wCurItem / wWhichPokemon = the bag slot and jumps to UseItem with the return pointed
+    at the start menu's closing rebuilt inline (CloseTextDisplay's body: it ends in `pop af`; no GBPalWhiteOutWithDelay3, which flashed the
+    screen white); a bite (wCurOpponent) or a warp (wStatusFlags6 FLY_WARP / DUNGEON_WARP) leaves the rest to the overworld loop. The
+    vitamins, RARE CANDY and the stones are picked on the companion (vitamins: stat experience's high byte under 100; RARE CANDY: under
+    level 100; a stone: an EVOLVE_ITEM entry in the cart's EvosMovesPointerTable for it at the Pokémon's level, never Yellow's starter)
+    and skip their party menu: the same routine pushes what their routine pushes before DisplayPartyMenu (wWhichPokemon, wCurItem; the
+    stone's wEvoStoneItemID), sets wWhichPokemon / wCurPartySpecies as the menu leaves them, switches to bank 3 with carry clear and jumps
+    past the menu's call (ItemUseMedicine's `jp c`, ItemUseEvoStone's next line). RARE CANDY first runs DisplayPartyMenu but its
+    input (GBPalWhiteOutWithDelay3, ClearSprites, PartyMenuInit with the cursor on the Pokémon, DrawPartyMenu): its level-up message
+    redraws the party menu, which without its tiles showed the field's in their place. That part sits right after the closing, low,
+    since it runs after the menu's calls (in the way in, the stack overwrote it). RARE CANDY and the stones get the whiteout and
+    RestoreScreenTilesAndReloadTilePatterns back (their screens), then the bank is put back. Evolution, level-up, learned moves and the bag
+    are the game's. Left out: GIVE / TAKE (Gen 1 has no held items). English Red is pokered's build (= the cart); Blue shares its code. The
+    removal was run headless on the German Red cart (three POTIONs out one by one, the emptied slot closed up, the game running on), and
+    the BICYCLE there (on in Vermilion City with the bike sprite and speed, then off), and the game's own UseItem on German Red (a stone's
+    evolution, HP UP, B on its party menu, the OLD ROD's bite and battle, the ESCAPE ROPE's warp, RARE CANDY learning a move; picked from
+    the companion: HP UP with no white flash, RARE CANDY's level and stats over the party menu, a THUNDER STONE evolving PIKACHU, the OLD ROD's bite with the
+    light closing) and German Yellow (the rope, a stone, RARE CANDY forgetting a move; the partner back behind the player; picked: a vitamin,
+    a stone refused by the starter with the bag untouched, the rod refused indoors); Yellow and English Red only by their code (no save
+    here). `Gen1ItemUseTest`.
+
