@@ -478,7 +478,7 @@ const struct pd_tr_entry pd_tr_table[786] = {
     { "Or trade it as it is?", { "Or trade it as it is?", "Ou l'échanger tel quel ?", "Oder so tauschen, wie es ist?", "O scambiarlo così com'è?", "¿O cambiarlo tal cual?", "Ou trocar como está?", "Ou trocar como está?" } },
     { "PARTY", { "PARTY", "ÉQUIPE", "TEAM", "SQUADRA", "EQUIPO", "EQUIPE", "EQUIPE" } },
     { "PARTY  %d/6", { "PARTY  %d/6", "ÉQUIPE  %d/6", "TEAM  %d/6", "SQUADRA  %d/6", "EQUIPO  %d/6", "EQUIPE  %d/6", "EQUIPA  %d/6" } },
-    { "PARTY + PC", { "PARTY + PC", "ÉQUIPE + PC", "TEAM + PC", "SQUADRA + PC", "EQUIPO + PC", "EQUIPE + PC", "EQUIPA + PC" } },
+    { "PARTY + PC", { "PARTY + PC", "ÉQUIPE + PC", "TEAM + PC", "SQUADRA+PC", "EQUIPO + PC", "EQUIPE + PC", "EQUIPA + PC" } },
     { "PC", { "PC", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "PEOPLE", { "PEOPLE", "GENS", "LEUTE", "PERSONE", "GENTE", "PESSOAS", "PESSOAS" } },
     { "PICK A GAME", { "PICK A GAME", "CHOISIR UN JEU", "SPIEL WÄHLEN", "SCEGLI UN GIOCO", "ELEGIR JUEGO", "ESCOLHER JOGO", "ESCOLHER JOGO" } },

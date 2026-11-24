@@ -55,14 +55,14 @@ object SettingsBackup {
     /** The file's text: the [prefs] worth keeping ([exportable]) and the [files] allowed. */
     fun encode(prefs: Map<String, Any?>, files: Map<String, String>, appVersion: String, exportedAt: Long): String {
         val values = buildJsonObject {
-            for ((key, value) in prefs.toSortedMap()) {
+            for ((key, value) in prefs.entries.sortedBy { it.key }) {
                 if (!exportable(key)) continue
                 val typed = typed(value) ?: continue
                 put(key, typed)
             }
         }
         val text = buildJsonObject {
-            for ((name, body) in files.toSortedMap()) if (fileAllowed(name)) put(name, body)
+            for ((name, body) in files.entries.sortedBy { it.key }) if (fileAllowed(name)) put(name, body)
         }
         return pretty.encodeToString(JsonObject.serializer(), buildJsonObject {
             put("format", FORMAT)
