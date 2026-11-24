@@ -623,10 +623,12 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
-    /** Crystal / Gold / Silver's party SWITCH ([com.pokedaisy.app.companion.data.Gen2BoxCalls.swapParty]): its code is checked
-     * with the PC moves' ([gbBoxField]). */
-    private fun gbPartySwapField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? =
-        (gbBoxField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine)?.takeIf { it.boxCalls != null }
+    /** The Game Boy game's party SWITCH ([com.pokedaisy.app.companion.data.GbField.swapParty]): Red / Blue / Yellow's on the
+     * field's own checked code; Crystal / Gold / Silver's calls the game, its code checked with the PC moves' ([gbBoxField]). */
+    private fun gbPartySwapField(): com.pokedaisy.app.companion.data.GbField? {
+        val field = gbField()?.takeIf { it.swapsParty } ?: return null
+        return if (field is com.pokedaisy.app.companion.data.GbField.CrystalEngine) gbBoxField()?.takeIf { it === field } else field
+    }
 
     @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
 
@@ -867,7 +869,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             if (a == b || a !in party.party.indices || b !in party.party.indices) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
             val keyA = party.party[a].personality
             val keyB = party.party[b].personality
-            // Mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up first.
+            // Gen 2's mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up first.
             Thread {
                 if (!gbBoxesBackedUp) {
                     gbBoxesBackedUp = backUpSaveNow(r)
