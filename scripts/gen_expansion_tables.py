@@ -407,6 +407,55 @@ GAMES = {
                     items={1: "Poké Ball", 28: "Potion", 43: "Antidote", 114: "Repel"},
                     moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100)}),
     ),
+    # Pokemon Generation 3 Evolved v1.0.22 (BPRE, 32 MB): pokeemerald-expansion 1.16.3's FireRed build (its RHHEXP block:
+    # 857 moves, 1576 species, 901 items), gcc, no source. Its GF ROM header gives gSpeciesInfo 0x087CA940, gItemsInfo
+    # 0x08778F1C and gMovesInfo 0x087A7850; the shapes are a plain FireRed build of the 1.16.3 tag's (offsetof against its
+    # headers) but for the moves:
+    #  - species: 0x108-byte entries, the name at +0x2C, types +6, genderRatio +0x12, growthRate +0x15 (Wishes' offsets from
+    #    the name). The headless save's party (Charmander, Pikachu, Gengar, Lucario) reads these names at those ids.
+    #  - items: 0x30-byte entries, the name pointer +0x14, the description pointer +0x0C ("Poke Ball" 1, "Potion" 28, "Repel"
+    #    114, "Oran Berry" 520, "TM01" 582 = the save's bag).
+    #  - moves: 0x48-byte entries (the reference's are 0x44: the hack grew them), the name pointer first ("Pound" 1 at
+    #    0x087A7898), +0xA type / power bits as before.
+    #  - chart: the unique [21][21] u32 run whose Normal row is 1x except Rock/Steel 0.5x, Ghost 0x (0x0846CE38).
+    #  - mapsecs: {x, y, w, h, name ptr} from 0x08D95018, 0xDA of them (Emerald's Hoenn ids first, Kanto's from 0x58); the
+    #    save's gMapHeader reads 0x59 = Pallet Town. Its region map picture isn't read yet (the MAP tab names the place).
+    "gen3_evolved": dict(
+        suffix="Gen3Evolved",
+        label="Pokemon Generation 3 Evolved v1.0.22",
+        sha1="558de0902cc92f67d10f0524724a46a37afbe003",
+        species_name1=0x087CA940 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08778F1C + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7850, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846CE38, chart_n=21,
+        mapsec_base=0x08D95018, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 6: "Charizard", 25: "Pikachu", 94: "Gengar",
+                             155: "Cyndaquil", 448: "Lucario"},
+                    types={1: (13, 4), 4: (11, 11), 6: (11, 3), 25: (14, 14), 94: (8, 4), 448: (2, 9)},
+                    gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel", 520: "Oran Berry", 582: "TM01"},
+                    moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
+    # v1.0.17: the same game an earlier build, its ROM tables 0x490-0x4E8 lower (the GF header's own pointers: gSpeciesInfo
+    # 0x087CA450, gItemsInfo 0x08778A34, gMovesInfo 0x087A7368; the chart and gRegionMapEntries by their contents). Every
+    # table comes out equal to v1.0.22's, so it runs on those (`same_as`: checked, not written).
+    "gen3_evolved_v1_0_17": dict(
+        suffix="Gen3Evolved",
+        same_as="gen3_evolved",
+        label="Pokemon Generation 3 Evolved v1.0.17",
+        sha1="35dd71e1831e39ca6ac5ec1f76a49eaab9812095",
+        species_name1=0x087CA450 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08778A34 + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7368, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846C950, chart_n=21,
+        mapsec_base=0x08D94DEC - 0x59 * 8 - 4, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 25: "Pikachu", 448: "Lucario"},
+                    types={1: (13, 4), 448: (2, 9)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
     # Team Rocket Edition 2026, Spanish v3.1 (its START menu says V.3.1): v3.0.9's RAM word for word (gPlayerParty's 552
     # literal-pool words and the rest), its ROM tables moved: gSpeciesInfo and the icon palettes +0x4BD8 (its GF header's
     # 0x080001BC / 0x08000140), gMovesInfo and gItemsInfo +0x4BD0 (the header's 0x080001CC / 0x080001C8),

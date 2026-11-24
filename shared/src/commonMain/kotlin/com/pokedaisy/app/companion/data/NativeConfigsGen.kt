@@ -3507,6 +3507,102 @@ val NATIVE_GAIA_V3_2 = NATIVE_FIRERED_REV0.copy(
     moveCursor = 0x02023FFCL,
 )
 
+// ---- gamedata/gen3/hacks/gen3_evolved.toml ----
+
+// Pokémon Generation 3 Evolved v1.0.22 (32 MB, BPRE rev 0, sha1 558de090…): pokeemerald-expansion 1.16.3's FireRed build (its
+// RHHEXP block: 857 moves, 1576 species, 901 items), gcc, no source. Retail FireRed's save reads as erased in it, so it was
+// mapped headless from a new game played in it (`gen3_evolved`: the intro, then the game's own createmon / additem / setflag
+// through its ScriptContext_SetupScript 0x0820B155, saved in game in the player's bedroom, Pallet Town). Every RAM address is
+// also a literal-pool word of a function matched code for code into a plain FireRed build of the 1.16.3 tag (5,300 of its
+// 13,600 functions: the hack's globals sit a constant few bytes from the reference's, +0x20 in IWRAM's save pointers, +0x1948
+// around gParties), and checked live:
+// - gParties 0x02033664 (the player's party, the foe's 600 bytes on) with gPartiesCount 0x02033654 (one byte each): vanilla's
+//   100-byte encrypted mons with expansion's packing; the egg is species 1576 (gSpeciesInfo's last entry, the header's
+//   NUM_SPECIES).
+// - gSaveBlock1Ptr / 2Ptr 0x030052E0 / 0x030052DC. The hack grew the player's name to 12 letters, so SaveBlock2 moved on past
+//   it: playerGender +0x0D, the encryption key +0xB0 (the reference's +0xAC); money SB1+0x490 XOR it (3000 on a new game).
+//   SaveBlock1's flags / vars +0x1760 / +0x1880 (its GF ROM header's), FireRed's flag numbers (FLAG_SYS_POKEMON_GET 0x828:
+//   the START menu's POKéMON appeared with it). gMain 0x030067DC.
+// - gMapHeader 0x02001B88 (mapsec 0x59 Pallet Town, regionMapSectionId +0x14 a byte), gObjectEvents 0x02001628.
+// - gBagPockets 0x02006C54: seven pockets {slots*, capacity:10, id:6}, quantities XOR the key, in its bag screen's order:
+//   Items, Medicine, Berries, TMs & HMs, Poké Balls, Power Ups, Key Items ([GEN3_EVOLVED_BAG_POCKET_ORDER]: Repel x2, Potion
+//   x5, Oran Berry x4, TM01 x1, Poké Ball x3, as given).
+// - Battle (a scripted wild PIDGEY, `gen3_evolved_battle`): gBattleTypeFlags 0x020000C8, gBattlersCount 0x020000CC,
+//   gBattlerPartyIndexes 0x02000160, gBattlerPositions 0x020001E4, gBattleMons 0x020004FC ([GEN3_EVOLVED_BATTLE_MON]: 0x8C
+//   bytes, otId +0x84: offsetof on the reference), gBattleStruct 0x020000D0 with monToSwitchIntoId at +0x149 (the reference's).
+//   The menus' cursors 0x02000358 / 0x0200035C (RIGHT walked the action cursor 0 -> 1, DOWN to 3; DOWN in the moves 0 -> 2; a
+//   written 1 + A opened the bag, a written 2 + A the party, a written move cell + A used EMBER). gBattlerControllerFuncs
+//   0x03002514: action / move / bag / party read live (0x08064589 / 0x0806358D / 0x08061FDD / 0x08062021). gPartyMenu
+//   0x020335C0 (slotId +9, FireRed's list: DOWN 0 -> 1 -> 2).
+// - Icons: gSpeciesInfo 0x087CA940 (0x108-byte entries, iconSprite +0x68, iconPalIndex +0x8A), gMonIconPaletteTable
+//   0x08D7DDE8 (the GF header's); gItemsInfo 0x08778F1C (0x30-byte entries: icon +0x24, its palette +0x28 plain).
+// Names / types / moves / chart / map sections: scripts/gen_expansion_tables.py gen3_evolved.
+val NATIVE_GEN3_EVOLVED = NATIVE_EMERALD.copy(
+    itemDescs = ItemDescTable(0x08778F30L, 0x30, -8),
+    playerParty = 0x02033664L,
+    playerPartyCount = 0x02033654L,
+    enemyParty = 0x020338BCL,
+    gMain = 0x030067DCL,
+    saveBlock1Ptr = 0x030052E0L,
+    saveBlock2Ptr = 0x030052DCL,
+    encryptionKeyOff = 0xB0L,
+    playerGenderOff = 0x0DL,
+    moneyOff = 0x490L,
+    objectEvents = 0x02001628L,
+    mapHeader = 0x02001B88L,
+    bagPockets = 0x02006C54L,
+    bagPocketCount = 7,
+    bagPocketOrder = GEN3_EVOLVED_BAG_POCKET_ORDER,
+    speciesMask = 0x07FF,
+    moveMask = 0x07FF,
+    ppMask = 0x7F,
+    battleTypeFlags = 0x020000C8L,
+    battlersCount = 0x020000CCL,
+    battlerPartyIndexes = 0x02000160L,
+    battlerPositions = 0x020001E4L,
+    battleMons = 0x020004FCL,
+    battleMonLayout = GEN3_EVOLVED_BATTLE_MON,
+    battleStructPtr = 0x020000D0L,
+    monToSwitchIntoOff = 0x149,
+    actionCursor = 0x02000358L,
+    moveCursor = 0x0200035CL,
+    battlerControllerFuncs = 0x03002514L,
+    handleInputChooseAction = 0x08064589L,
+    handleInputChooseMove = 0x0806358DL,
+    completeWhenChoseItem = 0x08061FDDL,
+    waitForMonSelection = 0x08062021L,
+    partyMenu = 0x020335C0L,
+    eggSpecies = 1576,
+    monIconTable = 0x087CA9A8L, // gSpeciesInfo[0].iconSprite
+    monIconStride = 0x108,
+    monIconPaletteIndices = 0x087CA9CAL, // gSpeciesInfo[0].iconPalIndex
+    monPalIdxStride = 0x108,
+    monPalIdxMask = 0x07,
+    monIconPaletteTable = 0x08D7DDE8L,
+    itemIconTable = 0x08778F40L, // gItemsInfo[0].iconPic
+    itemIconStride = 0x30,
+    itemPalCompressed = false,
+)
+
+// Generation 3 Evolved v1.0.17 (sha1 35dd71e1…): the same game's earlier build. Its RAM is v1.0.22's for everything the
+// companion reads (every literal-pool word of the 5,300 matched functions from gSaveBlock1Ptr to gPartyMenu; only globals
+// past 0x02034900 sit 0x68 lower), and v1.0.22's save loads in it with the same party (`gen3_evolved_v1_0_17`). Its ROM
+// tables sit lower (the GF header: gSpeciesInfo 0x087CA450, gItemsInfo 0x08778A34, the icon palettes 0x08D7D8F0) and equal
+// v1.0.22's (gen_expansion_tables.py gen3_evolved_v1_0_17 checks them). Its battle handlers sit 0xA0 lower, read live from
+// gBattlerControllerFuncs in its own scripted wild battle (`gen3_evolved_v1_0_17_battle`), where the cursors, gPartyMenu and
+// a written cell + A behaved as in v1.0.22.
+val NATIVE_GEN3_EVOLVED_V1_0_17 = NATIVE_GEN3_EVOLVED.copy(
+    itemDescs = ItemDescTable(0x08778A48L, 0x30, -8),
+    monIconTable = 0x087CA4B8L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x087CA4DAL, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08D7D8F0L,
+    itemIconTable = 0x08778A58L, // gItemsInfo[0].iconPic
+    handleInputChooseAction = 0x080644E9L,
+    handleInputChooseMove = 0x080634EDL,
+    completeWhenChoseItem = 0x08061F3DL,
+    waitForMonSelection = 0x08061F81L,
+)
+
 // ---- gamedata/gen3/hacks/glazed.toml ----
 
 val NATIVE_GLAZED = NATIVE_EMERALD.copy(

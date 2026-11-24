@@ -51,6 +51,8 @@ class BattleCursorTest {
             "team_rocket_battle" to NATIVE_TEAM_ROCKET, "team_rocket_trainer" to NATIVE_TEAM_ROCKET,
             "wishes_battle" to NATIVE_WISHES, "wishes_trainer" to NATIVE_WISHES,
             "ceruleum_battle" to NATIVE_CERULEUM,
+            "gen3_evolved_battle" to NATIVE_GEN3_EVOLVED,
+            "gen3_evolved_v1_0_17_battle" to NATIVE_GEN3_EVOLVED_V1_0_17,
             "dreamstone_battle" to NATIVE_DREAMSTONE, "dreamstone_trainer" to NATIVE_DREAMSTONE,
             "monomyth_battle" to NATIVE_MONOMYTH, "monomyth_trainer" to NATIVE_MONOMYTH,
             "monomyth_v1_1_battle" to NATIVE_MONOMYTH_V1_1, "monomyth_v1_1_trainer" to NATIVE_MONOMYTH_V1_1,

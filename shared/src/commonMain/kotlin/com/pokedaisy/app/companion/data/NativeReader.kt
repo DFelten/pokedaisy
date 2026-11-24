@@ -308,6 +308,13 @@ val TEAM_ROCKET_V3_BAG_POCKET_ORDER = listOf(
     POCKET_MEGA_STONES,
 )
 
+/** Pokémon Generation 3 Evolved's gBagPockets: seven, {slots*, capacity:10, id:6}, in its bag screen's order (Items,
+ * Medicine, Berries, TMs & HMs, Poké Balls, Power Ups, Key Items); Medicine and Power Ups fold into the app's ITEMS, like the
+ * other hacks' extra pockets. */
+val GEN3_EVOLVED_BAG_POCKET_ORDER = listOf(
+    POCKET_ITEMS, POCKET_ITEMS, POCKET_BERRIES, POCKET_TM_HM, POCKET_POKE_BALLS, POCKET_ITEMS, POCKET_KEY_ITEMS,
+)
+
 /** Pokémon Dreamstone Mysteries' gBagPockets: seven, in its items' own pocket numbers (gItemsInfo +0x41: 1 Items,
  * 2 Medicine, 3 Battle Items, 4 Poké Balls, 5 Berries, 6 TMs, 7 Key Items), as its bag screen's tabs show them; Medicine
  * and Battle Items fold into the app's ITEMS, like the other hacks' extra pockets. */
@@ -1055,6 +1062,7 @@ private fun Mon.withNativeGender(raw: ByteArray, off: Int, layout: PartyMonLayou
         GameKind.TEAM_ROCKET -> if (teamRocketV3) genderRatiosTeamRocketV3 else genderRatiosTeamRocket
         GameKind.WISHES -> genderRatiosWishes
         GameKind.CERULEUM -> genderRatiosCeruleum
+        GameKind.GEN3_EVOLVED -> genderRatiosGen3Evolved
         GameKind.RECORDKEEPERS -> genderRatiosRecordKeepers
         GameKind.MONOMYTH -> genderRatiosMonomyth
         GameKind.DREAMSTONE -> genderRatiosDreamstone

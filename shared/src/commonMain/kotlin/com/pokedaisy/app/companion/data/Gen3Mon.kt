@@ -639,6 +639,13 @@ val TEAM_ROCKET_V3_BATTLE_MON = EXPANSION_BATTLE_MON.copy(size = 0x68, otId = 0x
 val WISHES_BATTLE_MON = EXPANSION_BATTLE_MON.copy(size = 0x88)
 
 /**
+ * Pokémon Generation 3 Evolved's (pokeemerald-expansion 1.16.3, FireRed build) 0x8C-byte struct BattlePokemon: expansion's
+ * fields where [EXPANSION_BATTLE_MON] has them, the otId at +0x84 (offsetof on the reference build; its wild battle's two
+ * battlers read the party's and gEnemyParty's otId there).
+ */
+val GEN3_EVOLVED_BATTLE_MON = EXPANSION_BATTLE_MON.copy(size = 0x8C, otId = 0x84)
+
+/**
  * Pokémon RecordKeepers' 0x6C-byte struct BattlePokemon: expansion's fields where [EXPANSION_BATTLE_MON] has them (moves
  * +0x0C, statStages +0x18, ability +0x20, types +0x22 / +0x23 and a third at +0x24, PP +0x25, HP +0x2A, level +0x2C, max HP
  * +0x2E, item +0x30, personality +0x4C, otId +0x58), the foe at +0x6C (its wild battle's dump).

@@ -154,6 +154,8 @@ object GameTitleCatalog {
         "742e62ffa5a8d607171fdb8477eb1f417dc36086" to "Pokémon Monomyth",
         "60182b934d2e8eb3eef226a9bbc25e5df6becd4f" to "Pokémon Wishes of Tomorrow",
         "2b0b608666cc2d553ce08d88fa76dce1fa577e51" to "Pokémon Ceruleum",
+        "558de0902cc92f67d10f0524724a46a37afbe003" to "Pokémon Generation 3 Evolved",
+        "35dd71e1831e39ca6ac5ec1f76a49eaab9812095" to "Pokémon Generation 3 Evolved",
         "8df1c9720842c668448d5ad880e9c48bb29d7200" to "Pokémon RecordKeepers",
         "20e91aecb3243eea7cd610659846f37062f5d709" to "Pokémon Dreamstone Mysteries",
         "20dfaea1d5317cf95fe0b493208edce7d50b865f" to "Pokémon Ghost Grey",
