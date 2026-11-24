@@ -89,7 +89,13 @@ static bool searchOpen; // SEARCH's field in the header takes the keyboard (or S
 static char query[64];  // what SEARCH filters the list by (kept after the field closes, until cleared)
 static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
 static bool addedStore; // the state file has dates already: a game seen now for the first time is new
-static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
+// BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 the Xbox pad's (green A, red B, blue X, yellow Y).
+// The Windows host plays on an Xbox pad, so it starts on the pad's own colours; the setting still switches them.
+#ifdef _WIN32
+static int faceColors = 1;
+#else
+static int faceColors;
+#endif
 static int selected, scroll, columns = 4, menuCursor, settingsCursor, settingsScroll, toolCursor;
 static const char *picked;
 static char notice[96];
@@ -1030,7 +1036,7 @@ static long file_size(const char *path, long *mtime) {
 static void look_save(void) {
   char dir[PATH_MAX + 16];
   snprintf(dir, sizeof dir, "%s/pokedaisy", savesDir);
-  mkdir(dir, 0755);
+  pd_mkdir(dir);
   pd_settings_save(&settings, settingsFile);
   pd_look_apply(NULL, &settings);
 }
@@ -1120,7 +1126,7 @@ void library_open(char *const *paths, int count, const char *data, const char *s
   }
   char covers[PATH_MAX + 16];
   snprintf(covers, sizeof covers, "%s/covers", dataDir);
-  mkdir(covers, 0755);
+  pd_mkdir(covers);
   sgdb_key_load();
   for (int i = 0; i < gameCount; i++) {
     struct game *g = &games[i];
