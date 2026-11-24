@@ -303,7 +303,9 @@ class Gen2ItemCalls(
         store(slot + 1, partyMenuCursor)
         call(clearBgPalettes)
         for (f in listOf(loadPartyMenuGfx, initPartyMenuWithCancel, initPartyMenuGfx, writePartyMenuTilemap, placePartyMenuText)) far(PARTY_MENU_BANK, f)
-        call(waitBgMap); call(setDefaultBgpAndObp); call(delayFrame)
+        call(waitBgMap)
+        if (getSgbLayout != 0 && itemId != RARE_CANDY) { c += listOf(0x06, SCGB_PARTY_MENU); call(getSgbLayout) }
+        call(setDefaultBgpAndObp); call(delayFrame)
         store(slot, curPartyMon); store(species, curPartySpecies)
         far(FIELD_BANK, (if (itemId == RARE_CANDY) rareCandyEffect else evoStoneEffect) + EFFECT_PAST_PICK)
         call(closeSubmenu); call(tm.closeText); c += 0xC9
@@ -524,6 +526,7 @@ class Gen2ItemCalls(
         private const val PARTY_MENU_BANK = 0x14
         private const val PARTYMENUACTION_HEALING_ITEM = 1
         private const val PARTYMENUACTION_EVO_STONE = 5
+        private const val SCGB_PARTY_MENU = 0x0A
         /** `ld b, PARTYMENUACTION_*; call UseItem_SelectMon; jp c, ...`: where both effects go on with the picked Pokémon. */
         private const val EFFECT_PAST_PICK = 8
         private const val HAPPINESS_USEDITEM = 0x02
@@ -626,6 +629,11 @@ data class Gen2PartyItemFns(
     val clearBgPalettes: Int = 0x31F3,
     val waitBgMap: Int = 0x31F6,
     val setDefaultBgpAndObp: Int = 0x32F9,
+    /** GetSGBLayout, called with SCGB_PARTY_MENU after the party menu is drawn (0 = not called). Gold / Silver's stone menu
+     * draws no HP bars, the only part of it that sets the party menu's colours, so the map's palette layout stayed under it
+     * (its paths and ledges as green stripes over the menu); Crystal's sets them itself. Not for RARE CANDY: its menu's HP bars
+     * set them, and with the call too the candy wasn't spent (checked headless). */
+    val getSgbLayout: Int = 0,
     val delayFrame: Int = 0x045A,
     val loadPartyMenuGfx: Int = 0x404F,
     val initPartyMenuWithCancel: Int = 0x4405,
@@ -729,7 +737,7 @@ val GEN2_ITEM_CALLS_GOLD = goldSilverItemCalls(
         getTmhmItemMove = 0x45C1, teach = 0x4672, baseData = Gen2ItemCalls.romOff(0x14, 0x5B0B),
         tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5A66), tempTmhm = 0xD151, putativeTmhmMove = 0xD14D, options = 0xD199),
     party = Gen2PartyItemFns(fadeToMenu = 0x2C0E, closeSubmenu = 0x2C21, clearBgPalettes = 0x3449,
-        waitBgMap = 0x344C, setDefaultBgpAndObp = 0x3546, delayFrame = 0x032E,
+        waitBgMap = 0x344C, setDefaultBgpAndObp = 0x3546, getSgbLayout = 0x3583, delayFrame = 0x032E,
         loadPartyMenuGfx = 0x404F, initPartyMenuWithCancel = 0x437A, initPartyMenuGfx = 0x4355,
         writePartyMenuTilemap = 0x405F, placePartyMenuText = 0x440F,
         rareCandyEffect = 0x6F68, evoStoneEffect = 0x6E63,
@@ -744,6 +752,7 @@ val GEN2_ITEM_CALLS_GOLD = goldSilverItemCalls(
         0x3449L to "cd64353e01e0d60e04cd",
         0x344CL to "3e01e0d60e04cd3c03c9",
         0x3546L to "f0e8a7200b3ee4e0473e",
+        0x3583L to "f0e8a72004f0e9a7c83e",
         0x032EL to "3e01eaeace7600faeace",
         Gen2ItemCalls.romOff(0x25, 0x66B8) to "cdf566cd06673e252139",
         Gen2ItemCalls.romOff(0x03, 0x7405) to "2e32002f3c0030500010",
@@ -783,7 +792,7 @@ val GEN2_ITEM_CALLS_GOLD_DE = goldSilverItemCalls(
         getTmhmItemMove = 0x45C1, teach = 0x4672, baseData = Gen2ItemCalls.romOff(0x14, 0x5B00),
         tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5A5D), tempTmhm = 0xD151, putativeTmhmMove = 0xD14D, options = 0xD199),
     party = Gen2PartyItemFns(fadeToMenu = 0x2C3B, closeSubmenu = 0x2C4E, clearBgPalettes = 0x3440,
-        waitBgMap = 0x3443, setDefaultBgpAndObp = 0x353D, delayFrame = 0x032E,
+        waitBgMap = 0x3443, setDefaultBgpAndObp = 0x353D, getSgbLayout = 0x357A, delayFrame = 0x032E,
         loadPartyMenuGfx = 0x404F, initPartyMenuWithCancel = 0x4370, initPartyMenuGfx = 0x434B,
         writePartyMenuTilemap = 0x405F, placePartyMenuText = 0x4405,
         rareCandyEffect = 0x6F33, evoStoneEffect = 0x6E37,
@@ -798,6 +807,7 @@ val GEN2_ITEM_CALLS_GOLD_DE = goldSilverItemCalls(
         0x3440L to "cd5b353e01e0d60e04cd",
         0x3443L to "3e01e0d60e04cd3c03c9",
         0x353DL to "f0e8a7200b3ee4e0473e",
+        0x357AL to "f0e8a72004f0e9a7c83e",
         0x032EL to "3e01eaeace7600faeace",
         Gen2ItemCalls.romOff(0x25, 0x66B8) to "cdf566cd06673e252158",
         Gen2ItemCalls.romOff(0x03, 0x73D0) to "2e32002f3c0030500010",
@@ -837,7 +847,7 @@ val GEN2_ITEM_CALLS_SILVER = goldSilverItemCalls(
         getTmhmItemMove = 0x45C1, teach = 0x4672, baseData = Gen2ItemCalls.romOff(0x14, 0x5B0B),
         tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5A66), tempTmhm = 0xD151, putativeTmhmMove = 0xD14D, options = 0xD199),
     party = Gen2PartyItemFns(fadeToMenu = 0x2C0E, closeSubmenu = 0x2C21, clearBgPalettes = 0x3449,
-        waitBgMap = 0x344C, setDefaultBgpAndObp = 0x3546, delayFrame = 0x032E,
+        waitBgMap = 0x344C, setDefaultBgpAndObp = 0x3546, getSgbLayout = 0x3583, delayFrame = 0x032E,
         loadPartyMenuGfx = 0x404F, initPartyMenuWithCancel = 0x437A, initPartyMenuGfx = 0x4355,
         writePartyMenuTilemap = 0x405F, placePartyMenuText = 0x440F,
         rareCandyEffect = 0x6F66, evoStoneEffect = 0x6E61,
@@ -852,6 +862,7 @@ val GEN2_ITEM_CALLS_SILVER = goldSilverItemCalls(
         0x3449L to "cd64353e01e0d60e04cd",
         0x344CL to "3e01e0d60e04cd3c03c9",
         0x3546L to "f0e8a7200b3ee4e0473e",
+        0x3583L to "f0e8a72004f0e9a7c83e",
         0x032EL to "3e01eaeace7600faeace",
         Gen2ItemCalls.romOff(0x25, 0x66B8) to "cdf566cd06673e252139",
         Gen2ItemCalls.romOff(0x03, 0x7403) to "2e32002f3c0030500010",
@@ -891,7 +902,7 @@ val GEN2_ITEM_CALLS_SILVER_DE = goldSilverItemCalls(
         getTmhmItemMove = 0x45C1, teach = 0x4672, baseData = Gen2ItemCalls.romOff(0x14, 0x5B00),
         tmHmMoves = Gen2ItemCalls.romOff(0x04, 0x5A5D), tempTmhm = 0xD151, putativeTmhmMove = 0xD14D, options = 0xD199),
     party = Gen2PartyItemFns(fadeToMenu = 0x2C3B, closeSubmenu = 0x2C4E, clearBgPalettes = 0x3440,
-        waitBgMap = 0x3443, setDefaultBgpAndObp = 0x353D, delayFrame = 0x032E,
+        waitBgMap = 0x3443, setDefaultBgpAndObp = 0x353D, getSgbLayout = 0x357A, delayFrame = 0x032E,
         loadPartyMenuGfx = 0x404F, initPartyMenuWithCancel = 0x4370, initPartyMenuGfx = 0x434B,
         writePartyMenuTilemap = 0x405F, placePartyMenuText = 0x4405,
         rareCandyEffect = 0x6F31, evoStoneEffect = 0x6E35,
@@ -906,6 +917,7 @@ val GEN2_ITEM_CALLS_SILVER_DE = goldSilverItemCalls(
         0x3440L to "cd5b353e01e0d60e04cd",
         0x3443L to "3e01e0d60e04cd3c03c9",
         0x353DL to "f0e8a7200b3ee4e0473e",
+        0x357AL to "f0e8a72004f0e9a7c83e",
         0x032EL to "3e01eaeace7600faeace",
         Gen2ItemCalls.romOff(0x25, 0x66B8) to "cdf566cd06673e252158",
         Gen2ItemCalls.romOff(0x03, 0x73CE) to "2e32002f3c0030500010",
