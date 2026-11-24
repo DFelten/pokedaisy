@@ -55,11 +55,29 @@ sealed class GbField {
     /** The party order can be changed here ([swapParty]). */
     open val swapsParty: Boolean get() = false
 
+    /** [swapParty]'s own code is in the cart (Gen 2 calls the game's SwapMonAndMail; Gen 1 writes the lists itself). */
+    open fun partySwapMatches(rom: (Long, Int) -> ByteArray?): Boolean = true
+
     /** Party slots [a] ([keyA]) and [b] ([keyB]) trade places, as the game's party menu SWITCH does. */
     open fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult = PartySwapResult.FAILED
 
     /** Where the bag's PC could open: a PC move or a box change only then. */
     protected open fun pcFree(g: GameCalls): Boolean = false
+
+    /** USE on the ITEMS tab (Gen1ItemUse.kt, Gen2ItemUse.kt), where it's mapped: null otherwise. */
+    open val bagUse: GbBagUse? get() = null
+
+    /** USE's party pick on [bagUse] where the bag's PC could open: NOT_NOW otherwise. */
+    open fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
+        val use = bagUse ?: return PartyTargets(ItemUseResult.FAILED)
+        return if (!pcFree(g)) PartyTargets(ItemUseResult.NOT_NOW) else use.targets(g, itemId)
+    }
+
+    /** USE of [itemId] on [bagUse]: on the spot ([target] null) or on [target]. NOT_NOW off the free field. */
+    open fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
+        val use = bagUse ?: return ItemUseOutcome(ItemUseResult.FAILED)
+        return if (!pcFree(g)) ItemUseOutcome(ItemUseResult.NOT_NOW) else use.use(g, itemId, target, moveIndex)
+    }
 
     /** A PC move on [pcBox] where the bag's PC could open: NOT_NOW otherwise. */
     fun pcMove(g: GameCalls, move: (GbBoxMoves) -> BoxSwapResult): BoxSwapResult {
@@ -161,6 +179,8 @@ sealed class GbField {
         private val boxCalls: Gen1BoxCalls? = null,
         /** The party order ([swapParty]): the retail carts, whose party lists are pokered's / pokeyellow's. */
         private val partySwap: Boolean = false,
+        /** USE on the ITEMS tab (Gen1ItemUse.kt), where it's mapped. */
+        private val itemCalls: Gen1ItemCalls? = null,
     ) : GbField() {
         private val flags7 = flags6 + 1
 
@@ -198,6 +218,7 @@ sealed class GbField {
         }
 
         override val pcBox: GbBoxMoves? get() = boxCalls
+        override val bagUse: GbBagUse? get() = itemCalls
         override fun pcFree(g: GameCalls) = free(g)
 
         // wFontLoaded (right before wWalkCounter in every cart) bit 0: a text box is up. The games without an EXPAND
@@ -362,6 +383,7 @@ sealed class GbField {
         }
 
         override val swapsParty get() = boxCalls != null
+        override fun partySwapMatches(rom: (Long, Int) -> ByteArray?) = boxCalls?.switchMatches(rom) == true
 
         /** The party menu's SWITCH ([Gen2BoxCalls.swapParty]) where the bag's PC could open: NOT_NOW otherwise. */
         override fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
@@ -376,15 +398,17 @@ sealed class GbField {
             return if (!free(g)) BoxChangeResult.NOT_NOW else calls.changeBox(g, to)
         }
 
+        override val bagUse: GbBagUse? by lazy { itemCalls?.let { Gen2BagUse(it, cfg) } }
+
         /** USE's party pick ([itemCalls]) where the bag's PC could open: NOT_NOW otherwise. */
-        fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
+        override fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
             val calls = itemCalls ?: return PartyTargets(ItemUseResult.FAILED)
             return if (!free(g)) PartyTargets(ItemUseResult.NOT_NOW) else calls.targets(g, cfg, itemId)
         }
 
         /** USE of [itemId]: a Repel, the BICYCLE, a rod or a field item on the spot, a TM or an item with its own screen in the
          * game ([target] null), anything else on [target]. NOT_NOW off the free field. */
-        fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
+        override fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
             val calls = itemCalls ?: return ItemUseOutcome(ItemUseResult.FAILED)
             if (!free(g)) return ItemUseOutcome(ItemUseResult.NOT_NOW)
             if (calls.onTheSpot(itemId) || calls.fieldEffect(itemId)) {
@@ -555,6 +579,7 @@ val GB_FIELD_YELLOW = GbField.Gen1(
     waterRate = 0xD8A3L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW,
     partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_YELLOW,
     signatures = listOf(
         0x245L to "cd641ecd2a34cd6f1ecde10ffac4cfa7c2c303cd",
         0x3E84L to "f0b8f578e0b8ea0020cd983e",
@@ -574,6 +599,7 @@ val GB_FIELD_YELLOW_DE = GbField.Gen1(
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW_DE,
     partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_YELLOW_DE,
     signatures = listOf(
         0x245L to "cd691ecd2f34cd741ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -665,6 +691,7 @@ val GB_FIELD_RED_BLUE = GbField.Gen1(
     waterRate = 0xD8A4L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED,
     partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_RED,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa36d7cb77c49e03fac5cfa7c2b5",
         0x35D6L to "f0b8f578e0b8ea002001e435",
@@ -717,6 +744,7 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
     waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED_DE,
     partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_RED_DE,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
         0x35F0L to "f0b8f578e0b8ea002001fe35",
@@ -755,3 +783,27 @@ val GB_FIELD_PURE_RGB = GbField.Gen1(
     pcBank = 0x33,
     wildBank = 0x2C,
 )
+
+/** A Game Boy game's bag USE: which items it takes and how, for the ITEMS tab. */
+interface GbBagUse {
+    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean
+    fun usable(itemId: Int): Boolean
+    /** The items whose own screen or text the game shows: the companion hands over to it. */
+    fun inGame(itemId: Int): Boolean
+    fun picksMon(itemId: Int): Boolean
+    fun picksMove(itemId: Int): Boolean
+    fun targets(g: GameCalls, itemId: Int): PartyTargets
+    fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome
+}
+
+/** Crystal's [Gen2ItemCalls] as [GbBagUse], with the cart's config (its [GbField.CrystalEngine.useItem] runs the uses). */
+class Gen2BagUse(private val calls: Gen2ItemCalls, private val cfg: Gen2Config) : GbBagUse {
+    override fun codeMatches(rom: (Long, Int) -> ByteArray?) = calls.codeMatches(rom)
+    override fun usable(itemId: Int) = calls.usable(itemId)
+    override fun inGame(itemId: Int) = calls.inGame(itemId)
+    override fun picksMon(itemId: Int) = calls.picksMon(itemId)
+    override fun picksMove(itemId: Int) = calls.picksMove(itemId)
+    override fun targets(g: GameCalls, itemId: Int) = calls.targets(g, cfg, itemId)
+    override fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int) =
+        if (target == null) calls.useRepel(g, cfg, itemId) else calls.useOn(g, cfg, itemId, target, moveIndex)
+}
