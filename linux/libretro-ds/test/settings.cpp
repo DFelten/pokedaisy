@@ -131,7 +131,8 @@ int main(int argc,char** argv){
   ui.frame.tab=PD_TAB_DEX;
   draw();
   assert(!pd_dark_look && px[0]==0x1F202C);
-  assert(std::count(px.begin(),px.end(),0x1D2128)>100);
+  // The desktop cores draw the RETRO look: its dark list window (pd_style.c's RETRO[1].listFill).
+  assert(std::count(px.begin(),px.end(),0x1C2333)>100);
   ui.frame.tab=PD_TAB_SETTINGS;
   press(ui,RETRO_DEVICE_ID_JOYPAD_A);
   reloaded.init(path);
