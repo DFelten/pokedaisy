@@ -1544,6 +1544,10 @@ static bool environment(unsigned cmd, void *data) {
     struct pd_companion *p = data;
     if (!p)
       return true;
+    if (p->active == PD_ENV_PROBE) { // the core asks whether we draw it: yes
+      p->active = 1;
+      return true;
+    }
     compPending = p->active && p->pixels && p->src_w > 0 && p->src_h > 0;
     compHave = true;
     if (compPending) {
@@ -1595,7 +1599,11 @@ static bool environment(unsigned cmd, void *data) {
     return true;
   }
   case PD_ENV_SET_HUD: {
-    const struct pd_hud *h = data;
+    struct pd_hud *h = data;
+    if (h && h->active == PD_ENV_PROBE) { // the core asks whether we draw it: yes
+      h->active = 1;
+      return true;
+    }
     hudPending = h && h->active && h->pixels && h->src_w > 0 && h->src_h > 0 && h->w > 0 && h->h > 0;
     hudHave = true;
     if (hudPending)

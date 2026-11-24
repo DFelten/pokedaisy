@@ -94,7 +94,7 @@ Sur [plorpOS](https://github.com/thwonp/plorpos) et les versions nightly de [spr
 
 ## Reprendre vos sauvegardes
 
-Dans le programme PokeDaisy (les trois premiers téléchargements), la sauvegarde d'un jeu se trouve dans le dossier `saves` à côté de `roms`, nommée d'après le nom complet du fichier de la ROM suivi de `.sav` : pour `FireRed.gba`, c'est `saves/FireRed.gba.sav`. Une sauvegarde d'un autre émulateur fonctionne si vous la copiez là sous ce nom, y compris un `.srm` de RetroArch. Gardez d'abord une copie de votre ancienne sauvegarde ailleurs.
+Dans le programme PokeDaisy (les trois premiers téléchargements), la sauvegarde d'un jeu se trouve dans le dossier `saves` à côté de `roms`, nommée d'après la ROM sans son extension suivie de `.sav`, comme la nomment l'application Android et d'autres émulateurs : pour `FireRed.gba`, c'est `saves/FireRed.sav`. Une sauvegarde d'un autre émulateur fonctionne si vous la copiez là sous ce nom, y compris un `.srm` de RetroArch. Une sauvegarde qu'une version plus ancienne a créée sous le nom complet du fichier de la ROM (`saves/FireRed.gba.sav`) reste utilisée, et si les deux sont là, la dernière écrite l'emporte. Gardez d'abord une copie de votre ancienne sauvegarde ailleurs.
 
 Avant qu'un jeu s'ouvre, PokeDaisy copie sa sauvegarde dans `saves/pokedaisy-backups` et garde les 10 copies les plus récentes : une plus ancienne vous y attend si besoin. Les sauvegardes d'état d'un autre émulateur ne se chargent pas.
 

@@ -94,7 +94,7 @@ No [plorpOS](https://github.com/thwonp/plorpos) e nas versões nightly do [spruc
 
 ## Traga os seus jogos guardados
 
-No programa PokeDaisy (as três primeiras transferências), o jogo guardado de um jogo fica na pasta `saves` ao lado de `roms`, com o nome completo do ficheiro da ROM mais `.sav`: para `FireRed.gba`, é `saves/FireRed.gba.sav`. Um jogo guardado de outro emulador funciona se o copiar para lá com esse nome, incluindo um `.srm` do RetroArch. Antes, guarde uma cópia do seu jogo guardado antigo noutro sítio.
+No programa PokeDaisy (as três primeiras transferências), o jogo guardado de um jogo fica na pasta `saves` ao lado de `roms`, com o nome da ROM sem a extensão mais `.sav`, como a app de Android e outros emuladores lhe chamam: para `FireRed.gba`, é `saves/FireRed.sav`. Um jogo guardado de outro emulador funciona se o copiar para lá com esse nome, incluindo um `.srm` do RetroArch. Um jogo guardado que uma versão anterior criou com o nome completo do ficheiro da ROM (`saves/FireRed.gba.sav`) continua a ser usado e, se estiverem lá os dois, vale o último a ser gravado. Antes, guarde uma cópia do seu jogo guardado antigo noutro sítio.
 
 Antes de um jogo abrir, o PokeDaisy copia o seu jogo guardado para `saves/pokedaisy-backups` e mantém as 10 cópias mais recentes, por isso tem lá uma mais antiga se precisar. Os estados guardados de outro emulador não carregam.
 

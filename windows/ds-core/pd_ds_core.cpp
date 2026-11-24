@@ -711,11 +711,14 @@ RETRO_API bool retro_load_game(const struct retro_game_info* game)
     overlay_load(game->path, saveDir.c_str());
     // Whether this frontend draws the HUD itself: it takes the HUD's own 256x192 picture (PD_ENV_SET_HUD) and scales it
     // to the window, so a ZOOM step's smaller canvas doesn't soften it.
+    // Only a host that says it draws them (PD_ENV_PROBE): a frontend answering every private command true kept nothing.
     pd_hud probe {};
-    hudHost = env_cb && env_cb(PD_ENV_SET_HUD, &probe);
+    probe.active = PD_ENV_PROBE;
+    hudHost = env_cb && env_cb(PD_ENV_SET_HUD, &probe) && probe.active == 1;
     overlay_hud_host(hudHost);
-    pd_companion none {};
-    companionHost = env_cb && env_cb(PD_ENV_SET_COMPANION, &none);
+    pd_companion ask {};
+    ask.active = PD_ENV_PROBE;
+    companionHost = env_cb && env_cb(PD_ENV_SET_COMPANION, &ask) && ask.active == 1;
     quickFf = false;
     if (env_cb) env_cb(PD_ENV_SET_FAST_FORWARD, &quickFf);
     compose_layout();

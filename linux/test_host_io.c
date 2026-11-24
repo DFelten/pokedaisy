@@ -7,6 +7,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <utime.h>
+#include "pd_fs.h"
 struct fault_file {
   struct VFile d;
   struct VFile *inner;
@@ -126,8 +128,55 @@ static void test_backups(void) {
   unlink(save);
   rmdir(dir);
 }
+static void touch_at(const char *path, time_t when) {
+  FILE *f = fopen(path, "wb");
+  assert(f && fputc(1, f) == 1 && !fclose(f));
+  struct utimbuf t = {when, when};
+  assert(!utime(path, &t));
+}
+static void expect_save(const char *dir, const char *rom, const char *name) {
+  char out[700], want[700];
+  pd_save_path(dir, rom, out, sizeof out);
+  snprintf(want, sizeof want, "%s/%s", dir, name);
+  if (strcmp(out, want))
+    fprintf(stderr, "%s: %s, wanted %s\n", rom, out, want);
+  assert(!strcmp(out, want));
+}
+// A save named the way Android, the 3DS port and other emulators name it (FireRed.sav), the old whole-name one still read.
+static void test_save_names(void) {
+  char dir[] = "/tmp/pd-linux-saves-XXXXXX", roms[600], saves[600], rom[700], p[700], q[700];
+  assert(mkdtemp(dir));
+  snprintf(roms, sizeof roms, "%s/roms", dir);
+  snprintf(saves, sizeof saves, "%s/saves", dir);
+  assert(!pd_mkdir(roms) && !pd_mkdir(saves));
+  snprintf(rom, sizeof rom, "%s/FireRed.gba", roms);
+  touch_at(rom, 1760000000);
+  expect_save(saves, rom, "FireRed.sav"); // a new game: the base name
+  snprintf(p, sizeof p, "%s/FireRed.gba.sav", saves);
+  touch_at(p, 1760000000);
+  expect_save(saves, rom, "FireRed.gba.sav"); // an old host's save stays the save
+  snprintf(q, sizeof q, "%s/FireRed.sav", saves);
+  touch_at(q, 1760000100);
+  expect_save(saves, rom, "FireRed.sav"); // a newer one synced in from a phone wins
+  touch_at(p, 1760000200);
+  expect_save(saves, rom, "FireRed.gba.sav"); // played here after it: the old name was written last
+  // Another ROM with the same base name: FireRed.sav could be either's, so each keeps its whole name.
+  char twin[700];
+  snprintf(twin, sizeof twin, "%s/FireRed.gb", roms);
+  touch_at(twin, 1760000000);
+  expect_save(saves, rom, "FireRed.gba.sav");
+  expect_save(saves, twin, "FireRed.gb.sav");
+  unlink(twin);
+  unlink(p);
+  unlink(q);
+  unlink(rom);
+  rmdir(roms);
+  rmdir(saves);
+  rmdir(dir);
+}
 int main(void) {
   test_backups();
+  test_save_names();
   struct pocket_save_status status;
   struct fault_file f = file(true);
   struct VFile *v = pocket_save_wrap(&f.d, &status);

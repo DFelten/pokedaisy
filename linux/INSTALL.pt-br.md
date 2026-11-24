@@ -98,7 +98,7 @@ No [plorpOS](https://github.com/thwonp/plorpos) e nas versões nightly do [spruc
 
 ## Traga seus saves
 
-No programa PokeDaisy (os três primeiros downloads), o save de um jogo fica na pasta `saves` ao lado de `roms`, com o nome completo do arquivo da ROM mais `.sav`: para `FireRed.gba`, é `saves/FireRed.gba.sav`. Um save de outro emulador funciona se você copiar para lá com esse nome, incluindo um `.srm` do RetroArch. Antes, guarde uma cópia do seu save antigo em outro lugar.
+No programa PokeDaisy (os três primeiros downloads), o save de um jogo fica na pasta `saves` ao lado de `roms`, com o nome da ROM sem a extensão mais `.sav`, como o app de Android e outros emuladores nomeiam: para `FireRed.gba`, é `saves/FireRed.sav`. Um save de outro emulador funciona se você copiar para lá com esse nome, incluindo um `.srm` do RetroArch. Um save que uma versão anterior criou com o nome completo do arquivo da ROM (`saves/FireRed.gba.sav`) continua sendo usado, e se os dois estiverem lá, vale o último que foi gravado. Antes, guarde uma cópia do seu save antigo em outro lugar.
 
 Antes de um jogo abrir, o PokeDaisy copia o save dele para `saves/pokedaisy-backups` e mantém as 10 cópias mais novas, então uma mais antiga está lá se você precisar. Estados salvos de outro emulador não carregam.
 

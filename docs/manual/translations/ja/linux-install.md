@@ -28,7 +28,7 @@ PokeDaisyはLinuxでも動きます。Steam Deck、Linuxのパソコン、TrimUI
 | パソコンのRetroArchやほかのフロントエンド | `pokedaisy-libretro-x86_64.zip` |
 | ARM携帯機のRetroArchやほかのフロントエンド | `pokedaisy-libretro-aarch64.zip` |
 
-最初の3つには、PokeDaisyのプログラムと、その隣に3つのコアが入っています：ゲームボーイアドバンス用、ゲームボーイとゲームボーイカラー用、DS用です。最後の2つはコアだけです。あとは、このページの自分の機器のところに進んでください。
+最初の3つには、PokeDaisyのプログラム（最初の3つのダウンロード）では、ゲームのセーブデータは `roms` の隣の `saves` フォルダにあり、Androidのアプリやほかのエミュレーターと同じく、ROMの名前から拡張子を除いて `.sav` をつけた名前です：`FireRed.gba` なら `saves/FireRed.sav` です。ほかのエミュレーターのセーブデータも、その名前でそこにコピーすれば使えます。RetroArchの `.srm` も同じです。前のバージョンがROMのファイル名全体で作ったセーブデータ（`saves/FireRed.gba.sav`）もそのまま使われ、両方あるときは最後に書かれたほうが使われます。念のため、先に古いセーブデータのコピーを別の場所に残しておきましょう。
 
 ## Steam DeckとLinuxのパソコン
 

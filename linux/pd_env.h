@@ -18,6 +18,13 @@ struct pd_touch_panel {
   int active;
 };
 
+/* How a core asks whether the frontend draws what PD_ENV_SET_HUD / PD_ENV_SET_COMPANION hand it: once at load, a struct
+ * with active = PD_ENV_PROBE. A host that draws it sets active = 1 and returns true. Some frontends return true for every
+ * private command and draw nothing (the likely reason a player's GKD 350H Ultra lost the HUD in 1.6.2: it came back on
+ * 1.6.0's cores, which never asked), so the answer alone is not enough: a core
+ * hands the picture over only when active came back 1, and keeps drawing it into its own canvas otherwise. */
+#define PD_ENV_PROBE (-1)
+
 /* The core's field HUD at its own resolution. A ZOOM step grows the core's canvas and the frontend scales it down to
  * the window, so a HUD blended into the picture is resampled with it: sharp at whole steps, soft at 1.25x and 1.5x. A
  * host that can draw it takes the HUD's own picture instead, drawn over its box in the window's pixels, so each HUD
