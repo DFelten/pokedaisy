@@ -839,3 +839,28 @@ object Gen2Dex {
         }.getOrDefault("")
     }
 }
+
+/**
+ * The Gen 2 front pictures' background gaps the outline closes in (between a tail and the body, inside a coil, between
+ * necks), as x, y pairs of a pixel in each, by game and species: POKéMON PICTURES (shared-ui's `paperFilled`) leaves
+ * them see-through. Picked by eye from every picture's closed see-through areas (the white ones are bellies, faces and
+ * wings too, so no rule tells them apart); only clear cases, areas under 30 pixels not looked at. The German carts'
+ * pictures are the English ones. `GoldSilverArtTest` checks each is a closed area in its cart's picture.
+ */
+private val GEN2_PICTURE_GAPS: Map<GameKind, Map<Int, IntArray>> = mapOf(
+    GameKind.GOLD to mapOf(
+        5 to intArrayOf(43, 28), 6 to intArrayOf(39, 30), 26 to intArrayOf(42, 20), 78 to intArrayOf(36, 32),
+        85 to intArrayOf(34, 17), 148 to intArrayOf(39, 20), 239 to intArrayOf(43, 42),
+    ),
+    GameKind.SILVER to mapOf(
+        5 to intArrayOf(42, 27), 6 to intArrayOf(33, 29), 19 to intArrayOf(36, 31), 85 to intArrayOf(30, 18, 18, 25),
+        141 to intArrayOf(48, 29),
+    ),
+    GameKind.CRYSTAL to mapOf(
+        5 to intArrayOf(45, 27), 6 to intArrayOf(39, 30), 26 to intArrayOf(43, 20), 141 to intArrayOf(48, 29),
+        239 to intArrayOf(43, 42),
+    ),
+)
+
+/** [species]' background gaps in [game]'s front picture ([GEN2_PICTURE_GAPS]), or null. */
+fun gen2PictureGaps(game: GameKind, species: Int): IntArray? = GEN2_PICTURE_GAPS[game]?.get(species)
