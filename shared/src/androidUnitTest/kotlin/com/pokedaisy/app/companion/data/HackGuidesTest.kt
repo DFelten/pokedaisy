@@ -450,6 +450,24 @@ class HackGuidesTest {
         }
     }
 
+    private val dreamstone = Game("Pokemon Dreamstone Mysteries.gba", GameKind.DREAMSTONE, NATIVE_DREAMSTONE, "dreamstone")
+
+    /** HERE's rods (GitHub #1430 / #1440: none showed): expansion's headers keep a hidden set before fishing, so the rods'
+     * table is the fifth pointer. Imperium's Route 102 and Dreamstone's 6.17, each map's slots as the ROM has them. */
+    @Test fun `imperium and dreamstone HERE has the rods`() {
+        load(imperium)?.let {
+            val here = GuideRomSource.encounters(imperium.t, 0, 17)!!
+            assertEquals(setOf(283, 422), here.oldRod.map { e -> e.species }.toSet()) // the Old Rod's two slots
+            assertEquals(setOf(283, 422, 692), here.goodRod.map { e -> e.species }.toSet())
+            assertTrue(here.superRod.isNotEmpty())
+        }
+        load(dreamstone)?.let {
+            val here = GuideRomSource.encounters(dreamstone.t, 6, 17)!!
+            assertEquals(setOf(129, 118), here.oldRod.map { e -> e.species }.toSet())
+            assertTrue(here.goodRod.isNotEmpty() && here.superRod.isNotEmpty())
+        }
+    }
+
     private val lazarus = Game("Pokemon Lazarus (v2.0).gba", GameKind.LAZARUS, NATIVE_LAZARUS, "lazarus")
     private val seaglass = Game("Pokemon Emerald Seaglass (v3.0).gba", GameKind.EMERALD_SEAGLASS, NATIVE_EMERALD_SEAGLASS, "emerald_seaglass")
     private val tmt2 = Game("Pokemon Too Many Types 2 (v1.5.2).gba", GameKind.TMT2, NATIVE_TMT2, "tmt2")

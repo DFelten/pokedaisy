@@ -766,8 +766,9 @@ val GUIDE_TABLES_GLAZED = GUIDE_TABLES_EMERALD.copy(
  * 0x0854FA40 (36 refs; 0x78-byte records - party +4, class +0x10, name +0x13, size +0x20;
  * 265 = Roxanne: Rhyhorn 14, Wooper / Gligar / Nosepass 15, abilities at +0x18 Lightning Rod,
  * Water Absorb, Sand Veil, Sturdy), expansion's 0x24-byte TrainerMon, gWildMonHeaders
- * 0x08ED1CD0 (16 refs, 135 headers of 24 bytes: one set of land / water / rock smash / fishing /
- * hidden - Route 101's land table has the Shinx a walk there met), SaveBlock1 flags / vars at
+ * 0x08ED1CD0 (16 refs, 135 headers of 24 bytes: one set of land / water / rock smash / hidden / fishing - the hidden
+ * pointer is NULL in all 135, fishing set in 53 with its 10 rod slots; Route 101's land table has the Shinx a walk there
+ * met), SaveBlock1 flags / vars at
  * 0x19C4 / 0x1AF0 (GetFlagPointer / GetVarPointer literals).
  */
 val GUIDE_TABLES_IMPERIUM = GuideTables(
@@ -786,7 +787,7 @@ val GUIDE_TABLES_IMPERIUM = GuideTables(
     trainerSizeOff = 0x20,
     trainerPartyOff = 4,
     trainerMon = TrainerMonLayout(stride = 0x24, movesOff = 0x0C, speciesOff = 0x14, itemOff = 0x16, levelOff = 0x1A),
-    wildLayout = WildLayout(stride = 24),
+    wildLayout = WildLayout(stride = 24, fishing = 4),
     mapGroups = 0x08FC2F74L,
 )
 
@@ -1187,7 +1188,8 @@ val GUIDE_TABLES_MONOMYTH_V1_2 = GUIDE_TABLES_MONOMYTH.copy(
  * from 0x085837E4 (GetTrainerDifficultyLevel: VarGet(0x40A8) picks the table, a NULL party there falls back to the second);
  * [trainers] is the second, the first is [altTrainers] (see GuideDreamstone.kt), the third is empty. 12 = LEADER INGER
  * (Rockruff 12, Geodude 12, Minior 13), 1.11.2's 0x24-byte TrainerMon. gWildMonHeaders 0x0900247C (165 of 24 bytes:
- * land / water / rock smash / fishing / hidden; ROUTE 1's land set is its RATTATA / PIDOVE / CUBONE / ROCKRUFF), gMapGroups
+ * land / water / rock smash / hidden / fishing - the hidden pointer NULL in all 165, fishing set in 68; ROUTE 1's land set
+ * is its RATTATA / PIDOVE / CUBONE / ROCKRUFF), gMapGroups
  * 0x09186E6C (40 groups; CARABRUE TOWN is 0.0, ROUTE 1 0.4). SaveBlock1's flags / vars at +0x148C / +0x15B8 (FlagSet's and
  * GetVarPointer's literals, 0x0810E820 / 0x0810E672).
  */
@@ -1208,7 +1210,7 @@ val GUIDE_TABLES_DREAMSTONE = GuideTables(
     trainerPartyOff = 4,
     trainerMon = TrainerMonLayout(stride = 0x24, movesOff = 0x0C, speciesOff = 0x14, itemOff = 0x16, levelOff = 0x1A),
     altTrainers = listOf(0x085837E4L),
-    wildLayout = WildLayout(stride = 24),
+    wildLayout = WildLayout(stride = 24, fishing = 4),
     mapGroups = 0x09186E6CL,
 )
 
