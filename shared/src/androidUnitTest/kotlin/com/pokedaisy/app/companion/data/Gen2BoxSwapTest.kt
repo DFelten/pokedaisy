@@ -22,6 +22,10 @@ class Gen2BoxSwapTest {
         // Each cart is checked on its own when it's here (a missing German cart once skipped the English check too).
         assumeTrue("no Crystal cart", en.isFile || de.isFile)
         fun Gen2BoxCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        // The party SWITCH's code is checked on its own (a miss there must leave the PC's moves on).
+        fun Gen2BoxCalls.switchOn(f: File) = f.readBytes().let { rom -> switchMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        if (en.isFile) assertTrue(GEN2_BOX_CALLS_CRYSTAL.switchOn(en))
+        if (de.isFile) assertTrue(GEN2_BOX_CALLS_CRYSTAL_DE.switchOn(de))
         if (en.isFile) {
             assertTrue(GEN2_BOX_CALLS_CRYSTAL.on(en))
             assertFalse(GEN2_BOX_CALLS_CRYSTAL_DE.on(en))
@@ -69,6 +73,7 @@ class Gen2BoxSwapTest {
             assertEquals(calls.at, at)
             pending = null
             if (fn == 0x0008 && a == 5) saved += hl
+            else if (fn == 0x0008 && a == 0x14) pending = SWITCH.also { assertEquals(calls.switchMons, hl) }
             else if (fn == 0x0008) pending = hl.also { assertEquals(3, a) }
             return true
         }
@@ -78,8 +83,20 @@ class Gen2BoxSwapTest {
         fun partyMon(i: Int) = read(cfg.partyMons + i * 0x30, 0x30)
         fun boxMon(i: Int) = read(calls.box + 0x16 + i * 32, 32)
 
-        // The game's two routines, on wCurPartyMon and wPokemonWithdrawDepositParameter.
+        // The game's two routines, on wCurPartyMon and wPokemonWithdrawDepositParameter; SwapMonAndMail on wSwitchMonTo / From.
         private fun run(fn: Int) {
+            if (fn == SWITCH) {
+                val to = this[calls.switchTo]
+                val from = this[calls.switchFrom]
+                ran += fn to to * 16 + from
+                val sTo = this[cfg.partyCount + 1 + to]
+                this[cfg.partyCount + 1 + to] = this[cfg.partyCount + 1 + from]
+                this[cfg.partyCount + 1 + from] = sTo
+                val mTo = partyMon(to)
+                write(cfg.partyMons + to * 0x30, partyMon(from))
+                write(cfg.partyMons + from * 0x30, mTo)
+                return
+            }
             val slot = this[calls.curPartyMon]
             val param = this[calls.withdrawDeposit]
             ran += fn to param
@@ -125,6 +142,8 @@ class Gen2BoxSwapTest {
             this[(calls.box + 1) + mons.size] = 0xFF
         }
     }
+
+    private companion object { const val SWITCH = -1 }
 
     private fun Game.partySpecies() = (0 until partyCount).map { partyMon(it)[0].toInt() and 0xFF }
     private fun Game.boxSpecies() = (0 until boxCount).map { boxMon(it)[0].toInt() and 0xFF }
@@ -187,6 +206,26 @@ class Gen2BoxSwapTest {
         g.box(*Array(20) { g.mon(16, 100 + it) })
         assertEquals(BoxSwapResult.BOX_FULL, calls.deposit(g, cfg, 0, gen2MonKey(g.partyMon(0), 0)))
         assertEquals(emptyList<Pair<Int, Int>>(), g.ran)
+    }
+
+    @Test
+    fun `party SWITCH - the game's SwapMonAndMail on the two slots, refused if the party changed`() {
+        for ((c, k) in listOf(GEN2_CRYSTAL to GEN2_BOX_CALLS_CRYSTAL, GEN2_GOLD to GEN2_BOX_CALLS_GOLD)) {
+            val g = Game(c, k)
+            g.party(g.mon(152, 1), g.mon(25, 4), g.mon(16, 7))
+            val key = { i: Int -> gen2MonKey(g.partyMon(i), 0) }
+            val (k0, k2) = key(0) to key(2)
+            assertEquals(PartySwapResult.FAILED, k.swapParty(g, c, 0, k2, 2, k0))      // not what the companion showed
+            assertEquals(PartySwapResult.FAILED, k.swapParty(g, c, 0, k0, 3, 0L))      // past the party
+            assertEquals(emptyList<Pair<Int, Int>>(), g.ran)
+            assertEquals(PartySwapResult.SWAPPED, k.swapParty(g, c, 0, k0, 2, k2))
+            assertEquals(listOf(SWITCH to 0 * 16 + 2), g.ran)
+            assertEquals(listOf(16, 25, 152), g.partySpecies())
+            assertEquals(listOf(16, 25, 152), (0 until 3).map { g[c.partyCount + 1 + it] })
+            g.onField = false
+            assertEquals(PartySwapResult.NOT_NOW, k.swapParty(g, c, 0, key(0), 1, key(1)))
+            assertEquals(listOf(16, 25, 152), g.partySpecies())
+        }
     }
 
     @Test
@@ -282,6 +321,7 @@ class Gen2BoxSwapTest {
                 val ok = calls.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) }
                 assertEquals("$name / ${calls.remove.toString(16)}", calls === own, ok)
             }
+            assertTrue(name, own.switchMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) })
         }
         assertTrue(GbField.Gold.boxCalls === GEN2_BOX_CALLS_GOLD && GbField.Silver.boxCalls === GEN2_BOX_CALLS_SILVER)
         assertTrue(GbField.GoldDe.boxCalls === GEN2_BOX_CALLS_GOLD_DE && GbField.SilverDe.boxCalls === GEN2_BOX_CALLS_SILVER_DE)

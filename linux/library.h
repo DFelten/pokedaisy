@@ -69,6 +69,8 @@ bool library_quit(void);
 void library_pause(bool paused);
 /* Back from a game: it's the last played, the cursor on it, its save looked for again. */
 void library_played(const char *path);
+/* SHARED SAVES changed: every game's save is looked for again. */
+void library_saves(void);
 void library_close(void);
 
 #endif

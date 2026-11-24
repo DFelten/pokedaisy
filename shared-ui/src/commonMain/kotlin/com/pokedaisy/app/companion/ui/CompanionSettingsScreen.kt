@@ -145,6 +145,7 @@ fun CompanionSettingsScreen(
     // TOUCH CONTROLS > SKINS: the imported skins (read on the way in) and their pick-list.
     val touchSkinUi = remember { TouchSkinUi() }
     val touchSkins = remember(settings, page, settings?.touchRevision) { if (page == Page.TOUCH) settings?.touchSkins.orEmpty() else emptyList() }
+    var levelUp by remember { mutableStateOf<LevelUpStep?>(null) }
 
     // The games' own spelling: "POKéMON", not "POKÉMON".
     val gameName = settings?.gameName?.uppercase()?.replace('É', 'é') ?: ""
@@ -208,7 +209,8 @@ fun CompanionSettingsScreen(
                         listOf(groupTitle(tk("GAME")), SettingRow(tk("PLAYS AS"), game, subtitle = "Which game this ROM is read as",
                             opensPage = true, labelBadge = settings.gamePickBadge) { onPlaysAs() })
                     }.orEmpty() + homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
-                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } })
+                        { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } },
+                        { startLevelUp(settings) { levelUp = it } })
                         .let { if (settings.gameBlocked) withoutGameRows(it) else it }
                         // The groups and pages where the whole list shows (iOS keeps the rows it has on HOME, filtered below).
                         .let { rows ->
@@ -253,7 +255,13 @@ fun CompanionSettingsScreen(
                                 "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB)
                                 "HUNT" -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
                                 "STATES" -> settings.statesBadge
-                                "CARD" -> if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL) NewFeatures.badge(NewFeatures.CRYSTAL_CARD) else null
+                                "CARD" -> when (com.pokedaisy.app.companion.data.activeGame) {
+                                    com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> NewFeatures.badge(NewFeatures.CRYSTAL_CARD)
+                                    com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER -> NewFeatures.badge(NewFeatures.GOLD_SILVER_CARD)
+                                    com.pokedaisy.app.companion.data.GameKind.RED, com.pokedaisy.app.companion.data.GameKind.BLUE,
+                                    com.pokedaisy.app.companion.data.GameKind.YELLOW -> NewFeatures.badge(NewFeatures.GEN1_CARD)
+                                    else -> null
+                                }
                                 else -> null
                             },
                         ) {
@@ -356,7 +364,8 @@ fun CompanionSettingsScreen(
                     // BATTLE and QUALITY OF LIFE: HOME's own rows, on a page of their own (SETTINGS_PAGES).
                     Page.BATTLE, Page.QOL -> settingsPageRows(
                         homeRows(settings, barCount(settings, availableTabs), { tick++ }, { page = it }, { selector = it },
-                            { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } }),
+                            { c -> confirm = Confirm(c.title, c.message, c.confirmLabel, c.onConfirm).also { it.cancelLabel = c.cancelLabel; it.onCancel = c.onCancel } },
+                            { startLevelUp(settings) { levelUp = it } }),
                         if (page == Page.BATTLE) BATTLE_PAGE else QOL_PAGE,
                     ) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
                     Page.SPEED -> speedRows(settings, { tick++ }, { selector = it }) + SettingRow(tk("CANCEL"), null) { page = Page.HOME }
@@ -556,6 +565,7 @@ fun CompanionSettingsScreen(
             OptionConfirm(title, message, tk("OK"), m, onConfirm = { cheatNotice = null },
                 onDismiss = { cheatNotice = null }, cancelLabel = null)
         }
+        settings?.let { s -> levelUp?.let { step -> LevelUpAllFlow(s, step, m) { levelUp = it } } }
         confirm?.let { c ->
             OptionConfirm(
                 c.title, c.message, c.confirmLabel, m,
@@ -712,6 +722,7 @@ private fun homeRows(
     navigate: (Page) -> Unit,
     select: (Selector) -> Unit,
     askLock: (CoopLockAsk) -> Unit = {},
+    levelUpAll: () -> Unit = {},
 ): List<SettingRow> {
     fun onOff(on: Boolean) = if (on) tk("ON") else tk("OFF")
     val rateLabels = FF_RATES.map(::rateLabel)
@@ -754,14 +765,18 @@ private fun homeRows(
                 else select(Selector(tk("TEXT LOOK"), listOf(off) + s.textLooks, s.textLook ?: off) { s.setTextLook(it.takeIf { l -> l != off }) })
             }
         } else null,
-        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt; on Crystal
-        // pk_gb_follow.c with its own party icon).
+        // The party's lead walking behind the player (pk_wide.c's follower: a hack's following Pokémon, MonArt; on Crystal,
+        // Gold and Silver pk_gb_follow.c with their own party icons).
         if (s.followerSupported) {
             SettingRow(
                 tk("FOLLOWER"), if (s.followerReady) onOff(s.follower) else tk("N/A"), setting = SharedSetting.FOLLOWER, enabled = s.followerReady,
                 labelBadge = s.followerBadge ?: NewFeatures.badge(
-                    if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL)
-                        NewFeatures.FOLLOWER_CRYSTAL else NewFeatures.FOLLOWER,
+                    when (com.pokedaisy.app.companion.data.activeGame) {
+                        com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> NewFeatures.FOLLOWER_CRYSTAL
+                        com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
+                            NewFeatures.FOLLOWER_GOLD_SILVER
+                        else -> NewFeatures.FOLLOWER
+                    },
                 ),
                 subtitle = if (s.followerReady) null else "Needs a game with following Pokémon too",
             ) { if (s.followerReady) { s.setFollower(!s.follower); changed() } }
@@ -893,14 +908,15 @@ private fun homeRows(
         // The whole party gains EXP from a win (ExpShare.kt: getexp's sent-out bits set, FULL also its division skipped).
         // Three values: a pick-list.
         SettingRow(
-            tk("EXP SHARE"), if (s.expShareSupported) s.expShare.label else tk("N/A"), setting = SharedSetting.EXP_SHARE,
+            tk("EXP SHARE"), if (s.expShareSupported) s.expShare.effective(s.expShareModernSupported).label else tk("N/A"), setting = SharedSetting.EXP_SHARE,
             enabled = s.expShareSupported, labelBadge = s.gameplayModifiersBadge ?: NewFeatures.badge(NewFeatures.EXP_SHARE),
             subtitle = "The whole party gains EXP from a win",
         ) {
             if (s.expShareSupported) {
-                val modes = com.pokedaisy.app.companion.data.ExpShare.Mode.entries
+                val modern = s.expShareModernSupported
+                val modes = com.pokedaisy.app.companion.data.ExpShare.Mode.entries.filter { modern || it != com.pokedaisy.app.companion.data.ExpShare.Mode.MODERN }
                 select(
-                    Selector(tk("EXP SHARE"), modes.map { it.label }, s.expShare.label, note = EXP_SHARE_NOTE) { l ->
+                    Selector(tk("EXP SHARE"), modes.map { it.label }, s.expShare.effective(modern).label, note = if (modern) EXP_SHARE_NOTE_MODERN else EXP_SHARE_NOTE) { l ->
                         modes.firstOrNull { it.label == l }?.let(s::setExpShare)
                     },
                 )
@@ -943,6 +959,11 @@ private fun homeRows(
         ) {
             if (s.wildPinSupported) { s.setWildPin(!s.wildPin); changed() }
         },
+        // The whole party and PC brought up to one level (LevelUpAll.kt), only in a game whose records it knows.
+        if (s.levelUpAllSupported) SettingRow(
+            tk("LEVEL UP ALL"), null, labelBadge = NewFeatures.badge(NewFeatures.LEVEL_UP_ALL),
+            subtitle = "Bring your party and PC up to one level",
+        ) { levelUpAll() } else null,
         // A new wild foe made shiny at these odds before its battle draws it (ShinyOdds.kt; the versions it knows by hash).
         SettingRow(
             tk("SHINY ODDS"), if (s.shinyOddsSupported) shinyOddsLabel(s.shinyOdds) else tk("N/A"), setting = SharedSetting.SHINY_ODDS,
@@ -1587,3 +1608,4 @@ private const val SHINY_ODDS_CHECKER_NOTE = "Save checkers may flag these shinie
 
 /** EXP SHARE's pick-list: what the two ways do. */
 private const val EXP_SHARE_NOTE = "SPLIT shares a win's EXP across the party. FULL EXP gives each one all of it. Achievements pause."
+private const val EXP_SHARE_NOTE_MODERN = "SPLIT shares a win's EXP across the party. FULL EXP gives each one all of it. MODERN: all of it to those that fought, half to the rest, in one line. Achievements pause."

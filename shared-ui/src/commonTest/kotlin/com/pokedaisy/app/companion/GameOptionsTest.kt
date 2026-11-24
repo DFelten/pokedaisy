@@ -45,6 +45,29 @@ class GameOptionsTest {
         } finally { options.close() }
     }
 
+    @Test fun aGameBoyBattleHoldsEveryExpShareChangeUntilItEnds() {
+        val core = Core()
+        val options = GameOptions(core, { true })
+        val modern = listOf(InstantText.Write(0x3E000L, byteArrayOf(0), byteArrayOf(0xC9.toByte())))
+        val exp = ExpShare.Found(0xD058L, full = listOf(InstantText.Write(0x3E100L, byteArrayOf(0), byteArrayOf(1))), width = 1, modern = modern)
+        try {
+            options.setExpShare(exp, ExpShare.Mode.MODERN)
+            assertTrue(options.tick()!!.full)
+            assertEquals(setOf(0x3E000L), core.active)
+            // MODERN's line may be waiting for A: turning it off mid-battle waits.
+            options.gbBattleSeen(true)
+            options.setExpShare(exp, ExpShare.Mode.OFF)
+            assertNull(options.tick()); assertTrue(options.dirty); assertEquals(setOf(0x3E000L), core.active)
+            // The same bytes again (a settings refresh) aren't a change; another option still goes in.
+            options.setExpShare(exp, ExpShare.Mode.MODERN); options.setInstantText(text, true)
+            assertNotNull(options.tick()); assertEquals(setOf(0x3E000L, text.writes.single().addr), core.active)
+            options.setExpShare(exp, ExpShare.Mode.OFF)
+            assertNull(options.tick())
+            options.gbBattleSeen(false)
+            assertFalse(options.tick()!!.full); assertEquals(setOf(text.writes.single().addr), core.active)
+        } finally { options.close() }
+    }
+
     @Test fun settingsUpdatePreservesTheHostsIndoorsSupportAndEncounterRates() {
         val prefs = Prefs(PrefsCompanionSettingsTest.Store()).apply {
             autoRun = true

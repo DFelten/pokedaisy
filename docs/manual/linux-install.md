@@ -15,7 +15,7 @@ PokeDaisy also runs on Linux: on a Steam Deck, a Linux PC and Linux handhelds su
 
 - **A Steam Deck, a Linux PC (x86_64) or a 64-bit ARM Linux handheld.** On a PC: a Linux with glibc 2.35 or newer and SDL2 (SteamOS, Ubuntu 22.04 and newer and most current desktops have both). On a handheld: glibc 2.33 or newer, which takes in the TrimUI Brick.
 - **A way to copy files to it:** the device itself, or its SD card in a computer.
-- **Your own games.** PokeDaisy comes with no games. Use ROMs you dumped yourself from cartridges you own: `.gba`, `.gb`, `.gbc` or `.nds` files, unzipped.
+- **Your own games.** PokeDaisy comes with no games. Use ROMs you dumped yourself from cartridges you own: `.gba`, `.gb`, `.gbc` or `.nds` files, loose or zipped.
 
 ## Which file to download
 
@@ -110,7 +110,7 @@ Download the newer zip and extract it over the old folder (on NXRedux, at the to
 
 - **Permission denied when you start it:** the extractor lost the program's run permission. In the folder, run `chmod +x pokedaisy-linux`.
 - **An error naming `GLIBC_2.35` or `libSDL2`:** your Linux is older than PokeDaisy needs, or SDL2 isn't installed. Install SDL2 from your distribution (on Ubuntu, `sudo apt install libsdl2-2.0-0`), or try a newer system.
-- **A game isn't listed:** it has to be right in `roms` (not in a folder inside it), unzipped, and end in `.gba`, `.gb`, `.gbc` or `.nds`.
+- **A game isn't listed:** it has to be right in `roms` (not in a folder inside it) and end in `.gba`, `.gb`, `.gbc` or `.nds`, or be a `.zip` with one inside. `.7z` files have to be unpacked.
 - **A and B are the wrong way round:** open the menu (START and SELECT together, or the Guide or Menu button), pick `SETTINGS` and set `A/B BUTTONS` to `SWAPPED`.
 - **My save didn't load:** the save needs the ROM's whole file name with `.sav` added, or the ROM's name without its extension (the way other emulators name them), in `saves`. Check `saves/pokedaisy-backups` for an older copy.
 - **The controller does nothing:** SDL doesn't know it yet. Put a `gamecontrollerdb.txt` with its mapping in the data folder (next to `roms`).

@@ -60,6 +60,8 @@ class GameOptions internal constructor(
     private val partyMask = atomic(0)
     /** A Game Boy Gen 2 game's battle byte (wBattleMode) for [markExp]'s gate; 0 = none known. */
     private val gbBattle = atomic(0L)
+    /** A Game Boy game in a battle (the latest sample): an EXP SHARE change waits for it to end ([tick]). */
+    private val gbBattling = atomic(false)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val discovery: Discovery get() { revision; return found.value }
     val wildFlagFound: Boolean get() { revision; return allowed() && wildAvailable.value }
@@ -67,6 +69,7 @@ class GameOptions internal constructor(
     val reusableTmsSupported get() = allowed() && discovery.sites.isNotEmpty()
     val hmFreeSupported get() = allowed() && discovery.hm != null
     val expShareSupported get() = allowed() && discovery.exp != null
+    val expShareModernSupported get() = allowed() && discovery.exp?.modern != null
     val expShareActive get() = !closed.value && allowed() && expMetadata.value != null && expMode.value != ExpShare.Mode.OFF
     /** A DS game's EXP SHARE ([ExpShare.Found.ds]: its native side marks the battle and patches FULL EXP itself, each
      * frame): the mode's id while it's on, else 0; [expSharePartyMask] the party it marks. */
@@ -120,8 +123,13 @@ class GameOptions internal constructor(
         desired.update { it.copy(run = found.takeIf { on }) }
     }
     fun setExpShare(found: ExpShare.Found?, mode: ExpShare.Mode) {
-        expMetadata.value = found; expMode.value = mode
-        setFullExp(found, mode == ExpShare.Mode.FULL)
+        // MODERN where the game hasn't got it runs as FULL EXP (a DS game's native side never sees its id).
+        val m = mode.effective(found?.modern != null)
+        expMetadata.value = found; expMode.value = m
+        when (m) {
+            ExpShare.Mode.MODERN -> setFullExp(found?.asModern(), true)
+            else -> setFullExp(found, m == ExpShare.Mode.FULL)
+        }
     }
     /** EXP SHARE found by the host outside [start]'s GBA scan (a DS cart by its header: [ExpShare.dsFind]). */
     fun setExpFound(exp: ExpShare.Found?) {
@@ -145,6 +153,7 @@ class GameOptions internal constructor(
         partyMask.value = if (snapshot.connected && !holdsExpShare) ExpShare.maskOf(snapshot.party) else 0
         // Gen 2's battle byte, from the running game's config (Gen 1's comes with the ROM's own [ExpShare.Found.battle]).
         gbBattle.value = if (snapshot.connected && gen2) activeGen2.battleMode else 0L
+        gbBattleSeen(snapshot.connected && snapshot.inBattle && snapshot.game.isGameBoyGame)
         val source = found.value.cap ?: desired.value.cap ?: return
         if (!snapshot.connected || capBosses.value == false) return
         if (!capEnabled.value && capBosses.value != null) return
@@ -230,6 +239,9 @@ class GameOptions internal constructor(
     /** A new core has no patches, even if its desired settings equal the previous run. */
     fun coreStarted() { applied = null; appliedAny = false }
 
+    /** A Game Boy game's battle seen (or over): [tick] holds EXP SHARE's change meanwhile. */
+    internal fun gbBattleSeen(battling: Boolean) { gbBattling.value = battling }
+
     fun tick(): GameOptionPatches.Result? {
         if (closed.value) return null
         if (!allowed()) {
@@ -239,6 +251,10 @@ class GameOptions internal constructor(
         }
         val state = desired.value
         if (state == applied) return null
+        // A Game Boy battle: EXP SHARE's patch changes once it's over. MODERN prints its line from a routine in the ROM's
+        // padding and returns into it; taken away while that line waits for A, the game would return into nothing.
+        val before = applied
+        if (gbBattling.value && before != null && !sameWrites(state.full, before.full)) return null
         val result = GameOptionPatches.apply(core, state.sites.takeIf { state.tms }.orEmpty(), state.text.takeIf { state.instant },
             state.hm, state.full, state.cap, state.level, state.beep, state.poison, state.run)
         applied = state; appliedAny = result.tms || result.text || result.hm || result.full || result.cap || result.beep || result.poison || result.run
@@ -268,6 +284,15 @@ class GameOptions internal constructor(
             if (appliedAny) core.unpatch()
             appliedAny = false; applied = null
         }
+    }
+}
+
+/** Whether [a] and [b] write the same bytes ([ExpShare.Found] has no equality of its own). */
+private fun sameWrites(a: ExpShare.Found?, b: ExpShare.Found?): Boolean {
+    if (a == null || b == null) return a == null && b == null
+    return a.full.size == b.full.size && a.full.indices.all { i ->
+        val x = a.full[i]; val y = b.full[i]
+        x.addr == y.addr && x.expect.contentEquals(y.expect) && x.value.contentEquals(y.value)
     }
 }
 

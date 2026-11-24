@@ -961,6 +961,8 @@ enum class ItemUseResult {
     IN_GAME,
     /** A TM / HM on the picked Pokémon: the game teaches it on its own screen (Crystal's TeachTMHM over the map). */
     TEACHING,
+    /** RARE CANDY or a stone on the picked Pokémon: the game's own screens (Crystal's level-up or evolution) do the rest. */
+    USING_IN_GAME,
 }
 
 /** What using [itemId] did and, for a Repel, how many steps it lasts; a GIVE's item held before ([swapped]). */

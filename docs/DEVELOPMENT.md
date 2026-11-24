@@ -1755,6 +1755,9 @@ edge into the next: the map and tile change mid-step), and battle frames don't c
 in battles, with sprites off or no player sprite at OAM (0x48, 0x4C). Grass, BG priority, the window, menu tiles (wStateFlags
 bit 6) and the game's sprites cover it as in the note in docs/ROM_FEATURES.md (58). mgba_dump: `gbfollow CRC FILE` (512 ARGB
 ints), `gbfollowshow`, `gbfollowinfo`.
+**On Gold / Silver** (2026-11-24; English and German by CRC32): the same code over pokegold's RAM (`gbf_ram_map`: the object struct's
+layout is Crystal's, the addresses aren't), icons from `rom-art/gen2/gold_silver/pokemon/`. Gold / Silver keep no TEXT_STATE_F, so their
+font tiles (bank 0, 0x60 and up: their tilesets have at most 0x60 tiles) always stay over the follower.
 
 ### Sprite packs (the makeover's graphics in one file)
 
@@ -4284,6 +4287,14 @@ and is cleared only after a new resume snapshot commits successfully, including 
 RESUME GAMES-off launch use that same fresh marker; same-process sleep still retains the running core.
 The iPad's APP group exposes RESUME GAMES. Explicit close/restart first pauses and captures;
 failure resumes the running core and leaves the UI open rather than discarding the unsaved moment.
+
+## Windows UWP host (`windows/uwp/`)
+
+The Windows SDL host also builds as a UWP app for Xbox Dev Mode. It is the same `linux/main.c`, `linux/library.c` and `3ds/core` companion as the desktop host, compiled with MSVC. `PD_UWP` switches the data root to the package's LocalState, loads the cores with `LoadPackagedLibrary`, and finds the install folder through `pd_install_dir`. The package is not a Microsoft Store package; it is sideloaded in Dev Mode. The player steps are a draft until an Xbox build ships: [Install on Xbox](manual-drafts/xbox-install.md).
+
+`windows/uwp/build.bat` builds the three core DLLs from `build/PokeDaisy-windows-x64`, SDL2's UWP target and the host, then packs `build/uwp/PokeDaisyUwpHost.appx`. It needs Visual Studio 2022, Windows SDK 10.0.22621, MSYS2 MinGW gcc for `pd_guide_gen.c`, and SDL2 2.30.5 built for UWP (`windows/uwp/sdl2/README.md`; `gen_sdl2_uwp.py` builds it with `cl.exe` when the Visual Studio UWP workload is absent). `windows/uwp/README.md` has the install and signing steps.
+
+The package identity is `PokeDaisy.UwpHost_5wqf515wt4wy6`, publisher `CN=PokeDaisyHost`, x64. A build keeps the same identity and certificate so LocalState (`roms`, `saves`, `states`, `host.ini`) survives an update. Nothing under `build/` is committed; the host's own sources and manifest are in `windows/uwp/`.
 
 ## ScreenScraper and the dual-screen launcher
 

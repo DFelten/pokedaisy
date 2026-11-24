@@ -7,7 +7,16 @@
 #include <string.h>
 #include <strings.h>
 
-#ifdef _WIN32
+#ifdef PD_UWP
+#include "pd_uwp_fs.h"
+#define fsync(fd) _commit(fd) // a save on its way to the drive: flush the handle
+static inline int pd_mkdir(const char *path) {
+  return pd_uwp_mkdir(path);
+}
+static inline int pd_rename(const char *from, const char *to) {
+  return pd_uwp_rename(from, to);
+}
+#elif defined(_WIN32)
 #include <direct.h>
 #include <io.h>
 #define fsync(fd) _commit(fd) // a save on its way to the card: Windows flushes a file handle with _commit
@@ -29,13 +38,14 @@ static inline int pd_mkdir(const char *path) {
 #define pd_rename(from, to) rename(from, to)
 #endif
 
-/* Another ROM beside romPath with its stem (X.gb beside X.gba): then a save named after the stem could be either's. */
-static inline int pd_stem_shared(const char *romPath) {
+/* Another ROM beside romPath with romName's stem (X.gb beside X.gba): then a save named after the stem could be either's.
+ * romName is romPath's own file name, or the name a zipped ROM's saves go by (rom_zip.h); romPath itself never counts. */
+static inline int pd_stem_shared_named(const char *romPath, const char *romName) {
   const char *slash = strrchr(romPath, '/'), *back = strrchr(romPath, '\\');
   if (back && (!slash || back > slash))
     slash = back;
-  const char *name = slash ? slash + 1 : romPath, *dot = strrchr(name, '.');
-  if (!dot || dot == name)
+  const char *self = slash ? slash + 1 : romPath, *dot = strrchr(romName, '.');
+  if (!dot || dot == romName)
     return 0;
   char dir[4096];
   snprintf(dir, sizeof dir, "%.*s", slash ? (int)(slash - romPath) : 1, slash ? romPath : ".");
@@ -47,7 +57,8 @@ static inline int pd_stem_shared(const char *romPath) {
   static const char *const exts[] = {".gb", ".gbc", ".gba", ".nds", ".zip", ".7z"};
   while (!shared && (e = readdir(d))) {
     const char *edot = strrchr(e->d_name, '.');
-    if (!edot || edot - e->d_name != dot - name || strncmp(e->d_name, name, (size_t)(dot - name)) || !strcmp(e->d_name, name))
+    if (!edot || edot - e->d_name != dot - romName || strncmp(e->d_name, romName, (size_t)(dot - romName)) ||
+        !strcmp(e->d_name, romName) || !strcmp(e->d_name, self))
       continue;
     for (size_t k = 0; k < sizeof exts / sizeof *exts; k++)
       if (!strcasecmp(edot, exts[k]))
@@ -56,16 +67,26 @@ static inline int pd_stem_shared(const char *romPath) {
   closedir(d);
   return shared;
 }
+static inline int pd_stem_shared(const char *romPath) {
+  const char *slash = strrchr(romPath, '/'), *back = strrchr(romPath, '\\');
+  if (back && (!slash || back > slash))
+    slash = back;
+  return pd_stem_shared_named(romPath, slash ? slash + 1 : romPath);
+}
+
+static inline const char *pd_base_name(const char *path) {
+  const char *slash = strrchr(path, '/'), *back = strrchr(path, '\\');
+  if (back && (!slash || back > slash))
+    slash = back;
+  return slash ? slash + 1 : path;
+}
 
 /* The battery save in DIR for the ROM at romPath: DIR/<name>.sav (the ROM's whole file name), or, when that one isn't
  * there, a save named after the ROM without its extension (DIR/<base>.sav), the way other emulators leave them
  * (pokeblack2.nds -> pokeblack2.sav) - unless another ROM beside it has the same base name, whose save it could be.
- * [out] may name a file that doesn't exist yet: then it is <name>.sav, the name this host writes. */
-static inline void pd_save_path(const char *dir, const char *romPath, char *out, size_t size) {
-  const char *slash = strrchr(romPath, '/'), *back = strrchr(romPath, '\\');
-  if (back && (!slash || back > slash))
-    slash = back;
-  const char *romName = slash ? slash + 1 : romPath;
+ * [out] may name a file that doesn't exist yet: then it is <name>.sav, the name this host writes. romName: romPath's own,
+ * or the name a zipped ROM's saves go by (rom_save_name in rom_zip.h). */
+static inline void pd_save_path_named(const char *dir, const char *romPath, const char *romName, char *out, size_t size) {
   snprintf(out, size, "%s/%s.sav", dir, romName);
   FILE *f = fopen(out, "rb");
   if (f) {
@@ -82,9 +103,12 @@ static inline void pd_save_path(const char *dir, const char *romPath, char *out,
   f = fopen(alt, "rb");
   if (f) {
     fclose(f);
-    if (!pd_stem_shared(romPath))
+    if (!pd_stem_shared_named(romPath, romName))
       snprintf(out, size, "%s", alt);
   }
+}
+static inline void pd_save_path(const char *dir, const char *romPath, char *out, size_t size) {
+  pd_save_path_named(dir, romPath, pd_base_name(romPath), out, size);
 }
 
 #endif

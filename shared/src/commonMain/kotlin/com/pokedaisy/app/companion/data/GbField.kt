@@ -52,8 +52,32 @@ sealed class GbField {
     /** The PC's moves on the current box (Gen1BoxSwap.kt, Gen2BoxSwap.kt), where they're mapped: null otherwise. */
     open val pcBox: GbBoxMoves? get() = null
 
+    /** The party order can be changed here ([swapParty]). */
+    open val swapsParty: Boolean get() = false
+
+    /** [swapParty]'s own code is in the cart (Gen 2 calls the game's SwapMonAndMail; Gen 1 writes the lists itself). */
+    open fun partySwapMatches(rom: (Long, Int) -> ByteArray?): Boolean = true
+
+    /** Party slots [a] ([keyA]) and [b] ([keyB]) trade places, as the game's party menu SWITCH does. */
+    open fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult = PartySwapResult.FAILED
+
     /** Where the bag's PC could open: a PC move or a box change only then. */
     protected open fun pcFree(g: GameCalls): Boolean = false
+
+    /** USE on the ITEMS tab (Gen1ItemUse.kt, Gen2ItemUse.kt), where it's mapped: null otherwise. */
+    open val bagUse: GbBagUse? get() = null
+
+    /** USE's party pick on [bagUse] where the bag's PC could open: NOT_NOW otherwise. */
+    open fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
+        val use = bagUse ?: return PartyTargets(ItemUseResult.FAILED)
+        return if (!pcFree(g)) PartyTargets(ItemUseResult.NOT_NOW) else use.targets(g, itemId)
+    }
+
+    /** USE of [itemId] on [bagUse]: on the spot ([target] null) or on [target]. NOT_NOW off the free field. */
+    open fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
+        val use = bagUse ?: return ItemUseOutcome(ItemUseResult.FAILED)
+        return if (!pcFree(g)) ItemUseOutcome(ItemUseResult.NOT_NOW) else use.use(g, itemId, target, moveIndex)
+    }
 
     /** A PC move on [pcBox] where the bag's PC could open: NOT_NOW otherwise. */
     fun pcMove(g: GameCalls, move: (GbBoxMoves) -> BoxSwapResult): BoxSwapResult {
@@ -153,10 +177,48 @@ sealed class GbField {
         private val noFlyMaps: Set<Int> = emptySet(),
         /** The PC's moves on the current box (Gen1BoxSwap.kt), where they're mapped. */
         private val boxCalls: Gen1BoxCalls? = null,
+        /** The party order ([swapParty]): the retail carts, whose party lists are pokered's / pokeyellow's. */
+        private val partySwap: Boolean = false,
+        /** USE on the ITEMS tab (Gen1ItemUse.kt), where it's mapped. */
+        private val itemCalls: Gen1ItemCalls? = null,
     ) : GbField() {
         private val flags7 = flags6 + 1
 
+        override val swapsParty get() = partySwap
+
+        /**
+         * The party menu's SWITCH: what SwitchPartyMon_InitVarOrSwapData does (engine/menus/start_sub_menus.asm, the same
+         * in Red / Blue and Yellow), written straight into the party's lists: the species entries, the 44-byte records,
+         * the OT names and the nicknames (11 bytes each) of both slots. Gen 1 has no mail or anything else per slot. Only
+         * where the bag's PC could open, refused if the party isn't what the companion showed; read back. The party
+         * reaches the save at the next in-game save.
+         */
+        override fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
+            if (!partySwap) return PartySwapResult.FAILED
+            if (u8(g, inBattle) != 0) return PartySwapResult.IN_BATTLE
+            if (!free(g)) return PartySwapResult.NOT_NOW
+            val n = u8(g, partyCount).coerceAtMost(PARTY_MAX)
+            if (a == b || a !in 0 until n || b !in 0 until n) return PartySwapResult.FAILED
+            val mons = partyCount + 8
+            val ots = mons + PARTY_MAX * PARTY_MON_SIZE
+            val nicks = ots + PARTY_MAX * NAME_LENGTH
+            fun key(i: Int) = gen1MonKey(g.read(mons + i * PARTY_MON_SIZE, PARTY_MON_SIZE), 0)
+            if (key(a) != keyA || key(b) != keyB) return PartySwapResult.FAILED
+            fun trade(base: Long, size: Int) {
+                val x = g.read(base + a * size, size)
+                val y = g.read(base + b * size, size)
+                g.write(base + a * size, y)
+                g.write(base + b * size, x)
+            }
+            trade(partyCount + 1, 1)
+            trade(mons, PARTY_MON_SIZE)
+            trade(ots, NAME_LENGTH)
+            trade(nicks, NAME_LENGTH)
+            return if (key(a) == keyB && key(b) == keyA) PartySwapResult.SWAPPED else PartySwapResult.FAILED
+        }
+
         override val pcBox: GbBoxMoves? get() = boxCalls
+        override val bagUse: GbBagUse? get() = itemCalls
         override fun pcFree(g: GameCalls) = free(g)
 
         // wFontLoaded (right before wWalkCounter in every cart) bit 0: a text box is up. The games without an EXPAND
@@ -243,6 +305,8 @@ sealed class GbField {
         private companion object {
             const val JOY_IGNORE = 0xCD6BL     // the same in every Gen 1 cart
             const val PARTY_MON_SIZE = 44
+            const val PARTY_MAX = 6
+            const val NAME_LENGTH = 11
             const val NUM_CITY_MAPS = 11
         }
     }
@@ -318,21 +382,33 @@ sealed class GbField {
             return if (!free(g)) BoxSwapResult.NOT_NOW else move(calls, cfg)
         }
 
+        override val swapsParty get() = boxCalls != null
+        override fun partySwapMatches(rom: (Long, Int) -> ByteArray?) = boxCalls?.switchMatches(rom) == true
+
+        /** The party menu's SWITCH ([Gen2BoxCalls.swapParty]) where the bag's PC could open: NOT_NOW otherwise. */
+        override fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
+            val calls = boxCalls ?: return PartySwapResult.FAILED
+            if (u8(g, BATTLE_MODE) != 0) return PartySwapResult.IN_BATTLE
+            return if (!free(g)) PartySwapResult.NOT_NOW else calls.swapParty(g, cfg, a, keyA, b, keyB)
+        }
+
         /** CHANGE BOX ([Gen2BoxCalls.changeBox]: a box change saves the game) where the bag's PC could open: NOT_NOW otherwise. */
         fun changeBox(g: GameCalls, to: Int): BoxChangeResult {
             val calls = boxCalls ?: return BoxChangeResult.FAILED
             return if (!free(g)) BoxChangeResult.NOT_NOW else calls.changeBox(g, to)
         }
 
+        override val bagUse: GbBagUse? by lazy { itemCalls?.let { Gen2BagUse(it, cfg) } }
+
         /** USE's party pick ([itemCalls]) where the bag's PC could open: NOT_NOW otherwise. */
-        fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
+        override fun itemTargets(g: GameCalls, itemId: Int): PartyTargets {
             val calls = itemCalls ?: return PartyTargets(ItemUseResult.FAILED)
             return if (!free(g)) PartyTargets(ItemUseResult.NOT_NOW) else calls.targets(g, cfg, itemId)
         }
 
         /** USE of [itemId]: a Repel, the BICYCLE, a rod or a field item on the spot, a TM or an item with its own screen in the
          * game ([target] null), anything else on [target]. NOT_NOW off the free field. */
-        fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
+        override fun useItem(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome {
             val calls = itemCalls ?: return ItemUseOutcome(ItemUseResult.FAILED)
             if (!free(g)) return ItemUseOutcome(ItemUseResult.NOT_NOW)
             if (calls.onTheSpot(itemId) || calls.fieldEffect(itemId)) {
@@ -442,11 +518,11 @@ sealed class GbField {
      * Gold and Silver (USA / Europe), pret/pokegold's symbols (its `symbols` branch, 2026-11-18): Crystal's way in - the same
      * RunMemScript queue, PCScript and FlyFunction.FlyScript, CheckWildEncounterCooldown - at their own addresses; PCScript in
      * bank 0x40, wDefaultSpawnpoint in bank 0, the Kanto landmarks from 46. Silver's Fly script sits 2 bytes before Gold's.
-     * [boxCalls]: the PC moves on the current box (Gen2BoxSwap.kt).
+     * [boxCalls]: the PC moves on the current box (Gen2BoxSwap.kt); [itemCalls]: the bag's USE (Gen2ItemUse.kt).
      */
     open class GoldSilver(
         cfg: Gen2Config, flyScript: Int, runMemScript: Int = 0x7A61, flypoints: Int = 0x5BCC,
-        runMemScriptCall: String = "48", flyText: String = "0a", boxCalls: Gen2BoxCalls? = null,
+        runMemScriptCall: String = "48", flyText: String = "0a", boxCalls: Gen2BoxCalls? = null, itemCalls: Gen2ItemCalls? = null,
     ) : CrystalEngine(
         cfg = cfg,
         QUEUE = wramx(1, 0xD183), PC_SCRIPT = 0x4145, FLY_SCRIPT = flyScript, SCRIPT_RUNNING = wramx(1, 0xD15F),
@@ -460,19 +536,19 @@ sealed class GbField {
             0x25 * 0x4000L + (0x67F4 - 0x4000) to "2179d17ea7c835c837c9",           // CheckWildEncounterCooldown
             0x24 * 0x4000L + (flypoints - 0x4000) to "010e030f",                         // Flypoints: NEW BARK, CHERRYGROVE
         ),
-        DEFAULT_SPAWN = 0xCEEC, PC_SCRIPT_BANK = 0x40, KANTO_LANDMARK = 46, boxCalls = boxCalls,
+        DEFAULT_SPAWN = 0xCEEC, PC_SCRIPT_BANK = 0x40, KANTO_LANDMARK = 46, boxCalls = boxCalls, itemCalls = itemCalls,
         STATUS_FLAGS2 = wramx(1, 0xD572), LINK_MODE = wramx(1, 0xD042),
     )
 
-    object Gold : GoldSilver(GEN2_GOLD, 0x4AC2, boxCalls = GEN2_BOX_CALLS_GOLD)
-    object Silver : GoldSilver(GEN2_SILVER, 0x4AC0, boxCalls = GEN2_BOX_CALLS_SILVER)
+    object Gold : GoldSilver(GEN2_GOLD, 0x4AC2, boxCalls = GEN2_BOX_CALLS_GOLD, itemCalls = GEN2_ITEM_CALLS_GOLD)
+    object Silver : GoldSilver(GEN2_SILVER, 0x4AC0, boxCalls = GEN2_BOX_CALLS_SILVER, itemCalls = GEN2_ITEM_CALLS_SILVER)
 
     /** German Gold / Silver (Goldene / Silberne Edition): English's RAM, scripts and Fly script, RunMemScript 0x1F later and
      * the Flypoints table 0x31 later (bank 0x24). */
     object GoldDe : GoldSilver(GEN2_GOLD_DE, 0x4AC2, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37",
-        boxCalls = GEN2_BOX_CALLS_GOLD_DE)
+        boxCalls = GEN2_BOX_CALLS_GOLD_DE, itemCalls = GEN2_ITEM_CALLS_GOLD_DE)
     object SilverDe : GoldSilver(GEN2_SILVER_DE, 0x4AC0, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37",
-        boxCalls = GEN2_BOX_CALLS_SILVER_DE)
+        boxCalls = GEN2_BOX_CALLS_SILVER_DE, itemCalls = GEN2_ITEM_CALLS_SILVER_DE)
 
     /** Crystal Legacy v1.3.1 (its pokecrystal.sym): Crystal's scripts and rules at its own addresses. */
     object CrystalLegacy : CrystalEngine(
@@ -502,6 +578,8 @@ val GB_FIELD_YELLOW = GbField.Gen1(
     partyCount = 0xD162L, partyMoves = 0xD172L, curMap = 0xD35DL, grassRate = 0xD886L,
     waterRate = 0xD8A3L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW,
+    partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_YELLOW,
     signatures = listOf(
         0x245L to "cd641ecd2a34cd6f1ecde10ffac4cfa7c2c303cd",
         0x3E84L to "f0b8f578e0b8ea0020cd983e",
@@ -520,6 +598,8 @@ val GB_FIELD_YELLOW_DE = GbField.Gen1(
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW_DE,
+    partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_YELLOW_DE,
     signatures = listOf(
         0x245L to "cd691ecd2f34cd741ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -537,6 +617,7 @@ val GB_FIELD_YELLOW_FR = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd601ecd2d34cd6b1ecde10ffac9cfa7c2c303cd",
         0x3E87L to "f0b8f578e0b8ea0020cd9b3e",
@@ -554,6 +635,7 @@ val GB_FIELD_YELLOW_IT = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd641ecd2834cd6f1ecde10ffac9cfa7c2c303cd",
         0x3E82L to "f0b8f578e0b8ea0020cd963e",
@@ -571,6 +653,7 @@ val GB_FIELD_YELLOW_ES = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd631ecd2f34cd6e1ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -607,6 +690,8 @@ val GB_FIELD_RED_BLUE = GbField.Gen1(
     partyCount = 0xD163L, partyMoves = 0xD173L, curMap = 0xD35EL, grassRate = 0xD887L,
     waterRate = 0xD8A4L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED,
+    partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_RED,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa36d7cb77c49e03fac5cfa7c2b5",
         0x35D6L to "f0b8f578e0b8ea002001e435",
@@ -658,6 +743,8 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
     partyCount = 0xD168L, partyMoves = 0xD178L, curMap = 0xD363L, grassRate = 0xD88CL,
     waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED_DE,
+    partySwap = true,
+    itemCalls = GEN1_ITEM_CALLS_RED_DE,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
         0x35F0L to "f0b8f578e0b8ea002001fe35",
@@ -696,3 +783,27 @@ val GB_FIELD_PURE_RGB = GbField.Gen1(
     pcBank = 0x33,
     wildBank = 0x2C,
 )
+
+/** A Game Boy game's bag USE: which items it takes and how, for the ITEMS tab. */
+interface GbBagUse {
+    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean
+    fun usable(itemId: Int): Boolean
+    /** The items whose own screen or text the game shows: the companion hands over to it. */
+    fun inGame(itemId: Int): Boolean
+    fun picksMon(itemId: Int): Boolean
+    fun picksMove(itemId: Int): Boolean
+    fun targets(g: GameCalls, itemId: Int): PartyTargets
+    fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome
+}
+
+/** Crystal's [Gen2ItemCalls] as [GbBagUse], with the cart's config (its [GbField.CrystalEngine.useItem] runs the uses). */
+class Gen2BagUse(private val calls: Gen2ItemCalls, private val cfg: Gen2Config) : GbBagUse {
+    override fun codeMatches(rom: (Long, Int) -> ByteArray?) = calls.codeMatches(rom)
+    override fun usable(itemId: Int) = calls.usable(itemId)
+    override fun inGame(itemId: Int) = calls.inGame(itemId)
+    override fun picksMon(itemId: Int) = calls.picksMon(itemId)
+    override fun picksMove(itemId: Int) = calls.picksMove(itemId)
+    override fun targets(g: GameCalls, itemId: Int) = calls.targets(g, cfg, itemId)
+    override fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int) =
+        if (target == null) calls.useRepel(g, cfg, itemId) else calls.useOn(g, cfg, itemId, target, moveIndex)
+}

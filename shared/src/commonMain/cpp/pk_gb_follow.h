@@ -1,11 +1,11 @@
-// PokeDaisy - FOLLOWER on Pokemon Crystal (pk_gb_follow.c): the party's lead drawn a step behind the player into the
+// PokeDaisy - FOLLOWER on Pokemon Crystal, Gold and Silver (pk_gb_follow.c): the party's lead drawn a step behind the player into the
 // finished frame, nothing of the game written. GPL-3.0 (see NOTICE).
 #pragma once
 #include <stdint.h>
 
 struct mCore;
 
-/** Whether the cart (by CRC32) is one the follower knows: Crystal rev 0 / 1 / Australia and the German cart. */
+/** Whether the cart (by CRC32) is one the follower knows: Crystal rev 0 / 1 / Australia and the German cart, Gold / Silver in English and German. */
 int pk_gb_follow_knows(uint32_t crc);
 /** Whether this core runs a cart the follower knows (its first frame checks the cart by CRC32; false before). Any thread. */
 int pk_gb_follow_runs(const struct mCore* core);

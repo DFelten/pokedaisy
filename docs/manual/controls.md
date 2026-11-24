@@ -262,6 +262,29 @@ Only random encounters change. Fishing, moves that lure wild Pokémon out and ba
 
 It works on the Game Boy Advance originals in every language and on almost every supported hack, including the ones rebuilt from newer source code like SoulGold, Lazarus and Recharged Yellow. On the Game Boy it works in Red, Blue, Yellow (in every language), Yellow Legacy, PureRed, PureBlue, Brown, Gold, Silver, Crystal and Crystal Legacy. On Emerald Rogue, Quetzal, Monomyth and the other Game Boy games it shows `N/A`.
 
+## LEVEL UP ALL
+
+`LEVEL UP ALL` brings every Pokémon in your party and PC up to one level. It's on the companion's `QUALITY OF LIFE` page (in the `GAMEPLAY` group), in the games it works in (Monomyth for now), and it opens from the field: finish any battle, menu or text box first.
+
+First pick whose Pokémon go up: `PARTY AND PC`, `PARTY ONLY` or `PC ONLY`. A choice with nobody to raise reads `N/A`.
+
+Then pick how high to go:
+
+- `HIGHEST`: the level of your strongest Pokémon, party and PC alike.
+- `NEXT BOSS`: the level of the strongest Pokémon on the next team you haven't beaten. Once every boss is beaten this one reads `N/A`.
+- `PICK A LEVEL`: any level you like, up to the higher of those two. Slide the bar or press `-` and `+`, then `DONE`. It starts at the top. With `LEVEL CAP` on, it stops at the cap.
+
+Last, pick what happens to new moves:
+
+- `SKIP THEM ALL`, the default, leaves every Pokémon's moves as they are.
+- `ASK FOR EACH` asks about each new move a full Pokémon could learn, and fills an empty move slot without asking. Pick a move to forget, `DON'T LEARN IT`, or `SKIP THE REST`.
+
+Pokémon that evolve by reaching a level evolve on the way up, without the animation, and a Pokémon still using its species name takes the new one. Evolutions that need an item, a trade or friendship stay yours to do. A held item that stops evolutions still stops this one. Eggs, and Pokémon already at that level or above it, don't change.
+
+The change is in your running game until you save, so save in the game to keep it. If you change your mind, restart the game before saving.
+
+Once you've used it, achievements pause until you open another game.
+
 ## SHINY ODDS
 
 `SHINY ODDS` sets how often a wild Pokémon is shiny. It's in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and opens a list:
@@ -311,6 +334,7 @@ Normally only the Pokémon that fought gain EXP when you win, so the rest of you
 - **`OFF`** (the default) leaves the game's own rules.
 - **`SPLIT`** counts every Pokémon in your party as having fought: a win's EXP is shared out across the whole team, as the first games' version of this did. Each gets a smaller share, but nobody gets nothing.
 - **`FULL EXP`** gives every Pokémon in your party the EXP the one that fought would have had on its own. The game's own boosts still count: a held item that shares or boosts EXP, and the bonus for a Pokémon from a trade.
+- **`MODERN`** works like the newer games: the Pokémon that fought get all of the EXP and the rest of your team half of it. You see the message and level ups for the ones that fought first, then one line saying the others gained EXP too, then the others' level ups, instead of a message you have to press past for every Pokémon. Only in Red, Blue, Yellow, Gold, Silver and Crystal for now; elsewhere the list doesn't offer it.
 
 Eggs and fainted Pokémon are left out. The game shows each Pokémon's EXP as it comes, level ups and new moves included, and evolves the ones that leveled up once the battle is over. Battles that give no EXP in the game (link battles, the Battle Frontier) still give none.
 

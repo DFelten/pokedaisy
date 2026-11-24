@@ -548,6 +548,45 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private val fieldSupport = com.pokedaisy.app.companion.data.FieldItemSupportCache()
 
+    /** LEVEL UP ALL's roster from the emu thread on a free field, its plans worked out off it. */
+    private fun levelUpOffer(done: (com.pokedaisy.app.companion.data.LevelUpOffer?) -> Unit) {
+        val cfg = com.pokedaisy.app.companion.data.activeNativeConfig
+        val tables = cfg?.levelUpAll
+        val support = fieldItemSupport()
+        if (cfg == null || tables == null || support == null || !::engine.isInitialized || !engine.running || !engine.onField.value) return done(null)
+        val progress = telemetry.snapshot.value.progress
+        engine.requestFieldItemJob(telemetry.snapshot.value.inBattle) { calls, busy ->
+            val roster = runCatching {
+                if (com.pokedaisy.app.companion.data.levelUpFieldFree(support.fns, busy, calls)) com.pokedaisy.app.companion.data.readRoster(cfg, tables, calls) else null
+            }.getOrNull()
+            if (roster == null) runOnUiThread { done(null) } else kotlin.concurrent.thread(name = "pokedaisy-level-up") {
+                val offer = runCatching { com.pokedaisy.app.companion.data.buildLevelUpOffer(roster, cfg, tables, progress) }
+                    .onFailure { Log.e("pokedaisy", "level up offer failed", it) }.getOrNull()
+                runOnUiThread { done(offer) }
+            }
+        }
+    }
+
+    private fun levelUpApply(
+        planned: List<com.pokedaisy.app.companion.data.PlannedRaise>,
+        rules: com.pokedaisy.app.companion.data.LevelUpRules,
+        done: (com.pokedaisy.app.companion.data.LevelUpResult) -> Unit,
+    ) {
+        val cfg = com.pokedaisy.app.companion.data.activeNativeConfig
+        val flags = cfg?.pokedex?.flags
+        val support = fieldItemSupport()
+        if (cfg == null || flags == null || support == null || !::engine.isInitialized || !engine.running) return done(com.pokedaisy.app.companion.data.LevelUpResult.FAILED)
+        engine.requestFieldItemJob(telemetry.snapshot.value.inBattle) { calls, busy ->
+            val out = runCatching {
+                if (!com.pokedaisy.app.companion.data.levelUpFieldFree(support.fns, busy, calls)) com.pokedaisy.app.companion.data.LevelUpResult.NOT_NOW
+                else com.pokedaisy.app.companion.data.applyLevelUps(planned, rules, cfg, flags, calls)
+            }.getOrElse { Log.e("pokedaisy", "level up failed", it); com.pokedaisy.app.companion.data.LevelUpResult.FAILED }
+            Log.i("pokedaisy", "level up all: $out, ${planned.size} Pokémon")
+            if (out == com.pokedaisy.app.companion.data.LevelUpResult.DONE) RetroAchievements.setLevelUpUsed(true)
+            runOnUiThread { done(out) }
+        }
+    }
+
     private fun fieldItemSupport(): com.pokedaisy.app.companion.data.FieldItemSupport? {
         val snapshot = telemetry.snapshot.value
         if (romBlocked != null) { com.pokedaisy.app.companion.data.FlyWithoutMoveGame.active = false; return null }
@@ -623,12 +662,28 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
+    @Volatile private var gbSwapCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
+
+    /** The Game Boy game's party SWITCH ([com.pokedaisy.app.companion.data.GbField.swapParty]): Red / Blue / Yellow's on the
+     * field's own checked code; Crystal / Gold / Silver's calls the game: the PC moves' code ([gbBoxField]) and SwapMonAndMail's,
+     * checked on its own so a miss there leaves the PC's moves alone. */
+    private fun gbPartySwapField(): com.pokedaisy.app.companion.data.GbField? {
+        val field = gbField()?.takeIf { it.swapsParty } ?: return null
+        if (field !is com.pokedaisy.app.companion.data.GbField.CrystalEngine) return field
+        if (gbBoxField() !== field) return null
+        gbSwapCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
+        val ok = runCatching { field.partySwapMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        Log.i("pokedaisy", "Game Boy party switch: ${if (ok) "code found" else "code not found"}")
+        gbSwapCache = field to ok
+        return field.takeIf { ok }
+    }
+
     @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
 
-    /** The Game Boy game's bag USE (Crystal's, Gen2ItemUse.kt), its code checked in the cart once per game. */
-    private fun gbItemField(): com.pokedaisy.app.companion.data.GbField.CrystalEngine? {
-        val field = gbField() as? com.pokedaisy.app.companion.data.GbField.CrystalEngine ?: return null
-        val calls = field.itemCalls ?: return null
+    /** The Game Boy game's bag USE (Gen1ItemUse.kt, Gen2ItemUse.kt), its code checked in the cart once per game. */
+    private fun gbItemField(): com.pokedaisy.app.companion.data.GbField? {
+        val field = gbField() ?: return null
+        val calls = field.bagUse ?: return null
         gbItemCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
         if (!::engine.isInitialized || !engine.running) return null
         val ok = runCatching { calls.codeMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
@@ -638,7 +693,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     }
 
     /** Runs [job] on the emu thread with the Game Boy bag USE's field, a battle's NOT_NOW as IN_BATTLE. */
-    private fun <T> gbItemJob(failed: T, done: (T) -> Unit, job: (com.pokedaisy.app.companion.data.GbField.CrystalEngine, com.pokedaisy.app.companion.data.GameCalls) -> T) {
+    private fun <T> gbItemJob(failed: T, done: (T) -> Unit, job: (com.pokedaisy.app.companion.data.GbField, com.pokedaisy.app.companion.data.GameCalls) -> T) {
         val field = gbItemField()
         if (field == null || !::engine.isInitialized || !engine.running) return done(failed)
         val inBattle = telemetry.snapshot.value.inBattle
@@ -726,15 +781,15 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             else com.pokedaisy.app.companion.data.gen4ConfigFor(telemetry.snapshot.value.game)?.itemPockets?.get(itemId),
             dsBagGen5,
         )
-        /** Crystal's bag USE ([gbItemField]) takes [itemId]. */
-        private fun gbUse(itemId: Int) = romIsGameBoy && gbItemField()?.itemCalls?.usable(itemId) == true
+        /** The Game Boy game's bag USE ([gbItemField]) takes [itemId]. */
+        private fun gbUse(itemId: Int) = romIsGameBoy && gbItemField()?.bagUse?.usable(itemId) == true
         override fun canUse(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || dsUse(itemId) || sharedItemUse.canUse(itemId)
         override fun canGive(itemId: Int) = dsGive(itemId) || sharedItemUse.canGive(itemId)
         override fun marked(itemId: Int) = gbUse(itemId) || dsRepel(itemId) || dsUse(itemId) || dsGive(itemId) || sharedItemUse.marked(itemId)
         override fun picksMon(itemId: Int) =
-            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMon(itemId) == true else dsUse(itemId) || sharedItemUse.picksMon(itemId)
+            if (romIsGameBoy) gbItemField()?.bagUse?.picksMon(itemId) == true else dsUse(itemId) || sharedItemUse.picksMon(itemId)
         override fun picksMove(itemId: Int) =
-            if (romIsGameBoy) gbItemField()?.itemCalls?.picksMove(itemId) == true
+            if (romIsGameBoy) gbItemField()?.bagUse?.picksMove(itemId) == true
             else (dsUse(itemId) && com.pokedaisy.app.companion.data.DsBag.picksMove(itemId, dsBagGen5)) || sharedItemUse.picksMove(itemId)
 
         /** A DS bag job ([com.pokedaisy.app.companion.data.DsBag]): its answer (result PK_NDS_ITEM_RESULT, the held item
@@ -774,7 +829,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
             if (gbUse(itemId)) {
                 // A TM, a party screen or a text of the game's own: the companion window gets out of its way.
-                val handsOver = gbItemField()?.itemCalls?.inGame(itemId) == true
+                val handsOver = gbItemField()?.bagUse?.inGame(itemId) == true
                 return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
                     if (handsOver && (out.result == com.pokedaisy.app.companion.data.ItemUseResult.IN_GAME ||
                             out.result == com.pokedaisy.app.companion.data.ItemUseResult.USED)) closeCompanionWindow()
@@ -819,8 +874,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         override fun useOn(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
             if (romIsGameBoy) {
                 return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
-                    // A TM: the game teaches it over the map, so the companion window gets out of its way.
-                    if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING) closeCompanionWindow()
+                    // A TM, RARE CANDY or a stone: the game's own screens do the rest, so the companion window gets out of their way.
+                    if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING ||
+                        out.result == com.pokedaisy.app.companion.data.ItemUseResult.USING_IN_GAME) closeCompanionWindow()
                     done(out)
                 }) { f, calls ->
                     f.useItem(calls, itemId, target, moveIndex)
@@ -849,6 +905,40 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         ) = sharedItemUse.onGame(com.pokedaisy.app.companion.data.MoveOrderResult.FAILED, done) { s, calls, busy ->
             com.pokedaisy.app.companion.data.reorderMoves(s.fns, slot, personality, from, to, busy, calls)
         }
+        /** Crystal / Gold / Silver's party order: the party menu's own SWITCH ([gbPartySwapField]); every other game's [partyActions]'. */
+        override fun canReorderParty() = if (romIsGameBoy) gbPartySwapField() != null else partyActions.canReorderParty()
+
+        override fun reorderParty(a: Int, b: Int, done: (com.pokedaisy.app.companion.data.PartySwapResult) -> Unit) {
+            if (!romIsGameBoy) return partyActions.reorderParty(a, b, done)
+            val field = gbPartySwapField()
+            val r = rom
+            val party = telemetry.snapshot.value
+            if (field == null || r == null || !::engine.isInitialized || !engine.running) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
+            if (party.inBattle) return done(com.pokedaisy.app.companion.data.PartySwapResult.IN_BATTLE)
+            if (a == b || a !in party.party.indices || b !in party.party.indices) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
+            val keyA = party.party[a].personality
+            val keyB = party.party[b].personality
+            // Gen 2's mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up
+            // first. Gen 1's switch never touches the battery RAM, so it needs none.
+            val gen2 = field is com.pokedaisy.app.companion.data.GbField.CrystalEngine
+            Thread {
+                if (gen2 && !gbBoxesBackedUp) {
+                    gbBoxesBackedUp = backUpSaveNow(r)
+                    if (!gbBoxesBackedUp) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED) }
+                }
+                engine.requestFieldItemJob(false) { calls, busy ->
+                    val res = if (busy) com.pokedaisy.app.companion.data.PartySwapResult.NOT_NOW
+                    else runCatching { field.swapParty(calls, a, keyA, b, keyB) }
+                        .getOrElse { Log.e("pokedaisy", "Game Boy party switch failed", it); com.pokedaisy.app.companion.data.PartySwapResult.FAILED }
+                    // A rewind past it would put the party back in RAM but not the mail in SRAM, even after a switch that
+                    // ran and then didn't read back right.
+                    if (gen2 && !busy) MgbaCore.pkRewindDrop()
+                    Log.i("pokedaisy", "Game Boy party switch: $res")
+                    runOnUiThread { done(res) }
+                }
+            }.start()
+        }
+
         override fun canSwapBox() = gbBoxField() != null || !romIsGameBoy && partyActions.canSwapBox()
 
         override fun boxMovesCurrentOnly() = romIsGameBoy
@@ -1320,7 +1410,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                 if (flyer == null || flyer.first != targets.flyerSlot || flyer.second != targets.flyerPersonality) {
                     return done(com.pokedaisy.app.companion.data.FlyResult.NO_FLYER)
                 }
+                // The flight is the game's to show: the window goes, and the HUD's map panel it may come from.
                 closeCompanionWindow()
+                hudCloseTick.intValue++
                 // The job's result 1 is the flight's event: none when the game's own check said no (walked indoors since).
                 var refused = false
                 dsAction(MgbaCore.NDS_ACTION_FLY, intArrayOf(flyer.first, spot.mapHeader, 0, 0), ran = { res ->
@@ -1347,6 +1439,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     return done(com.pokedaisy.app.companion.data.FlyResult.NO_FLYER)
                 }
                 closeCompanionWindow()
+                hudCloseTick.intValue++
                 dsAction(MgbaCore.NDS_ACTION_FLY, intArrayOf(flyer.first, spot.mapHeader, spot.x, spot.z)) { o ->
                     completed(when (o.result) {
                         com.pokedaisy.app.companion.data.ItemUseResult.USED -> com.pokedaisy.app.companion.data.FlyResult.OK
@@ -1368,17 +1461,24 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
 
     private fun followerSupported() = ::engine.isInitialized && (gbFollower() || engine.playback.followerSupported)
 
-    /** FOLLOWER on Crystal: the party lead's Pokédex number (Crystal's species ids are its Pokédex numbers; null: none). */
+    /** FOLLOWER on Crystal / Gold / Silver: the party lead's Pokédex number (their species ids are its Pokédex numbers; null: none). */
     @Volatile private var gbFollowerLead: Int? = null
 
-    /** FOLLOWER on Crystal (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
-    private fun gbFollower() = romIsGameBoy && com.pokedaisy.app.companion.data.activeGame ==
-        com.pokedaisy.app.companion.data.GameKind.CRYSTAL && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
+    /** FOLLOWER on Crystal, Gold and Silver (pk_gb_follow.c): the lead's party icon drawn a step behind the player, on the carts it knows. */
+    private fun gbFollower() = romIsGameBoy && gbFollowerIconDir() != null && runCatching { MgbaCore.pkGbFollowRuns() }.getOrDefault(false)
 
-    /** Crystal's party icon for a Pokédex number (two 16 x 16 frames, rebuilt from the cart into rom-art), or null. */
+    /** Where the running game's party icons are rebuilt (Crystal's, Gold / Silver's), or null for a game without the follower. */
+    private fun gbFollowerIconDir(): String? = when (com.pokedaisy.app.companion.data.activeGame) {
+        com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS
+        com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER ->
+            com.pokedaisy.app.companion.data.Gen2Art.GOLD_SILVER_ICONS
+        else -> null
+    }
+
+    /** The game's party icon for a Pokédex number (two 16 x 16 frames, rebuilt from the cart into rom-art), or null. */
     private fun gbFollowerIcon(dex: Int): IntArray? {
-        val f = com.pokedaisy.app.companion.data.RomArt.dir(filesDir.toOkioPath()) /
-            "${com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_ICONS}/$dex.png"
+        val dir = gbFollowerIconDir() ?: return null
+        val f = com.pokedaisy.app.companion.data.RomArt.dir(filesDir.toOkioPath()) / "$dir/$dex.png"
         val bytes = runCatching { okio.FileSystem.SYSTEM.read(f) { readByteArray() } }.getOrNull() ?: return null
         val img = com.pokedaisy.app.companion.data.RomArt.Image.decodePng(bytes) ?: return null
         return img.argb.takeIf { img.width == 16 && img.height == 32 }
@@ -1397,7 +1497,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
      * menuHideBegin; Ruby / Sapphire's cursor sprites hidden with it, the sign drawn in the hidden menu's own tiles) whose
      * battles the companion's buttons can steer (the battle input read). */
     private fun battleMenuHideSupported() = !romIsGameBoy && !romIsNds && romBlocked == null && ::engine.isInitialized &&
-        listOf("BPR", "BPG", "BPE", "AXV", "AXP").any { romCode.startsWith(it) } &&
+        // Ultra Violet (PUVV) is FireRed rev 0 under a code of its own: checked headless, both menus hidden, the sign drawn.
+        (listOf("BPR", "BPG", "BPE", "AXV", "AXP").any { romCode.startsWith(it) } ||
+            romCode.startsWith(com.pokedaisy.app.companion.data.TelemetrySampler.ULTRA_VIOLET_CODE)) &&
         com.pokedaisy.app.companion.data.activeGame.let {
             it == com.pokedaisy.app.companion.data.GameKind.FIRERED || it == com.pokedaisy.app.companion.data.GameKind.EMERALD
         } && com.pokedaisy.app.companion.data.activeNativeConfig?.hasBattleInputAddrs == true &&
@@ -1530,6 +1632,13 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         }
         override val flyStyleSupported get() = flightSupport() != null
         override fun answerFlyStyle(style: com.pokedaisy.app.companion.FlyStyle?) = this@PokeDaisyActivity.answerFlyStyle(style)
+        override val levelUpAllSupported get() = com.pokedaisy.app.companion.data.activeNativeConfig?.levelUpAll != null && fieldItemSupport() != null
+        override fun levelUpOffer(done: (com.pokedaisy.app.companion.data.LevelUpOffer?) -> Unit) = this@PokeDaisyActivity.levelUpOffer(done)
+        override fun levelUpApply(
+            planned: List<com.pokedaisy.app.companion.data.PlannedRaise>,
+            rules: com.pokedaisy.app.companion.data.LevelUpRules,
+            done: (com.pokedaisy.app.companion.data.LevelUpResult) -> Unit,
+        ) = this@PokeDaisyActivity.levelUpApply(planned, rules, done)
         override fun setReusableTms(on: Boolean) {
             if (!coopRefuses()) stored.setReusableTms(on)
         }
@@ -1555,6 +1664,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             if (!coopRefuses()) stored.setExpShare(mode)
         }
         override val expShareSupported get() = currentGameOptions()?.expShareSupported == true
+        override val expShareModernSupported get() = currentGameOptions()?.expShareModernSupported == true
         override fun setLevelCap(on: Boolean) {
             if (!coopRefuses()) stored.setLevelCap(on)
         }
@@ -2242,6 +2352,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         FeatureFlags.applyBlocked(this)
         romBlocked = com.pokedaisy.app.companion.data.BlockedGames.forCrc(crc)
         RetroAchievements.setFlightAnywhere(false)
+        RetroAchievements.setLevelUpUsed(false)
         states = SaveStates.of(this, crc).also { it.noteGame(GameTitles.label(this, Prefs(this), romFile)) }
         val ffMusicCache = androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, crc, gameBoy = RomIdentity.isGameBoy(r))
         // STEADY FF music: songs rendered on their own from this ROM, in the
@@ -2332,6 +2443,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         if (::engine.isInitialized) engine.shiny.observe(null)
         syncShinyAchievements()
         gbBoxCache = null
+        gbSwapCache = null
         gbItemCache = null
         gbBoxesBackedUp = false
         gbFollowerLead = null

@@ -29,7 +29,7 @@ class RaFrameTest {
         val native = RecordingClient()
         val session = session(native)
         val suppressions = listOf(
-            session::setCheatsActive, session::setShinyOddsActive, session::setFlightAnywhere, session::setExpShareActive,
+            session::setCheatsActive, session::setShinyOddsActive, session::setFlightAnywhere, session::setExpShareActive, session::setLevelUpUsed,
             { active: Boolean -> session.coopBattle = active },
         )
         suppressions.forEach { set ->

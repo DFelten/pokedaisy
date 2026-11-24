@@ -235,13 +235,14 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "RIVAL LOOK" to "rival look rival costume outfit skin sprite appearance dress up brendan may other hero opponent",
     "PLAYER LOOK" to "player look hero heroine character protagonist trainer costume outfit skin sprite appearance swap play as another game red leaf brendan may",
     "NUZLOCKE" to "nuzlocke challenge hardcore run tracker encounter first catch per route area death dead faint permadeath graveyard dupes clause",
+    "LEVEL UP ALL" to "level up all raise train exp experience grind catch up party box boxes pc highest next boss cap evolve new moves",
     "TRADE EVOS" to "trade evolutions trading evolve evolves evolution evolutions traded link cable friend second game without trading held item",
     "INSTANT TEXT" to "instant text speed fast dialogue dialog words letters message box skip immediately faster",
     "RIDE ON" to "ride on bike bicycle motorcycle motorbike scooter vespa moped vehicle cycling replace bike look mach acro",
     "FLY ON" to "fly on vehicle balloon hot air balloon helicopter zeppelin airship blimp plane airplane aeroplane propeller ride mount bird flight free flight take off",
     "FLIGHT AREA" to "flight area where you've been where you have been anywhere visited seen places limit restrict progress story skip sequence break free flight take off fly over map achievements",
     "FLY STYLE" to "fly style scenic classic flight animation flying over map travel town cutscene bird fly to",
-    "EXP SHARE" to "exp share experience all party team whole party level up faster grinding exp all split full bench",
+    "EXP SHARE" to "exp share experience all party team whole party level up faster grinding exp all split full bench modern",
     "AUTO REFILL" to "auto refill repel repels super max keep away spray wild encounters avoid use another run out wore off again automatic",
     "POKéMON PICTURES" to "pokemon pictures party pictures sprites front sprite icons party icons detailed pictures recognise recognize team images crystal gold silver red blue yellow",
     "ITEM POPUPS" to "item popup obtained got received pickup found item gain toast notice card notification bag new item",
@@ -304,7 +305,7 @@ val SETTINGS_PAGES: Map<String, List<String>> = mapOf(
     // helper of that kind goes here.
     QOL_PAGE to listOf(
         "WILD ENCOUNTERS", "INSTANT TEXT", "AUTO-RUN", "RUN INDOORS", "AUTO REFILL", "REUSABLE TMS", "NO HMS NEEDED",
-        "EXP SHARE", "LEVEL CAP", "TRADE EVOS", "QUICK HATCH", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP",
+        "EXP SHARE", "LEVEL CAP", "LEVEL UP ALL", "TRADE EVOS", "QUICK HATCH", "WILD PIN", "SHINY ODDS", "SHINY ALERT", "BOSS RETRY", "LOW HP BEEP",
         "FIELD POISON",
     ),
 )

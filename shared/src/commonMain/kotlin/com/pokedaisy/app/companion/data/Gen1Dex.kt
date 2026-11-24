@@ -474,3 +474,40 @@ object Gen1Pic {
         Pic(wT, hT, px)
     }.getOrNull()
 }
+
+/**
+ * The Gen 1 front pictures' background gaps the outline closes in (between a tail and the body, inside a coil, between an
+ * arm and the body), as x, y pairs of a pixel in each, by species: POKéMON PICTURES (shared-ui's `paperFilled`) leaves them
+ * see-through, like `gen2PictureGaps`. Colour 0 is white and see-through alike, so bellies and faces are closed areas too:
+ * picked by eye, only clear cases. Red and Blue share their pictures (the German carts' are the English ones), Yellow has
+ * its own. `RedBlueArtTest` checks each is a closed area in its cart's picture.
+ */
+private val GEN1_RED_BLUE_GAPS: Map<Int, IntArray> = mapOf(
+    3 to intArrayOf(23, 20, 35, 20), 23 to intArrayOf(31, 22, 41, 34), 26 to intArrayOf(45, 32, 20, 44, 15, 45),
+    55 to intArrayOf(33, 11), 63 to intArrayOf(19, 27), 64 to intArrayOf(15, 23, 42, 31), 69 to intArrayOf(33, 29),
+    70 to intArrayOf(21, 20), 71 to intArrayOf(15, 7), 73 to intArrayOf(46, 42), 78 to intArrayOf(20, 17), 82 to intArrayOf(21, 25),
+    89 to intArrayOf(31, 16), 127 to intArrayOf(10, 22), 128 to intArrayOf(11, 3, 18, 5, 8, 8, 16, 9),
+    141 to intArrayOf(48, 28, 16, 33), 145 to intArrayOf(20, 43), 144 to intArrayOf(27, 16, 40, 31), 146 to intArrayOf(44, 1, 45, 14, 42, 30),
+    148 to intArrayOf(39, 26), 149 to intArrayOf(38, 17), 150 to intArrayOf(26, 16, 47, 15, 19, 29, 21, 37),
+    151 to intArrayOf(17, 39),
+)
+private val GEN1_YELLOW_GAPS: Map<Int, IntArray> = mapOf(
+    19 to intArrayOf(35, 26), 26 to intArrayOf(44, 41), 48 to intArrayOf(32, 22, 27, 21), 71 to intArrayOf(41, 17), 72 to intArrayOf(22, 43), 84 to intArrayOf(31, 14, 30, 41), 85 to intArrayOf(21, 6, 30, 6), 87 to intArrayOf(22, 25),
+    99 to intArrayOf(42, 18), 126 to intArrayOf(16, 29),
+    127 to intArrayOf(10, 26, 46, 23), 128 to intArrayOf(41, 12), 134 to intArrayOf(39, 23), 142 to intArrayOf(24, 43, 22, 44), 144 to intArrayOf(20, 36), 149 to intArrayOf(19, 5, 45, 9, 42, 19),
+    150 to intArrayOf(35, 15), 151 to intArrayOf(15, 44, 34, 46),
+)
+/**
+ * [species]' (a Dex number) background gaps in [game]'s front picture drawn from [tables], or null: also for the hacks
+ * with pictures of their own (the Gen II Graphics patches run as RED / YELLOW).
+ */
+fun gen1PictureGaps(game: GameKind, tables: Gen1DexTables, species: Int): IntArray? = when {
+    tables == GEN1_DEX_RED_GEN2_GRAPHICS || tables == GEN1_DEX_YELLOW_GEN2_GRAPHICS -> null
+    else -> gen1PictureGaps(game, species)
+}
+
+internal fun gen1PictureGaps(game: GameKind, species: Int): IntArray? = when (game) {
+    GameKind.RED, GameKind.BLUE -> GEN1_RED_BLUE_GAPS[species]
+    GameKind.YELLOW -> GEN1_YELLOW_GAPS[species]
+    else -> null
+}

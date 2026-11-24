@@ -930,7 +930,11 @@ private const val SHINY_PICTURE = 1 shl 20
 internal fun pokemonPicture(
     t: com.pokedaisy.app.companion.data.PokedexTables, species: Int, cached: Boolean, topLeft: Boolean = false, shiny: Boolean = false,
 ): com.pokedaisy.app.companion.data.RomArt.Image? {
-    val key = Triple<Any, Int, Boolean>(t, if (shiny) species or SHINY_PICTURE else species, topLeft)
+    // Gold and Silver share their tables but not their pictures (nor their gaps); Gen 1's gaps go by game too. One read of
+    // the game for both, so a game switch in between can't file one game's gaps under the other's key.
+    val game = com.pokedaisy.app.companion.data.activeGame
+    val owner: Any = if (t.gen2 != null || t.gen1 != null) t to game else t
+    val key = Triple(owner, if (shiny) species or SHINY_PICTURE else species, topLeft)
     pokemonPictureCache[key]?.let { return it }
     // A game with no shiny pictures (only Gen 2 has them here) shows its usual one.
     val src = when {
@@ -939,7 +943,12 @@ internal fun pokemonPicture(
         cached -> PokedexSource.cachedFrontSprite(t, species)
         else -> PokedexSource.frontSprite(t, species)
     } ?: return null
-    val filled = paperFilled(src)
+    val gaps = when {
+        t.gen2 != null -> com.pokedaisy.app.companion.data.gen2PictureGaps(game, species)
+        t.gen1 != null -> com.pokedaisy.app.companion.data.gen1PictureGaps(game, t.gen1!!, species)
+        else -> null
+    }
+    val filled = paperFilled(src, gaps)
     return (if (topLeft) toTopLeft(filled) else filled).also { pokemonPictureCache[key] = it }
 }
 
@@ -967,14 +976,23 @@ private fun toTopLeft(img: com.pokedaisy.app.companion.data.RomArt.Image): com.p
     return com.pokedaisy.app.companion.data.RomArt.Image(cw, ch, out)
 }
 
-/** [img] with every see-through pixel the border can't reach (4-way) made white. */
-internal fun paperFilled(img: com.pokedaisy.app.companion.data.RomArt.Image): com.pokedaisy.app.companion.data.RomArt.Image {
+/**
+ * [img] with every see-through pixel the border can't reach (4-way) made white, but the areas holding a [gaps] pixel
+ * (x, y pairs: background the outline closes in).
+ */
+internal fun paperFilled(
+    img: com.pokedaisy.app.companion.data.RomArt.Image, gaps: IntArray? = null,
+): com.pokedaisy.app.companion.data.RomArt.Image {
     val w = img.width; val h = img.height; val px = img.argb
     val outside = BooleanArray(w * h)
     val stack = IntArray(w * h); var top = 0
     fun push(i: Int) { if (!outside[i] && (px[i] ushr 24) == 0) { outside[i] = true; stack[top++] = i } }
     for (x in 0 until w) { push(x); push((h - 1) * w + x) }
     for (y in 0 until h) { push(y * w); push(y * w + w - 1) }
+    if (gaps != null) for (k in 0 until gaps.size / 2) {
+        val x = gaps[2 * k]; val y = gaps[2 * k + 1]
+        if (x in 0 until w && y in 0 until h) push(y * w + x)
+    }
     while (top > 0) {
         val i = stack[--top]; val x = i % w
         if (x > 0) push(i - 1); if (x < w - 1) push(i + 1)

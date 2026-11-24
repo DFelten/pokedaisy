@@ -36,6 +36,43 @@ class GoldSilverArtTest {
         other.deleteRecursively()
     }
 
+    /**
+     * Every [gen2PictureGaps] pixel sits in a closed see-through area of its cart's front picture (one the border can't
+     * reach), of 3 pixels or more: a moved picture or a typo would leave a belly or a face see-through instead.
+     */
+    @Test
+    fun `picture gaps are closed areas of each cart's picture`() {
+        val crystal = File(gbc, "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
+        var checked = 0
+        try {
+            for ((game, pair) in listOf(GameKind.GOLD to (gold to GEN2_DEX_GOLD_SILVER),
+                GameKind.SILVER to (silver to GEN2_DEX_GOLD_SILVER), GameKind.CRYSTAL to (crystal to GEN2_DEX_CRYSTAL))) {
+                Gen1Dex.rom = rom(pair.first)
+                for (s in 1..251) {
+                    val gaps = gen2PictureGaps(game, s) ?: continue
+                    val px = Gen2Dex.frontPixels(pair.second, s)!!
+                    for (k in 0 until gaps.size / 2) {
+                        val start = gaps[2 * k + 1] * 56 + gaps[2 * k]
+                        assertEquals("$game $s: not see-through", 0, px[start] ushr 24)
+                        val seen = HashSet<Int>(); val stack = ArrayDeque(listOf(start)); var edge = false
+                        while (stack.isNotEmpty()) {
+                            val i = stack.removeLast()
+                            if (!seen.add(i)) continue
+                            val x = i % 56; val y = i / 56
+                            if (x == 0 || y == 0 || x == 55 || y == 55) edge = true
+                            for ((nx, ny) in listOf(x - 1 to y, x + 1 to y, x to y - 1, x to y + 1))
+                                if (nx in 0..55 && ny in 0..55 && px[ny * 56 + nx] ushr 24 == 0) stack.add(ny * 56 + nx)
+                        }
+                        assertTrue("$game $s: reaches the border", !edge)
+                        assertTrue("$game $s: ${seen.size} pixels", seen.size >= 3)
+                        checked++
+                    }
+                }
+            }
+        } finally { Gen1Dex.rom = null }
+        assertEquals(33, checked)
+    }
+
     @Test
     fun `party icons, town maps and the player`() {
         val icons = Gen2Art.icons(rom(gold), Gen2Art.GOLD)

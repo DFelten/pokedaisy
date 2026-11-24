@@ -1250,11 +1250,13 @@ static int want_zoom(void) {
   if (settings.aspect == PD_ASPECT_ORIGINAL || !wideSupported)
     return 0;
   int level = settings.zoom + (settings.aspect == PD_ASPECT_ZOOM_OUT ? 1 : 0); // a file from before the list: its one step
-  // AUTO ZOOM IN keeps the step on the plain overworld and steps in everywhere else (a text box, a battle, a menu, a
-  // fade, a title), or they'd sit small in the middle of the window. Off, the step is the player's: it stays on every
-  // screen. (The DS cores report their field text boxes as the field, so a DS sign keeps the step either way.)
+  // AUTO ZOOM IN pulls a field text box (a conversation, a sign) in to 1x, so the words are never tiny. Off, the
+  // player's step stays through it. Battles, the title and menu screens always pull in, whatever the setting: a zoomed
+  // out menu would sit small in the middle of the window. A fade or a picture over the field holds the step.
   const int scene = pk_wide_scene();
-  if (!rewinding && settings.autoZoom && scene != PK_WIDE_SCENE_FIELD)
+  const bool close = scene == PK_WIDE_SCENE_BATTLE_START || scene == PK_WIDE_SCENE_OFF ||
+                     scene == PK_WIDE_SCENE_MENU || (scene == PK_WIDE_SCENE_TEXT && settings.autoZoom);
+  if (!rewinding && close)
     level = 0;
   int n = zoom_steps();
   if (level >= n)

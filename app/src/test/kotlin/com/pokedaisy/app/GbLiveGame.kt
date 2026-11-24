@@ -81,6 +81,30 @@ class GbLiveGame(rom: File, save: File?, private val log: (String) -> Unit = {})
     fun u8(addr: Int) = ram[addr].toInt() and 0xFF
     fun u16be(addr: Int) = (u8(addr) shl 8) or u8(addr + 1)
 
+    /** One mgba_dump command whose answer line starts with [prefix] (other lines logged); null if it never came. */
+    fun ask(command: String, prefix: String): String {
+        out.write(command + "\n")
+        out.write("gbwram\n")
+        out.flush()
+        var answer: String? = null
+        while (true) {
+            val line = inp.readLine() ?: error("mgba_dump ended: " + File(dir, "stderr.txt").readText())
+            if (line.startsWith("gbwram ")) {
+                val hex = line.substring(7)
+                for (i in 0 until 0x2000) ram[0xC000 + i] = hex.substring(2 * i, 2 * i + 2).toInt(16).toByte()
+                for (i in 0 until 0x7F) ram[0xFF80 + i] = hex.substring(0x4000 + 2 * i, 0x4000 + 2 * i + 2).toInt(16).toByte()
+                return answer ?: error("no '$prefix' answer to $command")
+            }
+            if (answer == null && line.startsWith(prefix)) answer = line else if (line.isNotBlank()) log(line)
+        }
+    }
+
+    /** The current frame as a PPM, copied to [dest]. */
+    fun shot(dest: File) {
+        run("shot /work/shot.ppm")
+        File(dir, "shot.ppm").copyTo(dest, overwrite = true)
+    }
+
     override fun readCoreMemory(addr: Long, size: Int): ByteArray = ram.copyOfRange(addr.toInt(), addr.toInt() + size)
 
     override fun close() {

@@ -17,7 +17,7 @@ PokeDaisy fonctionne aussi sur Linux : sur un Steam Deck, un PC Linux et des con
 
 - **Un Steam Deck, un PC Linux (x86_64) ou une console portable Linux ARM 64 bits.** Sur un PC : un Linux avec glibc 2.35 ou plus récent et SDL2 (SteamOS, Ubuntu 22.04 et plus récent et la plupart des bureaux actuels ont les deux). Sur une console portable : glibc 2.33 ou plus récent, ce qui inclut la TrimUI Brick.
 - **Un moyen d'y copier des fichiers :** l'appareil lui-même, ou sa carte SD dans un ordinateur.
-- **Vos propres jeux.** PokeDaisy ne contient aucun jeu. Utilisez des ROM que vous avez copiées vous-même depuis des cartouches que vous possédez : des fichiers `.gba`, `.gb`, `.gbc` ou `.nds`, décompressés.
+- **Vos propres jeux.** PokeDaisy ne contient aucun jeu. Utilisez des ROM que vous avez copiées vous-même depuis des cartouches que vous possédez : des fichiers `.gba`, `.gb`, `.gbc` ou `.nds`, tels quels ou dans un `.zip`.
 
 ## Quel fichier télécharger
 
@@ -112,7 +112,7 @@ Téléchargez le nouveau zip et extrayez-le par-dessus l'ancien dossier (sur NXR
 
 - **Permission refusée (permission denied) au lancement :** l'outil d'extraction a perdu le droit d'exécution du programme. Dans le dossier, lancez `chmod +x pokedaisy-linux`.
 - **Une erreur qui mentionne `GLIBC_2.35` ou `libSDL2` :** votre Linux est plus ancien que ce dont PokeDaisy a besoin, ou SDL2 n'est pas installé. Installez SDL2 depuis votre distribution (sur Ubuntu, `sudo apt install libsdl2-2.0-0`), ou essayez un système plus récent.
-- **Un jeu n'est pas dans la liste :** il doit être directement dans `roms` (pas dans un dossier à l'intérieur), décompressé, et se terminer par `.gba`, `.gb`, `.gbc` ou `.nds`.
+- **Un jeu n'est pas dans la liste :** il doit être directement dans `roms` (pas dans un dossier à l'intérieur) et se terminer par `.gba`, `.gb`, `.gbc` ou `.nds`, ou être un `.zip` qui contient un jeu. Les fichiers `.7z` doivent être décompressés.
 - **A et B sont inversés :** ouvrez le menu (START et SELECT ensemble, ou le bouton Guide ou Menu), choisissez `SETTINGS` et mettez `A/B BUTTONS` sur `SWAPPED`.
 - **Ma sauvegarde n'a pas été chargée :** la sauvegarde doit porter le nom complet du fichier de la ROM avec `.sav` ajouté, dans `saves`. Cherchez une copie plus ancienne dans `saves/pokedaisy-backups`.
 - **La manette ne fait rien :** SDL ne la connaît pas encore. Mettez un `gamecontrollerdb.txt` avec sa configuration dans le dossier de données (à côté de `roms`).

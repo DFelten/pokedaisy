@@ -42,6 +42,8 @@
 #include "pd_env.h"
 
 #include "library.h"
+#include "rom_zip.h"
+#include "shared_save.h"
 
 /* The cores' file ending: dlopen'd .so objects on Linux, .dll on Windows. */
 #ifdef _WIN32
@@ -72,11 +74,11 @@ static const char *root = ".";
 /* plorpOS: --save FILE, the battery save another emulator keeps (its backups then go to DATA/backups);
  * NULL = DATA/saves/ROM.sav, or the save named after the ROM without its extension. */
 static const char *saveFile;
-static char savesDir[PATH_MAX], exeDir[PATH_MAX];
+static char romsDir[PATH_MAX], savesDir[PATH_MAX], statesDir[PATH_MAX], exeDir[PATH_MAX];
 static char message[128];
 static unsigned messageUntil;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(PD_UWP) // a packaged app's icon is its manifest's
 /* The icon the executable carries (windows/pokedaisy.rc): the title bar, the taskbar and Alt-Tab take it here, so the
  * window does not depend on SDL picking the exe's own. */
 static void set_window_icon(SDL_Window *win) {
@@ -436,8 +438,12 @@ static void script_keys(void) {
     for (char *t = strtok_r(buf, ",", &save); t && scriptN < 256; t = strtok_r(NULL, ",", &save)) {
       char name[16];
       unsigned at, hold = 2;
-      if (sscanf(t, "%u:%15[^:]:%u", &at, name, &hold) >= 2 && key_named(name) >= 0)
-        script[scriptN++] = (typeof(script[0])){at, hold, key_named(name)};
+      if (sscanf(t, "%u:%15[^:]:%u", &at, name, &hold) >= 2 && key_named(name) >= 0) {
+        script[scriptN].at = at;
+        script[scriptN].hold = hold;
+        script[scriptN].key = key_named(name);
+        scriptN++;
+      }
     }
   }
   for (int i = 0; i < scriptN; i++) {
@@ -462,8 +468,12 @@ static void script_rawkeys(void) {
     for (char *t = strtok_r(buf, ",", &save); t && rawscriptN < 16; t = strtok_r(NULL, ",", &save)) {
       unsigned at, hold = 2;
       int code;
-      if (sscanf(t, "%u:%d:%u", &at, &code, &hold) >= 2)
-        rawscript[rawscriptN++] = (typeof(rawscript[0])){at, hold, code};
+      if (sscanf(t, "%u:%d:%u", &at, &code, &hold) >= 2) {
+        rawscript[rawscriptN].at = at;
+        rawscript[rawscriptN].hold = hold;
+        rawscript[rawscriptN].key = code;
+        rawscriptN++;
+      }
     }
   }
   for (int i = 0; i < rawscriptN; i++) {
@@ -610,8 +620,15 @@ static void script_mouse(void) {
       unsigned at;
       int x, y;
       char c = 0;
-      if (sscanf(t, "%u:%d:%d:%c", &at, &x, &y, &c) >= 3)
-        mscript[mscriptN] = (typeof(mscript[0])){at, x, y, c == 'd' ? -1 : c == 'u' ? 1 : 0, c == 'c', c == 'r'}, mscriptN++;
+      if (sscanf(t, "%u:%d:%d:%c", &at, &x, &y, &c) >= 3) {
+        mscript[mscriptN].at = at;
+        mscript[mscriptN].x = x;
+        mscript[mscriptN].y = y;
+        mscript[mscriptN].wheel = c == 'd' ? -1 : c == 'u' ? 1 : 0;
+        mscript[mscriptN].click = c == 'c';
+        mscript[mscriptN].menu = c == 'r';
+        mscriptN++;
+      }
     }
   }
   for (int i = 0; i < mscriptN; i++)
@@ -643,8 +660,12 @@ static void script_resize(void) {
     for (char *t = strtok_r(buf, ",", &save); t && rscriptN < 8; t = strtok_r(NULL, ",", &save)) {
       unsigned at;
       int w, h;
-      if (sscanf(t, "%u:%dx%d", &at, &w, &h) == 3 && w > 0 && h > 0)
-        rscript[rscriptN++] = (typeof(rscript[0])){at, w, h};
+      if (sscanf(t, "%u:%dx%d", &at, &w, &h) == 3 && w > 0 && h > 0) {
+        rscript[rscriptN].at = at;
+        rscript[rscriptN].w = w;
+        rscript[rscriptN].h = h;
+        rscriptN++;
+      }
     }
   }
   for (int i = 0; i < rscriptN; i++)
@@ -704,10 +725,12 @@ static struct {
   int modifier;
   bool fullscreen; // the FULLSCREEN setting (F11 / Alt+Enter on a desktop)
   int panel;       // the PANEL setting: 0 = the window's size, else a preset the core lays out for
+  bool sharedSaves;
   // The desktop window as it was left (windowedHost only): its size, its place (winPlaced), and whether it was maximized.
   int winW, winH, winX, winY;
   bool winPlaced, maximized;
-} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0, 0, 0, 0, 0, false, false};
+  char romDir[PATH_MAX], saveDir[PATH_MAX]; // a folder of the player's, from SETTINGS > FOLDERS (Windows)
+} hostSet = {0, false, false, false, {R2, L2, -1, -1}, {R2, L2, -1, -1}, SELECT, false, 0, false, 0, 0, 0, 0, false, false, {0}, {0}};
 static char hostIni[PATH_MAX];
 /* A DS game's L2 / R2 are its companion and screen buttons: with no modifier held for them, its FAST FORWARD and REWIND
  * go back to the stick clicks (R3 / L3), and come back to R2 / L2 when a modifier is picked again. */
@@ -730,12 +753,66 @@ static void modifier_takes(int k) {
       hostSet.dsHotkey[i] = -1;
   }
 }
+/* A folder from host.ini or the folder browser: '/' separators, no trailing one (except a drive's root, C:/). */
+static void path_normalize(char *p) {
+  for (char *c = p; *c; c++)
+    if (*c == '\\')
+      *c = '/';
+  size_t n = strlen(p);
+  while (n > 1 && p[n - 1] == '/' && !(n == 3 && p[1] == ':'))
+    p[--n] = 0;
+  if (n == 2 && p[1] == ':')
+    p[n++] = '/', p[n] = 0;
+}
+// DIR/NAME into OUT; false (OUT cut short) when it doesn't fit.
+static bool path_child(char *out, size_t size, const char *dir, const char *name) {
+  // Lengths checked by hand, no snprintf: a caller's fixed folder names would be -Wformat-truncation's guesses.
+  const size_t n = strlen(dir), m = strlen(name), slash = n && dir[n - 1] == '/' ? 0 : 1;
+  if (!size)
+    return false;
+  if (n + slash + m >= size) {
+    out[0] = 0;
+    return false;
+  }
+  memmove(out, dir, n); // (dir may be out itself)
+  if (slash)
+    out[n] = '/';
+  memcpy(out + n + slash, name, m + 1);
+  return true;
+}
+/* A folder beside DIR: the cores put their states at the save folder's parent (pd_libretro's pdStateRoot), so a save
+ * folder on another drive keeps its states on that drive too. */
+static void path_beside(char *out, size_t size, const char *dir, const char *name) {
+  char parent[PATH_MAX] = {0};
+  snprintf(parent, sizeof parent, "%s", dir);
+  char *slash = strrchr(parent, '/');
+  if (slash) {
+    if (slash == parent)
+      parent[1] = 0;
+    else
+      *slash = 0;
+  }
+  if (parent[1] == ':' && !parent[2])
+    snprintf(parent + 2, sizeof parent - 2, "/");
+  path_child(out, size, parent, name);
+}
 static void host_load(void) {
   FILE *f = fopen(hostIni, "r");
-  char line[128];
+  char line[PATH_MAX];
   int v;
   bool modifierSaved = false;
   while (f && fgets(line, sizeof line, f)) {
+    line[strcspn(line, "\r\n")] = 0;
+    if (!strncmp(line, "rom_dir=", 8)) {
+      snprintf(hostSet.romDir, sizeof hostSet.romDir, "%s", line + 8);
+      path_normalize(hostSet.romDir);
+      continue;
+    }
+    if (!strncmp(line, "save_dir=", 9)) {
+      snprintf(hostSet.saveDir, sizeof hostSet.saveDir, "%s", line + 9);
+      path_normalize(hostSet.saveDir);
+      continue;
+    }
     if (sscanf(line, "ff_speed=%d", &v) == 1)
       hostSet.ffSpeed = v == 0 || (v >= 2 && v <= 8) ? v : 0;
     if (sscanf(line, "rewind=%d", &v) == 1)
@@ -746,6 +823,8 @@ static void host_load(void) {
       hostSet.swapAB = v != 0;
     if (sscanf(line, "fullscreen=%d", &v) == 1)
       hostSet.fullscreen = v != 0;
+    if (sscanf(line, "shared_saves=%d", &v) == 1)
+      hostSet.sharedSaves = v != 0;
     if (sscanf(line, "panel=%d", &v) == 1 && v >= 0 && v < PD_PANEL_PRESETS)
       hostSet.panel = v;
     int a, b;
@@ -788,18 +867,20 @@ static void host_load(void) {
   }
   ds_hotkeys_follow_modifier();
   swapFace = hostSet.swapAB;
+  shared_saves_use(hostSet.sharedSaves);
 }
 static void host_save(void) {
   FILE *f = fopen(hostIni, "w");
   if (!f)
     return;
   fprintf(f, "ff_speed=%d\nrewind=%d\nlcd=%d\nswap_ab=%d\n", hostSet.ffSpeed, hostSet.rewind, hostSet.lcd, hostSet.swapAB);
-  fprintf(f, "fullscreen=%d\npanel=%d\n", hostSet.fullscreen, hostSet.panel);
+  fprintf(f, "fullscreen=%d\npanel=%d\nshared_saves=%d\n", hostSet.fullscreen, hostSet.panel, hostSet.sharedSaves);
   if (hostSet.winW > 0)
     fprintf(f, "window=%dx%d\n", hostSet.winW, hostSet.winH);
   if (hostSet.winPlaced)
     fprintf(f, "window_pos=%d,%d\n", hostSet.winX, hostSet.winY);
   fprintf(f, "maximized=%d\n", hostSet.maximized);
+  fprintf(f, "rom_dir=%s\nsave_dir=%s\n", hostSet.romDir, hostSet.saveDir);
   fprintf(f, "hk_modifier=%s\n", key_name(hostSet.modifier));
   for (int i = 0; i < HK_ACTIONS; i++) {
     fprintf(f, "hk_%s=%s\n", hotkeyIds[i], key_name(hostSet.hotkey[i]));
@@ -940,6 +1021,24 @@ static bool window_first_place(int w, int h, int *x, int *y) {
   }
   return false;
 }
+/* The folders this run uses: LocalState's roms / saves / states unless host.ini picked others. A save folder on a drive
+ * keeps its states in a states folder beside it, where the cores look for them. */
+static void set_paths(void) {
+  if (hostSet.romDir[0])
+    snprintf(romsDir, sizeof romsDir, "%s", hostSet.romDir);
+  else
+    path_child(romsDir, sizeof romsDir, root, "roms");
+  if (hostSet.saveDir[0]) {
+    snprintf(savesDir, sizeof savesDir, "%s", hostSet.saveDir);
+    path_beside(statesDir, sizeof statesDir, savesDir, "states");
+  } else {
+    path_child(savesDir, sizeof savesDir, root, "saves");
+    path_child(statesDir, sizeof statesDir, root, "states");
+  }
+  path_normalize(romsDir);
+  path_normalize(savesDir);
+  path_normalize(statesDir);
+}
 // A hotkey's button as the HOTKEYS page shows it.
 static const char *hotkey_label(int k) {
   static const char *const labels[] = {[START] = "START", [SELECT] = "SELECT", [L] = "L1", [R] = "R1",  [X] = "X",         [Y] = "Y",         [L2] = "L2",
@@ -1021,7 +1120,7 @@ static bool write_file(const char *path, const void *d, size_t n, bool sync) {
  * DS path's, and the hosts' before this one): DIR/STEM.backup-YYYYmmdd-HHMMSS.EXT, a new one only when the save data
  * differs from the newest backup's, the newest 10 kept. Every save chip is a multiple of 512 bytes, so what is past the
  * last whole 512 is mGBA's clock footer, which moves every session: a save where only the clock moved is the same save.
- * A save that can't be backed up keeps the game closed. */
+ * A save that can't be backed up keeps the game closed. [name]: STEM, when it isn't the save's. */
 static bool same_save(const unsigned char *a, size_t an, const unsigned char *b, size_t bn) {
   size_t n = an - an % 512;
   if (!n || n != bn - bn % 512)
@@ -1029,7 +1128,7 @@ static bool same_save(const unsigned char *a, size_t an, const unsigned char *b,
   return !memcmp(a, b, n);
 }
 static int newest_first(const void *a, const void *b) { return -strcmp(*(char *const *)a, *(char *const *)b); }
-static bool save_backup(const char *sav, const char *dir) {
+static bool save_backup(const char *sav, const char *name, const char *dir) {
   size_t n;
   unsigned char *d = read_file(sav, &n, 64u << 20);
   if (!d)
@@ -1044,6 +1143,8 @@ static bool save_backup(const char *sav, const char *dir) {
   const char *dot = strrchr(file, '.');
   char stem[512], ext[32] = "sav";
   snprintf(stem, sizeof stem, "%.*s.backup-", dot && dot != file ? (int)(dot - file) : (int)strlen(file), file);
+  if (name)
+    snprintf(stem, sizeof stem, "%.255s.backup-", name);
   if (dot && dot != file)
     snprintf(ext, sizeof ext, "%s", dot + 1);
   char *list[256];
@@ -2171,6 +2272,56 @@ struct save_baseline {
   unsigned char *data;
   size_t size;
 };
+// A save shared with the firmware's emulators keeps what its file holds past the core's save memory, and no clock after
+// it. Its clock is the emulators' file when they have one, or else ownClock.
+static bool sharedSave;
+static char ownClock[PATH_MAX * 2];
+static unsigned char *sharedFile;
+static size_t sharedFileSize;
+static void shared_load(const char *sav) {
+  void *rtc = core.get_memory_data(RETRO_MEMORY_RTC);
+  size_t n = core.get_memory_size(RETRO_MEMORY_SAVE_RAM), rn = rtc ? core.get_memory_size(RETRO_MEMORY_RTC) : 0, cn;
+  free(sharedFile);
+  sharedFile = read_file(sav, &sharedFileSize, 64u << 20);
+  if (sharedFile)
+    save_load(sharedFile, sharedFileSize < n ? sharedFileSize : n);
+  else
+    sharedFileSize = 0;
+  if (!rn || shared_clock_load(sav, rtc, rn, time(NULL)))
+    return;
+  unsigned char *clock = read_file(ownClock, &cn, 4096);
+  if (clock)
+    memcpy(rtc, clock, cn < rn ? cn : rn);
+  else if (sharedFileSize >= n + rn) // mGBA's .sav has it behind the save
+    memcpy(rtc, sharedFile + n, rn);
+  free(clock);
+}
+static bool write_linked(const char *path, const void *d, size_t n, bool sync) {
+  char real[PATH_MAX]; // a link's file, not the link
+  return write_file(realpath(path, real) ? real : path, d, n, sync);
+}
+static bool shared_write(const char *sav, const unsigned char *now, size_t n, const struct save_baseline *copy, bool sync) {
+  size_t mem = core.get_memory_size(RETRO_MEMORY_SAVE_RAM), rn = n - mem;
+  bool ok = true;
+  if (copy->size != n || memcmp(now, copy->data, mem)) {
+    size_t size = mem > sharedFileSize ? mem : sharedFileSize;
+    unsigned char *image = malloc(size);
+    if (!image)
+      return false;
+    if (sharedFileSize)
+      memcpy(image, sharedFile, sharedFileSize);
+    memcpy(image, now, mem);
+    ok = write_linked(sav, image, size, sync);
+    free(image);
+  }
+  if (rn && (copy->size != n || memcmp(now + mem, copy->data + mem, rn))) {
+    unsigned char clock[256];
+    char path[PATH_MAX * 2];
+    size_t size = rn <= sizeof clock ? shared_clock_image(sav, now + mem, rn, clock, path, sizeof path) : 0;
+    ok = (!size || write_linked(path, clock, size, sync)) && write_file(ownClock, now + mem, rn, sync) && ok;
+  }
+  return ok;
+}
 static void sram_write(const char *sav, struct save_baseline *copy, bool sync) {
   static unsigned char *now;
   static size_t nowSize;
@@ -2187,7 +2338,7 @@ static void sram_write(const char *sav, struct save_baseline *copy, bool sync) {
   save_image(now);
   if (n == copy->size && !memcmp(now, copy->data, n))
     return;
-  if (!write_file(sav, now, n, sync)) {
+  if (!(sharedSave ? shared_write(sav, now, n, copy, sync) : write_file(sav, now, n, sync))) {
     notice("Save write failed");
     return;
   }
@@ -2235,13 +2386,10 @@ static const char *core_for(const char *path) {
  * a Game Boy title of Red / Blue / Green / Yellow / Gold / Silver / Crystal and their hacks (not Pinball, the card
  * games or Puzzle Challenge), a DS game code of Diamond / Pearl / Platinum / HeartGold / SoulSilver / Black / White /
  * their sequels. */
-static bool pokemon_rom(const char *path) {
+static bool pokemon_rom(const char *path, const char *name) {
   unsigned char h[0x150];
-  FILE *f = fopen(path, "rb");
-  size_t n = f ? fread(h, 1, sizeof h, f) : 0;
-  if (f)
-    fclose(f);
-  const char *ext = strrchr(path, '.');
+  size_t n = rom_head(path, h, sizeof h);
+  const char *ext = strrchr(name, '.');
   if (!ext)
     return false;
   if (!strcasecmp(ext, ".gba")) {
@@ -2281,7 +2429,27 @@ enum { M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_L
  * (PD_ENV_FRONT_ROWS), RESUME / SAVE / LOAD / SETTINGS / QUIT. */
 static const int MENU_FULL[] = {M_RESUME, M_SAVE, M_LOAD, M_HOTKEYS, M_KEYBOARD, M_REWIND, M_FFSPEED, M_LCD, M_SWAP, M_QUIT};
 static const int MENU_SHORT[] = {M_RESUME, M_SAVE, M_LOAD, M_SETTINGS, M_QUIT};
+/* A line over the game list while it waits on something: a zipped game being unpacked (a DS one runs to 512 MB). */
+static const char *libraryBusy;
+static void library_present(struct pd_menu *page);
+static void unpacking_notice(void) {
+  SDL_PumpEvents();
+  libraryBusy = "Unpacking the game...";
+  library_present(NULL);
+  libraryBusy = NULL;
+}
 static void run_game(const char *path, int maxFrames, const char *shot, bool fromList) {
+  const char *romPath = path;
+  char unzipped[PATH_MAX - 8]; // its name and .sav still fit sav below
+  if (rom_zipped(path)) {
+    if (!rom_unzip(path, root, saveFile ? NULL : savesDir, fromList ? unpacking_notice : NULL, unzipped,
+                   sizeof unzipped)) {
+      appError = 1;
+      notice("Cannot read ROM");
+      return;
+    }
+    path = unzipped;
+  }
 #ifdef POCKET_DSPERATE
   const char *ext = strrchr(path, '.');
   if (ext && !strcasecmp(ext, ".nds")) {
@@ -2345,15 +2513,49 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     pd_save_path(savesDir, path, sav, sizeof sav);
     snprintf(backups, sizeof backups, "%s/pokedaisy-backups", savesDir);
   }
+  char ownSave[PATH_MAX * 2], shared[PATH_MAX * 2];
+  int share = saveFile || exists(sav) ? 0 : shared_save_path(romPath, name, shared, sizeof shared);
+  char *folder = share > 0 ? strrchr(shared, '/') : NULL;
+  if (folder) {
+    *folder = 0;
+    if (!exists(shared) && pd_mkdir(shared))
+      share = -1;
+    *folder = '/';
+  }
+  if (share < 0) {
+    free(rom);
+    dlclose(core.dl);
+    appError = 1;
+    notice("Shared save can't be used; game not opened");
+    return;
+  }
+  sharedSave = share;
+  if (sharedSave) {
+    snprintf(ownSave, sizeof ownSave, "%s", sav);
+    snprintf(sav, sizeof sav, "%s", shared);
+    snprintf(ownClock, sizeof ownClock, "%s/%s.rtc", savesDir, name);
+  }
   // DS uses L2 for the Companion and R2 for screen switching. Keep the host's DS bindings separate.
   const bool dsGame = !strcmp(coreName, "pokedaisy_ds_libretro" PD_CORE_EXT);
   int *hotkeys = dsGame ? hostSet.dsHotkey : hostSet.hotkey;
   // armGBA's states aren't mGBA's: each core its own file.
-  snprintf(ss, sizeof ss, "%s/states/%s%s.ss", root, name, strstr(coreName, "_gba_") ? ".armgba" : "");
+  {
+    // The state's file name, then joined by path_child (lengths checked by hand): a states folder the player picks is
+    // as long as a path can be, which -Wformat-truncation counts against ss.
+    char file[PATH_MAX];
+    const char *suffix = strstr(coreName, "_gba_") ? ".armgba.ss" : ".ss";
+    const size_t n = strlen(name), m = strlen(suffix);
+    file[0] = 0;
+    if (n + m < sizeof file) {
+      memcpy(file, name, n);
+      memcpy(file + n, suffix, m + 1);
+    }
+    path_child(ss, sizeof ss, statesDir, file);
+  }
   if (strstr(coreName, "_gba_")) {
     // A GBA state from before armGBA is mGBA's: it can't load here, so say so instead of "No state saved yet".
     char old[PATH_MAX * 2 + 16];
-    snprintf(old, sizeof old, "%s/states/%s.ss", root, name);
+    snprintf(old, sizeof old, "%s/%s.ss", statesDir, name);
     if (exists(old) && !exists(ss))
       notice("Your older save state doesn't load in this version");
   }
@@ -2367,7 +2569,7 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
     return;
   }
 #endif
-  if (!save_backup(sav, backups)) {
+  if (!save_backup(sav, sharedSave ? name : NULL, backups)) {
     free(rom);
     dlclose(core.dl);
     appError = 1;
@@ -2450,10 +2652,16 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   struct save_baseline sramCopy = {0};
   {
     size_t n = save_image(NULL), fn;
-    unsigned char *d = n ? read_file(sav, &fn, 64u << 20) : NULL;
+    if (sharedSave && !n) { // a size not known yet: the file can't be read, so it mustn't be replaced
+      sharedSave = false;
+      snprintf(sav, sizeof sav, "%s", ownSave);
+    }
+    unsigned char *d = n && !sharedSave ? read_file(sav, &fn, 64u << 20) : NULL;
     if (d)
       save_load(d, fn);
     free(d);
+    if (n && sharedSave)
+      shared_load(sav);
     sramCopy.data = n ? malloc(n) : NULL;
     if (sramCopy.data)
       sramCopy.size = save_image(sramCopy.data);
@@ -2936,14 +3144,298 @@ static const char *base_name(const char *p) {
 }
 /* ---- the library (library.c): the host's own SETTINGS rows, and its canvases and covers on the screen ---- */
 static bool libraryKeyboard; // the game list's KEYBOARD row was picked: its loop opens the page
+/* The host's own SETTINGS rows: the five every host has, SHARED SAVES only with folders to share with (sharedFound),
+ * FULLSCREEN on a desktop (windowedHost) and the two folder rows on Windows. libRows maps the library's row number to
+ * the row it is. */
+enum { HR_LCD, HR_FF, HR_REWIND, HR_SHARED, HR_AB, HR_KEYBOARD, HR_FULLSCREEN, HR_ROMS_FOLDER, HR_SAVES_FOLDER, HR_COUNT };
+static bool sharedFound;
+static int libRows[HR_COUNT], libRowCount;
+static int lib_rows_build(void) {
+  libRowCount = 0;
+  for (int r = HR_LCD; r <= HR_KEYBOARD; r++)
+    if (r != HR_SHARED || sharedFound)
+      libRows[libRowCount++] = r;
+  if (windowedHost)
+    libRows[libRowCount++] = HR_FULLSCREEN;
+#ifdef _WIN32
+  libRows[libRowCount++] = HR_ROMS_FOLDER;
+  libRows[libRowCount++] = HR_SAVES_FOLDER;
+#endif
+  return libRowCount;
+}
+static int lib_row(int row) { return row >= 0 && row < libRowCount ? libRows[row] : row; }
+static bool libraryReload;   // a folder changed: the loop rescans and opens the list again
+static int libraryFolderPick; // the SETTINGS row picked (HR_ROMS_FOLDER / HR_SAVES_FOLDER), 0 = none
+static bool folderPage;       // the folder browser over the game list
+static int folderTarget;      // HR_ROMS_FOLDER or HR_SAVES_FOLDER
+static char folderCwd[PATH_MAX];
+static bool folderDrivesPage; // the list of drives, opened by .. at a drive's top
+/* The folder browser's rows: USE THIS FOLDER, DEFAULT and .., the folders (a name is at most 255 bytes on every file
+ * system the host reads), then the drives. A folder with more subfolders than there are rows lists as many as fit. */
+#define FOLDER_ROWS 1024
+#define FOLDER_NAME 264
+static char folderRows[FOLDER_ROWS][FOLDER_NAME];
+static const char *folderPtrs[FOLDER_ROWS];
+static unsigned char folderKinds[FOLDER_ROWS]; // 0 USE, 1 up, 2 folder, 3 drive, 4 unreadable, 5 default
+static char folderDrives[FOLDER_ROWS];
+static struct pd_menu folderMenu;
+
+static bool path_parent(const char *path, char *out) {
+  char tmp[PATH_MAX];
+  snprintf(tmp, sizeof tmp, "%s", path);
+  size_t n = strlen(tmp);
+  if (!n || (n == 1 && tmp[0] == '/') || (n == 3 && tmp[1] == ':' && tmp[2] == '/'))
+    return false;
+  while (n > 1 && tmp[n - 1] == '/')
+    tmp[--n] = 0;
+  char *slash = strrchr(tmp, '/');
+  if (!slash)
+    return false;
+  if (slash == tmp) {
+    snprintf(out, PATH_MAX, "/");
+    return true;
+  }
+  *slash = 0;
+  if (tmp[1] == ':' && !tmp[2]) {
+    tmp[2] = '/';
+    tmp[3] = 0;
+  }
+  snprintf(out, PATH_MAX, "%s", tmp);
+  return true;
+}
+static int folder_name_cmp(const void *a, const void *b) {
+  return strcasecmp((const char *)a, (const char *)b);
+}
+static void folder_row(int *count, const char *label, unsigned kind, char drive) {
+  if (*count >= FOLDER_ROWS)
+    return;
+  snprintf(folderRows[*count], sizeof folderRows[*count], "%s", label);
+  folderPtrs[*count] = folderRows[*count];
+  folderKinds[*count] = (unsigned char)kind;
+  folderDrives[*count] = drive;
+  (*count)++;
+}
+static void folder_add_drives(int *count) {
+#ifdef _WIN32
+  DWORD drives = GetLogicalDrives();
+  for (int i = 0; i < 26; i++)
+    if (drives & (1u << i)) {
+      char label[32];
+      snprintf(label, sizeof label, "%.24s %c:", pd_tr("DRIVE"), 'A' + i); // a row pd_menu shows as it is
+      folder_row(count, label, 3, (char)('A' + i));
+    }
+#else
+  (void)count;
+#endif
+}
+static void folder_page_list(void) {
+  int count = 0;
+  if (folderDrivesPage) {
+    folder_row(&count, "DEFAULT", 5, 0);
+    folder_add_drives(&count);
+    pd_menu_init(&folderMenu, folderTarget == HR_ROMS_FOLDER ? "ROMS FOLDER" : "SAVES FOLDER", folderPtrs, count);
+    folderMenu.fixed = 1;
+    folderMenu.overlay = true;
+    return;
+  }
+  folder_row(&count, "USE THIS FOLDER", 0, 0);
+  folder_row(&count, "DEFAULT", 5, 0);
+  folder_row(&count, "..", 1, 0); // every folder, a drive's top included: it opens the drive list there
+  DIR *d = opendir(folderCwd);
+  if (d) {
+    // Every subfolder (as many as there are rows, keeping room for the drives), sorted by name once all are read.
+    const int first = count, last = FOLDER_ROWS - 26;
+    struct dirent *e;
+    while ((e = readdir(d)) && count < last) {
+      if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
+        continue;
+      char child[PATH_MAX];
+      struct stat st;
+      if (!path_child(child, sizeof child, folderCwd, e->d_name) || stat(child, &st) || !S_ISDIR(st.st_mode))
+        continue; // (d_type is missing in MinGW's dirent)
+      folder_row(&count, e->d_name, 2, 0);
+    }
+    closedir(d);
+    // Only the names move: every row here is a folder, and each pointer still names its own row.
+    qsort(folderRows[first], (size_t)(count - first), sizeof folderRows[0], folder_name_cmp);
+  } else {
+    folder_row(&count, "(cannot open this folder)", 4, 0);
+  }
+  folder_add_drives(&count);
+  pd_menu_init(&folderMenu, folderTarget == HR_ROMS_FOLDER ? "ROMS FOLDER" : "SAVES FOLDER", folderPtrs, count);
+  folderMenu.fixed = 3; // USE THIS FOLDER, DEFAULT and .. stay above the scrolling folders
+  folderMenu.overlay = true;
+}
+static void folder_page_open(int row) {
+  folderTarget = row;
+  folderDrivesPage = false;
+  const char *current = row == HR_ROMS_FOLDER ? romsDir : savesDir;
+  snprintf(folderCwd, sizeof folderCwd, "%s", current);
+  path_normalize(folderCwd);
+  DIR *d = opendir(folderCwd);
+  if (d)
+    closedir(d);
+  else {
+    snprintf(folderCwd, sizeof folderCwd, "%s", root);
+    path_normalize(folderCwd);
+  }
+  folderPage = true;
+  folder_page_list();
+}
+static void folder_page_up(void) {
+  if (folderDrivesPage) {
+    folderPage = false;
+    return;
+  }
+  char parent[PATH_MAX];
+  if (!path_parent(folderCwd, parent)) {
+    folderDrivesPage = true;
+    folder_page_list();
+    return;
+  }
+  snprintf(folderCwd, sizeof folderCwd, "%s", parent);
+  folder_page_list();
+}
+/* The companion's settings (settings.ini, FLIGHT AREA's maps) live in <save folder>/pokedaisy, where the cores read
+ * them: a new save folder without one gets a copy of the old folder's, so a move doesn't start every setting over.
+ * A folder that has its own keeps it (the player kept saves there before). */
+static void carry_settings(const char *fromSaves, const char *toSaves) {
+  char from[PATH_MAX + 16], to[PATH_MAX + 16];
+  if (!path_child(from, sizeof from, fromSaves, "pokedaisy") || !path_child(to, sizeof to, toSaves, "pokedaisy") ||
+      !strcmp(from, to) || exists(to))
+    return;
+  DIR *d = opendir(from);
+  if (!d)
+    return;
+  pd_mkdir(to);
+  struct dirent *e;
+  int copied = 0;
+  while ((e = readdir(d))) {
+    char src[PATH_MAX + 16], dst[PATH_MAX + 16];
+    struct stat st;
+    if (e->d_name[0] == '.' || !path_child(src, sizeof src, from, e->d_name) ||
+        !path_child(dst, sizeof dst, to, e->d_name) || stat(src, &st) || !S_ISREG(st.st_mode))
+      continue;
+    size_t n;
+    unsigned char *data = read_file(src, &n, 16u << 20);
+    if (data && write_file(dst, data, n, true))
+      copied++;
+    free(data);
+  }
+  closedir(d);
+  fprintf(stderr, "Settings: %d file(s) copied from %s to %s\n", copied, from, to);
+}
+static void folder_page_choose(void) {
+  if (folderTarget == HR_ROMS_FOLDER) {
+    snprintf(romsDir, sizeof romsDir, "%s", folderCwd);
+    snprintf(hostSet.romDir, sizeof hostSet.romDir, "%s", folderCwd);
+  } else {
+    carry_settings(savesDir, folderCwd);
+    snprintf(savesDir, sizeof savesDir, "%s", folderCwd);
+    snprintf(hostSet.saveDir, sizeof hostSet.saveDir, "%s", folderCwd);
+    path_beside(statesDir, sizeof statesDir, savesDir, "states");
+    path_normalize(savesDir);
+    path_normalize(statesDir);
+    pd_mkdir(savesDir);
+    pd_mkdir(statesDir);
+  }
+  host_save();
+  folderPage = false;
+  libraryReload = true;
+  notice(folderTarget == HR_ROMS_FOLDER ? "ROM folder changed" : "Save folder changed");
+}
+static void folder_page_default(void) {
+  if (folderTarget == HR_ROMS_FOLDER) {
+    hostSet.romDir[0] = 0;
+    path_child(romsDir, sizeof romsDir, root, "roms");
+    path_normalize(romsDir);
+    pd_mkdir(romsDir);
+  } else {
+    hostSet.saveDir[0] = 0;
+    char old[PATH_MAX];
+    snprintf(old, sizeof old, "%s", savesDir);
+    path_child(savesDir, sizeof savesDir, root, "saves");
+    path_normalize(savesDir);
+    pd_mkdir(savesDir);
+    carry_settings(old, savesDir);
+    path_child(statesDir, sizeof statesDir, root, "states");
+    path_normalize(savesDir);
+    path_normalize(statesDir);
+    pd_mkdir(savesDir);
+    pd_mkdir(statesDir);
+  }
+  host_save();
+  folderPage = false;
+  libraryReload = true;
+  notice(folderTarget == HR_ROMS_FOLDER ? "ROM folder set to default" : "Save folder set to default");
+}
+static void folder_page_enter(void) {
+  int row = folderMenu.selected;
+  if (row < 0 || row >= folderMenu.count)
+    return;
+  if (folderKinds[row] == 0)
+    folder_page_choose();
+  else if (folderKinds[row] == 5)
+    folder_page_default();
+  else if (folderKinds[row] == 1)
+    folder_page_up();
+  else if (folderKinds[row] == 2) {
+    char next[PATH_MAX];
+    if (!path_child(next, sizeof next, folderCwd, folderRows[row]))
+      return; // past PATH_MAX: not a folder the host could open
+    path_normalize(next);
+    snprintf(folderCwd, sizeof folderCwd, "%s", next);
+    folderDrivesPage = false;
+    folder_page_list();
+  } else if (folderKinds[row] == 3) {
+    snprintf(folderCwd, sizeof folderCwd, "%c:/", folderDrives[row]);
+    folderDrivesPage = false;
+    folder_page_list();
+  }
+}
+static void folder_page_wheel(int notches) {
+  if (!folderMenu.count || !notches)
+    return;
+  int dir = notches > 0 ? -1 : 1;
+  int steps = notches > 0 ? notches : -notches;
+  if (steps > folderMenu.count)
+    steps = folderMenu.count;
+  for (int i = 0; i < steps; i++) {
+    int next = folderMenu.selected + dir;
+    if (next < 0 || next >= folderMenu.count)
+      break; // no wrap: the wheel stops at the ends of the folder list
+    folderMenu.selected = next;
+  }
+}
+static void folder_page_keys(void) {
+  if (down(UP))
+    pd_menu_move(&folderMenu, -1);
+  if (down(DOWN))
+    pd_menu_move(&folderMenu, 1);
+  if (down(A))
+    folder_page_enter();
+  else if (down(B))
+    folder_page_up();
+  else if (down(MENU))
+    folderPage = false;
+}
+
 static const char *lib_label(int row) {
-  static const char *const LABELS[] = {"LCD FILTER", "FF SPEED", "REWIND", "A/B BUTTONS", "KEYBOARD", "FULLSCREEN"};
-  return LABELS[row];
+  static const char *const LABELS[] = {[HR_LCD] = "LCD FILTER",       [HR_FF] = "FF SPEED",
+                                       [HR_REWIND] = "REWIND",        [HR_SHARED] = "SHARED SAVES",
+                                       [HR_AB] = "A/B BUTTONS",
+                                       [HR_KEYBOARD] = "KEYBOARD",    [HR_FULLSCREEN] = "FULLSCREEN",
+                                       [HR_ROMS_FOLDER] = "ROMS FOLDER", [HR_SAVES_FOLDER] = "SAVES FOLDER"};
+  return LABELS[lib_row(row)];
 }
 static const char *lib_group(int row) {
-  return row == 0 || row == 5 ? "SCREEN" : row < 3 ? "FF / SPEED" : "CONTROLS";
+  row = lib_row(row);
+  if (row == HR_ROMS_FOLDER || row == HR_SAVES_FOLDER)
+    return "FOLDERS";
+  return row == HR_LCD || row == HR_FULLSCREEN ? "SCREEN" : row < HR_SHARED ? "FF / SPEED" : row == HR_SHARED ? "SAVES" : "CONTROLS";
 }
 static void lib_value(int row, char *out, int len) {
+  row = lib_row(row);
   if (row == 0)
     snprintf(out, (size_t)len, "%s", hostSet.lcd ? "ON" : "OFF");
   else if (row == 1 && hostSet.ffSpeed)
@@ -2953,13 +3445,29 @@ static void lib_value(int row, char *out, int len) {
   else if (row == 2)
     snprintf(out, (size_t)len, "%s", hostSet.rewind ? "ON" : "OFF");
   else if (row == 3)
+    snprintf(out, (size_t)len, "%s", hostSet.sharedSaves ? "ON" : "OFF");
+  else if (row == 4)
     snprintf(out, (size_t)len, "%s", hostSet.swapAB ? "SWAPPED" : "NORMAL");
-  else if (row == 5)
+  else if (row == HR_FULLSCREEN)
     snprintf(out, (size_t)len, "%s", window_is_fullscreen() ? "ON" : "OFF");
+  else if (row == HR_ROMS_FOLDER || row == HR_SAVES_FOLDER) {
+    const char *custom = row == HR_ROMS_FOLDER ? hostSet.romDir : hostSet.saveDir;
+    if (!custom[0]) {
+      snprintf(out, (size_t)len, "DEFAULT");
+      return;
+    }
+    const char *path = row == HR_ROMS_FOLDER ? romsDir : savesDir;
+    const char *tail = strrchr(path, '/');
+    tail = tail ? tail + 1 : path;
+    if (!*tail)
+      tail = path;
+    snprintf(out, (size_t)len, "%.18s", tail);
+  }
   else
     snprintf(out, (size_t)len, "EDIT");
 }
 static void lib_step(int row, int dir) {
+  row = lib_row(row);
   if (row == 0)
     hostSet.lcd = !hostSet.lcd;
   else if (row == 1) {
@@ -2969,10 +3477,17 @@ static void lib_step(int row, int dir) {
     hostSet.ffSpeed = v ? v + 1 : 0;
   } else if (row == 2)
     hostSet.rewind = !hostSet.rewind;
-  else if (row == 3)
+  else if (row == 3) {
+    hostSet.sharedSaves = !hostSet.sharedSaves;
+    shared_saves_use(hostSet.sharedSaves);
+    library_saves();
+  } else if (row == 4)
     hostSet.swapAB = swapFace = !hostSet.swapAB;
-  else if (row == 5) {
+  else if (row == HR_FULLSCREEN) {
     window_set_fullscreen(!window_is_fullscreen()); // saves it
+    return;
+  } else if (row == HR_ROMS_FOLDER || row == HR_SAVES_FOLDER) {
+    libraryFolderPick = row;
     return;
   } else {
     libraryKeyboard = true; // the loop opens the page over the list
@@ -2983,8 +3498,56 @@ static void lib_step(int row, int dir) {
 #ifndef POCKET_VERSION
 #define POCKET_VERSION "dev"
 #endif
-// FULLSCREEN (row 5) only on a desktop (windowedHost, set before the library opens).
-static struct lib_host libraryHost = {5, lib_label, lib_group, lib_value, lib_step, POCKET_VERSION};
+// SHARED SAVES only with folders to share, FULLSCREEN only on a desktop (windowedHost), the folders only on Windows:
+// lib_rows_build counts them.
+static struct lib_host libraryHost = {HR_KEYBOARD + 1, lib_label, lib_group, lib_value, lib_step, POCKET_VERSION};
+
+/* The game list's source: the ROM folder (or LocalState's roms), then POCKET_ROM_DIRS. */
+static int cmp(const void *a, const void *b);
+static char *libPaths[1024];
+static int libCount;
+static int scan_roms(void) {
+  int count = 0;
+  char dirs[PATH_MAX * 2];
+  char path[PATH_MAX * 2];
+#ifdef _WIN32
+  const char *dirSep = ";";
+#else
+  const char *dirSep = ":";
+#endif
+  snprintf(dirs, sizeof dirs, "%s%s%s", romsDir, getenv("POCKET_ROM_DIRS") ? dirSep : "",
+           getenv("POCKET_ROM_DIRS") ? getenv("POCKET_ROM_DIRS") : "");
+  char *save = NULL;
+  bool firmware = false;
+  for (char *dir = strtok_r(dirs, dirSep, &save); dir; dir = strtok_r(NULL, dirSep, &save), firmware = true) {
+    DIR *d = opendir(dir);
+    struct dirent *e;
+    while (d && (e = readdir(d)) && count < 1024) {
+      if (!core_for(e->d_name) && !rom_zipped(e->d_name))
+        continue;
+      char name[256];
+      snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
+      if (rom_name(path, name, sizeof name) && core_for(name) && (!firmware || pokemon_rom(path, name)))
+        libPaths[count++] = strdup(path);
+    }
+    if (d)
+      closedir(d);
+  }
+  return count;
+}
+static void library_reopen(void) {
+  for (int i = 0; i < libCount; i++)
+    free(libPaths[i]);
+  libCount = scan_roms();
+  qsort(libPaths, libCount, sizeof *libPaths, cmp);
+  settings_migrate(); // before the library writes its first settings: an old DATA/settings.ini wins
+  sharedFound = shared_saves_find() || hostSet.sharedSaves;
+  libraryHost.settings = lib_rows_build();
+  library_open(libPaths, libCount, root, savesDir, &libraryHost);
+  for (int i = 0; i < libCount; i++)
+    free(libPaths[i]);
+  libCount = 0;
+}
 
 /* The library at a finer grain than the overlay (its 320x240 is the companion's): about 640x480 on a 1280x960 panel. Its
  * page, then the covers at the screen's own resolution, then a second canvas with the legend and the menus. */
@@ -3107,6 +3670,10 @@ static void library_present(struct pd_menu *page) {
   struct pd_canvas top;
   pd_canvas_init(&top, w, h, libraryTopPx);
   library_draw_top(&top, KEY_COLOR);
+  if (libraryBusy) { // the host's notice, along the list's bottom
+    pd_fill(&top, 4, h - 30, w - 8, 24, 0x181818);
+    pd_text_fit(&top, 10, h - 26, w - 20, pd_tr(libraryBusy), 0xffffff, PD_NO_SHADOW);
+  }
   if (!libraryTopTexture || libraryTopW != w || libraryTopH != h) {
     if (libraryTopTexture)
       SDL_DestroyTexture(libraryTopTexture);
@@ -3143,7 +3710,19 @@ static int cmp(const void *a, const void *b) {
 }
 static void exe_dir(const char *argv0) {
   char p[PATH_MAX];
-#ifdef _WIN32
+#if defined(PD_UWP)
+  // A packaged app's own folder: the package's install folder, which holds the exe and the cores (the loader only
+  // loads modules the package has). It is the folder itself, not a file's path.
+  long n = pd_install_dir(p, sizeof p);
+  if (n <= 0)
+    snprintf(p, sizeof p, ".");
+  for (char *c = p; *c; c++) // one separator throughout: base_name and the path joins below use '/'
+    if (*c == '\\')
+      *c = '/';
+  snprintf(exeDir, sizeof exeDir, "%s", p);
+  (void)argv0;
+  return; // the folder itself: nothing to cut off
+#elif defined(_WIN32)
   long n = pd_exe_path(p, sizeof p); // GetModuleFileNameA: Windows has no /proc/self/exe
 #else
   ssize_t n = readlink("/proc/self/exe", p, sizeof p - 1);
@@ -3165,6 +3744,25 @@ static void exe_dir(const char *argv0) {
   snprintf(exeDir, sizeof exeDir, "%s", p);
 }
 int main(int argc, char **argv) {
+#ifdef PD_UWP
+  /* A packaged app has no console and can write nothing beside its exe: DATA (roms, saves, states, host.ini) lives in
+   * the app's local folder, and stderr, where the host says what it is doing, goes to a file there. The cores stay in
+   * the package, which exe_dir names. */
+  static char uwpRoot[PATH_MAX], uwpLog[PATH_MAX];
+  char *pref = SDL_GetPrefPath("PokeDaisy", "UwpHost");
+  snprintf(uwpRoot, sizeof uwpRoot, "%s", pref ? pref : ".");
+  SDL_free(pref);
+  for (size_t len = strlen(uwpRoot); len > 1 && (uwpRoot[len - 1] == '/' || uwpRoot[len - 1] == '\\'); len--)
+    uwpRoot[len - 1] = 0;
+  for (char *c = uwpRoot; *c; c++) // one separator throughout, as exe_dir leaves them
+    if (*c == '\\')
+      *c = '/';
+  root = uwpRoot;
+  snprintf(uwpLog, sizeof uwpLog, "%s/host.log", root);
+  freopen(uwpLog, "w", stderr);
+  fprintf(stderr, "PokeDaisy UWP\nData: %s\n", root);
+  fflush(stderr);
+#endif
   const char *rom = NULL, *shot = NULL;
   int frames = 0;
   for (int i = 1; i < argc; i++) {
@@ -3187,14 +3785,12 @@ int main(int argc, char **argv) {
 #endif
   pd_mkdir(root);
   char path[PATH_MAX * 2];
-  const char *dirs[] = {"roms", "saves", "states"};
-  for (int i = 0; i < 3; i++) {
-    snprintf(path, sizeof path, "%s/%s", root, dirs[i]);
-    pd_mkdir(path);
-  }
-  snprintf(savesDir, sizeof savesDir, "%s/saves", root);
   snprintf(hostIni, sizeof hostIni, "%s/host.ini", root);
   host_load();
+  set_paths();
+  pd_mkdir(romsDir);
+  pd_mkdir(savesDir);
+  pd_mkdir(statesDir);
   // The app's RETRO look for the host's own windows (its menu, HOTKEYS, KEYBOARD, the game list), as the cores draw
   // the companion: the game list applies the player's THEME and DARK MODE over it (library.c's pd_look_apply).
   pd_style_enable(true);
@@ -3212,6 +3808,11 @@ int main(int argc, char **argv) {
   // A window manager can give another window the focus over the game (plorpOS's in-game menu on the GKD): the
   // controller has to keep reaching the host then.
   SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+#ifdef PD_UWP
+  // Xbox reports the controller's B button as a system Back request. SDL only marks it handled when this hint is set;
+  // otherwise the shell closes the app to the dashboard. The controller event still reaches the game separately.
+  SDL_SetHint(SDL_HINT_WINRT_HANDLE_BACK_BUTTON, "1");
+#endif
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER)) {
     fprintf(stderr, "SDL: %s\n", SDL_GetError());
     return 1;
@@ -3250,7 +3851,7 @@ int main(int argc, char **argv) {
   // The companion and the game list lay out from 320x240 up: a window dragged smaller stops there.
   if (window && windowedHost)
     SDL_SetWindowMinimumSize(window, 320, 240);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(PD_UWP)
   set_window_icon(window);
 #endif
   // Presents wait for the refresh (the pacing, above); a driver without it gets the timer.
@@ -3290,33 +3891,11 @@ int main(int argc, char **argv) {
   if (rom)
     run_game(rom, frames, shot, false);
   else {
-    /* DATA/roms, then the folders POCKET_ROM_DIRS names (colon-separated: the PortMaster launcher passes the
-     * firmware's own gba / gb / gbc / nds folders), by file name. Those hold every other game too, so only their
-     * Pokemon games are listed (pokemon_rom); DATA/roms lists whatever was put there. */
-    static char *paths[1024];
-    int count = 0;
-    char dirs[4096];
-    snprintf(dirs, sizeof dirs, "%s/roms%s%s", root, getenv("POCKET_ROM_DIRS") ? ":" : "",
-             getenv("POCKET_ROM_DIRS") ? getenv("POCKET_ROM_DIRS") : "");
-    char *save = NULL;
-    bool firmware = false;
-    for (char *dir = strtok_r(dirs, ":", &save); dir; dir = strtok_r(NULL, ":", &save), firmware = true) {
-      DIR *d = opendir(dir);
-      struct dirent *e;
-      while (d && (e = readdir(d)) && count < 1024) {
-        if (core_for(e->d_name)) {
-          snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
-          if (!firmware || pokemon_rom(path))
-            paths[count++] = strdup(path);
-        }
-      }
-      if (d)
-        closedir(d);
-    }
-    qsort(paths, count, sizeof(*paths), cmp);
-    settings_migrate(); // before the library writes its first settings: an old DATA/settings.ini wins
-    libraryHost.settings = windowedHost ? 6 : 5;
-    library_open(paths, count, root, savesDir, &libraryHost);
+    /* DATA/roms, then the folders POCKET_ROM_DIRS names (colon-separated on Linux: the PortMaster launcher passes
+     * the firmware's own gba / gb / gbc / nds folders; a Windows drive letter owns the colon, so there a semicolon
+     * separates them), by file name. Those hold every other game too, so only their Pokemon games are listed
+     * (pokemon_rom); DATA/roms lists whatever was put there. */
+    library_reopen();
     int ticks = 0;
     bool keyPage = false; // the KEYBOARD page over the game list
     const char *typeAt = getenv("POCKET_TEXT"); // "TICK:text": typed into an open SEARCH field at that tick, for tests
@@ -3338,6 +3917,11 @@ int main(int argc, char **argv) {
       }
       events();
       repeat_directions();
+      if (libraryReload) {
+        libraryReload = false;
+        folderPage = false;
+        library_reopen();
+      }
       static const int LIB_KEYS[][2] = {{A, LIB_A},       {B, LIB_B},         {X, LIB_X},           {Y, LIB_Y},
                                         {L, LIB_L},       {R, LIB_R},         {UP, LIB_UP},         {DOWN, LIB_DOWN},
                                         {LEFT, LIB_LEFT}, {RIGHT, LIB_RIGHT}, {START, LIB_START},   {SELECT, LIB_SELECT},
@@ -3349,10 +3933,16 @@ int main(int argc, char **argv) {
       // START + SELECT (dev's quit chord) asks to close as START or Menu do.
       if ((down(START) && (held >> SELECT & 1)) || (down(SELECT) && (held >> START & 1)))
         libDown = (libDown & ~(unsigned)LIB_SELECT) | LIB_START;
-      if (keyPage) // the KEYBOARD page has the keys
+      if (keyPage || folderPage) // those pages have the keys
         libDown = 0;
       library_keys(libDown);
       library_tick();
+      if (libraryFolderPick) {
+        folder_page_open(libraryFolderPick);
+        libraryFolderPick = 0;
+        pressed = held = 0; // the A that opened the browser isn't the browser's own
+        libraryClick = false;
+      }
       if (libraryKeyboard) {
         libraryKeyboard = false;
         keyPage = true;
@@ -3414,6 +4004,23 @@ int main(int argc, char **argv) {
         kb_menu_build();
         libraryClick = false;
         libraryWheel = 0;
+      } else if (folderPage) {
+        folder_page_keys();
+        folder_page_wheel(libraryWheel);
+        int px = 0, py = 0;
+        bool onPage = libraryClick && key_page_pointer(&px, &py);
+        if (onPage) {
+          pd_menu_touch(&folderMenu, px, py, true);
+          const int row = pd_menu_touch(&folderMenu, px, py, false);
+          if (row >= 0) {
+            folderMenu.selected = row;
+            folder_page_enter();
+          }
+        } else if (libraryClick) {
+          folderPage = false; // a click beside the page closes it
+        }
+        libraryClick = libraryMenuClick = false;
+        libraryWheel = 0;
       } else if (libraryClick || libraryWheel || libraryMenuClick) {
         int ow, oh, s, w, h, x0, y0;
         library_viewport(&ow, &oh, &s, &w, &h, &x0, &y0);
@@ -3443,7 +4050,7 @@ int main(int argc, char **argv) {
         libraryWheel = 0;
         library_played(picked);
       }
-      library_present(keyPage ? &kbMenu : NULL);
+      library_present(folderPage ? &folderMenu : keyPage ? &kbMenu : NULL);
       if (frames && ++ticks >= frames) {
         if (shot && !capture(shot))
           appError = 1;
@@ -3453,8 +4060,6 @@ int main(int argc, char **argv) {
     }
     library_close();
     library_textures_free();
-    for (int i = 0; i < count; i++)
-      free(paths[i]);
   }
   if (js)
     SDL_JoystickClose(js);

@@ -41,7 +41,25 @@ class ShinyHuntTest {
         assertEquals(26, first.shiny?.species)
         assertNull(h.sample(inBattle = true, wild = true, foes = listOf(shiny)).shiny)
         h.sample(inBattle = false, wild = false, foes = emptyList())
-        assertEquals(26, h.sample(inBattle = true, wild = true, foes = listOf(plain, shiny)).shiny?.species)
+        // Another battle, another shiny (the same one read again is the battle before's, theLastShinyLeftOverIsNotAnnouncedAgain).
+        assertEquals(26, h.sample(inBattle = true, wild = true, foes = listOf(plain, shiny.copy(level = 9, maxHp = 30))).shiny?.species)
+    }
+
+    /** #1376: the next battle's first samples still read the shiny foe from the battle before; no second alert for it. */
+    @Test
+    fun theLastShinyLeftOverIsNotAnnouncedAgain() {
+        val h = ShinyHunt()
+        assertEquals(26, h.sample(inBattle = true, wild = true, foes = listOf(shiny)).shiny?.species)
+        h.sample(inBattle = false, wild = false, foes = emptyList())
+        // The next battle: the old battler first, then the game's own foe.
+        val first = h.sample(inBattle = true, wild = true, foes = listOf(shiny))
+        assertTrue(first.counted)
+        assertNull(first.shiny)
+        assertNull(h.sample(inBattle = true, wild = true, foes = listOf(plain)).shiny)
+        h.sample(inBattle = false, wild = false, foes = emptyList())
+        // A new shiny later (another one) is announced.
+        val other = shiny.copy(level = 7, maxHp = 22)
+        assertEquals(26, h.sample(inBattle = true, wild = true, foes = listOf(other)).shiny?.species)
     }
 
     @Test
@@ -102,5 +120,14 @@ class ShinyHuntTest {
         assertEquals(view.battleOpponent.single().species, step.shiny?.species)
         // The player's own battler stays as its DVs say.
         assertFalse(view.battlePlayer.single().shiny)
+
+        // A shiny one of the player's is drawn shiny too (POKéMON PICTURES in the BATTLE tab).
+        val ownDvs = GEN2_CRYSTAL.battleMon + 6
+        val ownShiny = object : MemoryReader {
+            override fun readCoreMemory(addr: Long, size: Int): ByteArray = fixture.readCoreMemory(addr, size).also { b ->
+                for (k in 0..1) if (ownDvs + k in addr until addr + size) b[(ownDvs + k - addr).toInt()] = (if (k == 0) 0x2A else 0xAA).toByte()
+            }
+        }
+        assertTrue(buildSnapshotView(readGen2Telemetry(ownShiny, GEN2_CRYSTAL)).battlePlayer.single().shiny)
     }
 }

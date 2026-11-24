@@ -253,7 +253,7 @@ fun AchievementsScreen(
             else -> AchievementList(
                 state.achievements, game, filter, { picking = true }, m, small, Modifier.weight(1f),
                 onLeaderboards = if (state.leaderboards.isNotEmpty()) ({ showBoards = true }) else null,
-                paused = when { state.cheatsPaused -> tk("PAUSED: CHEATS ON"); state.shinyOddsPaused -> tk("PAUSED: SHINY ODDS"); state.expSharePaused -> tk("PAUSED: EXP SHARE"); state.flightPaused -> tk("PAUSED: FLIGHT AREA"); state.wildPinPaused -> tk("PAUSED: WILD PIN"); else -> null },
+                paused = when { state.cheatsPaused -> tk("PAUSED: CHEATS ON"); state.shinyOddsPaused -> tk("PAUSED: SHINY ODDS"); state.expSharePaused -> tk("PAUSED: EXP SHARE"); state.flightPaused -> tk("PAUSED: FLIGHT AREA"); state.wildPinPaused -> tk("PAUSED: WILD PIN"); state.levelUpPaused -> tk("PAUSED: LEVEL UP ALL"); else -> null },
                 listState = listState,
                 marked = marked,
             )

@@ -17,7 +17,7 @@ PokeDaisy는 Linux에서도 실행돼요. Steam Deck, Linux PC, TrimUI 같은 Li
 
 - **Steam Deck, Linux PC(x86_64), 또는 64비트 ARM Linux 휴대용 게임기.** PC라면 glibc 2.35 이상과 SDL2가 있는 Linux가 필요해요(SteamOS, Ubuntu 22.04 이상, 요즘 데스크톱 대부분에는 둘 다 있어요). 휴대용 게임기라면 glibc 2.33 이상이 필요하고, TrimUI Brick도 여기에 들어가요.
 - **파일을 복사할 방법:** 기기 자체에서 하거나, SD 카드를 컴퓨터에 넣어서 해요.
-- **내 게임.** PokeDaisy에는 게임이 들어 있지 않아요. 내가 가진 카트리지에서 직접 추출한 ROM을 사용하세요: 압축을 푼 `.gba`, `.gb`, `.gbc`, `.nds` 파일이에요.
+- **내 게임.** PokeDaisy에는 게임이 들어 있지 않아요. 내가 가진 카트리지에서 직접 추출한 ROM을 사용하세요: `.gba`, `.gb`, `.gbc`, `.nds` 파일이에요. zip으로 압축된 채로도 괜찮아요.
 
 ## 어떤 파일을 내려받나요
 
@@ -112,7 +112,7 @@ RetroArch, NXRedux, 다른 프론트엔드에서는 세이브 데이터가 프�
 
 - **실행할 때 Permission denied가 나와요:** 압축을 풀면서 프로그램의 실행 권한이 사라졌어요. 그 폴더에서 `chmod +x pokedaisy-linux`를 실행하세요.
 - **`GLIBC_2.35`나 `libSDL2`가 들어간 오류가 나와요:** PokeDaisy에 필요한 것보다 Linux가 오래됐거나 SDL2가 설치되지 않았어요. 배포판에서 SDL2를 설치하거나(Ubuntu라면 `sudo apt install libsdl2-2.0-0`), 더 새로운 시스템에서 해 보세요.
-- **게임이 목록에 없어요:** `roms` 안에 바로 있어야 하고(그 안의 폴더에 넣으면 안 돼요), 압축을 푼 상태로, 이름이 `.gba`, `.gb`, `.gbc`, `.nds`로 끝나야 해요.
+- **게임이 목록에 없어요:** `roms` 안에 바로 있어야 하고(그 안의 폴더에 넣으면 안 돼요), 이름이 `.gba`, `.gb`, `.gbc`, `.nds`로 끝나거나 게임이 든 `.zip`이어야 해요. `.7z` 파일은 압축을 풀어야 해요.
 - **A와 B가 반대예요:** 메뉴를 열고(START와 SELECT를 함께, 또는 Guide나 Menu 버튼) `SETTINGS`에서 `A/B BUTTONS`를 `SWAPPED`로 바꾸세요.
 - **세이브 데이터를 안 읽어요:** 세이브 데이터는 `saves` 안에, ROM 파일 이름 전체에 `.sav`를 붙인 이름이어야 해요. 예전 사본은 `saves/pokedaisy-backups`에서 찾아보세요.
 - **컨트롤러가 반응하지 않아요:** SDL이 아직 그 컨트롤러를 몰라요. 그 매핑이 들어 있는 `gamecontrollerdb.txt`를 데이터 폴더(`roms` 옆)에 넣어 주세요.

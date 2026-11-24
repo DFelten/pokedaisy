@@ -1,5 +1,7 @@
 /* The library (library.h): the app's LibraryActivity drawn with the companion's pieces (3ds/core). */
 #include "library.h"
+#include "rom_zip.h"
+#include "shared_save.h"
 
 // Names and paths are cut to their buffers on purpose.
 #pragma GCC diagnostic ignored "-Wformat-truncation"
@@ -54,7 +56,7 @@ enum sort { S_NAME, S_RECENT, S_ADDED, S_COUNT }; // the app's NAME / LAST PLAYE
 enum { CS_NONE, CS_PATH, CS_READY, CS_FAILED };
 
 struct game {
-  char path[PATH_MAX], file[256], title[96], coverPath[PATH_MAX];
+  char path[PATH_MAX], file[256], rom[256], title[96], coverPath[PATH_MAX]; // rom: rom_name
   enum console console;
   bool hack, fav, favSet, hasSave;
   bool hidden; // HIDE (a game's menu): out of every view until SETTINGS > HIDDEN GAMES shows it again
@@ -87,7 +89,13 @@ static bool searchOpen; // SEARCH's field in the header takes the keyboard (or S
 static char query[64];  // what SEARCH filters the list by (kept after the field closes, until cleared)
 static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
 static bool addedStore; // the state file has dates already: a game seen now for the first time is new
-static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
+// BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 the Xbox pad's (green A, red B, blue X, yellow Y).
+// The Windows host plays on an Xbox pad, so it starts on the pad's own colours; the setting still switches them.
+#ifdef _WIN32
+static int faceColors = 1;
+#else
+static int faceColors;
+#endif
 static int selected, scroll, columns = 4, menuCursor, settingsCursor, settingsScroll, toolCursor;
 static const char *picked;
 static char notice[96];
@@ -175,7 +183,7 @@ static void pretty(const char *tidy, char *out, size_t len) {
 static void name_game(struct game *g) {
   bool hack = false, supported = false;
   char tidy[96];
-  pd_library_title(g->file, tidy, sizeof tidy, &hack, &supported);
+  pd_library_title(g->rom, tidy, sizeof tidy, &hack, &supported);
   if (supported) {
     snprintf(g->title, sizeof g->title, "%s", tidy);
     g->hack = hack;
@@ -197,9 +205,9 @@ static void name_by_sha1(struct game *g) {
 
 /* ---- the saved state: DATA/library.txt and the titles' cache ---- */
 
-static struct game *by_file(const char *file) {
+static struct game *by_rom(const char *rom) {
   for (int i = 0; i < gameCount; i++)
-    if (!strcmp(games[i].file, file))
+    if (!strcmp(games[i].rom, rom))
       return &games[i];
   return NULL;
 }
@@ -211,13 +219,13 @@ static void state_save(void) {
   fprintf(f, "view=%d\nsort=%d\ngrid=%d\nfaces=%d\n", view, sortBy, grid, faceColors);
   for (int i = 0; i < gameCount; i++) {
     if (games[i].favSet)
-      fprintf(f, "fav\t%d\t%s\n", games[i].fav, games[i].file);
+      fprintf(f, "fav\t%d\t%s\n", games[i].fav, games[i].rom);
     if (games[i].played)
-      fprintf(f, "played\t%llu\t%s\n", games[i].played, games[i].file);
+      fprintf(f, "played\t%llu\t%s\n", games[i].played, games[i].rom);
     if (games[i].added)
-      fprintf(f, "added\t%lld\t%d\t%s\n", games[i].added, games[i].addedInitial, games[i].file);
+      fprintf(f, "added\t%lld\t%d\t%s\n", games[i].added, games[i].addedInitial, games[i].rom);
     if (games[i].hidden)
-      fprintf(f, "hidden\t%s\n", games[i].file);
+      fprintf(f, "hidden\t%s\n", games[i].rom);
   }
   fclose(f);
 }
@@ -238,20 +246,20 @@ static void state_load(void) {
       grid = v != 0;
     else if (sscanf(line, "faces=%d", &v) == 1)
       faceColors = v == 1;
-    else if (sscanf(line, "fav\t%d\t%255[^\n]", &v, file) == 2 && by_file(file)) {
-      by_file(file)->fav = v != 0;
-      by_file(file)->favSet = true;
-    } else if (sscanf(line, "played\t%llu\t%255[^\n]", &t, file) == 2 && by_file(file))
-      by_file(file)->played = t;
-    else if (sscanf(line, "hidden\t%255[^\n]", file) == 1 && by_file(file))
-      by_file(file)->hidden = true;
+    else if (sscanf(line, "fav\t%d\t%255[^\n]", &v, file) == 2 && by_rom(file)) {
+      by_rom(file)->fav = v != 0;
+      by_rom(file)->favSet = true;
+    } else if (sscanf(line, "played\t%llu\t%255[^\n]", &t, file) == 2 && by_rom(file))
+      by_rom(file)->played = t;
+    else if (sscanf(line, "hidden\t%255[^\n]", file) == 1 && by_rom(file))
+      by_rom(file)->hidden = true;
     else {
       long long when;
       if (sscanf(line, "added\t%lld\t%d\t%255[^\n]", &when, &v, file) == 3) {
         addedStore = true;
-        if (by_file(file)) {
-          by_file(file)->added = when;
-          by_file(file)->addedInitial = v != 0;
+        if (by_rom(file)) {
+          by_rom(file)->added = when;
+          by_rom(file)->addedInitial = v != 0;
         }
       }
     }
@@ -264,7 +272,7 @@ static void titles_save(void) {
   FILE *f = fopen(titlesFile, "w");
   for (int i = 0; f && i < gameCount; i++)
     if (games[i].sha1Known)
-      fprintf(f, "%ld\t%ld\t%s\t%s\n", games[i].size, games[i].mtime, games[i].sha1, games[i].file);
+      fprintf(f, "%ld\t%ld\t%s\t%s\n", games[i].size, games[i].mtime, games[i].sha1, games[i].rom);
   if (f)
     fclose(f);
 }
@@ -276,7 +284,7 @@ static void titles_load(void) {
   while (f && fgets(line, sizeof line, f)) {
     line[strcspn(line, "\r\n")] = 0;
     struct game *g;
-    if (sscanf(line, "%ld\t%ld\t%40[0-9a-f]\t%255[^\n]", &size, &mtime, sha1, file) == 4 && (g = by_file(file)) &&
+    if (sscanf(line, "%ld\t%ld\t%40[0-9a-f]\t%255[^\n]", &size, &mtime, sha1, file) == 4 && (g = by_rom(file)) &&
         g->size == size && g->mtime == mtime) {
       snprintf(g->sha1, sizeof g->sha1, "%s", sha1);
       snprintf(g->workerSha1, sizeof g->workerSha1, "%s", sha1); // before the worker starts
@@ -461,6 +469,11 @@ static bool stopping(void) {
   while (SDL_AtomicGet(&pauseWorker) && !SDL_AtomicGet(&stopWorker))
     SDL_Delay(100);
   return SDL_AtomicGet(&stopWorker) != 0;
+}
+
+static bool sha1_take(void *user, const void *data, size_t n) {
+  pd_sha1_update(user, data, n);
+  return !stopping();
 }
 
 /* Only what a URL of ours or SteamGridDB's CDN holds. */
@@ -885,23 +898,18 @@ static int work(void *unused) {
       SDL_AtomicSet(&g->coverState, CS_FAILED);
     }
   }
-  static unsigned char buf[1 << 20];
   for (int i = 0; i < gameCount && !stopping(); i++) {
     struct game *g = &games[i];
     // DS carts run to 512 MB: they go by their file name.
     if (g->console == C_DS || SDL_AtomicGet(&g->hashed))
       continue;
-    FILE *f = fopen(g->path, "rb");
-    if (!f)
-      continue;
     struct pd_sha1 s;
     pd_sha1_init(&s);
-    size_t n;
-    while (!stopping() && (n = fread(buf, 1, sizeof buf, f)) > 0)
-      pd_sha1_update(&s, buf, n);
-    fclose(f);
+    bool whole = rom_read(g->path, sha1_take, &s);
     if (SDL_AtomicGet(&stopWorker))
       break;
+    if (!whole)
+      continue;
     pd_sha1_hex(&s, g->workerSha1); // the UI thread copies it into sha1 once hashed is 2 (library_tick)
     SDL_MemoryBarrierRelease();
     SDL_AtomicSet(&g->hashed, 2);
@@ -1028,16 +1036,31 @@ static long file_size(const char *path, long *mtime) {
 static void look_save(void) {
   char dir[PATH_MAX + 16];
   snprintf(dir, sizeof dir, "%s/pokedaisy", savesDir);
-  mkdir(dir, 0755);
+  pd_mkdir(dir);
   pd_settings_save(&settings, settingsFile);
   pd_look_apply(NULL, &settings);
 }
 
+// The save a game plays with, PokeDaisy's own or a shared one. false = none yet.
+static bool save_path(const struct game *g, char *out, size_t size) {
+  struct stat st;
+  char name[256]; // a zip's saves go by its ROM's name, as the game's do (rom_save_name)
+  if (!rom_save_name(g->path, savesDir, name, sizeof name))
+    snprintf(name, sizeof name, "%s", g->rom);
+  pd_save_path_named(savesDir, g->path, name, out, size);
+  if (stat(out, &st) && (shared_save_path(g->path, name, out, size) < 1 || stat(out, &st)))
+    return false;
+  return st.st_size > 0;
+}
+
 static void check_saves(struct game *g) {
   char sav[PATH_MAX * 2];
-  pd_save_path(savesDir, g->path, sav, sizeof sav);
-  struct stat st;
-  g->hasSave = !stat(sav, &st) && st.st_size > 0;
+  g->hasSave = save_path(g, sav, sizeof sav);
+}
+
+void library_saves(void) {
+  for (int i = 0; i < gameCount; i++)
+    check_saves(&games[i]);
 }
 
 void library_open(char *const *paths, int count, const char *data, const char *saves, const struct lib_host *h) {
@@ -1059,12 +1082,16 @@ void library_open(char *const *paths, int count, const char *data, const char *s
   gameCount = 0;
   for (int i = 0; games && i < count && gameCount < MAX_GAMES; i++) {
     const char *file = strrchr(paths[i], '/') ? strrchr(paths[i], '/') + 1 : paths[i];
-    if (by_file(file)) // the same game in DATA/roms and a firmware folder: the first one listed
+    char rom[256];
+    if (!rom_name(paths[i], rom, sizeof rom))
+      snprintf(rom, sizeof rom, "%s", file);
+    if (by_rom(rom)) // the same game in DATA/roms and a firmware folder, or loose and zipped: the first one listed
       continue;
     struct game *g = &games[gameCount++];
     snprintf(g->path, sizeof g->path, "%s", paths[i]);
     snprintf(g->file, sizeof g->file, "%s", file);
-    const char *ext = strrchr(file, '.');
+    snprintf(g->rom, sizeof g->rom, "%s", rom);
+    const char *ext = strrchr(g->rom, '.');
     g->console = !ext ? C_GBA : !strcasecmp(ext, ".nds") ? C_DS : !strcasecmp(ext, ".gbc") ? C_GBC : !strcasecmp(ext, ".gb") ? C_GB : C_GBA;
     g->size = file_size(g->path, &g->mtime);
     name_game(g);
@@ -1099,7 +1126,7 @@ void library_open(char *const *paths, int count, const char *data, const char *s
   }
   char covers[PATH_MAX + 16];
   snprintf(covers, sizeof covers, "%s/covers", dataDir);
-  mkdir(covers, 0755);
+  pd_mkdir(covers);
   sgdb_key_load();
   for (int i = 0; i < gameCount; i++) {
     struct game *g = &games[i];
@@ -1114,11 +1141,9 @@ void library_open(char *const *paths, int count, const char *data, const char *s
       g->coverFit = true;
     }
     if (g->console == C_DS) {
-      FILE *f = fopen(g->path, "rb");
-      if (f && !fseek(f, 0x0C, SEEK_SET) && fread(g->code, 1, 4, f) == 4)
-        g->code[4] = 0;
-      if (f)
-        fclose(f);
+      unsigned char h[0x10];
+      if (rom_head(g->path, h, sizeof h) == sizeof h)
+        memcpy(g->code, h + 0x0C, 4);
     }
     SDL_AtomicSet(&g->coverState, g->coverPath[0] ? CS_PATH : CS_NONE);
   }
@@ -1294,6 +1319,13 @@ static void sort_choose(int v) {
   state_save();
 }
 
+static char infoSave[PATH_MAX * 2];
+static void info_open(const struct game *g) {
+  if (!save_path(g, infoSave, sizeof infoSave))
+    infoSave[0] = 0;
+  infoOpen = true;
+}
+
 static void menu_choose(void) {
   if (selected < 0 || selected >= shownCount) {
     menuOpen = false;
@@ -1303,7 +1335,7 @@ static void menu_choose(void) {
   if (menuCursor == 0)
     play();
   else if (menuCursor == 2)
-    infoOpen = true;
+    info_open(g);
   else if (menuCursor == 3) {
     g->hidden = true; // the app's HIDE: SETTINGS > HIDDEN GAMES brings it back
     state_save();
@@ -2071,7 +2103,7 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
 
 /* A game's INFO (the app's GameInfo, the parts the desktop knows): its file, folder, size, console, SHA-1 and save. */
 static void draw_info(struct pd_canvas *c, const struct game *g) {
-  char size[32], folder[PATH_MAX], sav[PATH_MAX * 2];
+  char size[32], folder[PATH_MAX];
   if (g->size >= 1024 * 1024)
     snprintf(size, sizeof size, "%.1f MB", g->size / (1024.0 * 1024.0));
   else
@@ -2080,11 +2112,10 @@ static void draw_info(struct pd_canvas *c, const struct game *g) {
   char *slash = strrchr(folder, '/');
   if (slash)
     *slash = 0;
-  pd_save_path(savesDir, g->path, sav, sizeof sav);
   static const char *const CONSOLES[] = {"GB", "GBC", "GBA", "DS"};
   const char *labels[6] = {"FILE", "FOLDER", "SIZE", "CONSOLE", "SHA-1", "SAVE"};
   const char *values[6] = {g->file, folder, size, CONSOLES[g->console], g->sha1Known ? g->sha1 : "...",
-                           g->hasSave ? sav : pd_tr("none yet")};
+                           infoSave[0] ? infoSave : pd_tr("none yet")};
   int w = c->w - 80 > 520 ? 520 : c->w - 80, rowH = 22, h = 27 + 8 + 6 * rowH + 8;
   int x = (c->w - w) / 2, y = (c->h - h) / 2;
   int hf = pd_header_box(c, x, y, w, 26);

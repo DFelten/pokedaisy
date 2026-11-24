@@ -81,6 +81,9 @@ interface CompanionSettings : StoredCompanionSettings {
     /** EXP SHARE - see [com.pokedaisy.app.Prefs.expShare]; [expShareSupported]: the game's getexp is known
      * ([com.pokedaisy.app.companion.data.ExpShare]). */
     val expShareSupported: Boolean get() = false
+    /** EXP SHARE's MODERN works here ([com.pokedaisy.app.companion.data.ExpShare.Found.modern]); else the pick-list leaves it
+     * out and a stored MODERN shows and runs as FULL EXP. */
+    val expShareModernSupported: Boolean get() = false
     /** LEVEL CAP - see [com.pokedaisy.app.Prefs.levelCap]; [levelCapSupported]: the game's getexp is known
      * ([com.pokedaisy.app.companion.data.LevelCap]); [levelCapLevel]: the cap now (null = none worked out yet, or no
      * boss left). */
@@ -170,6 +173,16 @@ interface CompanionSettings : StoredCompanionSettings {
     val shinyOddsSupported: Boolean get() = false
     val shinyOddsBadge: String? get() = NewFeatures.badge(NewFeatures.SHINY_ODDS)
     val shinyOddsPausesAchievements: Boolean get() = true
+
+    /** LEVEL UP ALL ([com.pokedaisy.app.companion.data.LevelUpOffer]): [levelUpOffer] answers null when the field isn't free;
+     * [levelUpApply] writes the picked plans into the game. */
+    val levelUpAllSupported: Boolean get() = false
+    fun levelUpOffer(done: (com.pokedaisy.app.companion.data.LevelUpOffer?) -> Unit) { done(null) }
+    fun levelUpApply(
+        planned: List<com.pokedaisy.app.companion.data.PlannedRaise>,
+        rules: com.pokedaisy.app.companion.data.LevelUpRules,
+        done: (com.pokedaisy.app.companion.data.LevelUpResult) -> Unit,
+    ) { done(com.pokedaisy.app.companion.data.LevelUpResult.FAILED) }
 
     /** PLAYER LOOK ([com.pokedaisy.app.companion.data.PlayerLook]): [playerLookSupported] = a FireRed / LeafGreen /
      * Emerald game; [playerLooks] = the heroes it can wear now (another game's, kept from the player's own ROMs);
