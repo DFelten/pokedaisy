@@ -858,8 +858,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         override fun useOn(itemId: Int, target: com.pokedaisy.app.companion.data.PartyTarget, moveIndex: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {
             if (romIsGameBoy) {
                 return gbItemJob(com.pokedaisy.app.companion.data.ItemUseOutcome(com.pokedaisy.app.companion.data.ItemUseResult.NOT_NOW), { out ->
-                    // A TM: the game teaches it over the map, so the companion window gets out of its way.
-                    if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING) closeCompanionWindow()
+                    // A TM, RARE CANDY or a stone: the game's own screens do the rest, so the companion window gets out of their way.
+                    if (out.result == com.pokedaisy.app.companion.data.ItemUseResult.TEACHING ||
+                        out.result == com.pokedaisy.app.companion.data.ItemUseResult.USING_IN_GAME) closeCompanionWindow()
                     done(out)
                 }) { f, calls ->
                     f.useItem(calls, itemId, target, moveIndex)
