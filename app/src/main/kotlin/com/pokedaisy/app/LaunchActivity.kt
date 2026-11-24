@@ -95,7 +95,7 @@ class LaunchActivity : Activity() {
      * archive's name (`Emerald.zip` -> `Emerald.gba`).
      */
     private fun copyIntoLibrary(uri: Uri): File? {
-        val romsDir = File(getExternalFilesDir(null), "roms").apply { mkdirs() }
+        val romsDir = File(AppStorage.root(this), "roms").apply { mkdirs() }
         var name = RomUris.sanitizeFileName(RomUris.displayName(this, uri) ?: "imported-${System.currentTimeMillis()}.gba")
         if (name.substringAfterLast('.', "").lowercase() in RomArchive.EXTENSIONS) return unpackIntoLibrary(uri, romsDir, name)
         if (name.substringAfterLast('.', "").lowercase() !in ROM_EXT) name += ".gba"
@@ -104,7 +104,7 @@ class LaunchActivity : Activity() {
 
         runOnUiThread { Toast.makeText(this, tr("Copying {0}…", name), Toast.LENGTH_SHORT).show() }
         // Next to roms/ (same volume, so the swap below is a rename).
-        val importDir = File(getExternalFilesDir(null), "import").apply { mkdirs() }
+        val importDir = File(AppStorage.root(this), "import").apply { mkdirs() }
         val tmp = File(importDir, "launch-${System.currentTimeMillis()}.gba")
         try {
             contentResolver.openInputStream(uri)?.use { input -> tmp.outputStream().use { RomIntake.copyCapped(input, it) } }
@@ -127,7 +127,7 @@ class LaunchActivity : Activity() {
 
     /** [copyIntoLibrary] for a `.zip` / `.7z` [archiveName]: its ROM goes into [romsDir], unpacked. */
     private fun unpackIntoLibrary(uri: Uri, romsDir: File, archiveName: String): File? {
-        val importDir = File(getExternalFilesDir(null), "import").apply { mkdirs() }
+        val importDir = File(AppStorage.root(this), "import").apply { mkdirs() }
         val packed = File(importDir, "launch-${System.currentTimeMillis()}.${archiveName.substringAfterLast('.')}")
         val unpacked = File(importDir, "${packed.name}.rom")
         runOnUiThread { Toast.makeText(this, tr("Unpacking {0}…", archiveName), Toast.LENGTH_SHORT).show() }
@@ -156,7 +156,7 @@ class LaunchActivity : Activity() {
         // The library's cover, as its import fetches one (network, so its own thread).
         // RetroAchievements answers for games with no SteamGridDB match; idempotent.
         com.pokedaisy.app.achievements.RetroAchievements.init(this)
-        val cover = File(File(getExternalFilesDir(null), "covers").apply { mkdirs() }, "${out.name}.png")
+        val cover = File(File(AppStorage.root(this), "covers").apply { mkdirs() }, "${out.name}.png")
         Thread({
             runCatching { CoverArtSync.fetchOne(out, cover, prefs) }
         }, "pokedaisy-launch-cover").apply { isDaemon = true; start() }

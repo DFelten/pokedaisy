@@ -123,7 +123,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
     private lateinit var engine: EmulatorEngine
     private lateinit var view: EmulatorView
     /** SCREEN > OVERLAY's imports (Settings > OVERLAY on the top screen adds them). */
-    private val overlayStore by lazy { OverlayStore(getExternalFilesDir(null) ?: filesDir) }
+    private val overlayStore by lazy { OverlayStore(AppStorage.root(this)) }
     private lateinit var hud: TextView
     private lateinit var touchControls: TouchControlsView
     private lateinit var statusBar: ComposeView
@@ -2356,7 +2356,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         RetroAchievements.setFlightAnywhere(false)
         RetroAchievements.setLevelUpUsed(false)
         states = SaveStates.of(this, crc).also { it.noteGame(GameTitles.label(this, Prefs(this), romFile)) }
-        val ffMusicCache = androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, crc, gameBoy = RomIdentity.isGameBoy(r))
+        val ffMusicCache = androidFfMusicCache(AppStorage.root(this), crc, gameBoy = RomIdentity.isGameBoy(r))
         // STEADY FF music: songs rendered on their own from this ROM, in the
         // background, as the game starts them (see FfMusicRenderer).
         // The companion's button click is rendered from this ROM the same way.
@@ -3906,7 +3906,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         // AUTO language: the title id names none (its 4th character is a digit); the session sets the save's.
         com.pokedaisy.app.companion.i18n.L10n.apply(Prefs(this).appLanguage, key)
         states = SaveStates.of(this, key)
-        engine = EmulatorEngine(input, states!!, androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, key), com.pokedaisy.app.companion.GameBattleInput(telemetry, null, 0, input = input), Prefs(this), telemetry)
+        engine = EmulatorEngine(input, states!!, androidFfMusicCache(AppStorage.root(this), key), com.pokedaisy.app.companion.GameBattleInput(telemetry, null, 0, input = input), Prefs(this), telemetry)
         val session = com.pokedaisy.app.n3ds.N3dsSession(
             this, romFile, header.titleId, input,
             onSnapshot = { telemetry.publish(it) },
@@ -5626,7 +5626,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         // 3. Last played.
         Prefs(this).lastRomPath?.let { p -> File(p).takeIf { it.isFile }?.let { return it } }
         // 4. First ROM in the folder.
-        val romsDir = File(getExternalFilesDir(null), "roms").apply { mkdirs() }
+        val romsDir = File(AppStorage.root(this), "roms").apply { mkdirs() }
         return romsDir.listFiles { f ->
             f.isFile && f.name.substringAfterLast('.', "").lowercase() in GBA_EXT
         }?.sortedBy { it.name.lowercase() }?.firstOrNull()
@@ -5804,7 +5804,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
      * this on for the next launch; `adb shell rm <files-dir>/debug_mirror`
      * turns it back off. Always false in a release build regardless. */
     private fun isDebugMirrorEnabled(): Boolean =
-        BuildConfig.DEBUG && File(getExternalFilesDir(null) ?: filesDir, "debug_mirror").isFile
+        BuildConfig.DEBUG && File(AppStorage.root(this), "debug_mirror").isFile
 
     private fun goImmersive() {
         @Suppress("DEPRECATION")

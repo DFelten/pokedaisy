@@ -13,4 +13,4 @@ fun KeyCapture.onKey(event: KeyEvent): Boolean = when (event.action) {
 }
 
 /** Where GAME BUTTONS and HOTKEYS keep their files (controls.properties, hotkeys.properties). */
-val Context.controlsDir: Path get() = (getExternalFilesDir(null) ?: filesDir).toOkioPath()
+val Context.controlsDir: Path get() = AppStorage.root(this).toOkioPath()

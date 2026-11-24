@@ -51,7 +51,7 @@ object GameMedia {
     /** A game ScreenScraper didn't know is asked again after this long (new entries get added). */
     private const val NOT_FOUND_RETRY_MS = 7L * 24 * 3600 * 1000
 
-    fun root(context: Context): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "media")
+    fun root(context: Context): File = File(AppStorage.root(context), "media")
 
     fun dir(root: File, rom: File) = File(root, rom.name)
 
