@@ -157,7 +157,7 @@ val mapSecDataGen3Evolved: Map<Int, MapSecInfo> = mapOf(
     149 to MapSecInfo("Seven Island", -1, 0, 0, 0, 0),
     150 to MapSecInfo("Six Island", -1, 0, 0, 0, 0),
     151 to MapSecInfo("Kindle Road", -1, 0, 0, 0, 0),
-    152 to MapSecInfo("Treeasure Beach", -1, 0, 0, 0, 0),
+    152 to MapSecInfo("Treasure Beach", -1, 0, 0, 0, 0),
     153 to MapSecInfo("Cape Brink", -1, 0, 0, 0, 0),
     154 to MapSecInfo("Bond Bridge", -1, 0, 0, 0, 0),
     155 to MapSecInfo("Three Isle Port", -1, 0, 0, 0, 0),

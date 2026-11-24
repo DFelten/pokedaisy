@@ -95,7 +95,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Oops All Eevees! | 1.3.2 | — | ✅ | ✅ ⁴⁵ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
 | Ceruleum | 1.1.1 | — | ✅ ⁴⁶ | ✅ ⁴⁶ | ✅ ⁴⁶ | — | — | — | — | — | — ⁴⁶ | — | — | — | — | — | — | — ³⁶ | — |
 | RecordKeepers | 1.2.1 | — | — ⁴⁷ | — ⁴⁷ | — ⁴⁷ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
-| Generation 3 Evolved | 1.0.17, 1.0.22 | — | ✅ ⁶⁶ | ✅ ⁶⁶ | ✅ ⁶⁶ | — | — | — | — | — | — ⁶⁶ | — | — | — | — | — | — | — | — |
+| Generation 3 Evolved | 1.0.17, 1.0.22, 1.0.26 | — | ✅ ⁶⁶ | ✅ ⁶⁶ | ✅ ⁶⁶ | — | — | — | — | — | — ⁶⁶ | — | — | — | — | — | — | — | — |
 | Heart and Soul | 2.0.6 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | ✅ | — | — | — | — | ✅ ³³ | ✅ | — |
 | Lazarus | 2.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
 | Modern Emerald | 3.6 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ | — |
@@ -1256,8 +1256,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     light closing) and German Yellow (the rope, a stone, RARE CANDY forgetting a move; the partner back behind the player; picked: a vitamin,
     a stone refused by the starter with the bag untouched, the rod refused indoors); Yellow and English Red only by their code (no save
     here). `Gen1ItemUseTest`.
-66. Generation 3 Evolved (1.0.17 and 1.0.22, pokeemerald-expansion 1.16.3's FireRed build, `NATIVE_GEN3_EVOLVED` /
-    `NATIVE_GEN3_EVOLVED_V1_0_17`; 2026-11-24), checked headless on its new-game save in both builds: the action, move, bag and
+66. Generation 3 Evolved (1.0.17, 1.0.22 and 1.0.26, pokeemerald-expansion 1.16.3's FireRed build, `NATIVE_GEN3_EVOLVED` /
+    `NATIVE_GEN3_EVOLVED_V1_0_17` / `_V1_0_26`; 2026-11-24), checked headless on its new-game save in all three builds: the action, move, bag and
     party handlers read live, a written action cell + A opened the bag and the party, a written move cell + A used that move,
     and the POKéMON switch (FireRed's list) sent party slot 1 in. Its target handler (a double battle), wild-encounter switch,
     field reads, EXPAND, FLY and the rest weren't mapped yet.

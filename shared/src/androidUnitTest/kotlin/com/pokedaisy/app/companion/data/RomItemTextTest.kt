@@ -112,6 +112,7 @@ class RomItemTextTest {
         Case("Pokemon RecordKeepers (v1.2.1).gba", GameKind.RECORDKEEPERS, NATIVE_RECORDKEEPERS, mapOf(28 to "20 points")),
         Case("Pokemon Generation 3 Evolved (v1.0.22).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED, mapOf(28 to "20 points")),
         Case("Pokemon Generation 3 Evolved (v1.0.17).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED_V1_0_17, mapOf(28 to "20 points")),
+        Case("Pokemon Generation 3 Evolved (v1.0.26).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED_V1_0_26, mapOf(28 to "20 points")),
         // Monomyth's REPEL and ANTIDOTE, as its bag screen prints them (its own item ids, 32-byte gItems).
         Case("Pokemon Monomyth (v1.0).gba", GameKind.MONOMYTH, NATIVE_MONOMYTH, mapOf(93 to "for 100 steps", 33 to "poisoned")),
         Case("Pokemon Monomyth (v1.1).gba", GameKind.MONOMYTH, NATIVE_MONOMYTH_V1_1, mapOf(93 to "for 100 steps", 33 to "poisoned")),

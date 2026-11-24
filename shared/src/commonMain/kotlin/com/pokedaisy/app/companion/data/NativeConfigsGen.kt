@@ -3603,6 +3603,24 @@ val NATIVE_GEN3_EVOLVED_V1_0_17 = NATIVE_GEN3_EVOLVED.copy(
     waitForMonSelection = 0x08061F81L,
 )
 
+// Generation 3 Evolved v1.0.26 (sha1 26d9feea…): v1.0.22's RAM word for word again (every literal-pool word of the 5,300
+// matched functions), and v1.0.22's save loads in it with the same party (`gen3_evolved_v1_0_26`). Its ROM tables sit
+// 0x418-0x668 higher (the GF header: gSpeciesInfo 0x087CAD58, gItemsInfo 0x0877935C, the icon palettes 0x08D7E450) and equal
+// v1.0.22's but one place name, which it fixed (gen_expansion_tables.py gen3_evolved_v1_0_26 checks them); its battle
+// handlers read live in its own scripted wild battle (`gen3_evolved_v1_0_26_battle`), where the cursors, gPartyMenu, a
+// written cell + A and the POKéMON switch behaved as in v1.0.22.
+val NATIVE_GEN3_EVOLVED_V1_0_26 = NATIVE_GEN3_EVOLVED.copy(
+    itemDescs = ItemDescTable(0x08779370L, 0x30, -8),
+    monIconTable = 0x087CADC0L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x087CADE2L, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08D7E450L,
+    itemIconTable = 0x08779380L, // gItemsInfo[0].iconPic
+    handleInputChooseAction = 0x0806466DL,
+    handleInputChooseMove = 0x080636ADL,
+    completeWhenChoseItem = 0x0806217DL,
+    waitForMonSelection = 0x080621C1L,
+)
+
 // ---- gamedata/gen3/hacks/glazed.toml ----
 
 val NATIVE_GLAZED = NATIVE_EMERALD.copy(

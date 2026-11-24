@@ -430,6 +430,8 @@ GAMES = {
         moves_base=0x087A7850, moves_stride=0x48, move_bits_off=0x0A,
         chart=0x0846CE38, chart_n=21,
         mapsec_base=0x08D95018, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        # v1.0.26 fixed its one typo ("Treeasure Beach"): the shared table has the fixed name.
+        mapsec_fixes={152: "Treasure Beach"},
         checks=dict(species={1: "Bulbasaur", 4: "Charmander", 6: "Charizard", 25: "Pikachu", 94: "Gengar",
                              155: "Cyndaquil", 448: "Lucario"},
                     types={1: (13, 4), 4: (11, 11), 6: (11, 3), 25: (14, 14), 94: (8, 4), 448: (2, 9)},
@@ -451,6 +453,26 @@ GAMES = {
         moves_base=0x087A7368, moves_stride=0x48, move_bits_off=0x0A,
         chart=0x0846C950, chart_n=21,
         mapsec_base=0x08D94DEC - 0x59 * 8 - 4, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
+        mapsec_fixes={152: "Treasure Beach"},
+        checks=dict(species={1: "Bulbasaur", 4: "Charmander", 25: "Pikachu", 448: "Lucario"},
+                    types={1: (13, 4), 448: (2, 9)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "Poké Ball", 28: "Potion", 114: "Repel"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
+    # v1.0.26: the same game, its ROM tables 0x418-0x668 higher (the GF header's gSpeciesInfo 0x087CAD58, gItemsInfo
+    # 0x0877935C, gMovesInfo 0x087A7C90; the chart and gRegionMapEntries by their contents). Every table comes out equal to
+    # v1.0.22's (`same_as`: checked, not written).
+    "gen3_evolved_v1_0_26": dict(
+        suffix="Gen3Evolved",
+        same_as="gen3_evolved",
+        label="Pokemon Generation 3 Evolved v1.0.26",
+        sha1="26d9feea3e8dde937a6f43ebb24758e515be8a61",
+        species_name1=0x087CAD58 + 0x108 + 0x2C, species_stride=0x108, species_max=1576,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x0877935C + 0x14, items_stride=0x30, items_desc_off=-8,
+        moves_base=0x087A7C90, moves_stride=0x48, move_bits_off=0x0A,
+        chart=0x0846D278, chart_n=21,
+        mapsec_base=0x08D95680, mapsec_name_off=4, mapsec_count=0xDA, mapsec_keep_case=True,
         checks=dict(species={1: "Bulbasaur", 4: "Charmander", 25: "Pikachu", 448: "Lucario"},
                     types={1: (13, 4), 448: (2, 9)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
                     items={1: "Poké Ball", 28: "Potion", 114: "Repel"},
@@ -732,6 +754,8 @@ def main():
             # mapsec_keep_case: a game whose own names are mixed case (Ceruleum's "Council HQ") keeps them; only its
             # all-caps leftovers (Emerald's / Kanto's) are title-cased.
             mapsecs[i] = s if g.get("mapsec_keep_case") and s != s.upper() else title(s)
+    # A later build's spelling fixes, applied to an earlier build's table so the two agree (`same_as`).
+    mapsecs.update(g.get("mapsec_fixes", {}))
     rm = g.get("region_map")
     if "region_maps" in g:
         # Several region maps, each with its own cursor grid and its own range of mapsec ids (the game's map code

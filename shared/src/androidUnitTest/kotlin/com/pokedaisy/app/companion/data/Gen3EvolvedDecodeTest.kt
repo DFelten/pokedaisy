@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Pokémon Generation 3 Evolved v1.0.22 and v1.0.17: pokeemerald-expansion 1.16.3's FireRed build, its own RAM and names
+/** Pokémon Generation 3 Evolved v1.0.17, v1.0.22 and v1.0.26: pokeemerald-expansion 1.16.3's FireRed build, its own RAM and names
  * (gen_expansion_tables.py gen3_evolved). A new game played headless in v1.0.22, loaded in both (the fixtures' READMEs say
  * what the game's own screens show). */
 class Gen3EvolvedDecodeTest {
@@ -40,4 +40,6 @@ class Gen3EvolvedDecodeTest {
     @Test fun `v1_0_22 - a wild battle`() = checkBattle("gen3_evolved_battle", NATIVE_GEN3_EVOLVED)
     @Test fun `v1_0_17 - the save`() = checkSave("gen3_evolved_v1_0_17", NATIVE_GEN3_EVOLVED_V1_0_17)
     @Test fun `v1_0_17 - a wild battle`() = checkBattle("gen3_evolved_v1_0_17_battle", NATIVE_GEN3_EVOLVED_V1_0_17)
+    @Test fun `v1_0_26 - the save`() = checkSave("gen3_evolved_v1_0_26", NATIVE_GEN3_EVOLVED_V1_0_26)
+    @Test fun `v1_0_26 - a wild battle`() = checkBattle("gen3_evolved_v1_0_26_battle", NATIVE_GEN3_EVOLVED_V1_0_26)
 }

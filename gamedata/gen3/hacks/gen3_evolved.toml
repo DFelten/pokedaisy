@@ -93,3 +93,21 @@ handleInputChooseAction = 0x080644E9
 handleInputChooseMove = 0x080634ED
 completeWhenChoseItem = 0x08061F3D
 waitForMonSelection = 0x08061F81
+
+# Generation 3 Evolved v1.0.26 (sha1 26d9feea…): v1.0.22's RAM word for word again (every literal-pool word of the 5,300
+# matched functions), and v1.0.22's save loads in it with the same party (`gen3_evolved_v1_0_26`). Its ROM tables sit
+# 0x418-0x668 higher (the GF header: gSpeciesInfo 0x087CAD58, gItemsInfo 0x0877935C, the icon palettes 0x08D7E450) and equal
+# v1.0.22's but one place name, which it fixed (gen_expansion_tables.py gen3_evolved_v1_0_26 checks them); its battle
+# handlers read live in its own scripted wild battle (`gen3_evolved_v1_0_26_battle`), where the cursors, gPartyMenu, a
+# written cell + A and the POKéMON switch behaved as in v1.0.22.
+[config.gen3_evolved_v1_0_26]
+base = 'gen3_evolved'
+itemDescs = { base = 0x08779370, stride = 0x30, descOff = -8 }
+monIconTable = 0x087CADC0  # gSpeciesInfo[0].iconSprite
+monIconPaletteIndices = 0x087CADE2  # gSpeciesInfo[0].iconPalIndex
+monIconPaletteTable = 0x08D7E450
+itemIconTable = 0x08779380  # gItemsInfo[0].iconPic
+handleInputChooseAction = 0x0806466D
+handleInputChooseMove = 0x080636AD
+completeWhenChoseItem = 0x0806217D
+waitForMonSelection = 0x080621C1

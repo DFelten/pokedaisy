@@ -53,6 +53,7 @@ class BattleCursorTest {
             "ceruleum_battle" to NATIVE_CERULEUM,
             "gen3_evolved_battle" to NATIVE_GEN3_EVOLVED,
             "gen3_evolved_v1_0_17_battle" to NATIVE_GEN3_EVOLVED_V1_0_17,
+            "gen3_evolved_v1_0_26_battle" to NATIVE_GEN3_EVOLVED_V1_0_26,
             "dreamstone_battle" to NATIVE_DREAMSTONE, "dreamstone_trainer" to NATIVE_DREAMSTONE,
             "monomyth_battle" to NATIVE_MONOMYTH, "monomyth_trainer" to NATIVE_MONOMYTH,
             "monomyth_v1_1_battle" to NATIVE_MONOMYTH_V1_1, "monomyth_v1_1_trainer" to NATIVE_MONOMYTH_V1_1,
