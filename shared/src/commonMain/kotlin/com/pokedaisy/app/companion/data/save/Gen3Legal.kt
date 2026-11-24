@@ -21,6 +21,8 @@ object Gen3Legal {
         Gen3SaveFormat.RUBY_SAPPHIRE -> rs
         Gen3SaveFormat.EMERALD -> e
         Gen3SaveFormat.FIRERED_LEAFGREEN -> frlg
+        // A hack's rules come from its ROM (RomGen3Rules), never these tables.
+        else -> error("${f.label} has no generated tables")
     }
 
     private val rs by lazy { Tables(bagItemsRS, levelUpRS, tmHmRS, tutorMovesRS, tutorsRS) }

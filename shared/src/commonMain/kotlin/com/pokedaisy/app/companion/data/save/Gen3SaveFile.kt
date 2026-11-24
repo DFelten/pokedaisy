@@ -54,6 +54,8 @@ enum class Gen3SaveFormat(
     val pockets: List<PocketLayout>,
     /** The most of one item a stack holds (AddBagItem's slotCapacity): FR / LG 999 everywhere, R/S / E 99 but berries. */
     val stackMax: Int,
+    /** A retail game's layout (its rules the decomps' tables); false = a ROM hack's, its rules read from its ROM ([Gen3Rules]). */
+    val retail: Boolean = true,
 ) {
     // Offsets from the decomps' global.h (pokeruby / pokeemerald / pokefirered), flag / var ids from their constants.
     RUBY_SAPPHIRE(
@@ -77,11 +79,27 @@ enum class Gen3SaveFormat(
         linkRsFlag = 0x844, kanto = true, coinsOff = 0x294,
         pockets = pockets(0x310, items = 42, key = 30, balls = 13, tmhm = 58, berries = 43), stackMax = 999,
     ),
+    /**
+     * Pokémon Emerald Legacy v1.1.4: retail Emerald's SaveBlock2 and records, its SaveBlock1 past a 120-slot ITEMS pocket
+     * moved (gBagPockets' pointers in its own RAM, the flags / vars / dex copies on its card's and dex's tables), its
+     * system flags renumbered (the National Dex's 0x8F6). Its blocks' sizes aren't known without its ELF, so each is
+     * taken whole (a sector's 0xF80 bytes): what's past a block is zero in the game's own sectors, so the checksums agree.
+     */
+    EMERALD_LEGACY(
+        "EMERALD LEGACY", 0xF80, 4 * 0xF80, partyCountOff = 0x234, partyOff = 0x238, moneyOff = 0x490, encryptionKeyOff = 0xAC,
+        flagsOff = 0x13D8, varsOff = 0x1510, seen1Off = 0xAF0, seen2Off = 0x3B34,
+        nationalMagicOff = 0x1A, nationalMagic = 0xDA, nationalVar = 0x4046, nationalVarValue = 0x302, nationalFlag = 0x8F6,
+        linkRsFlag = -1, kanto = false, coinsOff = 0x494,
+        pockets = pockets(0x560, items = 120, key = 30, balls = 16, tmhm = 64, berries = 46), stackMax = 99, retail = false,
+    ),
     ;
+
+    /** What this layout's saves may hold ([Gen3Rules.of]: retail's tables, or a hack's from its ROM). */
+    val rules: Gen3Rules get() = Gen3Rules.of(this)
 
     /** How many of [item] one stack in [pocket] may hold: berries 999, an HM 1 (the game hands each out once). */
     fun stackMax(pocket: BagPocket, item: Int): Int = when {
-        pocket == BagPocket.TMHM && item >= FIRST_HM -> 1
+        pocket == BagPocket.TMHM && rules.isHm(item) -> 1
         pocket == BagPocket.BERRIES -> 999
         else -> stackMax
     }

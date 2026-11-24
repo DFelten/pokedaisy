@@ -63,6 +63,8 @@ object Gen3Trade : TradeRules {
 
     /** FireRed / LeafGreen and Ruby / Sapphire / Emerald can't link before the FireRed / LeafGreen side's Sevii Islands. */
     override fun linkBlocker(a: TradeSide, b: TradeSide): String? {
+        // A ROM hack trades only with saves of the same hack: its species, moves and items are its own.
+        if (a.format.rules.family != b.format.rules.family) return tr("{0} and {1} can't link", a.label, b.label)
         val frlg = listOf(a, b).filter { it.format == Gen3SaveFormat.FIRERED_LEAFGREEN }
         if (frlg.size != 1) return null
         val side = frlg.single()

@@ -17,9 +17,11 @@ class Gen3BoxMon private constructor(
     val checksumOk: Boolean,
     /** The record as read: what an unreadable one [encode]s back to. */
     private val original: ByteArray,
+    /** The game's rules its names, ability, gender and level are read with. */
+    val rules: Gen3Rules,
 ) : SaveMon {
 
-    override val game: SaveGameData get() = Gen3GameData
+    override val game: SaveGameData get() = rules
     override val personality: Long get() = u32(header, 0)
     val otId: Long get() = u32(header, 4)
     val nicknameBytes: ByteArray get() = header.copyOfRange(0x08, 0x12)
@@ -73,10 +75,10 @@ class Gen3BoxMon private constructor(
     override val isShiny: Boolean get() = Gen3Personality.isShiny(personality, otId)
 
     /** The species' ability this one has (its ability bit; a species with one ability always has that). */
-    override val ability: Int get() = Gen3Species.ability(species, abilityNum)
+    override val ability: Int get() = rules.ability(species, abilityNum)
 
     /** GetGenderFromSpeciesAndPersonality. */
-    override val gender: Gen3Gender get() = Gen3Personality.gender(species, personality)
+    override val gender: Gen3Gender get() = rules.gender(species, personality)
 
     /** The nickname in the games' Western text; a Japanese game's (language 1) is in kana the Western table can't read. */
     override val nickname: String? get() =
@@ -93,7 +95,7 @@ class Gen3BoxMon private constructor(
     override val pokerus: Int get() = data[36].toInt() and 0xFF
 
     /** Level from experience and the species' growth rate (box records keep no level byte). */
-    override val level: Int get() = levelFor(species, exp)
+    override val level: Int get() = rules.levelFor(species, exp)
 
     /**
      * This record with [species], [heldItem] and / or [nickname] (10 bytes, the game's charset) changed - what a trade
@@ -132,7 +134,7 @@ class Gen3BoxMon private constructor(
             putU32(d, 40, word)
         }
         nickname?.let { require(it.size == NICKNAME_BYTES); it.copyInto(h, 0x08) }
-        return Gen3BoxMon(h, d, true, original).encode()
+        return Gen3BoxMon(h, d, true, original, rules).encode()
     }
 
     /** This record under another [personality] (SHINY ODDS): its substructs reordered and encrypted with the new key. */
@@ -140,7 +142,7 @@ class Gen3BoxMon private constructor(
         require(checksumOk) { "an unreadable record is never changed" }
         val h = header.copyOf()
         putU32(h, 0, personality and 0xFFFFFFFFL)
-        return Gen3BoxMon(h, data.copyOf(), true, original).encode()
+        return Gen3BoxMon(h, data.copyOf(), true, original, rules).encode()
     }
 
     /** The record's 80 bytes, checksum recomputed and encrypted as the game stores it. */
@@ -163,7 +165,7 @@ class Gen3BoxMon private constructor(
         const val SIZE = 80
         const val NICKNAME_BYTES = 10
 
-        fun read(b: ByteArray, off: Int): Gen3BoxMon {
+        fun read(b: ByteArray, off: Int, rules: Gen3Rules = Gen3Rules.RETAIL): Gen3BoxMon {
             val header = b.copyOfRange(off, off + 0x20)
             val personality = u32(b, off)
             val key = personality xor u32(b, off + 4)
@@ -178,7 +180,7 @@ class Gen3BoxMon private constructor(
                     sum = (sum + (word and 0xFFFF).toInt() + ((word shr 16) and 0xFFFF).toInt()) and 0xFFFF
                 }
             }
-            return Gen3BoxMon(header, data, sum == u16(b, off + 0x1C), b.copyOfRange(off, off + SIZE))
+            return Gen3BoxMon(header, data, sum == u16(b, off + 0x1C), b.copyOfRange(off, off + SIZE), rules)
         }
 
         fun levelFor(species: Int, exp: Long): Int {

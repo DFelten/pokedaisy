@@ -22,13 +22,40 @@ object Gen3SaveReader {
         if (length > MAX_ROM_SIZE) return null
         val code = rom.gameCode()
         // Full-size hacks under a retail header can move save offsets or change Pokémon records.
-        if (length == MAX_ROM_SIZE && (code == "BPEE" || code == "BPRE") && rom.sha1() in NOT_RETAIL_SAVES) return null
+        if (length == MAX_ROM_SIZE && (code == "BPEE" || code == "BPRE")) {
+            val sha = rom.sha1()
+            // A hack the editor knows: its own layout, its rules read from the ROM (once).
+            HACKS[sha]?.let { hack -> return hack.format.takeIf { loadRules(hack, rom) } }
+            if (sha in NOT_RETAIL_SAVES) return null
+        }
         return Gen3SaveFormat.forGameCode(code)
+    }
+
+    /** A ROM hack whose saves the editor reads: its layout, the config naming its tables, its trade family. */
+    private class Hack(val format: Gen3SaveFormat, val config: () -> com.pokedaisy.app.companion.data.NativeConfig, val family: String)
+
+    private val HACKS: Map<String, Hack> by lazy {
+        with(com.pokedaisy.app.companion.data.TelemetrySampler) {
+            mapOf(
+                EMERALD_LEGACY_V1_1_4_SHA1 to Hack(Gen3SaveFormat.EMERALD_LEGACY, { com.pokedaisy.app.companion.data.NATIVE_EMERALD_LEGACY }, "emerald-legacy"),
+            )
+        }
+    }
+
+    /** [hack]'s rules from [rom], installed once; false when the ROM can't give them (the editor then leaves it out). */
+    private fun loadRules(hack: Hack, rom: RomIdentityReader): Boolean {
+        if (Gen3Rules.isInstalled(hack.format)) return true
+        return runCatching {
+            val tables = gen3RomTables(hack.config(), hack.family) ?: return false
+            val bytes = rom.readAll() ?: return false
+            Gen3Rules.install(hack.format, RomGen3Rules(bytes, tables).also { it.lastMove })
+            true
+        }.getOrDefault(false)
     }
 
     /**
      * The 16 MB builds the Poller knows whose save isn't laid out as their header's retail game's:
-     * - Emerald Legacy: a 120-slot ITEMS pocket moves everything after it in SaveBlock1.
+     * (Emerald Legacy, whose 120-slot ITEMS pocket moves everything after it, has a layout of its own: [HACKS].)
      * - Emerald Seaglass: pokeemerald-expansion's records (National Dex species ids, experience in 21 bits with a nickname's
      *   11th letter above it, its own shiny odds; GitHub #1167: COLLECTION showed its Pokémon at level 100 and none shiny).
      * - Recharged Emerald / Recharged Yellow: SaveBlock1s of their own past the bag.
@@ -36,7 +63,7 @@ object Gen3SaveReader {
      */
     private val NOT_RETAIL_SAVES = with(com.pokedaisy.app.companion.data.TelemetrySampler) {
         setOf(
-            EMERALD_LEGACY_V1_1_4_SHA1, EMERALD_SEAGLASS_V3_0_SHA1, CLOVER_V1_3_3_SHA1,
+            EMERALD_SEAGLASS_V3_0_SHA1, CLOVER_V1_3_3_SHA1,
             RECHARGED_EMERALD_V2_2_5_SHA1, RECHARGED_EMERALD_V2_2_8_SHA1, RECHARGED_EMERALD_REBALANCED_V2_2_8_SHA1,
             RECHARGED_YELLOW_V1_8_0_SHA1, RECHARGED_YELLOW_V1_9_0_SHA1, RECHARGED_YELLOW_V1_9_4_SHA1, RECHARGED_YELLOW_V1_9_7_SHA1,
         )
