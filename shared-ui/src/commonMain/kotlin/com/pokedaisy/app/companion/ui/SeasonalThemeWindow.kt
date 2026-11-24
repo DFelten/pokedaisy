@@ -98,7 +98,7 @@ fun ThemeSwatch(theme: ThemeSpec, modifier: Modifier = Modifier) {
         }
         val logo = theme.motif
         if (logo != null) PixelArt(logo.rows, logo.palette, Modifier.matchParentSize().padding(12.dp))
-        else PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.matchParentSize().padding(12.dp))
+        else AppLogo(Modifier.matchParentSize().padding(12.dp))
     }
 }
 

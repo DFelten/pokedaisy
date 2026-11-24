@@ -28,6 +28,7 @@ class AndroidFonts(context: Context) : FontSource {
     override fun pixel(): FontFamily = pixelFontFamily(app)
     override fun pixelSmall(): FontFamily = pixelSmallFontFamily(app)
     override fun smooth(bold: Boolean): FontFamily = atkinsonFamily(app, bold)
+    override fun modern(): FontFamily = nunitoFamily(app)
     override fun reading(): FontFamily = readingFontFamily(app)
     override fun game(file: Path): FontFamily? = gameFontFamily(app, file.toFile())
 }
@@ -145,5 +146,19 @@ fun atkinsonFamily(context: Context, bold: Boolean): FontFamily {
     }
 }
 
+/** VIEW MODERN's font: Nunito SemiBold as the normal weight, ExtraBold as bold (Latin only; the rest falls to the device's
+ * sans-serif glyph by glyph). */
+fun nunitoFamily(context: Context): FontFamily {
+    nunito?.let { return it }
+    return synchronized(fontLock) {
+        val assets = context.applicationContext.assets
+        nunito ?: FontFamily(
+            ComposeFont("fonts/Nunito-SemiBold.ttf", assets, androidx.compose.ui.text.font.FontWeight.Normal),
+            ComposeFont("fonts/Nunito-ExtraBold.ttf", assets, androidx.compose.ui.text.font.FontWeight.Bold),
+        ).also { nunito = it }
+    }
+}
+
+@Volatile private var nunito: FontFamily? = null
 @Volatile private var atkinsonRegular: FontFamily? = null
 @Volatile private var atkinsonBold: FontFamily? = null

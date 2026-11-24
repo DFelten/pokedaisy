@@ -81,6 +81,9 @@ interface CompanionSettings : StoredCompanionSettings {
     /** EXP SHARE - see [com.pokedaisy.app.Prefs.expShare]; [expShareSupported]: the game's getexp is known
      * ([com.pokedaisy.app.companion.data.ExpShare]). */
     val expShareSupported: Boolean get() = false
+    /** EXP SHARE's MODERN works here ([com.pokedaisy.app.companion.data.ExpShare.Found.modern]); else the pick-list leaves it
+     * out and a stored MODERN shows and runs as FULL EXP. */
+    val expShareModernSupported: Boolean get() = false
     /** LEVEL CAP - see [com.pokedaisy.app.Prefs.levelCap]; [levelCapSupported]: the game's getexp is known
      * ([com.pokedaisy.app.companion.data.LevelCap]); [levelCapLevel]: the cap now (null = none worked out yet, or no
      * boss left). */
@@ -120,6 +123,10 @@ interface CompanionSettings : StoredCompanionSettings {
     val tradeEvolutionsSupported: Boolean get() = false
     val tradeEvolutionsBadge: String? get() = NewFeatures.badge(NewFeatures.TRADE_EVOLUTIONS)
 
+    /** QUICK HATCH's row: this game's daycare step counter is known ([com.pokedaisy.app.companion.data.quickHatchCounterOff])
+     * and its party calls are there. */
+    val quickHatchSupported: Boolean get() = false
+
     /** DS RESOLUTION ([com.pokedaisy.app.Prefs.dsResolution]): the scale, null when the game isn't a DS one (no row);
      * [dsGpuAvailable] false = this device can't run the GPU renderer (no OpenGL ES 3.2), so the DS's own it is. */
     val dsResolution: Int? get() = null
@@ -147,6 +154,12 @@ interface CompanionSettings : StoredCompanionSettings {
     fun setDsLayout(layout: DsLayout) {}
 
     /** NUZLOCKE ([Nuzlocke]): [nuzlockeSupported] = a game whose party and battles are read (GBA, Game Boy, DS); the switch is per game. */
+    /** WILD PIN ([WildPins]): the PIN on GUIDE > HERE's and the HUD's grass rows; [wildPinSupported] = a game of its first
+     * slice ([com.pokedaisy.app.companion.data.WildPin.offered]). OFF hides every PIN. */
+    val wildPinSupported: Boolean get() = false
+    val wildPin: Boolean get() = WildPins.on
+    fun setWildPin(on: Boolean) = WildPins.setOn(on)
+
     val nuzlockeSupported: Boolean get() = false
     val nuzlockeBadge: String? get() = null
     val nuzlocke: Boolean get() = false
@@ -160,6 +173,16 @@ interface CompanionSettings : StoredCompanionSettings {
     val shinyOddsSupported: Boolean get() = false
     val shinyOddsBadge: String? get() = NewFeatures.badge(NewFeatures.SHINY_ODDS)
     val shinyOddsPausesAchievements: Boolean get() = true
+
+    /** LEVEL UP ALL ([com.pokedaisy.app.companion.data.LevelUpOffer]): [levelUpOffer] answers null when the field isn't free;
+     * [levelUpApply] writes the picked plans into the game. */
+    val levelUpAllSupported: Boolean get() = false
+    fun levelUpOffer(done: (com.pokedaisy.app.companion.data.LevelUpOffer?) -> Unit) { done(null) }
+    fun levelUpApply(
+        planned: List<com.pokedaisy.app.companion.data.PlannedRaise>,
+        rules: com.pokedaisy.app.companion.data.LevelUpRules,
+        done: (com.pokedaisy.app.companion.data.LevelUpResult) -> Unit,
+    ) { done(com.pokedaisy.app.companion.data.LevelUpResult.FAILED) }
 
     /** PLAYER LOOK ([com.pokedaisy.app.companion.data.PlayerLook]): [playerLookSupported] = a FireRed / LeafGreen /
      * Emerald game; [playerLooks] = the heroes it can wear now (another game's, kept from the player's own ROMs);
@@ -230,6 +253,9 @@ interface CompanionSettings : StoredCompanionSettings {
 
     /** EDIT LAYOUT over the running game (the companion steps aside while it's open). */
     fun editTouchLayout() {}
+
+    /** HUD > EDIT LAYOUT over the running game (the companion steps aside); null = this host can't (the row says why). */
+    val editHudLayout: (() -> Unit)? get() = null
 
     /** The touch controls are on the game's screen now (SHOW, a controller): EXPAND's UNDER GAME needs them. */
     val touchControlsShown: Boolean get() = true
@@ -311,6 +337,9 @@ interface CompanionSettings : StoredCompanionSettings {
 
     /** A host that runs only part of the app (the iPad app, so far): SETTINGS' HOME, DISPLAY OPTIONS and SHADERS show only these shared settings, each group's title kept over the ones left. Null = every row. */
     val shownRows: Set<SharedSetting>? get() = null
+
+    /** Per-game settings (SETTINGS FOR: ALL GAMES / THIS GAME, GameSettings.kt); null = no game, or a host without them. */
+    val gameSettings: GameSettingsControl? get() = null
 
     /** Opens a web link ([url]) in the browser - a blocked game's button ([com.pokedaisy.app.companion.data.BlockedAction]). */
     fun openUrl(url: String) {}
@@ -537,8 +566,10 @@ interface CompanionSettings : StoredCompanionSettings {
 /** Every tab the player can show or hide, in tab-bar order. BATTLE (while a
  * battle runs) and SETTINGS (the way to the hidden ones) are always there.
  * CARD (the TRAINER CARD) and ACHIEVEMENTS (RetroAchievements) start off the
- * bar, under the MORE tab. */
-val COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "CARD", "STATES", "ACHIEVEMENTS")
+ * bar, under the MORE tab. HUNT (SHINY HUNT) only with its flag ([FlaggedFeatures.shinyHunt]). */
+val COMPANION_TABS: List<String> get() = listOfNotNull(
+    "PARTY", "DEX", "MAP", "ITEMS", "BOXES", "GUIDE", "NUZLOCKE", "HUNT".takeIf { FlaggedFeatures.shinyHunt }, "CARD", "STATES", "ACHIEVEMENTS",
+)
 val DEFAULT_COMPANION_TABS = listOf("PARTY", "DEX", "MAP", "ITEMS", "GUIDE")
 
 /** Tabs next to SETTINGS: six chips in all is as many as fit. During a
@@ -690,3 +721,14 @@ fun CompanionSettings.gameButtonRequest(button: GbaControls.Btn, changed: () -> 
     KeyCapture.Request(button.title, chord = false,
         onDone = { keys -> setGbaControlBinding(button, KeyCapture.keyName(keys.first())); changed() },
         onClear = if (button.canClear) ({ clearGbaControlBinding(button); changed() }) else null)
+
+/** The game's own settings, as companion SETTINGS shows and changes them ([GameSettingsStore]). */
+interface GameSettingsControl {
+    /** SETTINGS FOR: THIS GAME (a change is the game's own) or ALL GAMES. */
+    val thisGame: Boolean
+    fun setThisGame(on: Boolean)
+    /** The settings this game has its own value of. */
+    val overridden: Set<SharedSetting>
+    /** RESET THIS GAME: back to every game's settings, applied at once. */
+    fun reset()
+}

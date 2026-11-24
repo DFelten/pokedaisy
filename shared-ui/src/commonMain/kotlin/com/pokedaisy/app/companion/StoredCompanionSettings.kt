@@ -57,6 +57,9 @@ interface StoredCompanionSettings {
      * evolution code is known ([com.pokedaisy.app.companion.data.tradeEvoFor]). */
     val tradeEvolutions: Boolean get() = false
     fun setTradeEvolutions(on: Boolean) {}
+    /** QUICK HATCH - see [com.pokedaisy.app.Prefs.quickHatch]. */
+    val quickHatch: Boolean get() = false
+    fun setQuickHatch(on: Boolean) {}
     val rivalLook: Boolean get() = true
     fun setRivalLook(on: Boolean) {}
     val follower: Boolean get() = false

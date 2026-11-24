@@ -20,7 +20,7 @@ class CrystalTrainerCardTest {
     private fun art(name: String, t: Gen2TrainerCard.Tables): Gen2TrainerCard.Art? {
         val f = File(dir, name)
         if (!f.isFile) return null
-        return Gen2TrainerCard.parse(Gen2TrainerCard.extract(f.readBytes(), t, 0x3E to 0x4200)) ?: error("no card art")
+        return Gen2TrainerCard.parse(Gen2TrainerCard.extract(f.readBytes(), t, 0x3E to 0x4200), t.style) ?: error("no card art")
     }
     private fun english() = art("Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc", Gen2TrainerCard.CRYSTAL_TABLES)
     private fun german() = art("Pokemon - Kristall-Edition (Germany).gbc", Gen2TrainerCard.CRYSTAL_DE_TABLES)

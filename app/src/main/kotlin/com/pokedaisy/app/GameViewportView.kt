@@ -31,6 +31,10 @@ class GameViewportView(context: Context, private val game: View, private val bar
     var gameDim: View? = null
     var dsTouch: View? = null
     var dsBackdrop: View? = null
+    /** SIDE BARS' view: the whole area, behind the game (the game's surface shows through where it is). */
+    var sideBars: View? = null
+    /** The game's picture (a DS game's two screens together) in this view's pixels, each layout. */
+    var onContent: ((Rect) -> Unit)? = null
     var dsTouchFrame = 0
     private var ds: DsArrangement? = null
     private var picture = Rect()
@@ -100,6 +104,7 @@ class GameViewportView(context: Context, private val game: View, private val bar
                 picture.set(x, y + barHeight, x + gw, y + barHeight + gh)
             }
         }
+        sideBars?.takeIf { it.visibility != GONE }?.measure(exact(w), exact(h))
         game.measure(exact(picture.width()), exact(picture.height()))
         gameDim?.measure(exact(picture.width()), exact(picture.height()))
         gameCover?.takeIf { it.visibility != GONE }?.measure(exact(picture.width()), exact(picture.height()))
@@ -109,6 +114,14 @@ class GameViewportView(context: Context, private val game: View, private val bar
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        sideBars?.takeIf { it.visibility != GONE }?.layout(0, 0, right - left, bottom - top)
+        onContent?.invoke(Rect(picture).also { r ->
+            ds?.let { a ->
+                val t = a.touch
+                if (t != null) r.union(backdrop.left + t.left, backdrop.top + barHeight + t.top, backdrop.left + t.right, backdrop.top + barHeight + t.bottom)
+            }
+            if (bar.visibility != GONE) r.union(barRect)
+        })
         game.layout(picture.left, picture.top, picture.right, picture.bottom)
         gameDim?.layout(picture.left, picture.top, picture.right, picture.bottom)
         gameCover?.takeIf { it.visibility != GONE }?.layout(picture.left, picture.top, picture.right, picture.bottom)

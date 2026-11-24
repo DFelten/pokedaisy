@@ -17,8 +17,12 @@ package com.pokedaisy.app.companion.data
  * headless on HeartGold: a wild battle's "Wild ... appeared!" and "Go! ...!" came up whole in one frame, the battle went on.
  */
 object DsInstantText {
-    /** Where the routine goes: the top 4 KB of the spare ITCM the call hook uses (pk_nds_call_abi.h), nothing else there. */
+    /**
+     * Where the routine goes in the spare ITCM the call hook uses: pk_nds_call_abi.h's PK_NDS_INSTANT_TEXT_ADDR, a range
+     * ([ROUTINE_MAX] bytes) its map keeps clear of the call helpers. DsInstantTextTest checks both agree with the header.
+     */
     const val ROUTINE = 0x01FFF000L
+    const val ROUTINE_MAX = 0x100
 
     /** The routine (`scripts/ds_instant_text.s`, assembled with llvm-mc for thumbv5te); its two calls are filled per cart. */
     private val CODE = hex("70b5041c0025201cfff7faff002807d10135ff2d0dd20026211c2a310e70f2e7002d07d0012804d16068fff7e9ff012000e0002070bd")

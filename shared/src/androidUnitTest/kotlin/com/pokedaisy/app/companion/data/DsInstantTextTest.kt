@@ -3,7 +3,9 @@ package com.pokedaisy.app.companion.data
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /** INSTANT TEXT on the Gen 4 DS games ([DsInstantText]): the printer task's call found, the routine's calls filled, on / off. */
 class DsInstantTextTest {
@@ -57,5 +59,18 @@ class DsInstantTextTest {
         task(0x02020310, 0x02020358, 0x0201D578)
         task(0x02030310, 0x02020358, 0x0201D578)
         assertNull(DsInstantText.find(read))
+    }
+
+    /** The routine's place is the native call helpers' map's INSTANT TEXT range, so no helper is written over it. */
+    @Test fun theRoutineSitsInTheRangeTheCallHelpersKeepClear() {
+        val abi = listOf(File("../app/src/main/cpp/nds/pk_nds_call_abi.h"), File("app/src/main/cpp/nds/pk_nds_call_abi.h"))
+            .first { it.isFile }.readText()
+        fun define(name: String): Long =
+            Regex("""#define $name (0x[0-9A-Fa-f]+)u""").find(abi)?.groupValues?.get(1)?.removePrefix("0x")?.toLong(16)
+                ?: error("$name not in pk_nds_call_abi.h")
+        assertEquals(define("PK_NDS_INSTANT_TEXT_ADDR"), DsInstantText.ROUTINE)
+        assertEquals(define("PK_NDS_INSTANT_TEXT_MAX"), DsInstantText.ROUTINE_MAX.toLong())
+        task(0x02020310, render = 0x02020358, copy = 0x0201D578)
+        assertTrue(DsInstantText.find(read)!!.routine.size <= DsInstantText.ROUTINE_MAX)
     }
 }

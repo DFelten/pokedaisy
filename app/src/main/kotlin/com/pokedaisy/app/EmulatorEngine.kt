@@ -180,9 +180,43 @@ class EmulatorEngine(
             override fun repaletteLook(from: ByteArray, to: ByteArray) = MgbaCore.pkRepalette(from, to)
             override fun refreshLook(palette: ByteArray?) = MgbaCore.pkLookRefresh(palette)
         },
+        onPinResult = { pin, installed ->
+            pinInstalled = installed
+            syncWildPinAchievements()
+            if (pin != null && !installed) runCatching { onWildPinEnded?.invoke(pin) }
+        },
     )
 
+    /** NO HMS NEEDED on a DS game ([com.pokedaisy.app.companion.data.DsHmFree], melonDS): our hooks of the party move checks, not
+     * a ROM patch, so beside [gameOptions]; sent to the core every frame from the emu thread (a flag write), since every
+     * pkInit (a start after HOME, RESTART GAME) makes a new core with it off. */
+    @Volatile var dsHmFree = false
+
     fun setPlayerLook(patch: com.pokedaisy.app.companion.data.PlayerLook.Patch?) = playerLook.select(patch)
+
+    /** WILD PIN ([com.pokedaisy.app.companion.data.WildPin]): its block goes into the ROM with PLAYER LOOK's ([playerLook]:
+     * one call replaces every block), on the next frame boundary; it comes out on the frame a wild battle starts. */
+    fun setWildPin(pin: com.pokedaisy.app.companion.data.WildPin.Pin?) = playerLook.selectPin(pin)
+    /** Whether a battle was up last frame (a pin ends on the frame one starts). */
+    private var pinWasBattling = false
+    /** The pin's block is in the ROM (emu thread, from [playerLook]'s result). */
+    private var pinInstalled = false
+    /** The pinned Pokémon's battle is on (emu thread): its block came out as the battle started, but catching it is
+     * still the pick's doing, so achievements stay paused until that battle ends (or the core stops). */
+    private var pinBattleHold = false
+
+    /** RetroAchievements idle while a pin is in or its battle is on. */
+    private fun syncWildPinAchievements() {
+        runCatching { RetroAchievements.setWildPinActive(pinInstalled || pinBattleHold) }
+    }
+    /** Fired (emu thread) when the pin goes out by itself: its wild battle started, or its bytes didn't match the ROM. */
+    var onWildPinEnded: ((com.pokedaisy.app.companion.data.WildPin.Pin) -> Unit)? = null
+
+    /** The pin out by itself (emu thread): the blocks go back without it on the next frame boundary. */
+    private fun endPin(pin: com.pokedaisy.app.companion.data.WildPin.Pin) {
+        if (!playerLook.clearPin(pin)) return
+        runCatching { onWildPinEnded?.invoke(pin) }.onFailure { Log.e("pokedaisy", "wild pin end hook failed", it) }
+    }
 
     /** ZOOM and the look-around over WIDE: asked for the window to draw before each frame ([EmulatorView.camera]). */
     @Volatile var wideCamera: WideCamera? = null
@@ -981,6 +1015,10 @@ class EmulatorEngine(
         battleMenuHideSent = -1
         playback.resetTint()
         playback.flight?.reset()
+        // The field read too: the last core's pkDeinit cleared it (pk_field_configure(0)), and a cache left from that
+        // core kept this one unconfigured - AUTO-RUN, RUN INDOORS and WILD ENCOUNTERS dead after HOME and back (#1374).
+        fieldApplied = -1
+        wildApplied = -1L
         endDsHold()
         onCoreReady?.invoke(vw, vh)
 
@@ -1020,6 +1058,10 @@ class EmulatorEngine(
         applyCheats()
         gameOptions.coreStarted()
         gameOptions.tick()
+        // A pin never outlives the core it was put into (a restart, another ROM, a resume): the player pins again.
+        playerLook.pin?.let(::endPin)
+        pinWasBattling = false
+        pinBattleHold = false
         if (gba) playerLook.service(force = true)
 
         val sampleRate = MgbaCore.pkSampleRate()
@@ -1075,6 +1117,10 @@ class EmulatorEngine(
             runCatching { finishSave() }
             MgbaCore.pkDeinit()
             runCatching { RetroAchievements.onCoreStopped() }
+            // A pin and its pause end with the core: the next game (a GB / DS one never services the pin) starts unpaused.
+            playerLook.pin?.let(::endPin)
+            pinInstalled = false
+            pinBattleHold = false
         }
     }
 
@@ -1365,7 +1411,7 @@ class EmulatorEngine(
             // DsFrameSkip learns from the core's own time (drawn or not), after the frame is out.
             if (dsSkipTimed) {
                 val before = dsSkip.skip
-                dsSkip.frameDone(coreEnd - coreStart, dsSkipDrawn)
+                dsSkip.frameDone(coreStart, coreEnd - coreStart, dsSkipDrawn)
                 dsSkipTimed = false
                 if (dsSkip.skip != before) Log.i("pokedaisy", "DS frame skip: $before -> ${dsSkip.skip} (${dsSkip.describe()})")
             }
@@ -1512,6 +1558,8 @@ class EmulatorEngine(
                 MgbaCore.pkNdsCpuBoost(ndsCpuBoost)
                 // EXP SHARE (Gen 4 / 5): the native side marks the battle's party and patches FULL EXP's division.
                 MgbaCore.pkNdsExpShare(gameOptions.dsExpShareMode, gameOptions.expSharePartyMask)
+                // NO HMS NEEDED's hooks: pk_nds_call_hm_free_frame puts them in or takes them out after each frame.
+                MgbaCore.pkNdsHmFree(dsHmFree)
             }
             fieldState = when {
                 nds -> MgbaCore.pkFieldState(false, wildKeep)
@@ -1520,6 +1568,25 @@ class EmulatorEngine(
             }
             // The verified roller handles each platform's wild-foe transition.
             shiny.tick()
+            // WILD PIN: out on the frame its wild battle starts (the foe is made by then); a trainer's battle keeps it.
+            if (gba) {
+                val battling = FfMenuWatch.battling || fieldState and MgbaCore.FIELD_BATTLE != 0
+                val pin = playerLook.pin
+                if (pin != null && com.pokedaisy.app.companion.data.WildPin.endsNow(pinWasBattling, battling) {
+                        com.pokedaisy.app.companion.data.activeNativeConfig?.battleTypeFlags?.takeIf { it != 0L }
+                            ?.let { InProcessReader.readCoreMemory(it, 4) }?.takeIf { it.size >= 4 }?.let { b -> (b[0].toInt() and 0xFF) or (b[1].toInt() and 0xFF shl 8) or (b[2].toInt() and 0xFF shl 16) or (b[3].toInt() shl 24) }
+                    }) {
+                    Log.i("pokedaisy", "wild pin: its battle started, the map's slots go back")
+                    // Set first: the next service() reports the pin out, and achievements must stay paused through the catch.
+                    pinBattleHold = true
+                    endPin(pin)
+                }
+                if (pinBattleHold && pinWasBattling && !battling) {
+                    pinBattleHold = false
+                    syncWildPinAchievements()
+                }
+                pinWasBattling = battling
+            }
             if (!nds) gameOptions.markExp(InProcessReader::readCoreMemory, MgbaCore::pkWriteBytes)
             playback.fieldChanged(fieldState)
             val bike = MgbaCore.FIELD_AVATAR or MgbaCore.FIELD_BIKE
@@ -1993,7 +2060,8 @@ class EmulatorEngine(
         val load = pendingLoad
         if (load >= 0) {
             pendingLoad = -1
-            if (refuseLoad(coopStatesBlocked, isResume = false)) {
+            // SHINY HUNT's guard: a shiny on screen isn't loaded over by a slip of the button.
+            if (playback.loadHeldForShiny() || refuseLoad(coopStatesBlocked, isResume = false)) {
                 onStateResult?.invoke(Hotkeys.Action.LOAD_STATE, load, false)
             } else slots.requestLoad(load)
         }

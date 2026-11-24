@@ -23,6 +23,8 @@ class PokeDaisyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Before anything reads the settings the next release's batches change.
+        FeatureFlags.applyBatches(this)
         // The data code reads the emulator through MgbaCore (companion/data/EmulatorCore.kt).
         com.pokedaisy.app.companion.data.EmulatorCore.current = MgbaEmulatorCore
         // The app's files folder, where the screens find the art RomArt rebuilt from the player's ROMs.
@@ -39,6 +41,10 @@ class PokeDaisyApp : Application() {
         com.pokedaisy.app.companion.ui.theme.FontSource.current = AndroidFonts(this)
         // The screens' pictures: Bitmaps made from pixels, image files decoded by BitmapFactory.
         com.pokedaisy.app.companion.ui.PictureCodec.current = AndroidPictures
+        // SETTINGS > MY LOOK: the player's fonts, themes and pictures (read before the theme and font are put on).
+        com.pokedaisy.app.companion.ui.theme.CustomLook.dir = filesDir.toOkioPath() / "look"
+        com.pokedaisy.app.companion.ui.theme.AnimatedPictures.host = AndroidAnimatedPictures()
+        runCatching { com.pokedaisy.app.companion.ui.theme.CustomLook.load() }
         // Dates and times the device's way (STATES' save times).
         com.pokedaisy.app.companion.ui.DeviceDates.current = JvmDeviceDates
         // Cheat codes checked by mGBA's own parser.

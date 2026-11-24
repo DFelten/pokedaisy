@@ -128,7 +128,7 @@ fun BoxesScreen(
     /** SORT is offered (the game supports it); the button opens its confirmation. */
     onSort: (() -> Unit)? = null,
     sorting: Boolean = false,
-    /** CHANGE BOX is offered (Crystal): on any box but the current one, the button opens its confirmation. */
+    /** CHANGE BOX is offered (Gold, Silver, Crystal): on any box but the current one, the button opens its confirmation. */
     onChangeBox: ((Int) -> Unit)? = null,
 ) {
     val boxIndex = ui.boxOf(boxes)
@@ -230,6 +230,7 @@ fun boxSwapMessage(r: com.pokedaisy.app.companion.data.BoxSwapResult, boxMon: Mo
     com.pokedaisy.app.companion.data.BoxSwapResult.LAST_MON -> tr("An EGG can't take the place of your last POKéMON that can battle.")
     com.pokedaisy.app.companion.data.BoxSwapResult.PARTY_FULL -> tr("Your party is full!")
     com.pokedaisy.app.companion.data.BoxSwapResult.BOX_FULL -> tr("{0} is full.", boxName)
+    com.pokedaisy.app.companion.data.BoxSwapResult.STARTER_PIKACHU -> tr("The POKéMON that follows you moves only with the game's own PC.")
     com.pokedaisy.app.companion.data.BoxSwapResult.FAILED -> tr("The swap didn't work. Nothing was changed.")
 }
 
@@ -675,7 +676,7 @@ private fun MonPanel(
  * fits, centred: the well's room goes to the Pokémon, not to the picture's empty margin.
  */
 @Composable
-private fun TrimmedSprite(bitmap: ImageBitmap?, modifier: Modifier, paper: Color? = null) {
+internal fun TrimmedSprite(bitmap: ImageBitmap?, modifier: Modifier, paper: Color? = null) {
     val density = LocalDensity.current
     val trim = remember(bitmap) { bitmap?.let(::opaqueBounds) }
     val holes = remember(bitmap, paper != null) { if (paper != null) bitmap?.let(::enclosedClear) else null }

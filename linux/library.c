@@ -32,6 +32,7 @@
 #include "pd_settings.h"
 #include "pd_sha1.h"
 #include "pd_style.h"
+#include "pd_tr.h"
 
 /* The 3DS library's art (pd_library_draw.c): the rail's icons and the flower at 24 px. */
 extern const struct pd_art LIB_ICON_GAMES, LIB_ICON_EDIT, LIB_ICON_TRADE, LIB_ICON_SETTINGS;
@@ -49,14 +50,17 @@ enum console { C_GB, C_GBC, C_GBA, C_DS };
 enum view { V_ALL, V_FAV, V_RECENT, V_GB, V_GBC, V_GBA, V_DS, V_HACKS, V_COUNT };
 enum page { P_GAMES, P_TOOLS, P_SETTINGS, P_COUNT };
 enum focus { F_RAIL, F_HEADER, F_PILLS, F_GAMES };
-enum sort { S_NAME, S_RECENT, S_COUNT };
+enum sort { S_NAME, S_RECENT, S_ADDED, S_COUNT }; // the app's NAME / LAST PLAYED / DATE ADDED
 enum { CS_NONE, CS_PATH, CS_READY, CS_FAILED };
 
 struct game {
   char path[PATH_MAX], file[256], title[96], coverPath[PATH_MAX];
   enum console console;
   bool hack, fav, favSet, hasSave;
+  bool hidden; // HIDE (a game's menu): out of every view until SETTINGS > HIDDEN GAMES shows it again
   unsigned long long played; // YYYYMMDDhhmmss, 0 = never
+  long long added;           // when the list first had it (seconds since 1970), 0 = not yet dated
+  bool addedInitial;         // dated with the whole list the first time (or a new folder's first scan): never NEW
   long size, mtime;
   char sha1[41];
   bool sha1Known, named;
@@ -78,6 +82,11 @@ static const struct lib_host *host;
 static struct pd_settings settings;
 static int page = P_GAMES, focus = F_GAMES, view = V_ALL, sortBy = S_NAME, railCursor, headerCursor;
 static bool grid = true, quit, menuOpen, closeAsk;
+static bool infoOpen;   // a game's INFO window (its menu's INFO)
+static bool searchOpen; // SEARCH's field in the header takes the keyboard (or Steam's on-screen keyboard)
+static char query[64];  // what SEARCH filters the list by (kept after the field closes, until cleared)
+static bool sortOpen;   // the header's sort button opened its pick-list (NAME / LAST PLAYED / DATE ADDED)
+static bool addedStore; // the state file has dates already: a game seen now for the first time is new
 static int faceColors; // BUTTON COLORS: 0 the app's (red A, yellow B, blue X, green Y), 1 green A, red B, blue X, yellow Y
 static int selected, scroll, columns = 4, menuCursor, settingsCursor, settingsScroll, toolCursor;
 static const char *picked;
@@ -90,7 +99,7 @@ static int contentY, contentH, contentX, contentW;
 
 /* What the last draw laid out under the pointer: the same rectangles it drew, so clicks need no second copy of the layout. */
 enum {
-  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE,
+  LIB_HIT_RAIL = 1, LIB_HIT_SORT, LIB_HIT_GRID, LIB_HIT_PILL, LIB_HIT_GAME, LIB_HIT_SETTING, LIB_HIT_TOOL, LIB_HIT_MENU, LIB_HIT_CLOSE, LIB_HIT_SORT_PICK, LIB_HIT_SEARCH,
 };
 struct lib_hit {
   int x, y, w, h, action, arg;
@@ -205,6 +214,10 @@ static void state_save(void) {
       fprintf(f, "fav\t%d\t%s\n", games[i].fav, games[i].file);
     if (games[i].played)
       fprintf(f, "played\t%llu\t%s\n", games[i].played, games[i].file);
+    if (games[i].added)
+      fprintf(f, "added\t%lld\t%d\t%s\n", games[i].added, games[i].addedInitial, games[i].file);
+    if (games[i].hidden)
+      fprintf(f, "hidden\t%s\n", games[i].file);
   }
   fclose(f);
 }
@@ -230,6 +243,18 @@ static void state_load(void) {
       by_file(file)->favSet = true;
     } else if (sscanf(line, "played\t%llu\t%255[^\n]", &t, file) == 2 && by_file(file))
       by_file(file)->played = t;
+    else if (sscanf(line, "hidden\t%255[^\n]", file) == 1 && by_file(file))
+      by_file(file)->hidden = true;
+    else {
+      long long when;
+      if (sscanf(line, "added\t%lld\t%d\t%255[^\n]", &when, &v, file) == 3) {
+        addedStore = true;
+        if (by_file(file)) {
+          by_file(file)->added = when;
+          by_file(file)->addedInitial = v != 0;
+        }
+      }
+    }
   }
   if (f)
     fclose(f);
@@ -925,6 +950,8 @@ static int work(void *unused) {
 /* ---- the views and the order ---- */
 
 static bool in_view(const struct game *g, int v) {
+  if (g->hidden)
+    return false;
   switch (v) {
   case V_ALL: return true;
   case V_FAV: return g->fav;
@@ -944,8 +971,22 @@ static int compare(const void *a, const void *b) {
     return x->fav ? -1 : 1;
   if (sortBy == S_RECENT && x->played != y->played)
     return x->played > y->played ? -1 : 1;
+  if (sortBy == S_ADDED && x->added != y->added)
+    return x->added > y->added ? -1 : 1;
   int byTitle = strcasecmp(x->title, y->title);
   return byTitle ? byTitle : strcasecmp(x->file, y->file);
+}
+
+/* [needle] in [hay], letters of either case alike (ASCII; MinGW has no strcasestr). */
+static bool contains(const char *hay, const char *needle) {
+  for (; *hay; hay++) {
+    size_t i = 0;
+    while (needle[i] && hay[i] && tolower((unsigned char)hay[i]) == tolower((unsigned char)needle[i]))
+      i++;
+    if (!needle[i])
+      return true;
+  }
+  return !*needle;
 }
 
 static void relist(void) {
@@ -959,7 +1000,7 @@ static void relist(void) {
     view = V_ALL;
   shownCount = 0;
   for (int i = 0; i < gameCount; i++)
-    if (in_view(&games[i], view))
+    if (in_view(&games[i], view) && (!*query || contains(games[i].title, query) || contains(games[i].file, query)))
       shown[shownCount++] = i;
   if (view == V_RECENT) {
     int save = sortBy;
@@ -1030,6 +1071,17 @@ void library_open(char *const *paths, int count, const char *data, const char *s
     check_saves(g);
   }
   state_load();
+  // DATE ADDED (the app's RomAdded): a game the list hasn't dated gets today; the whole list the first time the dates
+  // are kept is dated as it was (never NEW: an update mustn't tag every game NEW), later ones are new.
+  bool dated = false;
+  for (int i = 0; i < gameCount; i++)
+    if (!games[i].added) {
+      games[i].added = (long long)time(NULL);
+      games[i].addedInitial = !addedStore;
+      dated = true;
+    }
+  if (dated)
+    state_save();
   titles_load();
   // Each folder's gamelist.xml once.
   for (int i = 0; i < gameCount; i++) {
@@ -1117,7 +1169,7 @@ void library_tick(void) {
 /* ---- input ---- */
 
 static void say(const char *text) {
-  snprintf(notice, sizeof notice, "%s", text);
+  snprintf(notice, sizeof notice, "%s", pd_tr(text));
   noticeUntil = SDL_GetTicks() + 2500;
 }
 
@@ -1146,13 +1198,19 @@ static void step_view(int dir) {
 /* SETTINGS' rows: the library's three, then the host's, BUTTON COLORS (after the host's A/B BUTTONS), then VERSION. */
 enum { SET_DARK, SET_THEME, SET_ASPECT, SET_OWN };
 static int host_rows(void) { return host ? host->settings : 0; }
-static int settings_rows(void) { return SET_OWN + host_rows() + 2; }
+static int settings_rows(void) { return SET_OWN + host_rows() + 3; } // + BUTTON COLORS, HIDDEN GAMES, VERSION
+static int hidden_count(void) {
+  int n = 0;
+  for (int i = 0; i < gameCount; i++)
+    n += games[i].hidden;
+  return n;
+}
 static const char *setting_group(int row) {
   if (row < SET_OWN)
     return "SCREEN";
   if (row - SET_OWN < host_rows())
     return host->group(row - SET_OWN);
-  return row == SET_OWN + host_rows() ? "CONTROLS" : "APP";
+  return row == SET_OWN + host_rows() ? "CONTROLS" : row == SET_OWN + host_rows() + 1 ? "LIBRARY" : "APP";
 }
 static void setting_label(int row, char *label, int llen, char *value, int vlen) {
   value[0] = 0;
@@ -1173,6 +1231,13 @@ static void setting_label(int row, char *label, int llen, char *value, int vlen)
   } else if (row == SET_OWN + host_rows()) {
     snprintf(label, (size_t)llen, "BUTTON COLORS");
     snprintf(value, (size_t)vlen, "%s", faceColors ? "GREEN A" : "RED A");
+  } else if (row == SET_OWN + host_rows() + 1) {
+    // HIDDEN GAMES: how many; A shows them all again.
+    snprintf(label, (size_t)llen, "HIDDEN GAMES");
+    if (hidden_count())
+      snprintf(value, (size_t)vlen, "%d", hidden_count());
+    else
+      snprintf(value, (size_t)vlen, "NONE");
   } else {
     snprintf(label, (size_t)llen, "VERSION");
     snprintf(value, (size_t)vlen, "%s", host && host->version ? host->version : "");
@@ -1203,6 +1268,12 @@ static void setting_step(int row, int dir) {
   else if (row == SET_OWN + host_rows()) {
     faceColors = !faceColors;
     state_save();
+  } else if (row == SET_OWN + host_rows() + 1 && hidden_count()) {
+    for (int i = 0; i < gameCount; i++)
+      games[i].hidden = false;
+    state_save();
+    relist();
+    say("Hidden games are back in the list");
   }
 }
 
@@ -1212,6 +1283,17 @@ static void play(void) {
 }
 
 /* The game's B menu (PLAY / FAVORITE / CANCEL): A, or a click on its row. */
+static const char *const SORT_NAMES[S_COUNT] = {"NAME", "LAST PLAYED", "DATE ADDED"};
+static void sort_choose(int v) {
+  sortOpen = false;
+  if (v < 0 || v >= S_COUNT)
+    return;
+  sortBy = v;
+  say(v == S_NAME ? "Sorted by name" : v == S_RECENT ? "Sorted by last played" : "Sorted by date added");
+  relist();
+  state_save();
+}
+
 static void menu_choose(void) {
   if (selected < 0 || selected >= shownCount) {
     menuOpen = false;
@@ -1220,6 +1302,14 @@ static void menu_choose(void) {
   struct game *g = &games[shown[selected]];
   if (menuCursor == 0)
     play();
+  else if (menuCursor == 2)
+    infoOpen = true;
+  else if (menuCursor == 3) {
+    g->hidden = true; // the app's HIDE: SETTINGS > HIDDEN GAMES brings it back
+    state_save();
+    relist();
+    say("Hidden: SETTINGS > HIDDEN GAMES shows it again");
+  }
   else if (menuCursor == 1) {
     g->fav = !g->fav;
     g->favSet = true;
@@ -1265,6 +1355,13 @@ static void move_games(unsigned down) {
 void library_keys(unsigned down) {
   if (!down)
     return;
+  if (searchOpen) { // the controller while the field is open (Steam's keyboard types): A / B / START close it
+    if (down & (LIB_A | LIB_B | LIB_START | LIB_MENU)) {
+      searchOpen = false;
+      focus = F_GAMES;
+    }
+    return;
+  }
   if (closeAsk) {
     if (down & (LIB_LEFT | LIB_RIGHT | LIB_UP | LIB_DOWN))
       menuCursor ^= 1;
@@ -1277,11 +1374,27 @@ void library_keys(unsigned down) {
       closeAsk = false;
     return;
   }
+  if (infoOpen) {
+    if (down & (LIB_A | LIB_B | LIB_START | LIB_MENU))
+      infoOpen = false;
+    return;
+  }
+  if (sortOpen) {
+    if (down & LIB_UP)
+      menuCursor = (menuCursor + S_COUNT - 1) % S_COUNT;
+    if (down & LIB_DOWN)
+      menuCursor = (menuCursor + 1) % S_COUNT;
+    if (down & LIB_A)
+      sort_choose(menuCursor);
+    if (down & (LIB_B | LIB_START))
+      sortOpen = false;
+    return;
+  }
   if (menuOpen) {
     if (down & LIB_UP)
-      menuCursor = (menuCursor + 2) % 3;
+      menuCursor = (menuCursor + 4) % 5;
     if (down & LIB_DOWN)
-      menuCursor = (menuCursor + 1) % 3;
+      menuCursor = (menuCursor + 1) % 5;
     if (down & LIB_A)
       menu_choose();
     if (down & (LIB_B | LIB_START))
@@ -1354,16 +1467,18 @@ void library_keys(unsigned down) {
       else
         focus = F_RAIL, railCursor = P_GAMES;
     }
-    if ((down & LIB_RIGHT) && headerCursor < 1)
+    if ((down & LIB_RIGHT) && headerCursor < 2)
       headerCursor++;
     if (down & LIB_DOWN)
       focus = F_PILLS;
     if (down & LIB_A) {
       if (headerCursor == 0) {
-        sortBy = (sortBy + 1) % S_COUNT;
-        say(sortBy == S_NAME ? "Sorted by name" : "Sorted by last played");
+        sortOpen = true; // three orders: a pick-list (the app's), never a cycle
+        menuCursor = sortBy;
         relist();
-      } else
+      } else if (headerCursor == 1)
+        searchOpen = true;
+      else
         grid = !grid;
       state_save();
     }
@@ -1521,8 +1636,8 @@ static void backdrop(struct pd_canvas *c) {
 static int rail_w(void) {
   int w = 0;
   for (int i = 0; i < P_COUNT; i++)
-    if (pd_text_width(PAGE_NAMES[i]) > w)
-      w = pd_text_width(PAGE_NAMES[i]);
+    if (pd_text_width(pd_tr(PAGE_NAMES[i])) > w)
+      w = pd_text_width(pd_tr(PAGE_NAMES[i]));
   return w + 24 < 72 ? 72 : w + 24;
 }
 
@@ -1538,8 +1653,9 @@ static void draw_rail(struct pd_canvas *c) {
     if (on)
       pd_round_rect(c, x, y, w, ih, 3, PD_TITLE_FILL);
     ui_art_at(c, art[i], x + (w - 32) / 2, y + 5, 2);
-    int tw = pd_text_width(PAGE_NAMES[i]);
-    pd_text(c, x + (w - tw) / 2, y + 36, PAGE_NAMES[i], on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
+    const char *name = pd_tr(PAGE_NAMES[i]);
+    int tw = pd_text_width(name);
+    pd_text(c, x + (w - tw) / 2, y + 36, name, on ? PD_VALUE : PD_LABEL, on ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
     if (focus == F_RAIL && railCursor == i)
       ring(c, x, y, w, ih);
     hit_add(x, y, w, ih, LIB_HIT_RAIL, i);
@@ -1547,27 +1663,60 @@ static void draw_rail(struct pd_canvas *c) {
 }
 
 static void draw_header(struct pd_canvas *c, int x, int w, const char *title, bool buttons) {
-  int f = pd_title_box(c, x, M, w, HEADER_H, PD_TITLE_FILL);
+  int f;
+  if (pd_style) {
+    // The app's LibraryHeaderBar: a band docked to the screen's top and right edges, its frame only along the bottom and
+    // the side facing the rail; the header's buttons as keys.
+    const int bx = x - 3, bw = c->w - bx, bh = M + HEADER_H;
+    pd_fill(c, bx, 0, bw, bh, pd_style->header[0].color);
+    pd_fill(c, bx + 1, 0, bw - 1, bh - 1, pd_style->header[1].color);
+    pd_fill(c, bx + 2, 0, bw - 2, bh - 2, pd_style->headerFill);
+    f = 2;
+  } else
+    f = pd_title_box(c, x, M, w, HEADER_H, PD_TITLE_FILL);
   lib_draw_logo_24(c, x + f + 3, M + (HEADER_H - 24) / 2);
-  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+  pd_text(c, x + f + 32, pd_text_y(M, HEADER_H), pd_tr(title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
   if (!buttons)
     return;
-  // SORT and GRID / LIST: the app's HeaderIcons, at the window's right end.
-  for (int i = 0; i < 2; i++) {
-    int bw = 26, bh = HEADER_H - 2 * f - 4, bx = x + w - f - 4 - (2 - i) * (bw + 4), by = M + f + 2;
-    pd_layered_two_tone(c, bx, by, bw, bh, 3, pd_cur->chip, pd_cur->chipCount, pd_cur->tabIdleFill, 0);
-    const struct pd_mono *icon = i == 0 ? &SORT_ICON : grid ? &LIST_ICON : &GRID_ICON;
-    mono(c, icon, bx + (bw - icon->w * 2) / 2, by + (bh - icon->h * 2) / 2, 2, PD_LABEL);
+  // SEARCH's field, between the title and the buttons, while it's open or a search is on (the app's header search).
+  if (searchOpen || *query) {
+    const int fx = x + f + 32 + pd_text_width(pd_tr(title)) + 12, fr = x + w - f - 4 - 3 * 30 - 6;
+    if (fr - fx > 60) {
+      int lf = pd_list_box(c, fx, M + f + 2, fr - fx, HEADER_H - 2 * f - 4);
+      int tx = fx + lf + 4, tw = fr - fx - 2 * lf - 8, ty = pd_text_y(M + f + 2, HEADER_H - 2 * f - 4);
+      if (*query)
+        pd_text_fit(c, tx, ty, tw - 6, query, PD_LABEL, PD_LABEL_SHADOW);
+      else
+        pd_text_fit(c, tx, ty, tw - 6, pd_tr("SEARCH"), PD_MUTED, PD_MUTED_SHADOW);
+      if (searchOpen && (SDL_GetTicks() / 500) % 2 == 0) { // the caret
+        int cx = tx + (*query ? pd_text_width(query) + 1 : 0);
+        if (cx < tx + tw - 2)
+          pd_fill(c, cx, ty + 3, 2, 12, PD_LABEL);
+      }
+      hit_add(fx, M + f + 2, fr - fx, HEADER_H - 2 * f - 4, LIB_HIT_SEARCH, 0);
+    }
+  }
+  // SORT, SEARCH and GRID / LIST: the app's HeaderIcons, at the window's right end.
+  for (int i = 0; i < 3; i++) {
+    int bw = 26, bh = HEADER_H - 2 * f - 4, bx = x + w - f - 4 - (3 - i) * (bw + 4), by = M + f + 2;
+    if (pd_style)
+      pd_key(c, bx, by, bw, bh, &pd_style->button);
+    else
+      pd_layered_two_tone(c, bx, by, bw, bh, 3, pd_cur->chip, pd_cur->chipCount, pd_cur->tabIdleFill, 0);
+    const struct pd_mono *icon = i == 0 ? &SORT_ICON : i == 1 ? &PD_ICON_SEARCH : grid ? &LIST_ICON : &GRID_ICON;
+    const int sc = icon->w > 10 ? 1 : 2; // the 16-pixel search glass at 1x, the 7-pixel icons at 2x
+    mono(c, icon, bx + (bw - icon->w * sc) / 2, by + (bh - icon->h * sc) / 2 - (pd_style ? 1 : 0), sc,
+         pd_style ? pd_style->button.text : PD_LABEL);
     if (focus == F_HEADER && headerCursor == i)
       ring(c, bx, by, bw, bh);
-    hit_add(bx, by, bw, bh, i == 0 ? LIB_HIT_SORT : LIB_HIT_GRID, 0);
+    hit_add(bx, by, bw, bh, i == 0 ? LIB_HIT_SORT : i == 1 ? LIB_HIT_SEARCH : LIB_HIT_GRID, 0);
   }
 }
 
 static int pill_width(int v) {
   char count[16];
   snprintf(count, sizeof count, "%d", counts[v]);
-  return 16 + ((v == V_FAV || v == V_RECENT) ? 13 : 0) + pd_text_width(VIEW_NAMES[v]) + 5 + pd_text_width(count);
+  return 16 + ((v == V_FAV || v == V_RECENT) ? 13 : 0) + pd_text_width(pd_tr(VIEW_NAMES[v])) + 5 + pd_text_width(count);
 }
 
 static void draw_pills(struct pd_canvas *c, int x, int y, int w) {
@@ -1606,7 +1755,7 @@ static void draw_pills(struct pd_canvas *c, int x, int y, int w) {
       mono(c, v == V_FAV ? &PD_ICON_STAR : &PD_ICON_CLOCK, tx, y + (PILL_H - 9) / 2, 1, on ? 0xFFFFFF : k->back);
       tx += 13;
     }
-    tx += pd_text(c, tx, ty, VIEW_NAMES[v], text, shadow) + 5;
+    tx += pd_text(c, tx, ty, pd_tr(VIEW_NAMES[v]), text, shadow) + 5;
     char count[16];
     snprintf(count, sizeof count, "%d", counts[v]);
     pd_text(c, tx, ty, count, pd_mix(text, on ? k->back : PD_TITLE_FILL, 77), PD_NO_SHADOW);
@@ -1683,10 +1832,22 @@ static void cover_well(struct pd_canvas *c, const struct game *g, int x, int y, 
   }
 }
 
+int ui_game_tag(struct pd_canvas *c, int x, int y, const char *text, uint32_t fill, uint32_t ink, int minW); // pd_ui_widgets.c
+
+// NEW (the app's green tag): a game the list first had in the last 24 hours, not dated with the whole list.
+static bool is_new(const struct game *g) {
+  return g->added && !g->addedInitial && (long long)time(NULL) - g->added < 24 * 60 * 60;
+}
+
 static void title_line(struct pd_canvas *c, const struct game *g, int x, int y, int w) {
-  int icons = (g->fav ? 13 : 0) + (g->hasSave ? 13 : 0);
+  int newW = is_new(g) ? ui_game_tag(NULL, 0, 0, pd_tr("NEW"), 0, 0, 0) + 3 : 0;
+  int icons = (g->fav ? 13 : 0) + (g->hasSave ? 13 : 0) + newW;
   pd_text_fit(c, x, y, w - icons, g->title, PD_LABEL, PD_LABEL_SHADOW);
   int ix = x + w - icons;
+  if (newW) {
+    ui_game_tag(c, ix + 2, y + 2, pd_tr("NEW"), 0x38A048, 0xFFFFFF, 0);
+    ix += newW;
+  }
   if (g->fav) {
     mono(c, &PD_ICON_STAR, ix + 2, y + 4, 1, pd_cur->favorite);
     ix += 13;
@@ -1699,7 +1860,7 @@ static void draw_games(struct pd_canvas *c) {
   if (!shownCount) {
     int f = pd_list_box(c, contentX, contentY, contentW, 44);
     pd_text_fit(c, contentX + f + 8, contentY + 14, contentW - 2 * f - 16,
-                gameCount ? "No games in this view yet." : "No Pokemon games found. Put them in roms/ beside PokeDaisy.",
+                pd_tr(gameCount ? "No games in this view yet." : "No Pokemon games found. Put them in roms/ beside PokeDaisy."),
                 PD_LABEL, PD_LABEL_SHADOW);
     return;
   }
@@ -1745,7 +1906,7 @@ static void draw_games(struct pd_canvas *c) {
       int tx = contentX + rh + 4;
       title_line(c, g, tx, y + 5, contentW - rh - 12);
       int v = g->console == C_GB ? V_GB : g->console == C_GBC ? V_GBC : g->console == C_GBA ? V_GBA : V_DS;
-      const char *tags[2] = {VIEW_NAMES[v], g->hack ? "HACK" : NULL};
+      const char *tags[2] = {pd_tr(VIEW_NAMES[v]), g->hack ? pd_tr("HACK") : NULL};
       int lv[2] = {v, V_HACKS};
       for (int k = 0; k < 2 && tags[k]; k++) {
         int bw = pd_text_width(tags[k]) + 8;
@@ -1783,22 +1944,30 @@ static void draw_settings(struct pd_canvas *c) {
     settingsScroll = 0;
   f = pd_list_box(c, contentX, contentY, contentW, contentH);
   pd_clip(c, contentX + f, contentY + f, contentW - 2 * f, contentH - 2 * f);
-  int y = contentY + f - settingsScroll;
+  int y = contentY + f - settingsScroll, parity = 0;
   last = NULL;
   for (int i = 0; i < n; i++) {
     if (!last || strcmp(last, setting_group(i))) {
       last = setting_group(i);
-      pd_text(c, contentX + f + 8, pd_text_y(y, rowH), last, PD_MUTED, PD_MUTED_SHADOW);
-      pd_fill(c, contentX + f + 8, y + rowH - 3, contentW - 2 * f - 16, 1, PD_DIVIDER);
+      if (pd_style) { // the style's section band, as the companion's SETTINGS
+        pd_section_title(c, contentX + f + 4, y, contentW - 2 * f - 8, rowH, pd_tr(last));
+      } else {
+        pd_text(c, contentX + f + 8, pd_text_y(y, rowH), pd_tr(last), PD_MUTED, PD_MUTED_SHADOW);
+        pd_fill(c, contentX + f + 8, y + rowH - 3, contentW - 2 * f - 16, 1, PD_DIVIDER);
+      }
       y += rowH;
+      parity = 0;
     }
     char label[48], value[48];
     setting_label(i, label, sizeof label, value, sizeof value);
     bool cur = i == settingsCursor && focus == F_GAMES;
     if (cur)
       pd_fill(c, contentX + f, y, contentW - 2 * f, rowH, PD_ROW_SELECTED);
-    pd_text(c, contentX + f + 12, pd_text_y(y, rowH), label, PD_LABEL, PD_LABEL_SHADOW);
-    pd_text_right(c, contentX + contentW - f - 12, pd_text_y(y, rowH), value, PD_VALUE, PD_VALUE_SHADOW);
+    else if (pd_style && (parity & 1)) // striped rows
+      pd_fill(c, contentX + f, y, contentW - 2 * f, rowH, pd_style->stripe);
+    parity++;
+    pd_text(c, contentX + f + 12, pd_text_y(y, rowH), pd_tr(label), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_right(c, contentX + contentW - f - 12, pd_text_y(y, rowH), pd_tr(value), PD_VALUE, PD_VALUE_SHADOW);
     hit_add_clipped(contentX + f, y, contentW - 2 * f, rowH, contentX + f, contentY + f, contentW - 2 * f, contentH - 2 * f,
                     LIB_HIT_SETTING, i);
     y += rowH;
@@ -1813,10 +1982,12 @@ static void draw_tools(struct pd_canvas *c) {
   for (int i = 0; i < 2; i++) {
     int y = contentY + i * 64, h = 56;
     bool cur = focus == F_GAMES && toolCursor == i;
-    int f = pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->title, pd_cur->titleCount, cur ? PD_ROW_SELECTED : PD_TITLE_FILL);
+    // A card (ToolsPage's): the list window's frame in the style, the title window's without.
+    int f = pd_style ? pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->list, pd_cur->listCount, cur ? PD_ROW_SELECTED : PD_LIST_FILL)
+                     : pd_layered_box(c, contentX, y, contentW, h, 3, pd_cur->title, pd_cur->titleCount, cur ? PD_ROW_SELECTED : PD_TITLE_FILL);
     ui_art_at(c, art[i], contentX + f + 6, y + (h - 32) / 2, 2);
-    pd_text(c, contentX + f + 48, y + f + 6, NAMES[i], PD_LABEL, PD_LABEL_SHADOW);
-    pd_text_fit(c, contentX + f + 48, y + f + 24, contentW - f * 2 - 56, BLURBS[i], PD_MUTED, PD_MUTED_SHADOW);
+    pd_text(c, contentX + f + 48, y + f + 6, pd_tr(NAMES[i]), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, contentX + f + 48, y + f + 24, contentW - f * 2 - 56, pd_tr(BLURBS[i]), PD_MUTED, PD_MUTED_SHADOW);
     if (cur)
       ring(c, contentX, y, contentW, h);
     hit_add(contentX, y, contentW, h, LIB_HIT_TOOL, i);
@@ -1842,7 +2013,9 @@ void library_draw(struct pd_canvas *c) {
   } else {
     draw_header(c, x, w, page == P_TOOLS ? "TOOLS" : "SETTINGS", false);
     contentY = M + HEADER_H + GAP;
-    contentH = c->h - contentY - M;
+    // The list ends above the floating button legend (28 tall, M from the bottom): its rows' values sit at the right
+    // edge, where the legend covered the last ones.
+    contentH = c->h - contentY - M - 28 - GAP;
     if (page == P_TOOLS)
       draw_tools(c);
     else
@@ -1868,10 +2041,21 @@ static void face(struct pd_canvas *c, int x, int y, char letter) {
 }
 
 static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *title, const char *const *rows, int n, int cursor) {
-  int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+  int f;
+  if (pd_style && title) {
+    // The style's pick-list: the title in a header band, the rows in a list window under it, where the callers' taps are.
+    f = 0;
+    for (int i = 0; i < pd_cur->titleCount; i++)
+      f += pd_cur->title[i].width;
+    int hf = pd_header_box(c, x, y, w, 26);
+    pd_text_fit(c, x + hf + 6, pd_text_y(y, 26), w - 2 * hf - 12, title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
+    pd_list_box(c, x, y + 27, w, h - 27);
+  } else
+    f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
   int ry = y + f + 4;
   if (title) {
-    pd_text_fit(c, x + f + 8, ry, w - 2 * f - 16, title, PD_VALUE, PD_VALUE_SHADOW);
+    if (!pd_style)
+      pd_text_fit(c, x + f + 8, ry, w - 2 * f - 16, title, PD_VALUE, PD_VALUE_SHADOW);
     ry += 24;
   }
   for (int i = 0; i < n; i++) {
@@ -1879,54 +2063,97 @@ static int window(struct pd_canvas *c, int x, int y, int w, int h, const char *t
       pd_fill(c, x + f + 2, ry, w - 2 * f - 4, 22, PD_ROW_SELECTED);
       pd_triangle(c, x + f + 6, ry + 6, 8, PD_RIGHT, PD_VALUE);
     }
-    pd_text_fit(c, x + f + 18, pd_text_y(ry, 22), w - 2 * f - 26, rows[i], PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, x + f + 18, pd_text_y(ry, 22), w - 2 * f - 26, pd_tr(rows[i]), PD_LABEL, PD_LABEL_SHADOW);
     ry += 24;
   }
   return f;
 }
 
-bool library_dimmed(void) { return menuOpen || closeAsk; }
+/* A game's INFO (the app's GameInfo, the parts the desktop knows): its file, folder, size, console, SHA-1 and save. */
+static void draw_info(struct pd_canvas *c, const struct game *g) {
+  char size[32], folder[PATH_MAX], sav[PATH_MAX * 2];
+  if (g->size >= 1024 * 1024)
+    snprintf(size, sizeof size, "%.1f MB", g->size / (1024.0 * 1024.0));
+  else
+    snprintf(size, sizeof size, "%ld KB", (g->size + 1023) / 1024);
+  snprintf(folder, sizeof folder, "%s", g->path);
+  char *slash = strrchr(folder, '/');
+  if (slash)
+    *slash = 0;
+  pd_save_path(savesDir, g->path, sav, sizeof sav);
+  static const char *const CONSOLES[] = {"GB", "GBC", "GBA", "DS"};
+  const char *labels[6] = {"FILE", "FOLDER", "SIZE", "CONSOLE", "SHA-1", "SAVE"};
+  const char *values[6] = {g->file, folder, size, CONSOLES[g->console], g->sha1Known ? g->sha1 : "...",
+                           g->hasSave ? sav : pd_tr("none yet")};
+  int w = c->w - 80 > 520 ? 520 : c->w - 80, rowH = 22, h = 27 + 8 + 6 * rowH + 8;
+  int x = (c->w - w) / 2, y = (c->h - h) / 2;
+  int hf = pd_header_box(c, x, y, w, 26);
+  pd_text_fit(c, x + hf + 6, pd_text_y(y, 26), w - 2 * hf - 12, g->title, PD_HEADER_TEXT, PD_HEADER_SHADOW);
+  int lf = pd_list_box(c, x, y + 27, w, h - 27);
+  int lw = 0;
+  for (int i = 0; i < 6; i++)
+    if (pd_text_width(pd_tr(labels[i])) > lw)
+      lw = pd_text_width(pd_tr(labels[i]));
+  for (int i = 0; i < 6; i++) {
+    int ry = y + 27 + lf + 4 + i * rowH, vx = x + lf + 10 + lw + 12;
+    if (i & 1)
+      pd_fill(c, x + lf, ry, w - 2 * lf, rowH, pd_style ? pd_style->stripe : pd_mix(PD_LIST_FILL, PD_LABEL, 20));
+    pd_text(c, x + lf + 10, pd_text_y(ry, rowH), pd_tr(labels[i]), PD_LABEL, PD_LABEL_SHADOW);
+    pd_text_fit(c, vx, pd_text_y(ry, rowH), x + w - lf - 10 - vx, values[i], PD_VALUE, PD_VALUE_SHADOW);
+  }
+}
+
+bool library_dimmed(void) { return menuOpen || closeAsk || sortOpen || infoOpen; }
 
 void library_draw_top(struct pd_canvas *c, uint32_t clear) {
   pd_fill(c, 0, 0, c->w, c->h, clear);
   // The button legend, floating bottom right (the launcher's ButtonLegend).
-  if (!menuOpen && !closeAsk) {
+  if (!menuOpen && !closeAsk && !sortOpen && !infoOpen) {
     static const char *const GAMES_LEGEND[][2] = {{"A", "OPEN"}, {"B", "OPTIONS"}, {"Y", "SETTINGS"}};
     static const char *const PAGE_LEGEND[][2] = {{"A", "CHOOSE"}, {"B", "BACK"}};
     bool gamesPage = page == P_GAMES;
     int n = gamesPage ? 3 : 2, w = 10;
     for (int i = 0; i < n; i++)
-      w += 22 + pd_text_width(gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1]) + 10;
+      w += 22 + pd_text_width(pd_tr(gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1])) + 10;
     int h = 28, x = c->w - M - w, y = c->h - M - h;
-    int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+    int f = pd_style ? pd_list_box(c, x, y, w, h) : pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
     int lx = x + f + 5;
     for (int i = 0; i < n; i++) {
       const char *k = gamesPage ? GAMES_LEGEND[i][0] : PAGE_LEGEND[i][0], *l = gamesPage ? GAMES_LEGEND[i][1] : PAGE_LEGEND[i][1];
       face(c, lx, y + (h - 18) / 2, k[0]);
       lx += 22;
-      lx += pd_text(c, lx, pd_text_y(y, h), l, PD_LABEL, PD_LABEL_SHADOW) + 10;
+      lx += pd_text(c, lx, pd_text_y(y, h), pd_tr(l), PD_LABEL, PD_LABEL_SHADOW) + 10;
     }
   }
   if (menuOpen && selected < shownCount) {
     const struct game *g = &games[shown[selected]];
-    const char *rows[3] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "CANCEL"};
-    int w = 240, h = 2 * 6 + 24 + 3 * 24 + 4;
+    const char *rows[5] = {"PLAY", g->fav ? "UNFAVORITE" : "FAVORITE", "INFO", "HIDE", "CANCEL"};
+    int w = 240, h = 2 * 6 + 24 + 5 * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, g->title, rows, 3, menuCursor);
-    for (int i = 0; i < 3; i++)
+    int f = window(c, x, y, w, h, g->title, rows, 5, menuCursor);
+    for (int i = 0; i < 5; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_MENU, i);
+  }
+  if (infoOpen && selected < shownCount)
+    draw_info(c, &games[shown[selected]]);
+  if (sortOpen) {
+    int w = 240, h = 2 * 6 + 24 + S_COUNT * 24 + 4;
+    int x = (c->w - w) / 2, y = (c->h - h) / 2;
+    int f = window(c, x, y, w, h, pd_tr("SORT BY"), SORT_NAMES, S_COUNT, menuCursor);
+    for (int i = 0; i < S_COUNT; i++)
+      hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_SORT_PICK, i);
   }
   if (closeAsk) {
     const char *rows[2] = {"YES", "NO"};
     int w = 240, h = 2 * 6 + 24 + 2 * 24 + 4;
     int x = (c->w - w) / 2, y = (c->h - h) / 2;
-    int f = window(c, x, y, w, h, "CLOSE POKéDAISY?", rows, 2, menuCursor);
+    int f = window(c, x, y, w, h, pd_tr("CLOSE POKéDAISY?"), rows, 2, menuCursor);
     for (int i = 0; i < 2; i++)
       hit_add(x + f + 2, y + f + 4 + 24 + i * 24, w - 2 * f - 4, 22, LIB_HIT_CLOSE, i);
   }
   if (SDL_GetTicks() < noticeUntil) {
     int w = pd_text_width(notice) + 24, h = 28, x = (c->w - w) / 2, y = c->h - M - h - 36;
-    int f = pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
+    int f = pd_style ? pd_list_box(c, x, y, w, h) : pd_title_box(c, x, y, w, h, PD_TITLE_FILL);
     pd_text(c, x + f + 8, pd_text_y(y, h), notice, PD_LABEL, PD_LABEL_SHADOW);
   }
 }
@@ -1962,10 +2189,68 @@ static void wheel_games(int dir) {
   focus = F_GAMES;
 }
 
+bool library_searching(void) { return searchOpen; }
+
+void library_text(const char *utf8) {
+  size_t n = strlen(query), add = strlen(utf8);
+  if (!searchOpen || n + add >= sizeof query)
+    return;
+  memcpy(query + n, utf8, add + 1);
+  relist();
+}
+
+void library_search_key(int key) {
+  if (!searchOpen || key < 0)
+    return;
+  if (key == LIB_SEARCH_BACKSPACE) {
+    size_t n = strlen(query);
+    while (n > 0 && (query[n - 1] & 0xC0) == 0x80) // a whole UTF-8 character
+      n--;
+    if (n > 0)
+      n--;
+    query[n] = 0;
+    relist();
+  } else {
+    searchOpen = false;
+    if (key == LIB_SEARCH_CANCEL) {
+      query[0] = 0;
+      relist();
+    }
+    focus = F_GAMES;
+  }
+}
+
+void library_menu_at(int x, int y) {
+  if (menuOpen || closeAsk || sortOpen || infoOpen || page != P_GAMES)
+    return;
+  int under = hit_under(x, y);
+  const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
+  if (!h || h->action != LIB_HIT_GAME || h->arg < 0 || h->arg >= shownCount)
+    return;
+  selected = h->arg;
+  focus = F_GAMES;
+  menuOpen = true;
+  menuCursor = 0;
+}
+
 void library_pointer(int x, int y, bool click, int wheel) {
   int under = hit_under(x, y);
   const struct lib_hit *h = under >= 0 ? &libHits[under] : NULL;
+  if (searchOpen && click && (!h || h->action != LIB_HIT_SEARCH))
+    searchOpen = false; // a click elsewhere leaves the field; what it found stays
 
+  if (infoOpen) {
+    if (click)
+      infoOpen = false;
+    return;
+  }
+  if (sortOpen) {
+    if (click)
+      sort_choose(h && h->action == LIB_HIT_SORT_PICK ? h->arg : -1); // beside it: closed, as B
+    else if (wheel)
+      menuCursor = (menuCursor + (wheel > 0 ? S_COUNT - 1 : 1)) % S_COUNT;
+    return;
+  }
   if (menuOpen || closeAsk) {
     if (click) {
       if (h && ((menuOpen && h->action == LIB_HIT_MENU) || (closeAsk && h->action == LIB_HIT_CLOSE))) {
@@ -1984,7 +2269,7 @@ void library_pointer(int x, int y, bool click, int wheel) {
       return;
     }
     if (wheel) {
-      int n = menuOpen ? 3 : 2, dir = wheel > 0 ? -1 : 1;
+      int n = menuOpen ? 5 : 2, dir = wheel > 0 ? -1 : 1;
       for (int i = wheel > 0 ? wheel : -wheel; i > 0; i--)
         menuCursor = (menuCursor + dir + n) % n;
     }
@@ -1997,8 +2282,8 @@ void library_pointer(int x, int y, bool click, int wheel) {
       page = railCursor = h->arg;
       focus = F_GAMES;
     } else if (h->action == LIB_HIT_SORT) {
-      sortBy = (sortBy + 1) % S_COUNT;
-      say(sortBy == S_NAME ? "Sorted by name" : "Sorted by last played");
+      sortOpen = true;
+      menuCursor = sortBy;
       relist();
       state_save();
       focus = F_HEADER;
@@ -2006,6 +2291,10 @@ void library_pointer(int x, int y, bool click, int wheel) {
     } else if (h->action == LIB_HIT_GRID) {
       grid = !grid;
       state_save();
+      focus = F_HEADER;
+      headerCursor = 2;
+    } else if (h->action == LIB_HIT_SEARCH) {
+      searchOpen = true;
       focus = F_HEADER;
       headerCursor = 1;
     } else if (h->action == LIB_HIT_PILL) {

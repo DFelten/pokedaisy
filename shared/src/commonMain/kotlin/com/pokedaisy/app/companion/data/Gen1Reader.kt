@@ -291,7 +291,7 @@ fun decodeGen1PartyMon(raw: ByteArray, off: Int, cfg: Gen1Config): Mon? {
  * DVs at [dvs], stat experience (HP, Attack, Defense, Speed, Special), and max HP + the four stats at [hpStats], as
  * [MonStats] lists - Special in both of their special slots.
  */
-private fun gen1Stats(raw: ByteArray, dvs: Int, statExp: List<Int>, hpStats: Int): MonStats {
+internal fun gen1Stats(raw: ByteArray, dvs: Int, statExp: List<Int>, hpStats: Int): MonStats {
     val s = List(5) { be16(raw, hpStats + 2 * it) }
     return MonStats(
         ivs = gbDvs(u8(raw, dvs), u8(raw, dvs + 1)),
@@ -335,7 +335,7 @@ fun decodeGen1BattleMon(raw: ByteArray, cfg: Gen1Config): BattleMon? {
 }
 
 /** [raw]'s nickname at [off] (11 bytes, 0x50-terminated) in the cart's own charset. */
-private fun gen1Nickname(raw: ByteArray, off: Int, charset: Gen1Charset): String? {
+internal fun gen1Nickname(raw: ByteArray, off: Int, charset: Gen1Charset): String? {
     if (off + GEN1_NAME_LEN > raw.size) return null
     val chars = charset.chars
     return buildString {
@@ -348,7 +348,7 @@ private fun gen1Nickname(raw: ByteArray, off: Int, charset: Gen1Charset): String
 }
 
 /** The cart's character set: German / French share one, Italian / Spanish another. */
-private fun gen1Charset(language: Char): Gen1Charset = when (language) {
+internal fun gen1Charset(language: Char): Gen1Charset = when (language) {
     'D', 'F' -> Gen1Charset.DF
     'I', 'S' -> Gen1Charset.IS
     else -> Gen1Charset.EN
@@ -475,5 +475,8 @@ fun readGen1Telemetry(r: MemoryReader, cfg: Gen1Config): Telemetry {
         pokedex = cfg.pokedex?.let { t -> t.gen1?.let { runCatching { readGen1PokedexState(r, it, t) }.getOrNull() } },
         // The GUIDE's flags, badges and the champion's team (GuideGen1.kt).
         progress = gen1GuideRam(cfg)?.let { runCatching { readGen1Progress(r, it) }.getOrNull() },
+        pcBoxes = gen1BoxLayoutFor(cfg)?.let { readGen1Boxes(r, cfg, it) },
+        // The CARD tab: Red's, Blue's and Yellow's own card (Gen1TrainerCard), on the carts whose card is mapped.
+        trainerCard = Gen1TrainerCard.read(r, cfg),
     )
 }

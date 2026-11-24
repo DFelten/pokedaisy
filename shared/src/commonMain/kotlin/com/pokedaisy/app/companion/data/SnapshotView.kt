@@ -215,6 +215,8 @@ data class SnapshotView(
     val party: List<MonView> = emptyList(),
     /** The PC's boxes (the BOXES tab); null = not read for this game. */
     val pcBoxes: BoxesView? = null,
+    /** Without [pcBoxes]: each box's species, for the DEX alone ([Telemetry.boxSpecies]); null = not read. */
+    val boxSpecies: List<List<Int>>? = null,
     val battlePlayer: List<MonView> = emptyList(),
     val battleOpponent: List<MonView> = emptyList(),
     val items: List<ItemView> = emptyList(),
@@ -417,11 +419,11 @@ const val DEX_IN_PARTY = 0
 
 /** Where the save keeps each species, for the DEX's rows (GitHub discussion #312): the party first, then the first box
  * holding one. Null where the boxes aren't read, since a Pokémon missing from the party could be in them. Eggs don't
- * count: the entry isn't caught yet. */
-fun dexHoldings(party: List<MonView>, boxes: BoxesView?): Map<Int, Int>? {
-    if (boxes == null) return null
+ * count: the entry isn't caught yet. [boxSpecies] stands in for [boxes] where only the species are read. */
+fun dexHoldings(party: List<MonView>, boxes: BoxesView?, boxSpecies: List<List<Int>>? = null): Map<Int, Int>? {
+    val perBox = boxes?.boxes?.map { box -> box.mons.mapNotNull { m -> m?.takeIf { !it.isEgg }?.species } } ?: boxSpecies ?: return null
     val out = HashMap<Int, Int>()
-    boxes.boxes.forEachIndexed { i, box -> box.mons.forEach { m -> if (m != null && !m.isEgg) out.getOrPut(m.species) { i + 1 } } }
+    perBox.forEachIndexed { i, box -> box.forEach { out.getOrPut(it) { i + 1 } } }
     party.forEach { if (!it.isEgg) out[it.species] = DEX_IN_PARTY }
     return out
 }
@@ -499,6 +501,8 @@ fun buildSnapshotView(t: Telemetry): SnapshotView {
                 iconAsset = if (b.shiny) shinyIconAsset(b.species) else spriteAsset("pokemon", b.species),
                 moves = moves,
                 stats = statsFor(b, t.party, usedParty),
+                // POKéMON PICTURES draws it in its shiny colours, as the foe's (buildOpponentMon).
+                shiny = b.shiny,
             )
         }
 
@@ -583,6 +587,7 @@ fun buildSnapshotView(t: Telemetry): SnapshotView {
         regionMapSectionId = t.regionMapSectionId,
         party = party,
         pcBoxes = pcBoxes,
+        boxSpecies = t.boxSpecies,
         battlePlayer = battlePlayer,
         battleOpponent = battleOpponent,
         items = items,

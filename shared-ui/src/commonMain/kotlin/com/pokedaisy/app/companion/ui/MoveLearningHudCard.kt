@@ -42,7 +42,9 @@ fun MoveLearningHudCard(snapshot: SnapshotView, style: FieldHudStyle, modifier: 
     val ml = snapshot.moveLearning ?: return
     val mon = snapshot.party.getOrNull(ml.partyIndex) ?: return
     val tables = snapshot.pokedex?.tables ?: return
-    if (!MoveLearning.available(tables, snapshot.guideTables)) return
+    // The card is the advisor's verdict: only where it knows the moves ([MoveLearning.advises]), not every game with a
+    // CAN LEARN list (the DS and Game Boy games list moves without one).
+    if (!MoveLearning.advises || !MoveLearning.available(tables, snapshot.guideTables)) return
     // Off the UI thread: the advice reads the ROM's TM / learnset tables the first time (DexDetails, cached after).
     val advice = androidx.compose.runtime.produceState<com.pokedaisy.app.companion.data.MoveAdvice?>(null, tables, mon, ml.move) {
         value = withContext(Dispatchers.IO) { MoveLearning.advise(tables, mon, ml.move) }

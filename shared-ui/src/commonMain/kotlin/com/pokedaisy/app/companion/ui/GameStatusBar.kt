@@ -83,7 +83,7 @@ fun GameStatusBar(
                 Modifier.size(cell * POKE_DOLLAR[0].length, cell * POKE_DOLLAR.size),
             )
             Spacer(Modifier.width(cell))
-            StatusText(money.toString(), m)
+            StatusText(com.pokedaisy.app.companion.i18n.groupedNumber(money.toLong()), m)
         }
         Spacer(Modifier.width(u * 10))
         StatusText(time, m)

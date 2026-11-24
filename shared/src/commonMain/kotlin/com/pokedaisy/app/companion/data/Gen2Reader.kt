@@ -701,8 +701,8 @@ fun readGen2Telemetry(r: MemoryReader, cfg: Gen2Config): Telemetry {
         money = ((u8(m, 0).toLong() shl 16) or (u8(m, 1).toLong() shl 8) or u8(m, 2).toLong()),
         playerGender = if (cfg.playerGender < 0) 0 else u8(r.readCoreMemory(cfg.playerGender, 1), 0) and 1,
         pokedex = cfg.pokedex?.let { runCatching { readGen2PokedexState(r, cfg, it) }.getOrNull() },
-        // The BOXES tab: retail English and German Crystal's cart RAM (Gen2Boxes.kt).
-        pcBoxes = if (cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE) readGen2Boxes(r, cfg, GEN2_CRYSTAL_BOXES) else null,
+        // The BOXES tab: retail English and German Crystal, Gold and Silver's cart RAM (Gen2Boxes.kt).
+        pcBoxes = gen2BoxLayoutFor(cfg)?.let { readGen2Boxes(r, cfg, it) },
         // The GUIDE's flags, badges and clock (Polished Crystal's: GuidePolishedCrystal.kt; Crystal's: GuideCrystal.kt).
         progress = when {
             cfg.polished -> runCatching { readPolishedProgress(r) }.getOrNull()
@@ -710,8 +710,8 @@ fun readGen2Telemetry(r: MemoryReader, cfg: Gen2Config): Telemetry {
             cfg === GEN2_CRYSTAL_LEGACY -> runCatching { readCrystalProgress(r, CRYSTAL_LEGACY_GUIDE_RAM) }.getOrNull()
             else -> null
         },
-        // The CARD tab: Crystal's own two pages (Gen2TrainerCard), on the carts whose card art is mapped.
-        trainerCard = if (cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE) Gen2TrainerCard.read(r, cfg) else null,
+        // The CARD tab: Crystal's and Gold / Silver's own two pages (Gen2TrainerCard), on the carts whose card is mapped.
+        trainerCard = Gen2TrainerCard.read(r, cfg),
     )
 }
 

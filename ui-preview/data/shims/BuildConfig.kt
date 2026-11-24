@@ -7,10 +7,14 @@ object BuildConfig {
     @JvmField val VERSION_NAME: String = System.getProperty("appVersion").orEmpty().ifEmpty { "1.1.0" }
     const val SCREENSCRAPER_DEV_ID = ""
     const val SCREENSCRAPER_DEV_PASSWORD = ""
-    /** Off as in a default build; the ScreenScraper shots turn it on (`withScreenScraper`). */
-    @JvmField var FEATURE_SCREENSCRAPER = false
+    /** On as in a default build (since 2026-11-23). */
+    @JvmField var FEATURE_SCREENSCRAPER = true
     /** On in the preview: the CO-OP group and the invite pages are what the co-op shots show. */
     @JvmField var FEATURE_COOP = true
+    @JvmField var FEATURE_SETTINGS_PLUS = System.getProperty("flagsOff") != "true"
+    @JvmField var FEATURE_MODERN_LOOK = System.getProperty("flagsOff") != "true"
+    @JvmField var FEATURE_SHINY_HUNT = System.getProperty("flagsOff") != "true"
+    @JvmField var FEATURE_SPOILER_FREE = System.getProperty("flagsOff") != "true"
     /** Off as in a release: the blocked-game shots show the notice. */
     @JvmField var FEATURE_ALLOW_BLOCKED = false
     @JvmField var FEATURE_KEEP_BLOCKED = false

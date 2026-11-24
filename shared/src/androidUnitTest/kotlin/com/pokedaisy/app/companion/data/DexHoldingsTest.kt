@@ -20,6 +20,13 @@ class DexHoldingsTest {
         assertNull(dexHoldings(listOf(mon(25, egg = true)), BoxesView(0, listOf(box(mon(1, egg = true)))))!![25])
     }
 
+    @Test fun `species alone stand in for unread boxes, by box number`() {
+        val h = dexHoldings(listOf(mon(25)), null, listOf(listOf(25, 1), emptyList(), listOf(4, 1)))!!
+        assertEquals(DEX_IN_PARTY, h[25])
+        assertEquals(1, h[1])
+        assertEquals(3, h[4])
+    }
+
     @Test fun `no boxes read means nothing can be said`() {
         assertNull(dexHoldings(listOf(mon(25)), null))
     }

@@ -1,12 +1,26 @@
 package com.pokedaisy.app
 
 import android.content.Context
+import com.pokedaisy.app.companion.GameSettingsStore
 import com.pokedaisy.app.companion.PreferenceStore
 import java.io.File
 
+/** The game's activity: every Prefs made from it sees that game's own settings ([GameSettingsStore]); the library's
+ * and Settings' see every game's. */
+interface GameSettingsScope {
+    /** The game's key (its CRC32), null before one is loaded. */
+    val gameSettingsKey: String?
+}
+
 /** Preserve Android callers and the installed SharedPreferences file while sharing all preference policy. */
-fun Prefs(context: Context): Prefs = Prefs(AndroidPreferenceStore(context),
-    dsCpuBoostDefault = { !DevicePerformance.looksWeak(context.applicationContext ?: context) })
+fun Prefs(context: Context): Prefs {
+    val base: PreferenceStore = AndroidPreferenceStore(context)
+    val store = (context as? GameSettingsScope)?.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus }?.let { scope -> GameSettingsStore(base) { scope.gameSettingsKey } } ?: base
+    return Prefs(store, dsCpuBoostDefault = { !DevicePerformance.looksWeak(context.applicationContext ?: context) })
+}
+
+/** The game's own settings ([GameSettingsStore]) for SETTINGS FOR and RESET THIS GAME. */
+fun gameSettingsStore(context: Context, game: () -> String?) = GameSettingsStore(AndroidPreferenceStore(context), game)
 
 private class AndroidPreferenceStore(context: Context) : PreferenceStore {
     private val p = context.getSharedPreferences("pokedaisy", Context.MODE_PRIVATE)

@@ -36,8 +36,8 @@ static void keep_visible(struct pd_menu* m, int rows) {
 void pd_menu_draw(struct pd_menu* m, struct pd_canvas* c) {
     if (!m->overlay) pd_backdrop(c);
     int w = c->w - 2 * MARGIN;
-    int f = pd_title_box(c, MARGIN, MARGIN, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, MARGIN + f + 6, pd_text_y(MARGIN, TITLE_H), m->title, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, MARGIN, MARGIN, w, TITLE_H);
+    pd_text(c, MARGIN + f + 6, pd_text_y(MARGIN, TITLE_H), pd_tr(m->title), PD_HEADER_TEXT, PD_HEADER_SHADOW);
 
     pd_list_box(c, MARGIN, LIST_Y, w, c->h - LIST_Y - MARGIN);
     int rows = visible_rows(c);
@@ -54,7 +54,8 @@ void pd_menu_draw(struct pd_menu* m, struct pd_canvas* c) {
         int i = m->scroll + r;
         bool cursor = i == m->selected || i == m->pressed;
         if (cursor) pd_fill(c, x, y + r * ROW_H, iw, ROW_H, PD_ROW_SELECTED);
-        pd_text_fit(c, x + 6, pd_text_y(y + r * ROW_H, ROW_H), iw - 12, m->items[i],
+        // A row that is a key of the menus' table is drawn in the player's language (a ROM's name isn't one: as it is).
+        pd_text_fit(c, x + 6, pd_text_y(y + r * ROW_H, ROW_H), iw - 12, pd_tr(m->items[i]),
                     cursor ? PD_VALUE : PD_LABEL, cursor ? PD_VALUE_SHADOW : PD_LABEL_SHADOW);
     }
     // A scroll bar when the list runs past the window.

@@ -104,8 +104,6 @@ fun MapScreen(
     fly: com.pokedaisy.app.companion.FlyAction? = null,
     /** FLY's destinations open first - for screenshot tests, which can't tap. */
     initialFly: com.pokedaisy.app.companion.data.FlyTargets? = null,
-    /** Never stretched, not even a little (the HUD's MAP popup): the map at its own shape, centred. */
-    keepShape: Boolean = false,
 ) {
     val gen = rememberArtGeneration()
     // RomRegionMap lands a hack's own map in the background and announces it as new art.
@@ -223,8 +221,8 @@ fun MapScreen(
             } else BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val mapAspect = crop.width.toFloat() / crop.height
                 val boxAspect = maxWidth / maxHeight
+                // Never stretched (the user's call, 2026-11-20): the map keeps its shape, as big as fits, centred.
                 val fitted = when {
-                    !keepShape && maxOf(boxAspect / mapAspect, mapAspect / boxAspect) <= MAX_MAP_STRETCH -> Modifier.fillMaxSize()
                     boxAspect > mapAspect -> Modifier.size(maxHeight * mapAspect, maxHeight)
                     else -> Modifier.size(maxWidth, maxWidth / mapAspect)
                 }
@@ -280,8 +278,10 @@ fun MapScreen(
                 FlyList(
                     model, t, flyer = snapshot.party.getOrNull(t.flyerSlot)?.name,
                     onPick = { mapsec ->
+                        // The list goes with the pick: a DS flight's answer can come only after its fade (or never, a
+                        // job dropped on the way), and the list stayed over the map meanwhile. A refusal still shows.
+                        flyTargets = null
                         fly?.fly(mapsec, t) { result ->
-                            flyTargets = null
                             if (result == com.pokedaisy.app.companion.data.FlyResult.OK) flewFrom = snapshot.regionMapSectionId
                             if (result != com.pokedaisy.app.companion.data.FlyResult.OK) flyNote = flyMessage(result)
                         }
@@ -898,8 +898,6 @@ private const val CURSOR_FRAME_MS = 20 * 1000 / 60
 /** The tab's frame around the map (2 + 1 + 2 lines). */
 private val MAP_FRAME = 5.dp
 
-/** How far the map may be stretched (either way) to fill the tab before it keeps its shape instead. */
-private const val MAX_MAP_STRETCH = 1.2f
 private const val TILE = 8
 private const val HEAD = 16
 private val FR_STRIP = Color.Black.copy(alpha = 6f / 16f)

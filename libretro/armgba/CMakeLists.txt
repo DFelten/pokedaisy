@@ -84,8 +84,9 @@ if(WIN32)
   target_include_directories(pokedaisy_gba_libretro PRIVATE ${PD_WIN_COMPAT})
   target_compile_options(pokedaisy_gba_libretro PRIVATE -include ${PD_WIN_COMPAT}/pd_win_compat.h)
 endif()
-# Only retro_* leaves the object, as in the mGBA core (a second core may be resident beside this one).
-if(NOT WIN32)
+# Only retro_* leaves the object, as in the mGBA core (a second core may be resident beside this one). macOS (a build for
+# looking at the companion on a Mac) links without the ELF version script.
+if(NOT WIN32 AND NOT APPLE)
   target_link_options(pokedaisy_gba_libretro PRIVATE -Wl,--no-undefined -Wl,--exclude-libs,ALL -Wl,--version-script=${PD}/retro.map)
 endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND PD_GLIBC)

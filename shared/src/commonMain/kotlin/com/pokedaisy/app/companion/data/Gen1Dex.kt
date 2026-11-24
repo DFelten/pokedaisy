@@ -44,6 +44,9 @@ data class Gen1DexTables(
     val categoryStrings: Pair<Int, Int>? = null,
     /** The text command that points at the page's text: TX_FAR 0x17 (PureRGB renumbered its commands: TX_FAR_END 0x15). */
     val textFar: Int = 0x17,
+    /** EvosMovesPointerTable and TechnicalMachines ([GbLearnsets]); null = not mapped here (only the English carts are). */
+    val evosMoves: Pair<Int, Int>? = null,
+    val tmMoves: Pair<Int, Int>? = null,
     /** The highest Dex number (Brown: 252), and the bytes of each flag array ([owned] / [seen]: 19 = 152 bits in Red). */
     val dexCount: Int = 151,
     val flagBytes: Int = 19,
@@ -72,6 +75,8 @@ val GEN1_DEX_YELLOW = Gen1DexTables(
     internalToDex = gen1InternalToDexYellow,
     owned = 0xD2F6L,
     seen = 0xD309L,
+    evosMoves = 0x0E to 0x71E5,
+    tmMoves = 0x04 to 0x632D,
 )
 
 /**
@@ -87,16 +92,22 @@ private val GEN1_DEX_RED = GEN1_DEX_YELLOW.copy(
     seen = 0xD30AL,
     mewBaseStats = 0x01 to 0x425B,
     mewPicsBank = 0x01,
+    evosMoves = 0x0E to 0x705C,
+    tmMoves = 0x04 to 0x7773,
 )
 
-/** Pokémon Red Gen II Graphics V2.0: pic's bank from byte 27 of base stats, CGB palettes in bank 0x2F. */
+/** Pokémon Red Gen II Graphics V2.0: pic's bank from byte 27 of base stats, CGB palettes in bank 0x2F. Its learnsets,
+ * TechnicalMachines and BaseStats' moves / TM bits are Red's, at Red's addresses (read from the cart, all 190 entries). */
 val GEN1_DEX_RED_GEN2_GRAPHICS = GEN1_DEX_RED.copy(
     cgbPalettes = 0x2F to 0x4000,
     picBankOffset = 27,
 )
 
-/** Pokémon Yellow Gen II Graphics V1.1: pic's bank from byte 27 of base stats, CGB palettes in bank 0x42. */
+/** Pokémon Yellow Gen II Graphics V1.1: pic's bank from byte 27 of base stats, CGB palettes in bank 0x42. Its
+ * EvosMovesPointerTable moved to 0E:721C (the learnsets themselves are Yellow's, all 190, read from the cart); its
+ * TechnicalMachines and BaseStats' moves / TM bits are Yellow's, at Yellow's addresses. */
 val GEN1_DEX_YELLOW_GEN2_GRAPHICS = GEN1_DEX_YELLOW.copy(
+    evosMoves = 0x0E to 0x721C,
     monsterPalettes = 0x1C to 0x6995,
     cgbPalettes = 0x42 to 0x4000,
     picBankOffset = 27,
@@ -107,7 +118,7 @@ val GEN1_DEX_YELLOW_GEN2_GRAPHICS = GEN1_DEX_YELLOW.copy(
  * (MEW in the main table), pages and Super Game Boy palettes (the colours its SGB and COLORS > SGB1 modes give each
  * Pokémon; on a Color it shows them two-tone by default). Seen / owned keep Red's bit order, in WRAM bank 1.
  */
-private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(
+private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null,
     baseStats = 0x2C to 0x6445,
     dexEntryPointers = 0 to 0,
     monsterPalettes = 0x1C to 0x6435,
@@ -125,7 +136,7 @@ private val GEN1_DEX_PURE_RED = GEN1_DEX_YELLOW.copy(
 )
 
 /** Yellow Legacy v1.0.10 (its pokeyellow.sym): its own base data, pages and palettes. */
-private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(
+private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null,
     baseStats = 0x3B to 0x5272,
     dexEntryPointers = 0x10 to 0x46D3,
     monsterPalettes = 0x1C to 0x68B5,
@@ -133,7 +144,7 @@ private val GEN1_DEX_YELLOW_LEGACY = GEN1_DEX_YELLOW.copy(
 )
 
 /** The European Yellows: English's tables but for the dex pages' text and palettes (port_gen1.py, checked by contents). */
-private val GEN1_DEX_YELLOW_DE = GEN1_DEX_YELLOW.copy(dexEntryPointers = 0x10 to 0x4507, monsterPalettes = 0x1C to 0x6900,
+private val GEN1_DEX_YELLOW_DE = GEN1_DEX_YELLOW.copy(evosMoves = null, tmMoves = null, dexEntryPointers = 0x10 to 0x4507, monsterPalettes = 0x1C to 0x6900,
     cgbPalettes = 0x1C to 0x6AD8, owned = 0xD2FBL, seen = 0xD30EL, metric = true, charset = Gen1Charset.DF)
 private val GEN1_DEX_YELLOW_FR = GEN1_DEX_YELLOW_DE.copy(dexEntryPointers = 0x10 to 0x4508, monsterPalettes = 0x1C to 0x68F2,
     cgbPalettes = 0x1C to 0x6ACA)
@@ -142,7 +153,7 @@ private val GEN1_DEX_YELLOW_IT = GEN1_DEX_YELLOW_DE.copy(dexEntryPointers = 0x10
 private val GEN1_DEX_YELLOW_ES = GEN1_DEX_YELLOW_IT.copy(monsterPalettes = 0x1C to 0x6911, cgbPalettes = 0x1C to 0x6AE9)
 
 /** German Red / Blue: Red's tables, their pages' text and palettes moved (port_gen1.py), German Yellow's letters, metric. */
-private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(dexEntryPointers = 0x10 to 0x447A, monsterPalettes = 0x1C to 0x65A2,
+private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(evosMoves = null, tmMoves = null, dexEntryPointers = 0x10 to 0x447A, monsterPalettes = 0x1C to 0x65A2,
     cgbPalettes = 0x1C to 0x663A, owned = 0xD2FCL, seen = 0xD30FL, metric = true, charset = Gen1Charset.DF)
 
 /**
@@ -154,6 +165,8 @@ private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(dexEntryPointers = 0x10 to 0x447
  * D300 (the game swaps it into D31D to count them): 211 / 227 on the player's save, as the game's own POKéDEX says.
  */
 private val GEN1_DEX_BROWN = GEN1_DEX_RED.copy(
+    // MOVES reads English Red's tables: not Brown's.
+    evosMoves = null, tmMoves = null,
     baseStats = 0x3F to 0x4336,
     dexEntryPointers = 0x10 to 0x6C20,
     monsterPalettes = 0x1C to 0x7250,
@@ -460,4 +473,41 @@ object Gen1Pic {
         }
         Pic(wT, hT, px)
     }.getOrNull()
+}
+
+/**
+ * The Gen 1 front pictures' background gaps the outline closes in (between a tail and the body, inside a coil, between an
+ * arm and the body), as x, y pairs of a pixel in each, by species: POKéMON PICTURES (shared-ui's `paperFilled`) leaves them
+ * see-through, like `gen2PictureGaps`. Colour 0 is white and see-through alike, so bellies and faces are closed areas too:
+ * picked by eye, only clear cases. Red and Blue share their pictures (the German carts' are the English ones), Yellow has
+ * its own. `RedBlueArtTest` checks each is a closed area in its cart's picture.
+ */
+private val GEN1_RED_BLUE_GAPS: Map<Int, IntArray> = mapOf(
+    3 to intArrayOf(23, 20, 35, 20), 23 to intArrayOf(31, 22, 41, 34), 26 to intArrayOf(45, 32, 20, 44, 15, 45),
+    55 to intArrayOf(33, 11), 63 to intArrayOf(19, 27), 64 to intArrayOf(15, 23, 42, 31), 69 to intArrayOf(33, 29),
+    70 to intArrayOf(21, 20), 71 to intArrayOf(15, 7), 73 to intArrayOf(46, 42), 78 to intArrayOf(20, 17), 82 to intArrayOf(21, 25),
+    89 to intArrayOf(31, 16), 127 to intArrayOf(10, 22), 128 to intArrayOf(11, 3, 18, 5, 8, 8, 16, 9),
+    141 to intArrayOf(48, 28, 16, 33), 145 to intArrayOf(20, 43), 144 to intArrayOf(27, 16, 40, 31), 146 to intArrayOf(44, 1, 45, 14, 42, 30),
+    148 to intArrayOf(39, 26), 149 to intArrayOf(38, 17), 150 to intArrayOf(26, 16, 47, 15, 19, 29, 21, 37),
+    151 to intArrayOf(17, 39),
+)
+private val GEN1_YELLOW_GAPS: Map<Int, IntArray> = mapOf(
+    19 to intArrayOf(35, 26), 26 to intArrayOf(44, 41), 48 to intArrayOf(32, 22, 27, 21), 71 to intArrayOf(41, 17), 72 to intArrayOf(22, 43), 84 to intArrayOf(31, 14, 30, 41), 85 to intArrayOf(21, 6, 30, 6), 87 to intArrayOf(22, 25),
+    99 to intArrayOf(42, 18), 126 to intArrayOf(16, 29),
+    127 to intArrayOf(10, 26, 46, 23), 128 to intArrayOf(41, 12), 134 to intArrayOf(39, 23), 142 to intArrayOf(24, 43, 22, 44), 144 to intArrayOf(20, 36), 149 to intArrayOf(19, 5, 45, 9, 42, 19),
+    150 to intArrayOf(35, 15), 151 to intArrayOf(15, 44, 34, 46),
+)
+/**
+ * [species]' (a Dex number) background gaps in [game]'s front picture drawn from [tables], or null: also for the hacks
+ * with pictures of their own (the Gen II Graphics patches run as RED / YELLOW).
+ */
+fun gen1PictureGaps(game: GameKind, tables: Gen1DexTables, species: Int): IntArray? = when {
+    tables == GEN1_DEX_RED_GEN2_GRAPHICS || tables == GEN1_DEX_YELLOW_GEN2_GRAPHICS -> null
+    else -> gen1PictureGaps(game, species)
+}
+
+internal fun gen1PictureGaps(game: GameKind, species: Int): IntArray? = when (game) {
+    GameKind.RED, GameKind.BLUE -> GEN1_RED_BLUE_GAPS[species]
+    GameKind.YELLOW -> GEN1_YELLOW_GAPS[species]
+    else -> null
 }

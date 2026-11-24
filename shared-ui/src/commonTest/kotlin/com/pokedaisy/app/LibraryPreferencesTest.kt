@@ -6,6 +6,10 @@ import com.pokedaisy.app.companion.data.LibraryView
 import kotlin.test.*
 
 class LibraryPreferencesTest {
+    // The library views and the pills' order are the next release's (FlaggedFeatures.modernLook): on here.
+    @BeforeTest fun batchOn() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = true }
+    @AfterTest fun batchOff() { com.pokedaisy.app.companion.FlaggedFeatures.modernLook = false }
+
     private var saved: String? = null
     private var time = 100L
     private fun open() = LibraryPreferences({ saved }, { saved = it }, { time })
@@ -55,6 +59,18 @@ class LibraryPreferencesTest {
         assertFalse(prefs.grid); assertEquals(LibrarySort.NAME, prefs.sort)
         assertEquals(LibraryView.ALL, prefs.view); assertTrue(prefs.favorites.isEmpty())
         assertEquals(mapOf("ok" to 2L), prefs.played)
+    }
+
+    @Test fun dragOrderSurvivesAndNewViewsFindTheirPlace() {
+        val prefs = open()
+        val shown = listOf(LibraryView.ALL, LibraryView.FAVORITES, LibraryView.RECENT, LibraryView.HACKS)
+        assertEquals(shown, prefs.orderViews(shown))
+        prefs.setViewOrder(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.FAVORITES))
+        val reopened = open()
+        assertEquals(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.FAVORITES), reopened.orderViews(shown))
+        // A view that wasn't there when the order was made (a first GBA game) goes in at its own place.
+        val more = listOf(LibraryView.ALL, LibraryView.FAVORITES, LibraryView.RECENT, LibraryView.GBA, LibraryView.HACKS)
+        assertEquals(listOf(LibraryView.HACKS, LibraryView.ALL, LibraryView.RECENT, LibraryView.GBA, LibraryView.FAVORITES), reopened.orderViews(more))
     }
 
     @Test fun failedWritesDoNotClaimToHaveSavedAChange() {

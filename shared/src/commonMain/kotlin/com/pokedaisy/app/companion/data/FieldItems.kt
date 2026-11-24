@@ -959,6 +959,10 @@ enum class ItemUseResult {
     MAILBOX_FULL,
     /** A TM / HM: the game's own TM screen is opening (TmTeach.kt); the rest happens there. */
     IN_GAME,
+    /** A TM / HM on the picked Pokémon: the game teaches it on its own screen (Crystal's TeachTMHM over the map). */
+    TEACHING,
+    /** RARE CANDY or a stone on the picked Pokémon: the game's own screens (Crystal's level-up or evolution) do the rest. */
+    USING_IN_GAME,
 }
 
 /** What using [itemId] did and, for a Repel, how many steps it lasts; a GIVE's item held before ([swapped]). */
@@ -1078,8 +1082,9 @@ data class PartyTarget(
     val moves: List<Boolean> = emptyList(),
 )
 
-/** The party pick: [result] USED = pick from [targets]; otherwise why not (NOT_NOW, NONE_LEFT, FAILED). */
-data class PartyTargets(val result: ItemUseResult, val targets: List<PartyTarget> = emptyList())
+/** The party pick: [result] USED = pick from [targets]; otherwise why not (NOT_NOW, NONE_LEFT, FAILED). [move]: the move a
+ * TM teaches, where the pick knows it (Crystal's), for its forget question; 0 = not known. */
+data class PartyTargets(val result: ItemUseResult, val targets: List<PartyTarget> = emptyList(), val move: Int = 0)
 
 private const val MON_DATA_PERSONALITY = 0
 private const val MON_DATA_SPECIES = 11

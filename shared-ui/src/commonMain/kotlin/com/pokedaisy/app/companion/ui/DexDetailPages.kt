@@ -121,7 +121,12 @@ private class FamilyRow(val link: EvoLink, val fromNo: Int, val toNo: Int)
  * dex number).
  */
 @Composable
-internal fun DexEvolveSection(t: PokedexTables, species: Int, m: GbaTextMetrics, small: GbaTextMetrics, onOpen: (Int) -> Unit) {
+internal fun DexEvolveSection(
+    t: PokedexTables, species: Int, m: GbaTextMetrics, small: GbaTextMetrics,
+    /** SPOILERS: whether a family member (dex number, species) has been seen; an unseen one is ??? while hiding. */
+    known: (Int, Int) -> Boolean = { _, _ -> true },
+    onOpen: (Int) -> Unit,
+) {
     val rows by produceKeyedState(DexDetails.cachedFamily(t, species)?.let { rowsOf(t, it) }, t, species) {
         if (value == null && species > 0) value = withContext(Dispatchers.IO) {
             DexDetails.family(t, species).orEmpty().let { rowsOf(t, it) }
@@ -138,12 +143,12 @@ internal fun DexEvolveSection(t: PokedexTables, species: Int, m: GbaTextMetrics,
                     val (from, links) = groups[i]
                     val u = small.u
                     Column(Modifier.fillMaxWidth().drawBehind { drawRowDivider(OptionColors.divider, u.toPx(), 0f) }.padding(vertical = u * 2)) {
-                        FamilyMon(from, links.first().fromNo, species, m, onOpen, Modifier.fillMaxWidth())
+                        FamilyMon(from, links.first().fromNo, species, m, onOpen, Modifier.fillMaxWidth(), known)
                         links.forEach { r ->
                             Row(Modifier.padding(start = u * 6), verticalAlignment = Alignment.CenterVertically) {
                                 GbaText("→", OptionColors.muted, OptionColors.mutedShadow, small)
                                 Spacer(Modifier.width(u * 3))
-                                FamilyMon(r.link.to, r.toNo, species, small, onOpen, Modifier.weight(1f))
+                                FamilyMon(r.link.to, r.toNo, species, small, onOpen, Modifier.weight(1f), known)
                             }
                             GbaText(evolutionHow(r.link.reqs), OptionColors.value, OptionColors.valueShadow, small, Modifier.padding(start = u * 18), maxLines = 3)
                         }
@@ -158,8 +163,20 @@ private fun rowsOf(t: PokedexTables, links: List<EvoLink>) =
     links.map { FamilyRow(it, PokedexSource.nationalOf(t, it.from), PokedexSource.nationalOf(t, it.to)) }
 
 @Composable
-private fun FamilyMon(species: Int, national: Int, current: Int, m: GbaTextMetrics, onOpen: (Int) -> Unit, modifier: Modifier) {
+private fun FamilyMon(
+    species: Int, national: Int, current: Int, m: GbaTextMetrics, onOpen: (Int) -> Unit, modifier: Modifier,
+    known: (Int, Int) -> Boolean = { _, _ -> true },
+) {
     val here = species == current
+    // SPOILERS on HIDE: a family member the game hasn't shown is ???, no picture, no page to open.
+    if (!here && com.pokedaisy.app.companion.Spoilers.hiding && !known(national, species)) {
+        Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.size(m.lineHeight * 1.5f))
+            Spacer(Modifier.width(m.u * 2))
+            GbaText("???", OptionColors.muted, OptionColors.mutedShadow, m, Modifier.weight(1f))
+        }
+        return
+    }
     val noRipple = remember { MutableInteractionSource() }
     val focused by noRipple.collectIsFocusedAsState()
     Row(
@@ -336,7 +353,11 @@ private class DexMoves(val levelUp: List<LevelMove>, val teach: List<TeachMove>?
 
 /** LEVEL UP (level, move, type), then TM / HM - or the expansion games' TM / TUTOR list, by name. */
 @Composable
-internal fun DexMovesSection(t: PokedexTables, g: GuideTables?, species: Int, m: GbaTextMetrics, small: GbaTextMetrics) {
+internal fun DexMovesSection(
+    t: PokedexTables, g: GuideTables?, species: Int, m: GbaTextMetrics, small: GbaTextMetrics,
+    /** SPOILERS: the player's best level of it ([com.pokedaisy.app.companion.Spoilers.knownLevel]); moves past it are ???. */
+    knownLevel: Int = 0,
+) {
     val moves by produceKeyedState(
         DexDetails.cachedLevelUp(t, g, species)?.let { DexMoves(it, DexDetails.cachedTeachable(t, g, species)) }
             ?.takeIf { it.teach != null || !DexDetails.hasTeachable(t) },
@@ -358,7 +379,13 @@ internal fun DexMovesSection(t: PokedexTables, g: GuideTables?, species: Int, m:
     LazyColumn(Modifier.fillMaxSize().dpadScroll(scroll, RectangleShape, small.lineHeight * 3), state = scroll) {
         header(tr("LEVEL UP"), small)
         if (mv.levelUp.isEmpty()) item { Note(tr("NONE"), small) }
-        items(mv.levelUp) { lm -> MoveLine(if (lm.level == 0) tr("EVO.") else tr("LV {0}", lm.level), lm.move, small) }
+        items(mv.levelUp) { lm ->
+            val label = if (lm.level == 0) tr("EVO.") else tr("LV {0}", lm.level)
+            // SPOILERS on HIDE: a move still to come is ???; a tap shows that one.
+            if (com.pokedaisy.app.companion.Spoilers.moveAhead(species, lm.level, lm.move, knownLevel)) {
+                HiddenMoveLine(label, small) { com.pokedaisy.app.companion.Spoilers.reveal(com.pokedaisy.app.companion.Spoilers.moveKey(species, lm.level, lm.move)) }
+            } else MoveLine(label, lm.move, small)
+        }
         when {
             teach == null -> item { Note(tr("This game's TMs aren't read yet: level-up moves only."), small, Modifier.padding(top = small.u * 6)) }
             else -> {
@@ -383,9 +410,26 @@ private fun MoveLine(label: String, move: Int, small: GbaTextMetrics) {
         Modifier.fillMaxWidth().drawBehind { drawRowDivider(OptionColors.divider, u.toPx(), 0f) }.padding(vertical = u * 2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (label.isNotEmpty()) GbaText(label, OptionColors.value, OptionColors.valueShadow, small, Modifier.width(u * 40))
+        // 40 GBA pixels, as wide again as a game's font is drawn larger (Gen 1's 9/7): "LV 13" kept off the name.
+        val labelWidth = u * 40 * com.pokedaisy.app.companion.ui.theme.LocalGameTextScale.current
+        if (label.isNotEmpty()) GbaText(label, OptionColors.value, OptionColors.valueShadow, small, Modifier.width(labelWidth))
         GbaText(info.name, OptionColors.label, OptionColors.labelShadow, small, Modifier.weight(1f))
         typeName(info.type).takeIf { it.isNotEmpty() }?.let { TypeBadge(it, fontSize = 11.sp) }
+    }
+}
+
+/** A move still to come (SPOILERS on HIDE): its level and ???, a tap shows it. */
+@Composable
+private fun HiddenMoveLine(label: String, small: GbaTextMetrics, onShow: () -> Unit) {
+    val u = small.u
+    Row(
+        Modifier.fillMaxWidth().drawBehind { drawRowDivider(OptionColors.divider, u.toPx(), 0f) }.soundClickable(onClick = onShow)
+            .padding(vertical = u * 2),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GbaText(label, OptionColors.value, OptionColors.valueShadow, small, Modifier.width(u * 40))
+        GbaText("???", OptionColors.muted, OptionColors.mutedShadow, small, Modifier.weight(1f))
+        GbaText(tr("SHOW"), OptionColors.muted, OptionColors.mutedShadow, small)
     }
 }
 

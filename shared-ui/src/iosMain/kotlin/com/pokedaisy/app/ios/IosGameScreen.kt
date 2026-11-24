@@ -187,7 +187,9 @@ internal class IosGameScreen(
             portraitGripHeight = with(LocalDensity.current) { (rememberGbaTextMetrics().u.toPx() * 24).roundToInt() }
             val effect = IosCompanionEffects.effect(companionShaders,
                 companionCell.takeIf { it > 0f } ?: CompanionShaders.cellSize(0f, density))
+            // Tabs and grips clipped, as on Android: an unclipped shader effect smears its layer's edge pixels past it.
             val chrome = Modifier.graphicsLayer { renderEffect = effect }
+            val chromeTabs = Modifier.graphicsLayer { renderEffect = effect; clip = effect != null }
             val compactText = minOf(maxWidth, maxHeight) >= 600.dp
             val visible = IosTouchPreferences.visible
             val barHeight = if (statusBar == null) 0 else with(LocalDensity.current) { statusBarHeight().roundToPx() }
@@ -248,7 +250,7 @@ internal class IosGameScreen(
                             onConfirm = dismiss, onDismiss = dismiss, cancelLabel = null)
                     }
                 },
-                dismissSideOnGameTap = { !visible }, chromeModifier = chrome,
+                dismissSideOnGameTap = { !visible }, chromeModifier = chromeTabs,
                 onFrames = { measured, _ -> frames = measured; touch.stage = stage(measured, visible) })
         }
     }

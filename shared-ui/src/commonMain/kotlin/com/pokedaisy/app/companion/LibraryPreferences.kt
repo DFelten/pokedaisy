@@ -27,23 +27,44 @@ class LibraryPreferences private constructor(private val storage: Storage, priva
     constructor(read: () -> String?, write: (String) -> Unit,
                 now: () -> Long = { Clock.System.now().toEpochMilliseconds() }) : this(legacy(read, write), now)
     private val prefs get() = storage.prefs
-    private data class Record(val grid: Boolean, val sort: LibrarySort, val view: LibraryView,
+    private data class Record(val layout: LibraryLayout, val sort: LibrarySort, val view: LibraryView,
         val favorites: Set<String>, val played: Map<String, Long>, val added: Map<String, Long>, val last: String?,
-        val names: Map<String, String>)
-    private fun read() = Record(prefs.libraryViewMode == 1, LibrarySort.of(prefs.librarySort), LibraryView.of(prefs.libraryView),
-        prefs.favoriteRoms, prefs.romPlayTimes(), storage.added.all().mapValues { it.value.millis }, prefs.lastRomPath, prefs.romDisplayNames())
+        val names: Map<String, String>, val viewOrder: List<Int>)
+    private fun read() = Record(LibraryLayout.of(prefs.libraryViewMode), LibrarySort.of(prefs.librarySort), LibraryView.of(prefs.libraryView),
+        prefs.favoriteRoms, prefs.romPlayTimes(), storage.added.all().mapValues { it.value.millis }, prefs.lastRomPath, prefs.romDisplayNames(),
+        prefs.libraryViewOrder.split(',').mapNotNull { it.trim().toIntOrNull() })
     private var record by mutableStateOf(read())
-    val grid get() = record.grid
+    /** The grid of covers (the classic library's other view; a host without the immersive ones shows them as it). */
+    val grid get() = record.layout == LibraryLayout.GRID
+    /** LIBRARY VIEW: list, grid or one of the immersive views (Prefs.libraryViewMode, by ordinal). */
+    val layout get() = record.layout
     val sort get() = record.sort
     val view get() = record.view
     val favorites get() = record.favorites
     val played get() = record.played
     val added get() = record.added
     val last get() = record.last
+    /** The quick views' saved order (Compose state: a drag redraws the pills). */
+    val viewOrder get() = record.viewOrder
     fun reload() { storage.added.reload(); record = read() }
-    fun setGrid(on: Boolean) { prefs.libraryViewMode = if (on) 1 else 0; record = read() }
+    fun setGrid(on: Boolean) = setLayout(if (on) LibraryLayout.GRID else LibraryLayout.LIST)
+    fun setLayout(layout: LibraryLayout) { prefs.libraryViewMode = layout.ordinal; record = read() }
     fun setSort(sort: LibrarySort) { prefs.librarySort = sort.id; record = read() }
     fun setView(view: LibraryView) { prefs.libraryView = view.id; record = read() }
+    /** The quick views dragged into [order] (the pills shown now; others keep their place after them). */
+    fun setViewOrder(order: List<LibraryView>) {
+        val rest = record.viewOrder.filter { id -> order.none { it.id == id } }
+        prefs.libraryViewOrder = (order.map { it.id } + rest).joinToString(",")
+        record = read()
+    }
+    /** [views] in the player's order: the ones they placed first, as placed; any other in its default place among them. */
+    fun orderViews(views: List<LibraryView>): List<LibraryView> {
+        val saved = record.viewOrder
+        if (saved.isEmpty()) return views
+        val placed = views.filter { it.id in saved }.sortedBy { saved.indexOf(it.id) }.toMutableList()
+        for (v in views.filter { it.id !in saved }) placed.add(minOf(views.indexOf(v), placed.size), v)
+        return placed
+    }
     fun setFavorite(id: String, on: Boolean) {
         prefs.favoriteRoms = if (on) favorites + id else favorites - id
         record = read()
@@ -104,4 +125,25 @@ fun matchesLibrarySearch(query: String, names: List<String>): Boolean {
     fun searchable(value: String) = com.pokedaisy.app.companion.i18n.stripAccents(value).lowercase()
     val all = names.map(::searchable)
     return searchable(query).split(' ').filter { it.isNotEmpty() }.all { word -> all.any { word in it } }
+}
+
+/**
+ * How the library shows its games (the header's view button, Prefs.libraryViewMode by [ordinal]: 0 and 1 were the list
+ * and the grid, so they keep their meaning). The last three are the immersive views (the user's call, 2026-11-23, after
+ * other frontends): one game in front at a time, the rest in a row.
+ */
+enum class LibraryLayout(val label: String) {
+    LIST("LIST"), GRID("GRID"),
+    /** Each game a cartridge standing in a socket of a rack; the one picked rises out of its slot, and goes in to play. */
+    CARTRIDGES("CARTRIDGES"),
+    /** The covers in a row turned like a flip-through, the one in front big, its art behind. */
+    CAROUSEL("CAROUSEL"),
+    /** The picked game across the screen (its art, its name, PLAY), the rest in a row along the bottom. */
+    SPOTLIGHT("SPOTLIGHT");
+
+    val immersive get() = ordinal >= CARTRIDGES.ordinal
+
+    companion object {
+        fun of(i: Int): LibraryLayout = entries.getOrNull(i) ?: LIST
+    }
 }

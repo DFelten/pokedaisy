@@ -27,11 +27,11 @@ The window beside the box shows one Pokémon's picture, its name, its kind, its 
 
 Tap a Pokémon to show it in the window beside the box, and tap it again to open its summary, the same one the [PARTY tab](party.md#the-summary) shows: its level, types, moves, matchups, and `STATS` with its IVs, EVs, nature and ability. The column down the right side holds the Pokémon in the same box, six at a time, so you can step through the whole box. BACK returns to the box.
 
-A Pokémon in a box keeps no stats of its own, so the companion works them out the way the game does when you take it out. A Pokémon in a box is always at full HP.
+A Pokémon in a box keeps no stats of its own, so the companion works them out the way the game does when you take it out. A Pokémon in a box is at full HP, except in Red, Blue and Yellow, whose PC keeps its HP and status as they were.
 
 ## Taking a Pokémon out
 
-The summary of a Pokémon in a box has a green `WITHDRAW` button, like the game's own PC. Tap it and the Pokémon joins your party, right there in your game, at full health.
+The summary of a Pokémon in a box has a green `WITHDRAW` button, like the game's own PC. Tap it and the Pokémon joins your party, right there in your game, at full health (as it went in, in Red, Blue and Yellow).
 
 When your party already has six, `WITHDRAW` asks which of them to swap it with instead. Tap one of your party's Pokémon: the two trade places, just as if you had dropped one on the other in a PC. The one going into the box keeps everything but its HP and status.
 
@@ -42,14 +42,15 @@ Back on the box, you see the move: each Pokémon flashes white, shrinks to a spa
 A few things the game itself wouldn't allow are refused:
 
 - **Mail**: a Pokémon holding Mail can't go into a box. Take the Mail off first with the summary's `TAKE`, which sends the letter to your PC's mailbox.
-- **Your last fighter**: an Egg can't take the place of the last Pokémon in your party that can battle.
+- **Your last fighter**: an Egg can't take the place of the last Pokémon in your party that can battle. In Red, Blue and Yellow your last Pokémon can't go into a box at all.
+- **Your partner in Yellow**: the first Pokémon you got, the one that walks behind you, moves only with the game's own PC.
 - **Not now**: you have to be walking around, with no battle, menu or text box open. Close the game's own PC first too.
 
 The move happens in your game right away. **Save in the game** to keep it, just as you would after using a PC.
 
 ## Sorting every box
 
-In the games where the boxes can move Pokémon (not Crystal), a `SORT` button sits beside the box's name. Tap it and confirm, and every box is rewritten in Pokédex-number order, from box 1's first slot: Pokémon of the same kind go lowest level first, Eggs count as the kind they will hatch into, and records the companion can't read go last. Nothing is re-created: the game's own stored Pokémon move whole, so held items, ribbons and checksums stay as they were. **Save in the game** to keep the new order. If a write can't be read back, every box goes back exactly as it was.
+In the games where the boxes can move Pokémon (not Gold, Silver or Crystal), a `SORT` button sits beside the box's name. Tap it and confirm, and every box is rewritten in Pokédex-number order, from box 1's first slot: Pokémon of the same kind go lowest level first, Eggs count as the kind they will hatch into, and records the companion can't read go last. Nothing is re-created: the game's own stored Pokémon move whole, so held items, ribbons and checksums stay as they were. **Save in the game** to keep the new order. If a write can't be read back, every box goes back exactly as it was.
 
 ## Opening the BOXES tab
 
@@ -65,10 +66,11 @@ The tab shows your boxes in:
 - **FireRed, LeafGreen, Emerald, Ruby and Sapphire** in every language, every version of each cartridge.
 - **Hacks built on those games**: Unbound, Radical Red, Amethyst, Sword and Shield Ultimate Plus, GS Chronicles, Odyssey, Gaia, Orange Islands, Ultra Violet, Rocket Edition, Ash Gray, Emerald Kaizo and Glazed.
 - **SoulGold**.
-- **Crystal** in English (every release) and German.
+- **Red, Blue and Yellow** in English and German.
+- **Gold, Silver and Crystal** in English and German.
 
-Unbound, Radical Red, Amethyst, Sword and Shield Ultimate Plus and GS Chronicles have 25 boxes and SoulGold 15, and the tab shows them all. Crystal has 14 boxes of 20 Pokémon each, read from the game's save memory: they're there as soon as the game is running, and the box you're on follows every deposit and withdrawal at once.
+Unbound, Radical Red, Amethyst, Sword and Shield Ultimate Plus and GS Chronicles have 25 boxes and SoulGold 15, and the tab shows them all. Gold, Silver and Crystal have 14 boxes of 20 Pokémon each, read from the game's save memory: they're there as soon as the game is running, and the box you're on follows every deposit and withdrawal at once. Red, Blue and Yellow have 12 boxes of 20, with no names of their own (`BOX1` to `BOX12`); until you change boxes for the first time, the others are empty.
 
-`WITHDRAW`, the swap and `DEPOSIT` work on FireRed, LeafGreen, Emerald, Ruby and Sapphire in English, German, French, Italian, Spanish and Japanese (every release of each), and on Ultra Violet, Rocket Edition and Ash Gray. On **Crystal** in English and German they work on the box your PC is on: `WITHDRAW` and the swap take a Pokémon out of it, and `DEPOSIT` puts one into it, with no list to pick from. The game only keeps that box open, so the Pokémon in the other boxes can't move from the tab. To work on another box, open it and tap `USE BOX` under its picture: like the PC's own box change, this **saves the game**, so the tab asks first and backs your save up before it does. It only works once you've saved in the game at least once. Crystal has no `SORT`.
+`WITHDRAW`, the swap and `DEPOSIT` work on FireRed, LeafGreen, Emerald, Ruby and Sapphire in English, German, French, Italian, Spanish and Japanese (every release of each), and on Ultra Violet, Rocket Edition and Ash Gray. On **Gold, Silver and Crystal** in English and German they work on the box your PC is on: `WITHDRAW` and the swap take a Pokémon out of it, and `DEPOSIT` puts one into it, with no list to pick from. The game only keeps that box open, so the Pokémon in the other boxes can't move from the tab. To work on another box, open it and tap `USE BOX` under its picture: like the PC's own box change, this **saves the game**, so the tab asks first and backs your save up before it does. On Gold, Silver and Crystal it only works once you've saved in the game at least once. **Red, Blue and Yellow** in English and German work the same way: the box your PC is on, and `USE BOX` for another one, which saves the game too. The first box change also sets up every other box, as the game's own first change does. Red, Blue, Yellow, Gold, Silver and Crystal have no `SORT`.
 
 The other games show their boxes but can't move Pokémon yet. More games will follow.

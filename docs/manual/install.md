@@ -25,7 +25,13 @@ The first time you open PokeDaisy with an empty library, it shows `WELCOME TO PO
 
 Everything you pick here can be changed later in Settings, so don't overthink it.
 
-### Step 1: your ROMs folders
+### Step 1: a settings file
+
+Coming from another device, or putting PokeDaisy back after removing it? If you exported your settings before (Settings > `SETTINGS FILE` > `EXPORT`), tap `IMPORT SETTINGS FILE` and pick that file. Every setting comes back at once, setup is done, and the app starts again on your library. See [Move your settings to another device](#move-your-settings-to-another-device).
+
+No file? Tap `SKIP`.
+
+### Step 2: your ROMs folders
 
 If you keep your games in folders (say `ROMs/gba` and `ROMs/nds`), point PokeDaisy at them here. Tap `CHOOSE FOLDER` and pick a folder, then `ADD FOLDER` for each other one. PokeDaisy looks through them (`LOOKING FOR GAMES…`), then lists what it found under `FOUND 3 GAMES` or similar. `REMOVE` beside a folder takes it off again.
 
@@ -37,9 +43,9 @@ Games in these folders are played right where they are: nothing is copied. Every
 
 Skip this step if you'd rather add games one at a time with the `+` button in the library. [Your game library](library.md) explains both ways.
 
-![Setup's first step: YOUR ROMS FOLDERS, with a tip to pick just the folders with your games and a CHOOSE FOLDER button](shots/setup-roms.png "Step 1: link your ROMs folders")
+![Setup's ROMs step: YOUR ROMS FOLDERS, with a tip to pick just the folders with your games and a CHOOSE FOLDER button](shots/setup-roms.png "Step 2: link your ROMs folders")
 
-### Step 2: game saves
+### Step 3: game saves
 
 This decides where your save files go. Your choices:
 
@@ -49,17 +55,21 @@ This decides where your save files go. Your choices:
 
 If you already play these games in another emulator, pick its save folder and carry on with the same saves. A game finds its save by the ROM's file name, so `Pokemon Emerald.gba` uses `Pokemon Emerald.sav` (or `.srm`). [Saves, backups and save states](saves.md) has more on sharing saves.
 
-![Setup's second step: GAME SAVES, with KEEP THEM IN POKéDAISY and a RetroArch save folder offered with its number of saves](shots/setup-saves.png "Step 2: pick where saves go")
+![Setup's saves step: GAME SAVES, with KEEP THEM IN POKéDAISY and a RetroArch save folder offered with its number of saves](shots/setup-saves.png "Step 3: pick where saves go")
 
-### Step 3: game buttons
+### Step 4: game buttons
 
 This page shows which of your device's buttons presses each GBA button. Check A and B first: some devices print them the other way round from what you'd expect. If anything's off, tap that GBA button's row and press the button you want for it, right there on the page. `CANCEL`, or `BACK`, leaves it as it was.
 
-![Setup's third step: GAME BUTTONS, listing each GBA button with the device key bound to it](shots/setup-buttons.png "Step 3: check your buttons")
+![Setup's buttons step: GAME BUTTONS, listing each GBA button with the device key bound to it](shots/setup-buttons.png "Step 4: check your buttons")
 
 ![The same step with GBA B waiting for a button: PRESS A BUTTON… on its row and CANCEL under it](shots/setup-buttons-capture.png "Tap a row and press the button you want")
 
-### Step 4: cover art
+### Step 5: game media
+
+`GAME MEDIA (OPTIONAL)` signs you in to ScreenScraper.fr, a free site with box art, screenshots, title screens, logos, videos and each game's story. Type your screenscraper.fr username and password and tap `SIGN IN`; `NO ACCOUNT? SIGN UP` opens its site to make one. PokeDaisy then fetches them for your whole library (see [Game media from ScreenScraper](library.md#game-media-from-screenscraper)). Skip it now and sign in any time in Settings > `ScreenScraper`.
+
+### Step 6: cover art
 
 The library looks much better with box art. Covers come from two free services, and each needs a key you get from your own free account:
 
@@ -68,7 +78,16 @@ The library looks much better with box art. Covers come from two free services, 
 
 One key is enough. Tap `SAVE` and PokeDaisy fetches covers for your games (`FETCHING…`). Skip it now and add a key any time in Settings > `COVER ART`.
 
-![Setup's last step: COVER ART (OPTIONAL), with a key box for RetroAchievements and one for SteamGridDB](shots/setup-covers.png "Step 4: add cover art keys")
+![Setup's last step: COVER ART (OPTIONAL), with a key box for RetroAchievements and one for SteamGridDB](shots/setup-covers.png "Step 6: add cover art keys")
+
+### Move your settings to another device
+
+Your settings can go into one file to keep: handy before removing the app, or to set up a second device the same way. Open Settings > `SETTINGS FILE`:
+
+- `EXPORT` saves a file (named like `pokedaisy-settings-2026-11-23.json`) wherever you pick: Downloads, an SD card, a cloud folder.
+- `IMPORT` reads one back. Your settings on this device are replaced by the file's, then the app starts again.
+
+The file holds your options, game buttons, hotkeys, cheats, the names you gave your games, your favorites and your folders. A folder the new device doesn't have is left at its default. Sign-ins and keys (RetroAchievements, cover art keys) are never put in it, so sign in again after an import. Your games, saves and save states aren't in it either: copy them over yourself, or keep your saves and save states in folders of your own (see [Saves, backups and save states](saves.md)).
 
 ### Run setup again
 

@@ -75,6 +75,9 @@ int pk_nds_action(int action, const uint32_t args[4]);
 int pk_nds_action_status(int seq);
 // The job's results once it ran (PK_NDS_MAX_RESULTS words), false if it hasn't.
 bool pk_nds_action_results(int seq, uint32_t* out);
+// Gen 5's USE effect for the next ITEM action (pk_nds_call.h's PkNdsItem5Effect: heal, healDiv, revive, statusMask, pp,
+// ppAll). Emu thread.
+void pk_nds_item5_effect(const uint32_t effect[6]);
 // WILD ENCOUNTERS OFF: no random encounters (the field read holds the map's grass / surf rates at 0). Emu thread.
 void pk_nds_set_wild_off(bool off);
 /** Code of ours into the game (INSTANT TEXT, DsInstantText.kt): main RAM or the spare ITCM (0x01FFC000..), and the JIT
@@ -84,6 +87,9 @@ bool pk_nds_code_write(uint32_t addr, const uint8_t* src, int len);
 void pk_nds_set_keep_start_menu(bool on);
 /** EXP SHARE (Gen 4, melonDS): 0 off, 1 SPLIT, 2 FULL EXP; [mask] the party slots that aren't eggs. Emu thread. */
 void pk_nds_set_exp_share(int mode, uint32_t mask);
+
+/** NO HMS NEEDED (Platinum / HG / SS, Black / White / Black 2 / White 2; melonDS): the party move checks' hooks in or out, after every frame. */
+void pk_nds_set_hm_free(bool on);
 /** DS CPU BOOST: the ARM9 at twice the DS's clock (fewer of a game's own slow frames). Emu thread, between frames. */
 void pk_nds_set_cpu_boost(bool on);
 // Action Replay DS codes into melonDS's AREngine (it runs them on the ARM7's VBlank), replacing the ones before:

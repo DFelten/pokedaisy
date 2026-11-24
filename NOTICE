@@ -128,6 +128,9 @@ The app shows every license below in full under Settings > LICENSES.
 - Atkinson Hyperlegible (app/src/main/assets/fonts, website/public/fonts: the manual's
   reading text), Copyright 2020 Braille Institute of America, Inc., SIL Open Font
   License 1.1 (app/src/main/assets/fonts/LICENSE-AtkinsonHyperlegible.txt).
+- Nunito (app/src/main/assets/fonts/Nunito-SemiBold.ttf, Nunito-ExtraBold.ttf: the MODERN view's text),
+  Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito), SIL Open Font License 1.1
+  (app/src/main/assets/fonts/LICENSE-Nunito.txt); the variable font's 600 and 800 weights, cut to Latin.
 - PixelMplus10 (app/src/main/assets/fonts/PixelMplusJP.ttf; website/public/fonts/PixelMplusJP-site.ttf:
   the website's Japanese), by itouhiro, M+ FONT LICENSE (app/src/main/assets/fonts/LICENSE-PixelMplus.txt);
   cut to Japanese and rescaled by scripts/gen_jp_font.py, cut again to the site's characters by
@@ -136,6 +139,9 @@ The app shows every license below in full under Settings > LICENSES.
   Korean), Copyright (c) 2019-2025 Lee Minseo (https://github.com/quiple/galmuri), SIL Open Font License 1.1
   (app/src/main/assets/fonts/LICENSE-Galmuri.txt); cut to Hangul and rescaled by scripts/gen_ko_font.py, cut
   again to the site's characters by website/scripts/gen_site_ko_font.py.
+- Rubik Medium (website/public/fonts/Rubik-Medium.woff2: the website's buttons), Copyright 2015 The Rubik
+  Project Authors (https://github.com/googlefonts/rubik), SIL Open Font License 1.1
+  (website/public/fonts/LICENSE-Rubik.txt); the weight 500 instance, cut to Latin with fontTools.
 - PokeAPI (https://pokeapi.co), BSD 3-Clause: the National Dex species list
   (third_party/licenses/PokeAPI-BSD-3-Clause.txt).
 - AndroidX, Jetpack Compose, Kotlin, kotlinx.coroutines and Apache Commons

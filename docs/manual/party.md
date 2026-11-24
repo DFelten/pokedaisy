@@ -3,7 +3,7 @@ title: Party and summaries
 summary: Your team at a glance, each Pokémon's full summary, its exact IVs and EVs, which new moves are worth learning, and the POKéMON CENTER's services anywhere.
 section: companion
 order: 2
-keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, move replacement, replacement, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special]
+keywords: [team, pokemon, summary, pokemon pictures, party pictures, pictures, sprites, front sprite, detailed icons, ivs, evs, nature, ability, hidden power, stats, moves, exp, experience, learn, tm, forget, move advice, move replacement, replacement, weakness, resistance, held item, holding, item, shiny, shiny icon, colours, deposit, pc, box, trade, trade evolution, evolve, evolution, no trade, pokemon center, center, heal, heal anywhere, nurse, move relearner, move tutor, relearn, remember move, move deleter, delete move, forget move, name rater, nickname, rename, move details, move info, move page, accuracy, effect, priority, category, physical, special, egg, hatch, quick hatch, hatching, breeding, daycare]
 ---
 
 The `PARTY` tab is your team, live. Glance down and you know who's hurt, who's poisoned and who's about to level up, without pausing to open the game's menu.
@@ -16,6 +16,8 @@ A Pokémon holding an item gets a small tag in its slot's top right corner with 
 
 The slots are your game's own party screen: FireRed and Emerald use their real slot art, and many hacks have their own colours. Games without a look of their own get a FireRed-style slot. The art is rebuilt from your own ROM the first time you play it, so it can take a moment to appear the very first time.
 
+With VIEW set to `MODERN` (see [Screen](screen.md#view-retro-or-modern)), the party looks like the newer games' instead: your six Pokémon in a column of rounded bars on a coloured band, the one under the cursor dark with an arrow beside it, and that Pokémon's picture large on the right with its types under it. Each bar has the icon, name, gender, level, a thin HP bar and the HP left. The band takes your theme's colour, or the game's with `GAME COLORS`. On a small or narrow screen (an RG DS, a phone held upright, the side panel) the picture is left out and the bars sit in two columns of three, the level beside the HP bar. Your party in a battle and the bag's "which Pokémon?" pick look the same.
+
 ![The PARTY tab: EMBERPUP Lv12 with full HP, GALEFINCH poisoned and low on HP, BUBBLEFIN and THORNLET](shots/companion-party.png "The PARTY tab")
 
 The icons bounce like they do in the game. If you'd rather they stood still, turn off `PARTY ICONS MOVE` in SETTINGS > `TWEAKS`.
@@ -24,7 +26,7 @@ The icons bounce like they do in the game. If you'd rather they stood still, tur
 
 The party screens of Pokémon Red, Blue, Yellow, Gold, Silver and Crystal have only a few dozen icons, shared by kinds that look alike, all in one colour, so a leafy starter and every other plant look the same. Set `POKéMON PICTURES` to `DETAILED` in SETTINGS (COMPANION group) and each slot shows that Pokémon's own picture instead, the one you see in battle and in the `DEX`, in its own colours, a shiny one in its shiny colours (Red, Blue and Yellow have no shiny Pokémon). The picture is read from your cartridge file like the rest of the game's art. The same pictures show everywhere else the companion and the HUD draw a Pokémon: the summary, battle `INFO`, the `DEX` list and its `EVOLVE` page, `GUIDE` and the HUD's wild Pokémon. `GAME`, the default, keeps the game's icons. The setting only appears while you play one of those games.
 
-To change the order, press and hold a Pokémon, drag it onto another one and let go: they trade places, in your game too. The summary's `SWITCH` does the same: tap it, your party opens, and tap the Pokémon to trade with. `CANCEL` or BACK goes back to the summary. This works in the Game Boy Advance games while you're free to walk around, not in a battle or a conversation. If the party changes before the move runs, nothing is swapped; try again.
+To change the order, press and hold a Pokémon, drag it onto another one and let go: they trade places, in your game too. The summary's `SWITCH` does the same: tap it, your party opens, and tap the Pokémon to trade with. `CANCEL` or BACK goes back to the summary. This works in the Game Boy Advance games and in Pokémon Red, Blue, Yellow, Gold, Silver and Crystal (not their hacks) while you're free to walk around, not in a battle or a conversation. If the party changes before the move runs, nothing is swapped; try again. In the Game Boy games it's the party menu's own switch, so in Gold, Silver and Crystal a held letter goes with its Pokémon, and the new order is kept once you save in the game.
 
 These controls also work in the supported English version of Pokémon Unbound. Changing party order is separate from choosing a Pokémon to send into battle.
 
@@ -60,7 +62,7 @@ Tap the highlighted Pokémon again to open its Pokédex entry. That page's blue 
 
 In the games where the [BOXES tab](boxes.md) can move Pokémon, the summary has a green `DEPOSIT` button, like the game's own PC. Tap it, then pick a box from the list, which shows how full each one is. The Pokémon goes into that box's first free slot, right there in your game, and the rest of your party moves up. Back on your party you see it fly over to the box, then a message says where it went.
 
-On Crystal there's no list: the Pokémon goes straight into the box your PC is on, the only one the game keeps open.
+On Red, Blue, Yellow, Gold, Silver and Crystal there's no list: the Pokémon goes straight into the box your PC is on, the only one the game keeps open.
 
 The game's own rules still apply: your last Pokémon that can battle has to stay, a Pokémon holding Mail can't go in until you take the Mail off, and a full box says so. You have to be walking around, with no battle, menu or text box open. **Save in the game** to keep it, just as you would after using a PC.
 
@@ -68,10 +70,21 @@ The game's own rules still apply: your last Pokémon that can battle has to stay
 
 Some Pokémon only evolve when traded, some of them while holding an item. If you have no one to trade with, turn on `TRADE EVOS` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE` (it's `OFF` until you turn it on). A Pokémon in your party that would evolve from a trade right now then gets an `EVOLVE` button on its summary. Tap it and confirm: the game plays its own evolution on the game's screen, as it would after a trade, and you're back where you were when it's done. The Pokémon stays yours, with your name on it.
 
-The game decides, by its own rules: a Pokémon holding the item that stops evolution doesn't get the button, and one that needs a held item uses it up, as in a real trade. It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
+The game decides, by its own rules: a Pokémon holding the item that stops evolution doesn't get the button, and one that needs a held item uses it up, as in a real trade. In Black and White and their sequels, the two Pokémon that only evolve by trading with each other don't get it. It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
 
 > [!NOTE]
-> `TRADE EVOS` works in FireRed, LeafGreen and Emerald, in every language and release. In other games it shows `N/A`. To trade for real between two of your games, see [Link play](link-play.md).
+> `TRADE EVOS` works in FireRed, LeafGreen and Emerald, in every language and release, and in the US Platinum, HeartGold and SoulSilver and the English Black, White, Black 2 and White 2. On the DS the screen fades out, the game's evolution plays on both screens, and the field fades back in after. In other games it shows `N/A`. To trade for real between two of your games, see [Link play](link-play.md).
+
+## Quick hatch
+
+An Egg needs thousands of steps to hatch. To skip the walk, turn on `QUICK HATCH` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF LIFE` (it's `OFF` until you turn it on). An Egg in your party then gets a `HATCH` button on its summary. Tap it and confirm, then take one step on the field: the game plays its own hatching, asks about a nickname as usual, and adds the Pokémon to your Pokédex.
+
+It works on the field, with no menu, text or battle open. **Save in the game** to keep it.
+
+Carrying more than one Egg? The game goes down your party in order on that step: each Egg above the one you picked gets a little closer to hatching (a bit more if a Pokémon in your party has an ability that warms Eggs), and the Eggs below it don't change. If an Egg above it is already ready to hatch, that one would hatch instead, so `HATCH` says so: hatch that one first, then this one.
+
+> [!NOTE]
+> `QUICK HATCH` works in Emerald. In other games it shows `N/A`.
 
 ## CENTER: heal, relearn, forget, rename
 
@@ -140,7 +153,11 @@ A few rules behind the verdicts:
 - It weighs damage against every type, not one opponent, so it's advice for your team in general rather than for the next fight.
 
 > [!NOTE]
-> `LEARN` works in FireRed, LeafGreen, Ruby, Sapphire and Emerald (the original games) so far. Hacks change too many moves for the advice to be right there yet.
+> `LEARN` gives its advice in FireRed, LeafGreen, Ruby, Sapphire and Emerald (the original games) so far. Hacks change too many moves for the advice to be right there yet.
+>
+> On the DS, `LEARN` lists the next moves a Pokémon learns by level and the TMs and HMs in your bag it can learn, read from your cart, without the verdicts. That's Platinum, HeartGold, SoulSilver, Black, White, Black 2 and White 2 in every language, and Renegade Platinum, Origin HeartGold, Sacred Gold, Storm Silver, Blaze Black 2 Redux and Volt White 2 Redux. Heartfelt Gold lists the moves by level only, since its TMs can't be read yet.
+>
+> On the Game Boy it does the same in the English Red, Blue, Yellow, Gold, Silver and Crystal, and in Red and Yellow with the Gen II Graphics patch. Crystal's move tutor moves aren't in the list, since you don't carry them in your bag.
 
 The verdicts follow `BATTLE HINTS` in SETTINGS. With it off, `LEARN` still lists what the Pokémon can learn and the move details, but without the verdicts and reasons.
 

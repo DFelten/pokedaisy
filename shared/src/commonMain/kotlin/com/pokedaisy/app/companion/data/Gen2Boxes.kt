@@ -4,7 +4,8 @@ import kotlinx.atomicfu.locks.synchronized
 
 /**
  * Crystal's PC boxes, read from the cart's battery RAM (pokecrystal's sram.asm; retail English rev 0, rev 1 and Australia
- * keep them at the same places, the `crystal_boxes` fixture, and German Kristall too, `crystal_de_boxes`):
+ * keep them at the same places, the `crystal_boxes` fixture, and German Kristall too, `crystal_de_boxes`). Gold and Silver,
+ * English and German, keep them the same way at their own places ([GEN2_GOLD_SILVER_BOXES], pret/pokegold: `gold_boxes` ...):
  * - the box the PC is on (wCurBox) is sBox, SRAM bank 1 at AD10: every deposit and withdrawal writes it at once, so it's
  *   always the game's own;
  * - boxes 1-7 are SRAM bank 2's, 8-14 bank 3's, 0x450 bytes apart from A000. The game copies sBox into its place there
@@ -34,6 +35,22 @@ val GEN2_CRYSTAL_BOXES = Gen2BoxLayout(
     firstBox = cartRam(2, 0xA000),
     boxesPerBank = 7,
 )
+
+/** Gold / Silver (pret/pokegold), English and German alike: Crystal's boxes, sBox at AD6C and wCurBox / wBoxNames earlier. */
+val GEN2_GOLD_SILVER_BOXES = Gen2BoxLayout(
+    curBox = wramx(1, 0xD8BC),
+    boxNames = wramx(1, 0xD8BF),
+    activeBox = cartRam(1, 0xAD6C),
+    firstBox = cartRam(2, 0xA000),
+    boxesPerBank = 7,
+)
+
+/** The box layout of [cfg]'s game, or null: retail English / German Crystal, Gold and Silver. */
+fun gen2BoxLayoutFor(cfg: Gen2Config): Gen2BoxLayout? = when {
+    cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE -> GEN2_CRYSTAL_BOXES
+    cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg === GEN2_GOLD_DE || cfg === GEN2_SILVER_DE -> GEN2_GOLD_SILVER_BOXES
+    else -> null
+}
 
 private const val GEN2_NUM_BOXES = 14
 private const val GEN2_BOX_SLOTS = 20

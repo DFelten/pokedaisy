@@ -231,7 +231,7 @@ loading one keeps the battery save in memory (`load_state_keeping_save`), like t
 
 The user runs several agents at once and runs the full suites about once a day, so (the user's rule, 2026-11-01):
 
-- **Everyday check: `make test-quick`** (`./gradlew :app:testDebugUnitTest :shared:testDebugUnitTest -Pquick`, about 1 min warm; companion/data and
+- **Everyday check: `make test-quick`** (`make gen-check` first - every generator's `--check` but gen_gamedata's, under a second; then `./gradlew :app:testDebugUnitTest :shared:testDebugUnitTest -Pquick`, about 1 min warm; companion/data and
   companion/i18n are compiled and tested by `shared/`, docs/DEVELOPMENT.md's "The shared module"). It
   drops the Paparazzi renders (`*ScreenshotTest`: they assert nothing and were 86% of the full run's ~10 min)
   and `BestEffortTest` (26 whole ROMs, ~45 s), and runs the forks side by side. Fixture decodes, ROM-backed
@@ -272,8 +272,8 @@ pixel, so there its text was as large for the screen as on a GBA): `LocalTextSte
    `WideCompanionScreenshotTest` re-runs all of them at the top screen's 1920x1080 (where SWAP SCREENS puts
    the companion; density 2.0, the closest bucket layoutlib has). Wide-screen rules so far: `PartyGrid` goes
    to 3 columns past 2.0:1 (1.6 caught the Duo Lite's 4:3 grid, ~1.56-1.75) (a measuring `Layout` - BoxWithConstraints composed the slots late and FireRed's
-   icons missed the frame), and the MAP fills the tab only while that stretches it <= 1.2x
-   (`MAX_MAP_STRETCH`; the Thor's bottom is ~1.16), else it keeps its shape, centred, buttons with it. Add a
+   icons missed the frame), and the MAP never stretches (2026-11-20, the user's call):
+   it keeps its shape, as big as fits, centred, buttons with it. Add a
    test when adding a screen. Paparazzi is on **1.3.5** (Kotlin 2.4.21, Compose BOM
    2025.03.01 = Compose 1.7.8) — the last release on compileSdk 34's layoutlib; 2.x, Compose 1.8+ and a Kotlin past
    2.4 need compileSdk 35+ and a newer AGP first (Kotlin 2.4's lowest AGP is our 8.5.2). Library/Settings (top screen)
@@ -298,6 +298,73 @@ to a THEME's hue, `Color.rehued`; `uiStylePalette`'s SUMMARY MINT keeps the samp
 TOOLS, Settings, every tool: `LibraryHeaderBar`, `ToolHeader`) and Settings HOME's footer (`AppAboutBar`) are full-width bands on the
 screen's edges; a panel's title inside a window is a band across its top (`PanelHeader`, `LocalWindowInset`). The library header drops
 HELP and narrows its buttons when they'd cut POKéDAISY short (`compactActions`).
+**VIEW: RETRO / MODERN** (2026-11-19, the user's call; SCREEN > VIEW on both screens, Android only, `AppViews` / `AppView` in
+`theme/AppView.kt`, `Prefs.appView`, NEW tag `APP_VIEW`; asked once on the Library, `AppViewIntro`, before the other one-time windows,
+KEEP MY CURRENT LOOK = RETRO): RETRO is everything below. MODERN (after X / Y and later games) is `UiStyle.MODERN`'s palette under
+`CompanionSkins.MODERN`, everywhere (a 3DS game's own smooth skin still wins in game): smooth corners `radiusScale`d, hairline frames
+(`frameScale` in `inPx`), soft drop shadows (`drawSoftShadow`), gradient keys, no text shadows, `AppFont.MODERN` (Nunito 600 / 800, OFL,
+cut to Latin; put on with the view, RETRO's font kept in `Prefs.appFontRetro`), bold = the font's weight. Its own pieces where a screen
+draws its own: `ModernLook.kt` (`modernView`, `ModernBackdrop`, `ModernPartySlot`, HP bar, status chip; the party after Sword / Shield's screen, 2026-11-20: `PartyGrid` in MODERN lays the six out as a column of pills on the accent's slanted band (a short companion or a narrow one: two columns of three, no stage, each pill's level beside its HP bar), `drawModernPartyWindow`, the cursor's pill dark with a chevron, and `ModernPartyStage` beside them - the cursor's front picture from `LocalPartyDex`, its types - past `MODERN_STAGE_ASPECT`; tags on a pill's top edge, `modernBadgeRoom`), `ModernIcons.kt` (`ModernGlyph`:
+our own drawings, a glyph or a gradient tile; `forPixel` swaps `PixelIcon` / `ShadowedPixelIcon`'s one-colour drawings), the library's
+pills, rail, header icons, covers (`CategoryArt`), tags (`GameTagBox`), `PlatinumButton` / `ButtonLabel`, the bag (`ModernBag`). The game's
+own art stays (region map, card, icons). Both views: the top screen's header is a band along the screen's top edge (`LibraryHeaderBar`,
+`AppPageTitle(docked)`); RETRO's library list is one window, a row a part of it (`LocalListSegment`), MODERN's cards apart. A new screen
+that draws its own look: check `modernView`. ui-preview `-Pview=MODERN`, `modern-icons`, `library-view-intro*`.
+**The look settings apply everywhere** (2026-11-20, the user's call after VIEW IN GAME / COMPANION LOOK confused players): VIEW, THEME,
+FONT and DARK MODE are the same on both screens, in a game or not; the only in-game difference is LOOK > IN GAME (`inGameRow`,
+`CompanionSkins.enabled`, `Prefs.gameLook`): GAME COLORS = `CompanionSkins.gameSkin` (the running game's) gives `gameHue`, the
+companion's colours in either view (RETRO: `themedStylePalette` at that hue, uncalmed; MODERN: `SkinColors.inTheme`), its HUD the
+game's style (`gameHud`), a 3DS game its own smooth skin; MY THEME = the Library's look. A row that can't act right now says why in
+its grey line (`fontSubtitle`, VIEW on a 3DS game) rather than doing nothing silently; THEME is greyed out in a game on GAME COLORS
+(`themeInGameOff`): `AppColors.theme` is then the default (`AppColors.chosen` is the pick), so nothing of a theme reaches a game's
+screens, and Unbound gets its colour from `GAME_HUES` (its own palette in RETRO). FONT TYPE (was FONT; its pick-list draws each name
+in itself, `fontOption`) and FONT SIZE (`AppFontSize` SMALL / MEDIUM / LARGE, `Prefs.fontSize`, a factor in `rememberGbaTextMetrics`,
+NEW tag `FONT_SIZE`); THEME's pick-list shows each theme's colours (`themeSwatch`). FONT SIZE's MORE SIZES (`AppFontSize.CUSTOM`, `AppFonts.customPercent`, `Prefs.fontSizePercent`, NEW tag `MORE_FONT_SIZES`): a
+slider 50% to 200% (`fontSizeSlider`), opened straight from the pick (both screens set `selector = null` *before* `onPick`, so an onPick can
+open the next pop-up). **MY LOOK** (2026-11-21, the user's request; top-screen Settings > LOOK, `Screen.MY_LOOK`, NEW tag `MY_LOOK`;
+`theme/CustomLook.kt`, files under `files/look/`): APP BACKGROUND / COMPANION BACKGROUND (`LookBackground`, a picture scaled by
+`LookPictures` on Android, drawn by `PictureBackdrop` from `AppBackdrop` / `GameBackdrop`; the companion's SETTINGS gets COMPANION
+BACKGROUND once a picture exists), themes from a JSON file (`CustomThemes.parse`: only `name` + `color` needed, the rest worked out;
+ids from 1000, in `themeById` / `availableThemes`; the format is in docs/manual/screen.md) and TTF / OTF fonts (`CustomFont`, worn as
+`AppFont.CUSTOM` + `AppFonts.custom`, sized by the file's OS/2 cap height, `FontFileInfo`). A label's font in a pick-list is a
+`FontChoice` (an `AppFont` or a `CustomFont`). ui-preview: `withMyLook()`, `demoLookPicture()` (drawn in code: never a real photo or a
+third-party font), `settings-my-look*`, `library-my-look*`, `$g-party-my-look`. **MY LOOK round two** (2026-11-23, the user's requests; NEW tags
+`THEME_EDITOR`, `MOVING_BACKGROUNDS`, `SIDE_BARS`, `TAB_ICONS`, `HUD_EDITOR`, `TOUCH_LAYOUTS`, `LIBRARY_VIEWS`): themes made in the app (CREATE A
+THEME, `Screen.THEME_EDIT` in SettingsActivity, `ThemeDraft` / `ThemeFiles` in `theme/ThemeFiles.kt`: `theme-<id>.json` + its pictures in
+`theme-<id>/`, its font one of MY LOOK's fonts by `fontFile`), exported / added as a pack (`ThemePack`: a zip of `theme.json`, `font.ttf|otf`
+and `LookSlot` files, nothing else; unzipped / written by the app's `ThemePackFiles`). Pictures are `LookSlot`s (APP, COMPANION, LEFT_BAR,
+RIGHT_BAR), still or moving (GIF / WebP: `AnimatedPictures.host` = `AndroidAnimatedPictures`, AnimatedImageDrawable on Android 9+, drawn by
+`LookPictureImage`; LIGHT COMPANION holds the companion's on its first frame). A worn theme's pictures show where the player's setting is
+DEFAULT; picking a theme with a font wears it (`pickTheme` -> `wearThemeFont`). **Every added file goes through `LookLimits`** (the user's
+rule: checked by its bytes, size-capped; `FontFileInfo.problem`, `PictureKind` / `PictureMotion`, the zip's caps in `ThemePackFiles.unzip`).
+SIDE BARS (`SideBars`, `Prefs.sideBars`; GAME SCREEN on both screens): DEFAULT (theme's bar pictures, else the DS blur / black) / BLACK / MY
+PICTURES, drawn by `SideBarsFill` in `sideBarsView` (behind the game in `GameViewportView`, `onContent` gives the game's rect) or inside
+the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / `ModernGlyph`. Several
+custom layouts: touch (`TouchControlsStyle.customs` / `customIndex`, `TouchCustom`, prefs `touch_layouts`; EDIT LAYOUT on a preset makes a new
+one, never writes over another) and HUD (`FieldHudStyle.customs` / `custom`, `HudCustom` places per `HudBlock` as shares of the room;
+`HudEditor` over the game from the companion's HUD > EDIT LAYOUT, `CustomHudLayout`). LIBRARY VIEW (`LibraryLayout`, `Prefs.libraryViewMode`
+by ordinal: LIST / GRID / CARTRIDGES / CAROUSEL / SPOTLIGHT; the header's view button opens its pick-list): the immersive three are
+`LibraryShowcaseView` over the host's `LibraryShowcase` (cover, ScreenScraper's fanart / wheel, facts, menu); our own cartridge drawings,
+never a console maker's art. Theme colours past the one (the user's call, 2026-11-23): TEXT COLOR (`ThemeSpec.text` / `textNight`,
+`OptionColors.label` / `labelShadow` take it) and SECOND COLOR (`ThemeSpec.accentHue`: `themedStylePalette(accent)` gives the title / section
+bands, buttons and tabs that hue, `withBands`). Bars (same day): the companion's TAB BAR > POSITION (`TabBarPlace`: BOTTOM / TOP / a side rail,
+`sideRail` in CompanionScreen) and SIZE COMPACT (`LocalTabBarCompact`), the library's / Settings' MENU BAR (`MenuBarPlace`, `LibraryNav(far)`)
+and MENU BAR SIZE COMPACT (icons alone); the dual-screen launcher keeps its rail where its keys reach it. **ScreenScraper is on for players** (2026-11-23: `featureFlag("screenScraper", default = true)`; its row's words
+are back in `SETTING_KEYWORDS`, the manual has "Game media from ScreenScraper"). RETRO's SUMMARY MINT build wears MODERN's own blues (`retroStylePalette`,
+the user's call: the same colours in both views; its list frame band 2 px) and **a THEME moves the whole
+style to its hue** (`themedStylePalette`: `rehued` shifts the style's own colour family, SUMMARY MINT's greens / MODERN's blues, keeping
+saturation and lightness; `themed` then leaves colours already in the theme's hue alone) - before, themes only tinted the greys and
+changed little. Library pieces the launcher drives with its own cursor are `keyDrivenFocus()` (`LocalKeyDriven`): never two cursors.
+A tab tap leaves its first row in `FocusJump`, taken by the next D-pad key (a focus request in touch mode does nothing; `leaveTouchMode`). A pop-up opened by a tap (`OptionOverlay`) leaves its current choice there the same way (LibraryActivity provides an `OverlayStack`
+and takes it). Top-screen Settings: L / R step the group tabs (`GroupStep`, `LocalGroupStep`). A pick-list's current choice is
+`OptionLine(marker)`, a drawn cursor at the row's end (never a typed ◀).
+Money and counts are `groupedNumber` (the language's thousands mark). Logos are `AppLogo` (smooth in MODERN). Settings' footer is
+`AppAboutBar`, docked full width. GAME PATHS (`LibraryPathMode`): the file's name under a game's only where two names match.
+Quick views reorder by a long press and a drag (`QuickViewPills(onReorder)`, `Prefs.libraryViewOrder`, `LibraryPreferences.orderViews`).
+Panels' titles are `PanelHeader` (a solid band filling an `OptionListWindow`'s top out to the frame as drawn and rounded with its fill,
+`LocalWindowInset` = `WindowEdge`; keep it outside a scrolling column, whose clip cuts off what reaches over its top); box grids are
+`BoxHeader` + round placeholders (`MonCell`), after the newer games'. Every tool's title is `ToolHeader` (the app's header band, full width, the
+tool's icon). Greens and yellows are calmed when a theme moves a palette (`rehued`).
 **The menus' look is SUMMARY MINT** (2026-11-12, the user's pick of eight looks tried; `theme/UiStyle.kt`, `UiStyles`,
 `OptionColors.style`): the OPTION pieces below drawn over a `UiStylePalette` - Emerald's summary pages (sampled headless): a teal
 header joined to a mint list window (`OptionTitleWindow(joined)`, `WindowGap`), green section bands (`StyledGroupTitle`), banded
@@ -363,8 +430,11 @@ sets once), sampled headless off each game's menus (nds_dump / menu-shots); pixe
 `SkinColors.button*` = OptionButton's own face (HG's orange, Black's plates); `flatFaces` = one-colour buttons (FR / LG, Emerald, R / S, Platinum: HG's two tones clashed there); `darkToo = false` = a light skin gives way to the app's dark
 windows in DARK MODE (`activeColors`). `CompanionSkin.hud` (`SkinHud`) is HUD > LOOK **GAME** (the new default; GLASS for a game without
 one, `FieldHudLook.resolved`): drawn by WINDOW's paths with the skin's panels (`drawRingedBox`: rings round a see-through fill),
-`hudSelected` its cursor colour. SCREEN > COMPANION LOOK GAME / CLASSIC, under THEME on both screens (`Prefs.gameLook`, `CompanionSkins.enabled`, `gameLookRow`):
-CLASSIC turns them all off, X / Y included. `GameSkinsScreenshotTest` / `GameSkinsHudScreenshotTest` render every one.
+`hudSelected` its cursor colour. LOOK > IN GAME GAME COLORS / MY THEME, under THEME on both screens (`Prefs.gameLook`, `CompanionSkins.enabled`, `inGameRow`; it
+replaced COMPANION LOOK and VIEW IN GAME): MY THEME turns them all off, X / Y included. **GAME COLORS keeps the app's own menus in the
+game's colour** (2026-11-19 / 20, the user's calls: GAME looked like the old windows; FireRed is its HUD's gold, not its name's red):
+`CompanionSkins.gameHue` = `hueOf(skin)`, the most chromatic colour of the skin's HUD, so companion and HUD always agree; the skin's
+window colours and buttons give way, `tint()` / values / the focus ring follow it; the skin's corners and the HUD stay. The 3DS games' smooth skins are untouched. `GameSkinsScreenshotTest` / `GameSkinsHudScreenshotTest` render every one.
 **SETTINGS' group tabs sit outside the card** (both screens, the user's call): `RailedWindow` leaves the window to the `GroupedRows` inside, which draws it round the list alone, the `TabRail` on the backdrop beside it.
 **Buttons are HeartGold's two-tone (2026-11-05, the user's call)**: every companion button is a face in two colours with two soft lines between them (`drawTwoTone`, GbaText.kt): `PlatinumButton` (a thick dark outline, a thin white ring, `fill` over `frame`) and, through `drawLayeredBox(twoTone = true)`, `OptionButton`, the tab chips, SETTINGS' group chips, the DEX's sections, MORE's tiles and the bag's PC and sort; the quick menu's tiles (`quickTileFace`) add a thick outline. The BATTLE tab takes HeartGold's layout by proportion (`ActionButtons`' `ds`: a DS pixel from the pane's width, so a tall pane leaves room rather than stretching the buttons), `BattlePlaceholder`'s four move places behind FIGHT, and its move cards (`hgMovePanel`); RUN stays whole, not cut by the screen's edge as in the game.
 **DARK MODE** (SETTINGS on either screen, SCREEN group; `Prefs.darkMode` OFF default / ON / AUTO = the device's uiMode;
@@ -377,6 +447,31 @@ battle buttons); bags get `BagPalette.night()` (`theme/NightColors.kt`: each col
 yellows lean amber, a dark cream read olive), Yellow's party slots `YellowPartyPaletteNight`, Gen 1 pictures a white card
 (`spritePaper`: their paper is transparent). New colours: read `OptionColors` (or add a getter with both values), never a
 bare white / black fill. Look at it: `gradle render -Pdark=true -Pout=build/shots-dark`, `DarkCompanionScreenshotTest`.
+**Next release's batches** (`companion/FlaggedFeatures.kt`, both off until 1.7.0; `FeatureFlags.settingsPlus` / `modernLook`:
+`-Ppokedaisy.settingsPlus=true` / `modernLook`, or markers `settings-plus` / `modern-look`; ui-preview turns both on, `-PflagsOff=true` off):
+`settingsPlus` = SETTINGS FILE, the SAVE STATES folder and page, per-game settings; `modernLook` = everything of the modern-look merge
+(VIEW, MY LOOK, FONT SIZE, SIDE BARS, tab / menu bar places, kept HUD / touch layouts, library views and pill order, the regrouped
+settings, ScreenScraper on). Off, their rows are left out (`ui/FlaggedRows.kt`'s `flaggedRows`, by label) and their prefs read as before
+(`Prefs` getters); a new row of either goes in `flaggedRows`' lists. Their manual text is already in docs/manual (no release from dev
+before 1.7.0). Flipping them on for 1.7.0: the build defaults (app/build.gradle.kts) to true, or drop the flags.
+**Per-game settings** (companion SETTINGS > GAME > SETTINGS FOR: ALL GAMES / THIS GAME, NEW tag `GAME_SETTINGS`; 2026-11-23,
+`docs/plans/per-game-settings.md`): a game's own value of a setting is `game.<crc>.<key>` beside the normal key; `GameSettingsStore`
+(`companion/GameSettings.kt`) reads it first and writes there under THIS GAME (or once one exists). Only the game's activity sees them
+(`PokeDaisyActivity : GameSettingsScope`, so every `Prefs(this)` there is scoped); the library and top-screen Settings never show or change
+them (the user's call). A setting a game may keep its own value of goes in `PerGameSettings.KEYS` (its `SharedSetting` id and every pref
+key it writes; its row needs that id); game volume stays global. Reset / a scope flip re-applies through `reapplyGameSettings`.
+**SHINY HUNT** (the HUNT tab, behind a third flag `FlaggedFeatures.shinyHunt` / `FeatureFlags.shinyHunt`, marker `shiny-hunt`, for 1.7.0;
+NEW tag `SHINY_HUNT`; `docs/plans/shiny-hunt.md`): a game's hunts in Prefs `hunts_<crc>` (`HuntLog`), counted by `HuntCounter` from the samples
+(`ShinyHunts.onSample` via `GameRuntime`) and state loads (`stateLoaded`: a RESETS try is the first Pokémon read after one); `loadHeld()` holds
+LOAD STATE / RESTART GAME over a shiny (EmulatorEngine's pending load, `restartGame`). The HUD's count is `FieldHudPart.HUNT` (`HudStatus`).
+**SPOILERS** (companion SETTINGS > COMPANION, per ROM `Prefs.spoilersFor`, behind a fourth flag `FlaggedFeatures.spoilerFree` / marker
+`spoiler-free`, for 1.7.0; NEW tag `SPOILER_FREE`; `docs/plans/spoiler-free.md`, manual `spoilers.md`): `Spoilers` (companion/Spoilers.kt) is the one
+check every screen asks - `seen` / `seenNational` (the Pokédex's mark, the species the companion read, what was tapped open: `reveal`), `moveAhead`,
+`hiding`. A screen that names a Pokémon, a move to come or a foe's hidden facts goes through it. Asked by `SpoilerAskHost` (FeatureTip.kt) on an early
+save's first moments in game, else on the first DEX / GUIDE open (`pageOpened`); unanswered = SHOW.
+**SETTINGS FILE** (Settings > APP, setup's first step; `SettingsBackup.kt` / `SettingsFile.kt`): every pref and the controls / hotkeys /
+cheat files in one JSON; sign-ins and keys never (`SECRET_KEYS`). **SAVE STATES folder** (FOLDERS > SAVE STATES, `Prefs.statesDirOverride`):
+every states path goes through `SaveStates.root` / `SaveStates.of`, never `File(filesDir, "states")`.
 **ACHIEVEMENTS from a popup**: `AchievementPopup.achievementId` (unlocks and progress); a tap opens the tab on it
 (`AchievementFocus`: scrolled to, the white cursor row, followed for 3 s while the list re-sorts), BACK returns to the
 tab it was opened over (`popupReturn`). The list's filter button (pixel funnel, `OptionButton(pixelIcon = …)`) opens a
@@ -811,7 +906,8 @@ the software renderer, pixel for pixel. Check GPU changes headless with nds_dump
 It runs as `GameKind.HEARTGOLD` with `originHeartGold` set (`GEN4_ORIGIN_HEARTGOLD`, `pk_nds_field.cpp` / `pk_nds_call.cpp`'s
 `ORIGIN_HEARTGOLD`, callSet 7) and its own tables read from the cart (`NdsArt.readOrigin`: 1440 species / forms, 920 moves,
 Fairy = 9, its type chart, icons, its DEX's pages): never bundled. Its battle engine is its own: the BATTLE tab reads its
-battle objects (`Gen4ManagedBattle`), no battle buttons, the touch screen floats in while its battle waits (`battleManagerPtr`).
+battle objects (`Gen4ManagedBattle`); BATTLE BUTTONS press its commands and moves (HeartGold's places; the waiting panel's handler at
+manager +0x234 -> +0x57C, never its id), the touch screen floats in for the rest (`battleManagerPtr`).
 No GUIDE. Fixtures `origin_heartgold(_battle, _trainer)`; docs/DEVELOPMENT.md's "Origin HeartGold".
 **Heartfelt Gold v1.0.15 (2026-11-16)**: hg-engine over the *US* HeartGold (`HeartfeltGold.matches`: ARM9 / overlay table sizes),
 the US RAM and battle system, so the native side (EXPAND, FLY, PC, WILD, battle buttons) runs it as HeartGold unchanged. Its species ids are
@@ -952,6 +1048,18 @@ TMs never run out by themselves (checked headless), so `ReusableTms.BUILT_IN` sh
 list beside the cheats' in `pk_cheats.c` (`sOptions`: loading cheats never drops them), with the same overlay / RA swap, so the
 Poller's hash and RetroAchievements' see the file; they don't pause achievements. Played headless with mgba_dump's `rompatch`
 (docs/ROM_FEATURES.md note 15). The newer-engine hacks build the check another way: each needs its own site.
+**WILD PIN** (2026-11-11, a PIN on GUIDE > HERE's and the HUD WILD's GRASS / CAVE, SURFING, ROCK SMASH and rod rows - water / rock /
+fishing 2026-11-16; GAMEPLAY > QUALITY OF LIFE > WILD PIN ON, NEW tag, OFF hides them; `WildPin.kt` the pure contract, `WildPins.kt` its Compose state + the
+activity's host, `ui/WildPinUi.kt`): the next encounter that way on the map is the pinned species. While pinned, the method's slots
+({u8 min, u8 max, u16 species}, the WildPokemonInfo's array: `GuideRomSource.pinSlots`; `WildPin.Method` LAND 12 / WATER 5 / ROCK_SMASH 5 /
+FISHING 10, fishing's three rods all patched so any rod catches it) go in as one ROM block, every slot the species at its own min / max
+over that method's slots, guarded by the file's bytes' CRC32; one pin at a time (`PinControl` carries the method). `pkRomBlocks` replaces every block, so PLAYER LOOK's and the pin's go in one call (`GamePlayerLook.service`, `selectPin`; a pin
+that doesn't match drops and the look goes alone). One encounter (the user's call over until-caught): out on the frame a battle starts
+with gBattleTypeFlags' TRAINER clear (`WildPin.endsNow`; a trainer's battle keeps it), on another map (the activity's sample) and on
+UNPIN; never gEnemyParty, never the file or the save. RetroAchievements idle while one is in (`achievementsIdle` in RaSession.kt, WILD PIN ON / OFF,
+PAUSED: WILD PIN). Greyed with the NUZLOCKE tracker on (OFF IN A NUZLOCKE RUN) or in a battle (the reason under the first heading with PINs). Games: retail English FireRed rev 1,
+LeafGreen rev 0 / 1, Emerald (randomized ones too) and Monomyth v1.0 / v1.1 (vanilla's wild headers; `WildPin.offered`, by GUIDE tables). Headless: `Pin.toText()` is mgba_dump's
+`romblocks` line. ui-preview `*-guide-pin*` (`-Prom`), `hud-wild-*` (`WildPins.preview`). Other games: later.
 **LINK PLAY** (2026-11-01, a game's library menu; `LinkActivity`, `LinkCore`, native `pk_link.c` / `pk_link_jni.c`): two to
 four GBA games on mGBA's own lockstep link cable, apart from the player's core (`g`): only the games, no companion / EXPAND /
 HUD / hotkeys / FF / states. mGBA defines only the link's hooks (struct mLockstep); `pk_link.c` fills them with Qt's
@@ -967,6 +1075,15 @@ CB2_ReturnToField, controls locked first, from the field only. Which Pokémon ge
 bytes put back (a held-item evolution's item would be spent otherwise). Records `TRADE_EVO_*` in gamedata (retail English FireRed
 rev 1, LeafGreen rev 0 / 1 - found in retail by the shifted `$DECOMPS` build's masked code - and Emerald), the rest of retail (FireRed rev 0,
 every language) `TRADE_EVO_PORTS` from `port_field_items.py`; hacks / Kaizo / Legacy off.
+**QUICK HATCH** (2026-11-12, companion GAMEPLAY > QUALITY OF LIFE, `Prefs.quickHatch` OFF, NEW tag; `QuickHatch.kt`, `FieldQuickHatch`): an
+Egg's summary gets HATCH: the Egg's cycles (MON_DATA_FRIENDSHIP) to 0 through the game's SetMonData and SaveBlock1's daycare.stepCounter
+to 254, so the game's own TryProduceOrHatchEgg starts EventScript_EggHatch on the next step ("Huh?", the scene, the nickname question).
+Free field only; the window closes for the walk. The game's loop goes down the party: Eggs ahead of it lose a cycle (two with a
+Flame Body / Magma Armor in the party), those after it nothing, and an Egg ahead already at 0 hatches first, so HATCH refuses then
+(`EGG_AHEAD`). Retail Emerald in every language (+ Kaizo, randomized), counter 0x314C, checked headless
+(one step, the scene, IS_EGG 0). FireRed / LeafGreen 0x309A and Ruby / Sapphire 0x30B6 are in the file's doc from pret's global.h, not
+offered until run.
+**LEVEL UP ALL** (2026-11-08, Monomyth v1.0 / v1.1 / v1.2, companion QUALITY OF LIFE, NEW tag; `LevelUpAll.kt`, `ui/LevelUpAllFlow.kt`, the config's `levelUpAll` record): the party, the PC or both (`LevelUpScope`) raised to the highest level owned, the next unbeaten boss's strongest Pokémon or a level the player picks up to the higher of those two (`LevelUpOffer.pickable`: from one past the scope's lowest, stopping at LEVEL CAP's level while it's on), written to live RAM on a free field, all or nothing (every record re-read first, put back on a failed write); the game's own save keeps it. Level evolutions (and level + ATTACK vs DEFENSE) are silent: species, a still-default name, Pokédex bits. New moves are skipped unless the player picks ASK FOR EACH (`LevelUpSession`). A box record keeps only EXP, a party one also its level and stats. Monomyth's storage is vanilla's 14 x 30 x 80 under its own key, but its box names are 21 bytes apart, and `decodeBoxMon` still uses vanilla's key: the BOXES tab stays off there, and the DEX's PARTY + PC / box numbers read the PC through `boxSpecies` (`Telemetry.boxSpecies`).
 **INSTANT TEXT** (GitHub #111, GAMEPLAY on the companion, `Prefs.instantText` OFF, NEW tag; `InstantText.kt`): a game-option patch like REUSABLE TMS (`pkRomPatch` in 4-byte pieces, `EmulatorEngine.applyTmPatch` does both). RenderFont rewritten in its own 40 bytes (no free ROM): it goes on past RENDER_PRINT until a control code, textSpeed 0; Ruby / Sapphire: UpdateWindowText's delay turned into a `b` back to PrintNextChar. A delay of 0 (the game's own instant path) would lose everything after a page break. Found in the ROM's first 64 KB by code; gcc builds: N/A. TEXT SPEED stays: it's the emulator's speed, stops at what the device runs.
 **NO HMS NEEDED** (2026-11-14, GAMEPLAY on the companion, `Prefs.hmFree` OFF, NEW tag; `HmFree.kt`): the field moves with the badge
 alone, a game-option patch beside INSTANT TEXT's. Every field-move script runs `checkpartymove` after its badge check: ScrCmd_checkpartymove
@@ -979,6 +1096,8 @@ rule), and PartyHasMonWithSurf's `beq` becomes a `nop` (the A press on water). B
 Pokémon in gSentPokesToOpponent (nothing else reads it), the EXP divided by their count. SPLIT: the engine writes the party's non-egg slots there
 every frame (`ExpShare.mark`, mask from each sample; per frame because the battle's first turn resets it after the intro). FULL EXP: also the two
 `bl __divsi3` after `adds r1, r5` `nop`ed, a game-option patch with the others. Pauses RetroAchievements (`setExpShareActive`, like SHINY ODDS).
+MODERN (2026-11-23, Gold / Silver / Crystal, `ExpShare.Found.modern`, `GbGamePatches.expModern`; Red / Blue / Yellow since 2026-11-24, `expModernGen1`: wBoostExpByExpAll = 2 as the pass, wPartyFoughtCurrentEnemyFlags as the fighters): fighters paid first (boxes, level ups), then one
+line, then the rest at half with their level ups only (a second pass of the loop, wGivingExperienceToExpShareHolders = 2); offered only where found (`expShareModernSupported`), a saved MODERN runs as FULL elsewhere (`Mode.effective`). A Game Boy battle holds an EXP SHARE change until it ends (`GameOptions.gbBattleSeen`): MODERN prints its line from a routine in the padding and returns into it.
 **LEVEL CAP** (2026-11-14, GAMEPLAY on the companion, `Prefs.levelCap` OFF, NEW tag; `LevelCap.kt`): no Pokémon past the top level of
 the first boss NEXT BOSS has ahead (`LevelCap.next`: the guide's bosses and the ROM's trainer table, worked out on the activity's
 `level-cap` thread every 2 s at most). getexp's two `cmp r0, #100` (before the EXP message; before each one-level step of
@@ -1015,7 +1134,7 @@ games' rules kept (eggs, the last move, IsMonOTIDNotPlayers for traded ones, the
 two steps like the TM screen (`centerRelearnStart` / `Finish`: fade, then cleanup + gFieldCallback + SetMainCallback2) and, on FireRed,
 LoadStdWindowFrameGfx first: the relearner never loads the message box palette (15), which a loaded save's recap leaves dark (black word
 boxes). Ruby / Sapphire (no TM screen table): the Fallarbor tutor's own script, `special DisplayMoveTutorMenu` (`centerRelearnScript`). Offered only when `relearnableMoves` (DexDetails.levelUp) has some.
-**PLAYER LOOK** (2026-10-22, the companion's MAKEOVER group - first, a blue-framed `featuredGroupTitle`, only in a game it works in; per ROM: `Prefs.playerLookFor`, NEW tag; `PlayerLook.kt`,
+**PLAYER LOOK** (2026-10-22, the companion's MAKEOVER group - first, a plain group title since 2026-11-23, only in a game it works in; per ROM: `Prefs.playerLookFor`, NEW tag; `PlayerLook.kt`,
 `PlayerLookSession.kt`, docs/DEVELOPMENT.md's "PLAYER LOOK"): play retail FireRed / LeafGreen / Ruby / Sapphire / Emerald (and Kaizo, Legacy, Imperium, Ultra
 Violet: `PlayerLook.HACKS`) as another game's hero, picked from tiles of the heroes walking (`PlayerLookPicker`),
 its graphics found by fingerprint in the player's own ROMs (`scripts/gen_player_look_sigs.py`; kept in `rom-art/look/`, never
@@ -1097,6 +1216,13 @@ is found by shape in the first 16 MB), plus gifts / trades from the area data. M
 `GuideTables.learnsets` / `SpeciesInfoDex.levelUpOff` / `PokedexTables.levelUpLearnsets`, then TM / HM
 (`tmhmLearnsets` + `tmhmMoves`, retail only, checked on BULBASAUR) or expansion's `teachableOff` list; CFRU / Gaia /
 Glazed / Odyssey say level-up only. Celia has no evolutions or learnsets located; Rogue no learnsets (its baked profiles).
+**DEX list filters**: under the seen / caught rows (`DexFilter`; PARTY + PC = `dexHoldings`, only where the boxes are read) the
+list has TYPE (a seen type, then `TypeRelation` IS / HITS {0} HARD / RESISTS {0} over the running game's chart), NAME (`DexNameSearch`:
+a letter grid in the left column, contains, keys that would find nothing dimmed; names that aren't Latin - kana, Hangul, `dexNameKeysFitGrid` -
+get a pick-list of first letters instead, `DexUiState.letter`; with SPOILERS on HIDE both only see entries the player may, `dexVisibleNameOf`)
+and SORT (`DexSort`: a base stat, highest first, read by `rememberDexStats` for seen entries only while one is on; Gen 1's five stats are
+HP / ATK / DEF / SPEED / SPECIAL, `gen1Stat`, every other game's the dex page's six, `DexSort.offered` / `sortFor`). The rules are pure in `DexQuery.kt` (`DexQueryTest`); `rememberDexList`
+gives the list and the entry page the same order. ui-preview `emerald-dex-list-*` (needs `-Prom`).
 **Move advice (GitHub #45, phases 1-2: the original games only)**: `MoveAdvisor` (`data/MoveAdvice.kt`) scores a moveset
 as the mean over defending types of its best hit (power x accuracy x1.5 own type x the stat it runs on - Gen 3 splits
 physical / special by type) plus status / side-effect tiers by gBattleMoves effect (a share of that score, less for a second
@@ -1268,15 +1394,20 @@ denser try was too small to tap - the user's call), **ordered by how often they'
 what you flip while playing first, set-once setup last, LANGUAGE just above HELP at the very end): companion = (GAME: PLAYS
 AS) / FF / SPEED / GAMEPLAY (WILD ENCOUNTERS, AUTO-RUN, RUN INDOORS, CHEATS) / SCREEN / COMPANION / CONTROLS / APP (LANGUAGE,
 HELP), ending in CLOSE GAME / RESTART GAME (under a `Separator`); the top-screen Settings uses the same `GroupedRows` /
-`SettingRow` (`companion/ui/SettingRows.kt`) with FF / SPEED / SCREEN / LIBRARY / ONLINE / CONTROLS / APP. A new row goes
-where its frequency puts it, in the same place on both screens. Set-once rows of a busy group go on a sub-page whose row stays
+`SettingRow` (`companion/ui/SettingRows.kt`). **Groups since 2026-11-19 (the user's call)**: FF / SPEED, SOUND, GAMEPLAY, GAME RULES,
+GAME SCREEN, ON THE GAME, SCREENS, DS, LOOK, BATTLE, COMPANION, ACHIEVEMENTS, LIBRARY, CONTROLS, CO-OP, APP (MAKEOVER first): each
+screen builds its rows where it always did and `regroupSettings` places them by `SETTINGS_GROUPS` (labels in order; an unlisted
+row stays in its old group, SCREEN's going to GAME SCREEN, ONLINE's to ACHIEVEMENTS). A new row: its label in `SETTINGS_GROUPS`
+where its frequency puts it, the same on both screens. Groups can share a tab (`SETTINGS_TABS`: GAMEPLAY's covers GAME RULES and GAME
+SCREEN, the user's call), each keeping its title in the list; BATTLE and QUALITY OF LIFE are pages (`SETTINGS_PAGES`, the companion's
+`Page.BATTLE` / `Page.QOL`), their rows replaced on HOME by one row that opens them (QUALITY OF LIFE's says how many are on). Set-once rows of a busy group go on a sub-page whose row stays
 in that group: FF / SPEED > SPEED OPTIONS (SCENE SPEEDS - companion only - FF MODE, FF MUSIC; `Page.SPEED` / `Screen.SPEED`) and
 SCREEN > DISPLAY OPTIONS (STATUS BAR, SHADERS, OVERLAY, an upright phone's COMPANION; `Page.DISPLAY` / `Screen.DISPLAY`). SHADERS
 opens from DISPLAY OPTIONS, so BACK returns there (`Page.parent`, SettingsActivity's `goBack`). A row that opens a page of its own (not a pick-list) sets
 `SettingRow.opensPage`: a pixel chevron (`PixelIcons.chevronRight`) at its right end. Sub-pages and pick-lists get the title window's back arrow (`onBack`). The tabs not in the tab bar used to sit under the
 list as a second row of chips (TOOLS); they're the MORE tab now.
 **QUALITY OF LIFE** (companion GAMEPLAY, 2026-11-22, the user's call): WILD ENCOUNTERS, INSTANT TEXT, AUTO-RUN, RUN INDOORS, AUTO REFILL,
-REUSABLE TMS, NO HMS NEEDED, EXP SHARE, LEVEL CAP, TRADE EVOS, SHINY ODDS, SHINY ALERT, BOSS RETRY, LOW HP BEEP and FIELD POISON live on
+REUSABLE TMS, NO HMS NEEDED, EXP SHARE, LEVEL CAP, TRADE EVOS, WILD PIN, SHINY ODDS, SHINY ALERT, BOSS RETRY, LOW HP BEEP and FIELD POISON live on
 `Page.QOL`: `homeRows` still builds them, `withQolPage` moves them off HOME (`QOL_ROWS`; the row counts those changed from the game's
 own way, `QOL_UNUSED`). A new helper of that kind goes in `QOL_ROWS`. **D-pad after a tap** (`FocusJump`, SettingRows.kt): a focus
 asked for in touch mode doesn't take, so a tap parks a target - `target` (a group tab's first row, a pick-list's choice: the press
@@ -2627,7 +2758,7 @@ fit the screen's height and two fit across it (`screenSize`, measured by the lib
 `contentPadding`; the RECENTLY PLAYED row bleeds past it, `bleedHorizontally`), so cards slide off the screen instead of
 being cut at an inner box. D-pad focus (`gbaFocusRing`) is a ring flush inside the element's own outline (pass the frame's real corner radius: the
 library cards 2u, OptionButton 3u - a rounder ring let the frame's corners show), layout untouched - a border +
-padding shrank the focused item - in a bright orange (`AppColors.focusRing`, the user's call; it was cyan).
+padding shrank the focused item - in a bright orange (`AppColors.focusRing`, the user's call; it was cyan), under a THEME the colour opposite its hue (2026-11-19).
 D-pad in the library: focusing a RECENTLY PLAYED tile brings the whole section (its title too) into view, and UP from
 the games' top row (those tiles, else the first list row / grid row 0) goes to the header's leftmost button
 (`toHeader`, a `focusProperties { up }` on those cards - the lazy list's top row had nowhere to go). ui-preview can't

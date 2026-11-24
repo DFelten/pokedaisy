@@ -140,6 +140,8 @@ data class NativeConfig(
     // USE / GIVE / TAKE's functions (FieldItems.kt) for a build with no retail code to key them on (Recharged
     // Emerald's gcc rebuilds); null = by game kind and header code (fieldItemsForGame).
     val fieldItems: FieldItemFns? = null,
+    // LEVEL UP ALL's storage, name and move tables (LevelUpAll.kt); null = the game doesn't offer it.
+    val levelUpAll: LevelUpTables? = null,
     // gEnemyParty (6 encrypted Pokémon structs, like gPlayerParty) for the
     // battle's FOE TEAM; 0 = not known for this game.
     val enemyParty: Long = 0,
@@ -642,7 +644,10 @@ fun readNativeTelemetry(client: MemoryReader, cfg: NativeConfig, moveWatch: Move
         mapSecName = if (regionMapSectionId == 0) readHubName(client, cfg) else null,
         trainerCard = readTrainerCard(client, cfg),
         pcBoxes = if (cfg.pokemonStoragePtr != 0L) readPcBoxes(client, cfg) else null,
-    )
+    ).let { t ->
+        // The DEX's PARTY + PC in a game whose BOXES aren't read but LEVEL UP ALL knows the storage of (Monomyth).
+        if (t.pcBoxes != null) t else t.copy(boxSpecies = cfg.levelUpAll?.let { runCatching { boxSpecies(client, it) }.getOrNull() })
+    }
 }
 
 // struct PokemonStorage (pokefirered's include/pokemon_storage_system.h): u8 currentBox (+ 3 bytes of padding), then

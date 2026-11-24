@@ -237,6 +237,49 @@ class GbFieldTest {
     }
 
     @Test
+    fun `Red, Blue and Yellow - the party SWITCH trades the species, records, OT names and nicknames of two slots`() {
+        for ((field, count, battle, walk) in listOf(
+            listOf(GB_FIELD_YELLOW, 0xD162L, 0xD056L, 0xCFC4L), listOf(GB_FIELD_RED_BLUE, 0xD163L, 0xD057L, 0xCFC5L))) {
+            field as GbField; count as Long; battle as Long; walk as Long
+            assertTrue(field.swapsParty)
+            val m = Memory()
+            m[count] = 3
+            val mons = count + 8
+            val ots = mons + 6 * 44
+            val nicks = ots + 6 * 11
+            for (i in 0 until 3) {
+                m[count + 1 + i] = 0x10 + i
+                for (k in 0 until 44) m[mons + i * 44 + k] = (i * 50 + k) and 0xFF
+                m[mons + i * 44] = 0x10 + i
+                for (k in 0 until 11) { m[ots + i * 11 + k] = 0x80 + i; m[nicks + i * 11 + k] = 0x90 + i }
+            }
+            m[count + 4] = 0xFF
+            fun key(i: Int) = gen1MonKey(m.read(mons + i * 44, 44), 0)
+            val k0 = key(0)
+            val k2 = key(2)
+            val before = m.read(count, 6 * 44 + 6 * 22 + 8)
+            assertEquals(PartySwapResult.FAILED, field.swapParty(m, 0, k2, 2, k0))   // not the party the companion showed
+            assertEquals(PartySwapResult.FAILED, field.swapParty(m, 0, k0, 3, k2))   // no slot 3
+            m[battle] = 1
+            assertEquals(PartySwapResult.IN_BATTLE, field.swapParty(m, 0, k0, 2, k2))
+            m[battle] = 0
+            m[walk] = 4   // mid-step
+            assertEquals(PartySwapResult.NOT_NOW, field.swapParty(m, 0, k0, 2, k2))
+            m[walk] = 0
+            assertTrue(before.contentEquals(m.read(count, before.size)))
+            assertEquals(PartySwapResult.SWAPPED, field.swapParty(m, 0, k0, 2, k2))
+            assertEquals(listOf(0x12, 0x11, 0x10, 0xFF), (1..4).map { m[count + it] })
+            assertEquals(k2, key(0))
+            assertEquals(k0, key(2))
+            assertEquals(listOf(0x82, 0x81, 0x80), (0 until 3).map { m[ots + it * 11 + 10] })
+            assertEquals(listOf(0x92, 0x91, 0x90), (0 until 3).map { m[nicks + it * 11] })
+            assertEquals(3, m[count])
+        }
+        assertFalse(GB_FIELD_YELLOW_LEGACY.swapsParty)
+        assertEquals(PartySwapResult.FAILED, GB_FIELD_BROWN.swapParty(Memory(), 0, 0, 1, 0))
+    }
+
+    @Test
     fun `Crystal - the PC and FLY queued as map scripts, the cooldown held`() {
         val rom = ByteArray(0x200000)
         val flypoints = 0x24 * 0x4000 + (0x5C5E - 0x4000)

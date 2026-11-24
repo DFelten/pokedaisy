@@ -21,6 +21,7 @@ import com.pokedaisy.app.companion.data.MoveView
 import com.pokedaisy.app.companion.data.POCKET_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_KEY_ITEMS
 import com.pokedaisy.app.companion.data.POCKET_POKE_BALLS
+import com.pokedaisy.app.companion.data.POCKET_TM_HM
 import com.pokedaisy.app.companion.data.SlotVerdict
 import com.pokedaisy.app.companion.data.SnapshotView
 import com.pokedaisy.app.companion.data.TypeMatchup
@@ -101,6 +102,7 @@ import com.pokedaisy.app.companion.data.resetNativeBagCache
 import com.pokedaisy.app.companion.ui.theme.AppTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
@@ -180,6 +182,37 @@ open class CompanionScreenshotTest {
 
     @Test fun party() = tab("PARTY")
 
+    /** VIEW MODERN's party, after the Switch games': the list on its band, the lead on the stage. */
+    @Test fun partyModern() = modern {
+        snapshot { CompanionScreen(SampleCompanion.snapshot.copy(pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") }
+    }
+
+    /** VIEW MODERN with six: hurt, an egg, fainted, statuses. */
+    @Test fun partyModernFull() = modern {
+        listOf(16, 25, 7, 10).forEach { PokedexSource.reader?.let { _ -> PokedexSource.frontSprite(POKEDEX_FIRERED_REV1, it); DecompIconSource.get(it) } }
+        DecompIconSource.get(412)
+        snapshot { CompanionScreen(SampleCompanion.snapshot.copy(party = modernParty, pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") }
+    }
+
+    /** VIEW MODERN's party in DARK MODE. */
+    @Test fun partyModernDark() = modern {
+        com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
+        try { snapshot { CompanionScreen(SampleCompanion.snapshot.copy(party = modernParty, pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "PARTY") } }
+        finally { com.pokedaisy.app.companion.ui.theme.DarkMode.override = null }
+    }
+
+    /** VIEW MODERN's party list inside the summary's SWITCH and the bag's USE pick. */
+    @Test fun partyModernSwitch() = modern { partyDetailSwitch() }
+    @Test fun partyModernItemPick() = modern { itemsUsePick() }
+
+    private val modernParty get() = pickParty.map { it.copy(iconAsset = spriteAsset("pokemon", if (it.isEgg) 412 else it.species)) }
+    private val modernDex get() = com.pokedaisy.app.companion.data.PokedexState(POKEDEX_FIRERED_REV1, seen = setOf(4, 16), caught = setOf(4, 16), national = false)
+
+    private fun modern(run: () -> Unit) {
+        com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN
+        try { run() } finally { com.pokedaisy.app.companion.ui.theme.AppViews.override = null }
+    }
+
     /** PARTY before the player is in the game (the title screen: GameStart): the game's empty slots, PRESS START. */
     @Test fun waiting() {
         GameStart.waiting = true
@@ -223,6 +256,29 @@ open class CompanionScreenshotTest {
 
     /** NUZLOCKE on a full tab bar: the chip's label narrows to fit. */
     @Test fun nuzlockeOnBar() = nuzlockeShot("NUZLOCKE", listOf("PARTY", "DEX", "MAP", "ITEMS", "NUZLOCKE"))
+
+    /** SHINY HUNT (its flag on): a RESETS hunt for EMBERPUP's species (4), drawn in its shiny colours from the ROM. */
+    @Test fun hunt() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, method = com.pokedaisy.app.companion.data.HuntMethod.RESETS,
+        target = 4, targetName = "EMBERPUP", count = 4321, playMillis = 11_820_000))
+
+    /** An ENCOUNTERS hunt with a phase on the way (no reset buttons, a PHASES cell). */
+    @Test fun huntEncounters() = huntShot(com.pokedaisy.app.companion.data.Hunt(id = 1, target = 16, targetName = "SKYLARK", count = 12_480,
+        playMillis = 30_120_000, phases = listOf(com.pokedaisy.app.companion.data.HuntShiny(19, "NIBBLER", 2875, 2))))
+
+    private fun huntShot(h: com.pokedaisy.app.companion.data.Hunt) {
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = true
+        // Loaded before the shot (the tab loads it off the main thread).
+        PokedexSource.reader?.let { PokedexSource.huntSprite(modernDex.tables, h.target) }
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(com.pokedaisy.app.companion.data.HuntLog(listOf(h)))
+        try {
+            snapshot {
+                CompanionScreen(SampleCompanion.snapshot.copy(pokedex = modernDex), SampleCompanion.Slots, SampleCompanion.Settings(), initialTab = "HUNT")
+            }
+        } finally {
+            com.pokedaisy.app.companion.ShinyHunts.close(game)
+            com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = false
+        }
+    }
 
     private fun nuzlockeShot(tab: String, barTabs: List<String> = com.pokedaisy.app.companion.DEFAULT_COMPANION_TABS) {
         val party = SampleCompanion.snapshot.party.mapIndexed { i, m -> m.copy(personality = i + 1L, heldItemId = if (i == 1) 200 else 0) }
@@ -514,6 +570,20 @@ open class CompanionScreenshotTest {
     /** ...which asks first. */
     @Test fun partyDetailTradeEvolveAsk() = snapshot { AppTheme { MonDetailScreen(takeParty, 0, {}, {}, itemUse = evolveUse, initialEvolveAsk = true) } }
 
+    /** QUICK HATCH (QuickHatch.kt): an Egg's summary has HATCH... */
+    @Test fun partyDetailHatch() = snapshot { AppTheme { MonDetailScreen(eggParty, 0, {}, {}, itemUse = hatchUse) } }
+
+    /** ...which asks first. */
+    @Test fun partyDetailHatchAsk() = snapshot { AppTheme { MonDetailScreen(eggParty, 0, {}, {}, itemUse = hatchUse, initialHatchAsk = true) } }
+
+    private val eggParty get() = takeParty.mapIndexed { i, m -> if (i == 0) m.copy(isEgg = true) else m }
+
+    private val hatchUse = object : com.pokedaisy.app.companion.ItemUse {
+        override fun canUse(itemId: Int) = false
+        override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {}
+        override fun canHatch() = true
+    }
+
     private val evolveUse = object : com.pokedaisy.app.companion.ItemUse {
         override fun canUse(itemId: Int) = false
         override fun use(itemId: Int, done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) {}
@@ -557,6 +627,70 @@ open class CompanionScreenshotTest {
                 onBack = {}, onShowSuggestions = {}, onShowStats = {},
                 foeTeam = foes, seenFoes = setOf(0, 1), shownFoe = 1,
             )
+        }
+    }
+
+    /** LEARN in Black 2: the next level-up moves and the bag's TMs from the cart, no verdicts (the advice is Gen 3's). */
+    @Test
+    fun partyDetailLearnBlack2() {
+        activeGame = GameKind.BLACK2
+        romLanguage = 'E'
+        romGameCode = ""
+        val rom = java.io.File(java.io.File(java.io.File(RETAIL_ROM_DIR).parentFile, "nds"), "Pokemon - Black Version 2 (USA, Europe) (NDSi Enhanced) [b].nds")
+        val dir = kotlin.io.path.createTempDirectory("nds-art").toFile()
+        try {
+            if (rom.isFile && com.pokedaisy.app.companion.data.NdsArt.extractTo(rom.toOkioPath(), dir.toOkioPath())) com.pokedaisy.app.companion.data.NdsArt.dir = dir.toOkioPath()
+            val t = com.pokedaisy.app.companion.data.readGen5Telemetry(FixtureMemoryReader.load("black2"), com.pokedaisy.app.companion.data.GEN5_BLACK2)
+            val v = buildSnapshotView(t).copy(game = GameKind.BLACK2)
+            v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
+            val tables = v.pokedex?.tables ?: return
+            val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+            // Worked out in the background in the app: here before the frame, so the list shows rather than LOADING.
+            com.pokedaisy.app.companion.data.MoveLearning.options(tables, v.guideTables, v.party[0], v.items)
+            snapshot { AppTheme { MonDetailScreen(v.party, 0, {}, {}, learn = ctx, initialLearnPick = 0) } }
+        } finally {
+            com.pokedaisy.app.companion.data.NdsArt.dir = null
+            dir.deleteRecursively()
+        }
+    }
+
+    /** LEARN in Yellow / Crystal: the next level-up moves and the bag's TMs from the cart (GbLearnsets), no verdicts. */
+    @Test fun partyDetailLearnYellow() = gbLearn(GameKind.YELLOW, "yellow", "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb")
+    @Test fun partyDetailLearnCrystal() = gbLearn(GameKind.CRYSTAL, "crystal", "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc")
+
+    private fun gbLearn(game: GameKind, fixture: String, romFile: String) {
+        activeGame = game
+        romLanguage = 'E'
+        romGameCode = ""
+        val rom = java.io.File(java.io.File(java.io.File(RETAIL_ROM_DIR).parentFile, "gbc"), romFile)
+        if (!rom.isFile) return
+        val bytes = rom.readBytes()
+        com.pokedaisy.app.companion.data.Gen1Dex.rom = bytes
+        val t = if (game == GameKind.YELLOW) {
+            com.pokedaisy.app.companion.data.Gen1Art.extractTo(bytes, RomArt.dirOverride!!)
+            com.pokedaisy.app.companion.data.readGen1Telemetry(FixtureMemoryReader.load(fixture), com.pokedaisy.app.companion.data.GEN1_YELLOW)
+        } else {
+            com.pokedaisy.app.companion.data.Gen2Art.extractTo(bytes, RomArt.dirOverride!!)
+            com.pokedaisy.app.companion.data.activeGen2 = com.pokedaisy.app.companion.data.GEN2_CRYSTAL
+            com.pokedaisy.app.companion.data.readGen2Telemetry(FixtureMemoryReader.load(fixture), com.pokedaisy.app.companion.data.GEN2_CRYSTAL)
+        }
+        val v = buildSnapshotView(t).copy(game = game)
+        v.party.forEach { m -> m.iconAsset?.let { GameArt.get(it) } }
+        val tables = v.pokedex?.tables ?: return
+        val ctx = LearnContext(tables, v.guideTables, v.items, showHints = com.pokedaisy.app.companion.data.MoveLearning.advises)
+        // Worked out in the background in the app: here before the frame, so the list shows rather than LOADING.
+        // The first one with something to learn (Yellow's PIKACHU is Lv100 and learns none of the bag's HMs).
+        val index = v.party.indices.firstOrNull {
+            com.pokedaisy.app.companion.data.MoveLearning.options(tables, v.guideTables, v.party[it], v.items).isNotEmpty()
+        } ?: 0
+        snapshot {
+            AppTheme {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.pokedaisy.app.companion.ui.theme.LocalGameFont provides com.pokedaisy.app.companion.ui.theme.rememberGameFont(game),
+                    com.pokedaisy.app.companion.ui.theme.LocalGameTextScale provides com.pokedaisy.app.companion.ui.theme.gameTextScale(game),
+                    com.pokedaisy.app.companion.ui.theme.LocalGameFontWidth provides com.pokedaisy.app.companion.ui.theme.gameFontWidth(game),
+                ) { MonDetailScreen(v.party, index, {}, {}, learn = ctx, initialLearnPick = 0) }
+            }
         }
     }
 
@@ -1026,6 +1160,94 @@ open class CompanionScreenshotTest {
         }
     }
 
+    /** SPOILERS on HIDE (Spoilers.preview): the party's CHARIZARD at Lv 36 is what the companion has read. */
+    private fun hidingSpoilers(levels: Map<Int, Int> = mapOf(6 to 36), body: () -> Unit) {
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = true
+        val g = com.pokedaisy.app.companion.Spoilers.preview(com.pokedaisy.app.companion.Spoilers.HIDE, levels = levels)
+        try { body() } finally {
+            com.pokedaisy.app.companion.Spoilers.close(g)
+            com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = false
+        }
+    }
+
+    /** The DEX while hiding: unseen entries are "-----" with no picture. */
+    @Test fun dexSpoilers() = hidingSpoilers {
+        snapshot {
+            AppTheme {
+                val dex = SampleCompanion.snapshot.pokedex!!
+                PokedexScreen(dex, DexUiState(androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = 140)))
+            }
+        }
+    }
+
+    /** An unseen entry's page: shut, SHOW IT. */
+    @Test fun dexEntrySpoilers() = hidingSpoilers {
+        snapshot {
+            AppTheme {
+                val dex = SampleCompanion.snapshot.pokedex!!
+                val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+                val unseen = (1..151).first { it !in dex.seen }
+                ui.open = unseen
+                PokedexEntryScreen(dex, ui, unseen)
+            }
+        }
+    }
+
+    /** CHARMANDER's EVOLVE and MOVES while hiding: the family seen, the moves past Lv 36 still ???. */
+    @Test fun dexEvolveSpoilers() = hidingSpoilers { dexSection(4, DexSection.EVOLVE) }
+    /** MUDKIP's MOVES (the retail Emerald ROM's) while hiding, the player's at Lv 16: the moves after are ???. */
+    @Test fun dexMovesSpoilers() {
+        val shot = emeraldDex() ?: return
+        val mudkip = PokedexSource.speciesFor(POKEDEX_EMERALD, 258)
+        val g = com.pokedaisy.app.companion.data.GUIDE_TABLES_EMERALD
+        com.pokedaisy.app.companion.data.DexDetails.levelUp(POKEDEX_EMERALD, g, mudkip)
+        com.pokedaisy.app.companion.data.DexDetails.teachable(POKEDEX_EMERALD, g, mudkip)
+        hidingSpoilers(mapOf(mudkip to 16)) {
+            snapshot {
+                AppTheme {
+                    val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+                    ui.open = 258
+                    ui.section = DexSection.MOVES
+                    PokedexEntryScreen(shot.pokedex!!, ui, 258, guide = g)
+                }
+            }
+        }
+    }
+
+    private fun dexSection(entry: Int, section: DexSection) = snapshot {
+        AppTheme {
+            val dex = SampleCompanion.snapshot.pokedex!!
+            val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
+            ui.open = entry
+            ui.section = section
+            PokedexEntryScreen(dex, ui, entry, guide = SampleCompanion.snapshot.guideTables)
+        }
+    }
+
+    /** Heart and Soul's NEXT BOSS while hiding: FALKNER only, the rest a count. */
+    @Test fun hnsGuideNextBossSpoilers() = hidingSpoilers { hnsGuideNextBoss() }
+
+    /** EVOLUTIONS while hiding: the special ones not seen are ???. */
+    @Test fun guideEvolutionsSpoilers() = hidingSpoilers { guideShot("EVOLUTIONS", "EVOLUTIONS/YOUR PARTY/PIDGEY/null" to 2) }
+
+    /** The question on the companion's screen. */
+    @Test fun spoilerAsk() = snapshot {
+        AppTheme {
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF6C8CB0)).padding(16.dp),
+                contentAlignment = androidx.compose.ui.Alignment.TopCenter,
+            ) {
+                FeatureTipCard(
+                    spoilerAskText(), androidx.compose.ui.Modifier.fillMaxWidth(), left = 0.7f, roomy = true, maxWidth = 1200.dp,
+                    badge = "NEW", noLabel = "SHOW EVERYTHING",
+                )
+            }
+        }
+    }
+
+    /** FOE DETAILS while hiding: the foe's matchups, none of its ability, item, stats or moves. */
+    @Test fun battleInfoFoeDetailsSpoilers() = hidingSpoilers { battleInfoFoeDetails() }
+
     /** The trainer's party for the FOE TEAM shots: GEODUDE fainted, ONIX out, two more unseen. */
     private val foes = listOf(
         MonView(74, "GEODUDE", 12, 0, 30, "", listOf("Rock", "Ground"), spriteAsset("pokemon", 74)),
@@ -1428,6 +1650,7 @@ open class CompanionScreenshotTest {
     @Test fun yellowStates() = yellow("yellow", "STATES")
     @Test fun yellowTweaks() = yellow("yellow", "SETTINGS", page = "TWEAKS")
     @Test fun yellowDexEntry() = yellow("yellow", "DEX", dexEntry = 25)
+    @Test fun yellowDexEntryMoves() = yellow("yellow", "DEX", dexEntry = 1, dexSection = DexSection.MOVES)
 
     // The German, French, Italian and Spanish carts on the English save (yellow_de .. yellow_es).
     private val yellowDe = com.pokedaisy.app.companion.data.GEN1_YELLOW_DE
@@ -1553,6 +1776,8 @@ open class CompanionScreenshotTest {
         guidePage: String? = null,
         /** The save as if it stood on this map (wCurMap): the fixtures are all in a Pokémon Center. */
         onMap: Int? = null,
+        /** The DEX entry on this section (MOVES: the cart's learnsets, GbLearnsets). */
+        dexSection: DexSection = DexSection.INFO,
         itemUse: com.pokedaisy.app.companion.ItemUse? = null,
         settings: com.pokedaisy.app.companion.CompanionSettings = SampleCompanion.Settings(),
         settingsRow: String? = null,
@@ -1601,6 +1826,11 @@ open class CompanionScreenshotTest {
         }
         if (dexEntry != null && dex != null) {
             PokedexSource.entry(dex.tables, dexEntry); PokedexSource.frontSprite(dex.tables, dexEntry)
+            // MOVES is read in the background in the app: here before the frame.
+            if (dexSection == DexSection.MOVES) {
+                com.pokedaisy.app.companion.data.DexDetails.levelUp(dex.tables, v.guideTables, dexEntry)
+                com.pokedaisy.app.companion.data.DexDetails.teachable(dex.tables, v.guideTables, dexEntry)
+            }
             snapshot {
                 AppTheme {
                     androidx.compose.runtime.CompositionLocalProvider(
@@ -1610,6 +1840,7 @@ open class CompanionScreenshotTest {
                     ) {
                         val ui = DexUiState(androidx.compose.foundation.lazy.rememberLazyListState())
                         ui.open = dexEntry
+                        ui.section = dexSection
                         PokedexEntryScreen(dex, ui, dexEntry)
                     }
                 }
@@ -2211,6 +2442,20 @@ open class CompanionScreenshotTest {
         AppTheme {
             GameBackdrop(GameKind.FIRERED)
             ItemPartyPicker(pick, pickParty, rememberGbaTextMetrics(), itemName = "Ether", picksMove = true, onCancel = {}, onPick = { _, _ -> }, initialMoveSlot = 4)
+        }
+    }
+
+    /** A TM on SQUIRTLE, its four moves full: the move to forget is asked once more. */
+    @Test fun itemsTmForgetConfirm() = snapshot {
+        pickParty.forEach { DecompIconSource.get(it.species) }
+        val pick = ItemPick(
+            ItemView(289, "TM01", 1, spriteAsset("items", 289), POCKET_TM_HM), give = false,
+            pickTargets(SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT, SlotVerdict.EGG, SlotVerdict.NO_EFFECT, SlotVerdict.OK, SlotVerdict.NO_EFFECT),
+            move = 264,   // FireRed's TM01: the question names the move it learns, not the TM
+        )
+        AppTheme {
+            GameBackdrop(GameKind.FIRERED)
+            ItemPartyPicker(pick, pickParty, rememberGbaTextMetrics(), itemName = "TM01", picksMove = true, onCancel = {}, onPick = { _, _ -> }, initialMoveSlot = 4, initialForget = 1)
         }
     }
 

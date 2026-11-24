@@ -46,13 +46,32 @@ def at(bank, addr):
 def scan(rom):
     _ = None
     r = {}
+    # Gold / Silver (pret/pokegold): the player's picture and the card's frame are one blob (ChrisPicAndTrainerCardGFX,
+    # 35 + 6 tiles to vTiles2), drawn row by row, with no corner tile of its own; the rest is Crystal's code.
+    gold = find_all(rom, [0x21, _, _, 0x11, 0x00, 0x90, 0x01, 0x90, 0x02, 0x3E, _])
+    gold = [h for h in gold if find_all(rom[h + 11:h + 30], [0x21, _, _, 0x11, 0x90, 0x92, 0x01, 0x60, 0x05, 0x3E])]
+    player_name = 0xD1A3 if gold else 0xD47D
+    tm = 0xC3A0 if gold else 0xC4A0  # wTilemap
+    attr = 0xCCD9 if gold else 0xCDD9  # wAttrmap
+
+    def coord(x, y):
+        return tm + 20 * y + x
     # TrainerCard.InitRAM: ld hl, CardStatusGFX / ld de, vTiles2 tile $29 / ld bc, 86 tiles / ld a, BANK.
     o = one(rom, [0x21, _, _, 0x11, 0x90, 0x92, 0x01, 0x60, 0x05, 0x3E, _], "CardStatusGFX")
     code_bank = rom[o + 10]
     card = o - 0x80  # TrainerCard.InitRAM, then the whole card's code
     r["status"] = (code_bank, word(rom, o + 1))
-    o = one(rom, [0x21, _, _, 0x11, 0xC0, 0x91, 0x01, 0x10, 0x00, 0x3E, code_bank], "CardRightCornerGFX")
-    r["corner"] = (code_bank, word(rom, o + 1))
+    if gold:
+        assert len(gold) == 1, gold
+        pic = word(rom, gold[0] + 1)
+        r["chris"] = r["kris"] = (rom[gold[0] + 10], pic)
+        r["frame"] = (rom[gold[0] + 10], pic + 0x23 * 16)
+        # The corner: Gold's border draws its picture's tile $04 at the boxes' top right (the bottom box's shows; the top
+        # box's is under the picture).
+        r["corner"] = (rom[gold[0] + 10], pic + 0x04 * 16)
+    else:
+        o = one(rom, [0x21, _, _, 0x11, 0xC0, 0x91, 0x01, 0x10, 0x00, 0x3E, code_bank], "CardRightCornerGFX")
+        r["corner"] = (code_bank, word(rom, o + 1))
     # Page 2: ld de, LeaderGFX / ld hl, vTiles2 tile $29 / lb bc, BANK, 86 (the first match is page 1's CardStatusGFX).
     hits = find_all(rom, [0x11, _, _, 0x21, 0x90, 0x92, 0x01, 0x56, code_bank])
     assert len(hits) == 3, hits
@@ -63,23 +82,28 @@ def scan(rom):
     r["badges"] = (code_bank, word(rom, hits[0] + 1))
     # TrainerCard_PrintTopHalfOfCard: hlcoord 2, 2 / ld de, .Name_Money; hlcoord X, 2 / ld de, wPlayerName.
     # (German Kristall prints the name at 2, 2 as well, with no NAME/ before it.)
-    hits = [h for h in find_all(rom, [0x21, 0xCA, 0xC4, 0x11, _, _, 0xCD]) if card <= h < card + 0x800 and word(rom, h + 4) != 0xD47D]
+    hits = [h for h in find_all(rom, [0x21, coord(2, 2) & 0xFF, coord(2, 2) >> 8, 0x11, _, _, 0xCD]) if card <= h < card + 0x800 and word(rom, h + 4) != player_name]
     assert len(hits) == 1, hits
     r["nameMoney"] = (code_bank, word(rom, hits[0] + 4))
-    o = one(rom, [0x21, _, 0xC4, 0x11, 0x7D, 0xD4, 0xCD], "player name", near=card)
-    r["nameX"] = (word(rom, o + 1) - 0xC4A0) % 20
+    o = one(rom, [0x21, _, coord(0, 2) >> 8, 0x11, player_name & 0xFF, player_name >> 8, 0xCD], "player name", near=card)
+    r["nameX"] = (word(rom, o + 1) - tm) % 20
     # TrainerCard_Page1_PrintDexCaught_GameTime: hlcoord 2, 10 / .Dex_PlayTime; hlcoord 10, 15 / .Badges.
-    o = one(rom, [0x21, 0x6A, 0xC5, 0x11, _, _, 0xCD], "Dex_PlayTime", near=card)
+    o = one(rom, [0x21, coord(2, 10) & 0xFF, coord(2, 10) >> 8, 0x11, _, _, 0xCD], "Dex_PlayTime", near=card)
     r["dexPlayTime"] = (code_bank, word(rom, o + 4))
-    o = one(rom, [0x21, 0xD6, 0xC5, 0x11, _, _, 0xCD], "Badges", near=card)
-    r["badgesText"] = (code_bank, word(rom, o + 4))
+    hits = [h for h in find_all(rom, [0x21, _, coord(10, 15) >> 8, 0x11, _, _, 0xCD]) if card <= h < card + 0x800 and word(rom, h + 1) in (coord(10, 15), coord(12, 15))]
+    assert len(hits) == 1, hits
+    r["badgesText"] = (code_bank, word(rom, hits[0] + 4))
+    r["badgesX"] = (word(rom, hits[0] + 1) - tm) % 20
     # GetCardPic: ld hl, ChrisCardPic / ld a, [wPlayerGender] / bit 0, a / jr z / ld hl, KrisCardPic / ld de, vTiles2.
-    o = one(rom, [0x21, _, _, 0xFA, 0x72, 0xD4, 0xCB, 0x47, 0x28, 0x03, 0x21, _, _, 0x11, 0x00, 0x90, 0x01, 0x30, 0x02, 0x3E, _], "GetCardPic")
-    pic_bank = rom[o + 20]
-    r["chris"] = (pic_bank, word(rom, o + 1))
-    r["kris"] = (pic_bank, word(rom, o + 11))
-    o = one(rom, [0x21, _, _, 0x11, 0x30, 0x92, 0x01, 0x60, 0x00, 0x3E, pic_bank], "TrainerCardGFX")
-    r["frame"] = (pic_bank, word(rom, o + 1))
+    if gold:
+        r["rowMajor"] = True
+    else:
+     o = one(rom, [0x21, _, _, 0xFA, 0x72, 0xD4, 0xCB, 0x47, 0x28, 0x03, 0x21, _, _, 0x11, 0x00, 0x90, 0x01, 0x30, 0x02, 0x3E, _], "GetCardPic")
+     pic_bank = rom[o + 20]
+     r["chris"] = (pic_bank, word(rom, o + 1))
+     r["kris"] = (pic_bank, word(rom, o + 11))
+     o = one(rom, [0x21, _, _, 0x11, 0x30, 0x92, 0x01, 0x60, 0x00, 0x3E, pic_bank], "TrainerCardGFX")
+     r["frame"] = (pic_bank, word(rom, o + 1))
     # GetTrainerPalettePointer: ld l, a / ld h, 0 / add hl, hl x2 / ld bc, TrainerPalettes / add hl, bc / ret.
     o = one(rom, [0x6F, 0x26, 0x00, 0x29, 0x29, 0x01, _, _, 0x09, 0xC9], "GetTrainerPalettePointer")
     r["trainerPals"] = (bank_of(o), word(rom, o + 6))
@@ -88,7 +112,7 @@ def scan(rom):
     # (the opposite gender's border fill comes next); GetPredefPal: ld l, a / ld h, 0 / add hl, hl x3 / ld bc, PredefPals.
     gtpp = 0x4000 + r["trainerPals_fn"] % 0x4000
     cgb = one(rom, [0xAF, 0xCD, gtpp & 0xFF, gtpp >> 8, 0xCD, _, _, 0x3E, 0x01, 0xCD, gtpp & 0xFF, gtpp >> 8], "_CGB_TrainerCard")
-    o = min(h for h in find_all(rom, [0x3E, _, 0xCD, _, _, 0xCD, _, _, 0x21, 0xD9, 0xCD]) if h > cgb)  # its own, the first after it
+    o = min(h for h in find_all(rom, [0x3E, _, 0xCD, _, _, 0xCD, _, _, 0x21, attr & 0xFF, attr >> 8]) if h > cgb)  # its own, the first after it
     assert o - cgb < 0x80, hex(o - cgb)
     get_predef = bank_of(o) * 0x4000 + word(rom, o + 3) - 0x4000
     assert rom[get_predef:get_predef + 6] == bytes([0x6F, 0x26, 0x00, 0x29, 0x29, 0x29]) and rom[get_predef + 6] == 0x01

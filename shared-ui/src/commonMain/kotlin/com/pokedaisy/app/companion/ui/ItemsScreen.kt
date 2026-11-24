@@ -1,5 +1,8 @@
 package com.pokedaisy.app.companion.ui
 
+import com.pokedaisy.app.companion.ui.theme.rehued
+import com.pokedaisy.app.companion.data.isN3ds
+
 import kotlin.concurrent.Volatile
 
 import androidx.compose.ui.graphics.ImageBitmap
@@ -418,6 +421,42 @@ private val RadicalRedBag = BagPalette(
  */
 /** Pokemon X: its menus' greens (CompanionSkins.POKEMON_XY): white rows in the dark green rim, white pocket names on the
  * green tabs, the cursor's orange underline, descriptions on a dark green band; no backdrop of its own (the party's). */
+/** VIEW MODERN's bag: white rows, the pockets' tabs in the header's blue, a pale icon well. */
+private val ModernBag = BagPalette(
+    panelLayers = listOf(Color(0xFFD5DCEA) to 1, Color(0xFF3D6FE0) to 2, Color(0xFFFFFFFF) to 1),
+    tabLayerCount = 1,
+    fill = Color(0xFFFFFFFF), divider = Color(0xFFE6EBF3), dividerDash = null, dividerWidth = 1,
+    text = Color(0xFF232B40), textShadow = Color.Transparent,
+    tabText = Color(0xFFFFFFFF), tabTextShadow = Color.Transparent, tabUnderline = Color(0xFFFFFFFF),
+    descLayers = listOf(Color(0xFF2F5BC8) to 1), descFill = Color(0xFF3D6FE0),
+    descText = Color(0xFFFFFFFF), descTextShadow = Color.Transparent,
+    iconBox = Color(0xFFF0F3F9), iconBoxEdge = Color(0xFFD5DCEA),
+)
+
+/** [ModernBag] in the game's colours (IN GAME), else the THEME's, its blues moved the way the menus' are. */
+private fun modernBag(): BagPalette {
+    val base = if (OptionColors.dark) ModernBagNight else ModernBag
+    val game = CompanionSkins.gameHue
+    val hue = game ?: com.pokedaisy.app.companion.ui.theme.AppColors.theme.hue ?: return base
+    return modernBags.getOrPut(Triple(OptionColors.dark, hue, game != null)) {
+        fun Color.r() = rehued(com.pokedaisy.app.companion.ui.theme.MODERN_FAMILY, hue, calmed = game == null)
+        base.copy(
+            panelLayers = base.panelLayers.map { (c, w) -> c.r() to w }, fill = base.fill.r(), divider = base.divider?.r(),
+            descLayers = base.descLayers.map { (c, w) -> c.r() to w }, descFill = base.descFill.r(),
+            iconBox = base.iconBox.r(), iconBoxEdge = base.iconBoxEdge.r(),
+        )
+    }
+}
+private val modernBags = HashMap<Triple<Boolean, Float, Boolean>, BagPalette>()
+
+private val ModernBagNight = ModernBag.copy(
+    panelLayers = listOf(Color(0xFF333D55) to 1, Color(0xFF3560D0) to 2, Color(0xFF1C2333) to 1),
+    fill = Color(0xFF1C2333), divider = Color(0xFF2E374C),
+    text = Color(0xFFE8ECF5),
+    descLayers = listOf(Color(0xFF2A4FB0) to 1), descFill = Color(0xFF3560D0),
+    iconBox = Color(0xFF232B3E), iconBoxEdge = Color(0xFF333D55),
+)
+
 private val XyBag = BagPalette(
     panelLayers = listOf(Color(0xFF2B8E26) to 1, Color(0xFF8ED46A) to 2, Color(0xFF5FB043) to 2),
     tabLayerCount = 2,
@@ -822,6 +861,8 @@ private fun DrawScope.drawHgssBand(top: Float, k: Float, pal: BagPalette, shades
 
 /** Same grouping as the companion backdrop (rememberGameBackground). */
 private fun bagPaletteFor(game: GameKind, hgssPocket: Int = 0): BagPalette =
+    // VIEW MODERN: its own white windows and blue tabs (a 3DS game keeps its own look).
+    if (modernView && !game.isN3ds) modernBag() else
     // Gen 1's white goes nearly black, like its party backdrop (GameBackdrop).
     lightBagFor(game, hgssPocket).let {
         if (!OptionColors.dark) it
@@ -925,7 +966,7 @@ fun ItemsScreen(
     fun startPick(item: ItemView, give: Boolean) {
         val use = itemUse ?: return
         use.targets(item.itemId, give) { t ->
-            if (t.result == ItemUseResult.USED) pick = ItemPick(item, give, t.targets)
+            if (t.result == ItemUseResult.USED) pick = ItemPick(item, give, t.targets, t.move)
             else say(itemUseMessage(ItemUseOutcome(t.result)))
         }
     }
@@ -1467,6 +1508,23 @@ private fun FolderTab(
     // carries the orange underline the game draws under its pocket title.
     val reach = if (selected) pal.selectedFillReach else 0
     val focused by noRipple.collectIsFocusedAsState()
+    // VIEW MODERN: its own folder tab (drawModernFolderTab), square where it meets the window, the open one solid in the header's colour.
+    if (modernView) {
+        Box(
+            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier
+                .width(tabWidth)
+                .drawBehind {
+                    drawModernFolderTab(false, pal.fill, if (selected) OptionColors.headerFill else lerp(pal.fill, OptionColors.headerFill, 0.1f), pal.panelLayers.first().first, u.toPx() * 6, panelFrame.toPx() + 2.dp.toPx())
+                }
+                .soundClickable(interactionSource = noRipple, indication = null, onClick = onClick)
+                .gbaFocusRing(focused, androidx.compose.foundation.shape.RoundedCornerShape(topStart = u * 6, bottomStart = u * 6))
+                .padding(start = u * 7, end = u * 4, top = u * 5, bottom = u * 5),
+        ) {
+            GbaText(label, if (selected) OptionColors.headerText else pal.text, Color.Transparent, rememberGbaTextMetrics(1f), bold = true)
+        }
+        return
+    }
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = Modifier
@@ -1793,7 +1851,7 @@ internal fun takenMessage(item: Int, mon: String): String =
     else tr("Received {0} from {1}.", bagItemName(item), mon)
 
 fun itemUseMessage(o: ItemUseOutcome, mon: String = "", item: String = "", held: Int = 0): String = when (o.result) {
-    ItemUseResult.USED -> if (o.steps > 0) tr("Used! It lasts {0} steps.", o.steps) else tr("Used on {0}.", mon)
+    ItemUseResult.USED -> if (o.steps > 0) tr("Used! It lasts {0} steps.", o.steps) else if (mon.isEmpty()) tr("Used!") else tr("Used on {0}.", mon)
     ItemUseResult.STILL_ACTIVE -> tr("The last one is still working.")
     ItemUseResult.NOT_NOW -> tr("Not now: close the game's menus and battles first.")
     ItemUseResult.IN_BATTLE -> tr("You can't do that during a battle.")
@@ -1807,6 +1865,8 @@ fun itemUseMessage(o: ItemUseOutcome, mon: String = "", item: String = "", held:
     ItemUseResult.TAKEN -> takenMessage(o.swapped, mon)
     ItemUseResult.MAILBOX_FULL -> tr("The PC's mailbox is full.")
     ItemUseResult.IN_GAME -> tr("Pick a POKéMON on the game's screen.")
+    ItemUseResult.TEACHING -> tr("{0} is learning it on the game's screen.", mon)
+    ItemUseResult.USING_IN_GAME -> tr("{0} gets it on the game's screen.", mon)
 }
 
 /** What a USE / GIVE did, popped up over the bag ([ItemNoticeWindow]). */

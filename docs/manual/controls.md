@@ -3,7 +3,7 @@ title: Controls, hotkeys and touch
 summary: Remap the game's buttons, set up turbo, change or turn off the hotkeys, set up the touch controls or an external controller, and what the BACK button does.
 section: player
 order: 2
-keywords: [flash, dark cave, light up cave, remap, rebind, keybind, reset controls, reset buttons, default buttons, reset hotkeys, key bindings, buttons, mapping, controller, gamepad, joystick, bluetooth, 8bitdo, gamesir, xbox, keyboard, shortcut, chord, combo, turbo, autofire, rapid fire, triggers, l2, r2, on screen controls, virtual pad, touch pad, touch controls, layout editor, move buttons, resize buttons, left handed, lefty, button colors, button style, skin, skins, deltaskin, delta, controller skin, opacity, haptics, vibration, wild encounters, encounter rate, random battles, shiny, shiny odds, shiny hunting, rare colors, hm, hms, hm slave, hidden machine, field moves, no hms, without hms, exp share, exp all, experience, share exp, party exp, grinding, level up faster, level cap, max level, hard mode, overleveled]
+keywords: [flash, dark cave, light up cave, remap, rebind, keybind, reset controls, reset buttons, default buttons, reset hotkeys, key bindings, buttons, mapping, controller, gamepad, joystick, bluetooth, 8bitdo, gamesir, xbox, keyboard, shortcut, chord, combo, turbo, autofire, rapid fire, triggers, l2, r2, on screen controls, virtual pad, touch pad, touch controls, layout editor, move buttons, resize buttons, left handed, lefty, button colors, button style, skin, skins, deltaskin, delta, controller skin, opacity, haptics, vibration, wild encounters, encounter rate, random battles, shiny, shiny odds, shiny hunting, rare colors, hm, hms, hm slave, hidden machine, field moves, no hms, without hms, exp share, exp all, experience, share exp, party exp, grinding, level up faster, level cap, max level, hard mode, overleveled, several layouts, multiple layouts, save layout, keep layout, custom layouts, layout lost, layout reset]
 ---
 
 PokeDaisy works out of the box on handhelds like the AYN Thor: the face buttons, shoulders, START and SELECT are the GBA's, and a few button combinations do emulator things like saving a state. Everything here is about changing that: which button presses what, which shortcuts exist, and what happens when you plug in a controller or play by touch.
@@ -182,11 +182,12 @@ You can open it with the `QUICK MENU` touch button, even with `HOTKEYS` off. Wit
   - `COMPACT`: like `CLASSIC`, smaller and tucked into the corners, with `SELECT` above the D-pad and `START` above A and B.
   - `MIRRORED`: `SIDES` (or `CLASSIC`, where `SIDES` doesn't fit) the other way round, for left hands: A and B on the left, the D-pad on the right. L and R stay on their own sides.
   - `RAISED`: like `CLASSIC`, but held sideways the D-pad and A and B sit higher, where your thumbs rest, with L and R right above them instead of in the top corners.
-  - `CUSTOM`: the one you made in `EDIT LAYOUT`. It shows up once you've made one, and picking a ready-made layout keeps it for later.
-- **`EDIT LAYOUT`**: move the buttons yourself (see below).
+  - Your own layouts, `MY LAYOUT 1`, `MY LAYOUT 2` and so on: the ones you made in `EDIT LAYOUT`. They show up after the ready-made ones once you've made one, and each keeps its places whatever else you pick.
+- **`EDIT LAYOUT`**: move the buttons yourself (see below). On one of your layouts it changes that one; on a ready-made layout it makes a new layout of your own from it, so a ready-made layout or another of yours is never changed.
+- **`NEW LAYOUT`**: one more layout of your own, starting where the buttons are now, and straight into `EDIT LAYOUT`. Only there once you've made one.
 
 In a DS game the buttons get X and Y too, around A and B the way the DS has them: X on top, Y on the left.
-- **`POSITION`**: with the phone held upright, where the buttons sit in their space: `TOP`, `MIDDLE` (the default) or `BOTTOM`. With the companion `UNDER GAME`, their space is below the companion. With `AT BOTTOM`, it is the gap between the game and the companion, or the game itself when there's no gap. It doesn't move a `CUSTOM` layout, which keeps your own places. With `EXPAND` and `UNDER GAME` the buttons get a space that fits them exactly, so it's greyed out then.
+- **`POSITION`**: with the phone held upright, where the buttons sit in their space: `TOP`, `MIDDLE` (the default) or `BOTTOM`. With the companion `UNDER GAME`, their space is below the companion. With `AT BOTTOM`, it is the gap between the game and the companion, or the game itself when there's no gap. It doesn't move a layout of your own, which keeps your own places. With `EXPAND` and `UNDER GAME` the buttons get a space that fits them exactly, so it's greyed out then.
 - **`COMPANION`**: with the phone held upright, the companion right `UNDER GAME` (the default), which leaves the space at the bottom of the screen for the buttons (when there's no room to spare, the companion and then the game get a little smaller to make that space), or `AT BOTTOM` of the screen. It's the same setting as the one in `DISPLAY OPTIONS`, and only on phones and other one-screen devices. With `EXPAND` on, the game fills everything above the companion, so `UNDER GAME` gives the buttons a strip of their own along the bottom of the screen instead, under the companion, where they never cover the game. With no touch controls on screen there's nothing to choose then, and the setting is greyed out.
 - **`SIZE`**: `SMALL`, `NORMAL`, `LARGE` or `X-LARGE`, for every button at once.
 - **`LOOK`**: how the buttons are drawn. `GLASS` (the default) is see-through with a light edge, `SOLID` fills them in, `OUTLINE` draws only their edges and words (a press fills one in), `CONSOLE` makes them look like a handheld's: raised, sinking a little when you press them, and `MODERN` draws smooth round buttons with plain lettering instead of pixels.
@@ -195,7 +196,7 @@ In a DS game the buttons get X and Y too, around A and B the way the DS has them
 - **`D-PAD`**: `8-WAY` (the default) lets you press diagonals; `4-WAY` presses one direction at a time, which helps if you keep walking the wrong way in a menu.
 - **`FADE WHEN IDLE`**: the buttons fade to a faint outline a few seconds after you stop touching them, and come back with your next touch.
 - **`VIBRATION`**: a buzz each time you press something, `OFF` to start with. Turn it on and **`STRENGTH`** shows under it: `LIGHT`, `MEDIUM` (the default) or `STRONG`. Each tap on `STRENGTH` buzzes once, so you feel what you picked.
-- **`RESET LAYOUT`**: forgets `CUSTOM` and goes back to the ready-made layout. Only there once you've made one.
+- **`DELETE LAYOUT`**: forgets the layout of yours in use and goes back to the ready-made layout. Only there while one of yours is in use.
 
 On a phone held upright the buttons sit between the game and the companion when there's room; see [Devices](devices.md). Your thumb can slide from one button to the next without lifting: from one direction to another on the D-pad, or from B onto A. Touching between A and B presses both.
 
@@ -261,6 +262,29 @@ Only random encounters change. Fishing, moves that lure wild Pokémon out and ba
 
 It works on the Game Boy Advance originals in every language and on almost every supported hack, including the ones rebuilt from newer source code like SoulGold, Lazarus and Recharged Yellow. On the Game Boy it works in Red, Blue, Yellow (in every language), Yellow Legacy, PureRed, PureBlue, Brown, Gold, Silver, Crystal and Crystal Legacy. On Emerald Rogue, Quetzal, Monomyth and the other Game Boy games it shows `N/A`.
 
+## LEVEL UP ALL
+
+`LEVEL UP ALL` brings every Pokémon in your party and PC up to one level. It's on the companion's `QUALITY OF LIFE` page (in the `GAMEPLAY` group), in the games it works in (Monomyth for now), and it opens from the field: finish any battle, menu or text box first.
+
+First pick whose Pokémon go up: `PARTY AND PC`, `PARTY ONLY` or `PC ONLY`. A choice with nobody to raise reads `N/A`.
+
+Then pick how high to go:
+
+- `HIGHEST`: the level of your strongest Pokémon, party and PC alike.
+- `NEXT BOSS`: the level of the strongest Pokémon on the next team you haven't beaten. Once every boss is beaten this one reads `N/A`.
+- `PICK A LEVEL`: any level you like, up to the higher of those two. Slide the bar or press `-` and `+`, then `DONE`. It starts at the top. With `LEVEL CAP` on, it stops at the cap.
+
+Last, pick what happens to new moves:
+
+- `SKIP THEM ALL`, the default, leaves every Pokémon's moves as they are.
+- `ASK FOR EACH` asks about each new move a full Pokémon could learn, and fills an empty move slot without asking. Pick a move to forget, `DON'T LEARN IT`, or `SKIP THE REST`.
+
+Pokémon that evolve by reaching a level evolve on the way up, without the animation, and a Pokémon still using its species name takes the new one. Evolutions that need an item, a trade or friendship stay yours to do. A held item that stops evolutions still stops this one. Eggs, and Pokémon already at that level or above it, don't change.
+
+The change is in your running game until you save, so save in the game to keep it. If you change your mind, restart the game before saving.
+
+Once you've used it, achievements pause until you open another game.
+
 ## SHINY ODDS
 
 `SHINY ODDS` sets how often a wild Pokémon is shiny. It's in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and opens a list:
@@ -310,6 +334,7 @@ Normally only the Pokémon that fought gain EXP when you win, so the rest of you
 - **`OFF`** (the default) leaves the game's own rules.
 - **`SPLIT`** counts every Pokémon in your party as having fought: a win's EXP is shared out across the whole team, as the first games' version of this did. Each gets a smaller share, but nobody gets nothing.
 - **`FULL EXP`** gives every Pokémon in your party the EXP the one that fought would have had on its own. The game's own boosts still count: a held item that shares or boosts EXP, and the bonus for a Pokémon from a trade.
+- **`MODERN`** works like the newer games: the Pokémon that fought get all of the EXP and the rest of your team half of it. You see the message and level ups for the ones that fought first, then one line saying the others gained EXP too, then the others' level ups, instead of a message you have to press past for every Pokémon. Only in Red, Blue, Yellow, Gold, Silver and Crystal for now; elsewhere the list doesn't offer it.
 
 Eggs and fainted Pokémon are left out. The game shows each Pokémon's EXP as it comes, level ups and new moves included, and evolves the ones that leveled up once the battle is over. Battles that give no EXP in the game (link battles, the Battle Frontier) still give none.
 
@@ -335,7 +360,14 @@ Turn on `NO HMS NEEDED` in the companion's `SETTINGS`, `GAMEPLAY` > `QUALITY OF 
 
 The companion's own `FLY`, `TAKE OFF` and `FLASH` (on the [map](map.md) and in the [quick menu](#the-quick-menu)) follow it too: with the badge, they no longer need someone who knows the move. The badges stay: a move the game would refuse without its badge is still refused.
 
-It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
+It works in the original FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and revision, and in many hacks built on their code. On the Game Boy it works in the English Red, Blue, Yellow, Gold, Silver and Crystal:
+
+- In Red, Blue and Yellow you only ever use these moves from the party menu. With the badge, they show in every Pokémon's menu there, after its own (four at most), and work as if it knew them.
+- In Gold, Silver and Crystal, press A at the tree, the boulder, the water, the whirlpool or the waterfall as above. The party menu also gets the moves for flying and for lighting up a cave, when there's room for them. Butting a tree and breaking a rock come from TMs in these games, so they still need a Pokémon that knows them.
+
+Where it can't work the row shows `N/A`. Turning it off puts the game back as it was: nothing in your save changes either way.
+
+On the DS it works in the US Platinum, HeartGold and SoulSilver and the English Black, White, Black 2 and White 2, when the game runs on melonDS (`DS CORE`). Walk up to the tree, the rock, the boulder, the water or the waterfall and press A, as above. A move a game lists in its party menu only for a Pokémon that knows it stays that way there; the companion's `FLY` takes anyone.
 
 ## External controllers
 

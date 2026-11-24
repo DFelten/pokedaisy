@@ -22,7 +22,26 @@ enum PkNdsAction {
      * x / z (the spawn's fly tile: GetSpawnIdByMapAndCoords finds it again). The game's own FieldMoves_FlyTask from
      * there: the cut-in, the flight, the landing; and the journal's "flew to" line. */
     PK_NDS_ACTION_FLY = 3,
+    /** The bag on a party Pokémon (Gen 4: stub/pk_nds_item.c): arg0 = PK_NDS_ITEM_* mode | slot << 8 | move slot << 16,
+     * arg1 = the item, arg2 = the Pokémon's personality (USE / GIVE / TAKE check it again), arg3 = the party's count.
+     * Result PK_NDS_ITEM_RESULT = the helper's answer (CHECK: its mask), PK_NDS_ITEM_RESULT + 1 = the item held before. */
+    PK_NDS_ACTION_ITEM = 4,
+    /** TRADE EVOLUTIONS (Platinum / HeartGold / SoulSilver: stub/pk_nds_evo.c; Black / White / Black 2 / White 2: stub/pk_nds_evo5.c): arg0 = PK_NDS_EVO_CHECK / _START |
+     * slot << 8, arg2 = the Pokémon's personality (START checks it again), arg3 = the party's count. Result
+     * PK_NDS_EVO_RESULT = the helper's answer (PK_NDS_EVO_*), the six after it each slot's trade evolution target (CHECK;
+     * 0 = none). START leaves the game's evolution playing in a field task of ours, which puts the map back after. */
+    PK_NDS_ACTION_TRADE_EVO = 5,
 };
+
+/** Where a trade evolution job's answer is among its results (the helper's op); the slots' targets follow it. */
+#define PK_NDS_EVO_RESULT 4
+
+/** Gen 5's USE effect (stub/pk_nds_item5.c's PkNdsItem5 fields), the app's for the item: set before an ITEM action. */
+struct PkNdsItem5Effect { uint32_t heal, healDiv, revive, statusMask, pp, ppAll; };
+void pk_nds_call_item5_effect(const PkNdsItem5Effect& effect);
+
+/** Where an item job's answer is among its results (the helper's op). */
+#define PK_NDS_ITEM_RESULT 9
 
 /** Posts [action] for the next frame; 0 when the field isn't free (or this cart has no recipe), else the job's number. */
 int pk_nds_call_action(melonDS::NDS* nds, const PkNdsFieldGame* game, int action, const uint32_t args[4]);
@@ -44,6 +63,9 @@ bool pk_nds_call_results(int seq, uint32_t* out);
 
 /** After every frame: notices a job that ran and takes out a hook the game hasn't called within a few frames. */
 void pk_nds_call_frame(melonDS::NDS* nds, const PkNdsFieldGame* game);
+
+/** NO HMS NEEDED after every frame: the hooks in while [on] (where the game's own code is), out while not. */
+void pk_nds_call_hm_free_frame(melonDS::NDS* nds, const PkNdsFieldGame* game, bool on);
 
 /** Forget any job (a reset, a state load: the hook went with the old RAM, or is in the new RAM and will run). */
 void pk_nds_call_reset(void);

@@ -149,3 +149,25 @@ fun tr(en: String, vararg args: Any?): String {
  * friends call [tr] on what they show. Only marks the literal for the tables.
  */
 fun tk(en: String): String = en
+
+/**
+ * [n] with its thousands grouped the app language's way: a comma in English, Japanese and Korean, a period in German, Italian,
+ * Spanish and both Portuguese, a space in French ("1,234,567" / "1.234.567" / "1 234 567"). Money and coins everywhere the app
+ * draws them in its own letters (a game's own screens - the trainer card - keep the game's way).
+ */
+fun groupedNumber(n: Long): String {
+    val sep = when (L10n.language) {
+        AppLanguage.EN, AppLanguage.JA, AppLanguage.KO -> ','
+        AppLanguage.FR -> ' '
+        else -> '.'
+    }
+    val digits = kotlin.math.abs(n).toString()
+    val out = StringBuilder()
+    digits.forEachIndexed { i, c ->
+        if (i > 0 && (digits.length - i) % 3 == 0) out.append(sep)
+        out.append(c)
+    }
+    return if (n < 0) "-$out" else out.toString()
+}
+
+fun groupedNumber(n: Int): String = groupedNumber(n.toLong())

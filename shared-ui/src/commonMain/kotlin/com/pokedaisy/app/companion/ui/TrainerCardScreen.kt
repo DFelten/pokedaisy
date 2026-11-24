@@ -2,6 +2,7 @@ package com.pokedaisy.app.companion.ui
 
 import com.pokedaisy.app.companion.ui.theme.gbaFocusRing
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.pokedaisy.app.companion.i18n.tr
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.pokedaisy.app.companion.data.CardArt
 import com.pokedaisy.app.companion.data.CardStyle
+import com.pokedaisy.app.companion.data.Gen1TrainerCard
 import com.pokedaisy.app.companion.data.Gen2TrainerCard
 import com.pokedaisy.app.companion.data.LookArt
 import com.pokedaisy.app.companion.data.PlayerLook
@@ -57,7 +59,8 @@ fun rememberTrainerCardArt(style: CardStyle?): CardArt? {
     val generation = rememberArtGeneration()
     val start: CardArt? = when (style) {
         null -> null
-        CardStyle.CRYSTAL -> Gen2TrainerCard.cached()
+        in Gen2TrainerCard.STYLES -> Gen2TrainerCard.cached(style)
+        in Gen1TrainerCard.STYLES -> Gen1TrainerCard.cached(style)
         else -> TrainerCardArt.cached(style)
     }
     return produceKeyedState(start, style, generation) {
@@ -66,7 +69,13 @@ fun rememberTrainerCardArt(style: CardStyle?): CardArt? {
         val s = style ?: run { value = null; return@produceKeyedState }
         if (value != null && cardArtGeneration[s] == generation) return@produceKeyedState
         value = withContext(Dispatchers.IO) {
-            runCatching { if (s == CardStyle.CRYSTAL) Gen2TrainerCard.load(RomArt.dir()) else TrainerCardArt.load(RomArt.dir(), s) }.getOrNull()
+            runCatching {
+                when (s) {
+                    in Gen2TrainerCard.STYLES -> Gen2TrainerCard.load(RomArt.dir(), s)
+                    in Gen1TrainerCard.STYLES -> Gen1TrainerCard.load(RomArt.dir(), s)
+                    else -> TrainerCardArt.load(RomArt.dir(), s)
+                }
+            }.getOrNull()
         }
         if (value != null) cardArtGeneration[s] = generation
     }.value
@@ -83,6 +92,12 @@ fun TrainerCardScreen(card: TrainerCardInfo, art: CardArt, modifier: Modifier = 
     var back by remember { mutableStateOf(initialBack) }
     if (art is Gen2TrainerCard.Art) {
         CrystalCard(card, art, back, modifier) { back = !back }
+        return
+    }
+    if (art is Gen1TrainerCard.Art) {
+        // Red's, Blue's and Yellow's card is one screen: nothing to flip to.
+        val image = remember(art, card) { Gen1TrainerCard.render(art, card).let { imageBitmapOf(it.argb, it.width, it.height) } }
+        FlippingCard(image, back = false, modifier, dropHint = true, flip = null)
         return
     }
     art as TrainerCardArt.Art
@@ -111,7 +126,7 @@ fun TrainerCardScreen(card: TrainerCardInfo, art: CardArt, modifier: Modifier = 
 }
 
 /**
- * Crystal's card ([Gen2TrainerCard]): the whole 160x144 screen the game draws, its two pages flipped like the GBA
+ * Crystal's and Gold / Silver's card ([Gen2TrainerCard]): the whole 160x144 screen the game draws, its two pages flipped like the GBA
  * cards' sides. The game's 64-frame cycle in eighths: the badges spin a step each, the play time's colon blinks.
  */
 @Composable
@@ -139,7 +154,7 @@ private fun CrystalCard(card: TrainerCardInfo, art: Gen2TrainerCard.Art, badges:
 
 /** [image] at the largest whole scale that fits; a tap squashes it shut, [flip]s and opens it again. */
 @Composable
-private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, dropHint: Boolean, flip: () -> Unit) {
+private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, dropHint: Boolean, flip: (() -> Unit)?) {
     val squash = remember { Animatable(1f) }
     val scope = rememberCoroutineScope()
     var flipping by remember { mutableStateOf(false) }
@@ -155,7 +170,7 @@ private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, 
         // ([dropHint]): the GBA cards keep their hint everywhere, as before.
         val hint = with(density) { (m.lineHeight + m.u * 4).toPx() }
         fun fit(height: Float) = max(1, min(w / image.width, height / image.height).toInt())
-        val showHint = !dropHint || fit(h - hint) >= fit(h)
+        val showHint = flip != null && (!dropHint || fit(h - hint) >= fit(h))
         val scale = if (showHint) fit(h - hint) else fit(h)
         val size = with(density) { DpSize((image.width * scale).toDp(), (image.height * scale).toDp()) }
         Column(
@@ -170,16 +185,17 @@ private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, 
                     // flips (a disabled clickable drops the focus): a press mid-flip is ignored instead.
                     .focusStart(true)
                     .gbaFocusRing(focused, RectangleShape)
-                    .soundClickable(interactionSource = cardFocus, indication = null) {
+                    // A card with one side (Red / Blue / Yellow's) stays a focus stop but has nothing to tap: no click sound.
+                    .then(if (flip == null) Modifier.focusable(interactionSource = cardFocus) else Modifier.soundClickable(interactionSource = cardFocus, indication = null) {
                         if (flipping) return@soundClickable
                         flipping = true
                         scope.launch {
                             squash.animateTo(0f, tween(FLIP_MS, easing = LinearEasing))
-                            flip()
+                            flip.invoke()
                             squash.animateTo(1f, tween(FLIP_MS, easing = LinearEasing))
                             flipping = false
                         }
-                    },
+                    }),
             ) {
                 drawImage(image, dstSize = IntSize(image.width * scale, image.height * scale), dstOffset = IntOffset.Zero, filterQuality = FilterQuality.None)
             }

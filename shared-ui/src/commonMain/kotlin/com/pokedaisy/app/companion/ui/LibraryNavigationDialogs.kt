@@ -15,6 +15,10 @@ fun LibraryNavigationDialogs(library: LibraryCoordinator, m: GbaTextMetrics, sma
         LibraryCoordinator.Dialog.SORT -> OptionSelector(tr("SORT BY"), LibrarySort.entries.toList(), library.sort,
             { tr(it.label) }, m, onPick = library::selectSort,
             onDismiss = { library.dismiss(LibraryCoordinator.Dialog.SORT) })
+        LibraryCoordinator.Dialog.LAYOUT -> OptionSelector(tr("LIBRARY VIEW"), com.pokedaisy.app.companion.LibraryLayout.entries.toList(), library.layout,
+            { tr(it.label) }, m, onPick = library::selectLayout,
+            onDismiss = { library.dismiss(LibraryCoordinator.Dialog.LAYOUT) },
+            badge = { if (it.immersive) com.pokedaisy.app.companion.NewFeatures.badge(com.pokedaisy.app.companion.NewFeatures.LIBRARY_VIEWS) else null })
         null -> Unit
     }
 }

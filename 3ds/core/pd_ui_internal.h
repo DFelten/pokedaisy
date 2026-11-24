@@ -160,6 +160,7 @@ enum setting_row {
     SETTING_TRADE_EVOS,
     SETTING_NUZLOCKE,
     SETTING_LANGUAGE,   // LANGUAGE: a pick-list, AUTO first
+    SETTING_FONT_TYPE,  // hosts with hasFontType: PIXEL SMALL / PIXEL
     // ZOOM must stay out of SETTING_SCENE's block: its rows are SETTING_SCENE + i, so a setting sat inside it read
     // as a scene row (ZOOM's tap opened a scene's pick-list instead and the step never changed).
     SETTING_FRONT,      // + i: the frontend's own rows (pd_host_info.front*), 8 of them at most

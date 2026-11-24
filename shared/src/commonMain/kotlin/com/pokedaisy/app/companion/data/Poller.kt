@@ -702,7 +702,9 @@ class TelemetrySampler {
                 ramVerified = true   // its build's own symbols; the battle cursors kept retail's EWRAM (checked headless)
                 return
             }
-            retailHash = hash in RETAIL_SHA1S || retailDump(reader, code, size) || randomizedDump(reader, code, size)
+            // MWisBest's RTC / RNG fix of retail: retail's config, cursors and all (checked headless on it).
+            retailHash = hash in RETAIL_SHA1S || hash == EMERALD_MWISBEST_V1_0_SHA1 ||
+                retailDump(reader, code, size) || randomizedDump(reader, code, size)
             retailRom = retailHash
             smallHash = hash
         }
@@ -978,6 +980,10 @@ class TelemetrySampler {
             if (gen5Cfg != null) return gen5Cfg?.battle?.let { b ->
                 runCatching { 0 to readGen5BattleInput(reader, b) }.getOrNull()
             }
+            // Origin HeartGold: its own battle engine (0 outside a battle: the manager pointer is cleared after one).
+            gen4Cfg?.managedBattle?.takeIf { originHeartGold && kind == GameKind.HEARTGOLD }?.let { b ->
+                return runCatching { 0 to readManagedBattleInput(reader, b) }.getOrNull()
+            }
             return gen4Cfg?.battle?.takeIf { it.offBattleInput != 0 }?.let { b ->
                 if (kind != GameKind.HEARTGOLD && kind != GameKind.SOULSILVER && kind != GameKind.PLATINUM) null
                 else runCatching { 0 to readGen4BattleInput(reader, b) }.getOrNull()
@@ -1105,6 +1111,17 @@ class TelemetrySampler {
         const val SOULGOLD_V1_2_1B_SHA1 = "dacb6e40e7f572ddefd2dfa10e99c0da6835b062"
         // Pokémon Emerald Kaizo v2.0 (BPEE, 16 MB) - its GPIO bytes are zero, so the masked hash is the file's.
         const val EMERALD_KAIZO_V2_0_SHA1 = "a7c4e34fafb53f2d5283eb6d43dad285c0dd40a8"
+        // MWisBest's "32-bit RTC + Timer RNG Fix" v1.0 of retail Emerald (USA, Europe), 16 MB: retail byte for byte but 76
+        // bytes (AgbMain calls a new routine, one callback pointer, the routine itself in retail's zero space at 0x089C0D00:
+        // the RNG seeded from a timer and the RTC). Retail's RAM, code and tables, so it's read as retail Emerald.
+        const val EMERALD_MWISBEST_V1_0_SHA1 = "bfe52fb1b279792bc02aa5ebb7e162cb91435f4f"
+        // Its CRC32 and retail Emerald's: EXPAND / the field reads look it up by retail's ([retailTablesCrc]).
+        private const val EMERALD_MWISBEST_V1_0_CRC = 0x67c39b5a
+        private const val EMERALD_RETAIL_CRC = 0x1f1c08fb
+
+        /** Retail's CRC32 for a ROM that is retail with a patch leaving its code, RAM, maps and sprites alone
+         * ([EMERALD_MWISBEST_V1_0_SHA1]), else null - for [com.pokedaisy.app.WideScreen.tablesCrc]. */
+        fun retailTablesCrc(crc: Int): Int? = if (crc == EMERALD_MWISBEST_V1_0_CRC) EMERALD_RETAIL_CRC else null
         // Pokémon Emerald Legacy v1.1.4 (BPEE, 16 MB) - its source at tag V1.1.4 built with agbcc is this file byte for byte.
         const val EMERALD_LEGACY_V1_1_4_SHA1 = "cbd71af65ee3dcd53280a6a12014bfb11e8f626a"
         // Pokémon Glazed 9.2.0 (BPEE, 32 MB) - host-side masked hash (GPIO bytes zero).
@@ -1419,6 +1436,7 @@ class TelemetrySampler {
             UNBOUND_V2_1_1_1_SHA1, GAIA_V3_2_SHA1, RADICAL_RED_V4_1_SHA1, ODYSSEY_V4_1_1_SHA1,
             AMETHYST_V1_3_0_SHA1, AMETHYST_V1_4_1_SHA1, CELIA_V1_1_4_SHA1, HEART_AND_SOUL_V2_0_6_SHA1, LAZARUS_V2_0_SHA1,
             ROWE_V2_1_9_1_SHA1, EMERALD_ROGUE_V2_2_1_EX_SHA1, TMT2_V1_5_2_SHA1, EMERALD_SEAGLASS_V3_0_SHA1, EMERALD_KAIZO_V2_0_SHA1, EMERALD_LEGACY_V1_1_4_SHA1,
+            EMERALD_MWISBEST_V1_0_SHA1,
             SOULGOLD_V1_1_4_SHA1, SOULGOLD_V1_2_SHA1, SOULGOLD_V1_2B_SHA1, SOULGOLD_V1_2C_SHA1, GLAZED_V9_2_0_SHA1, IMPERIUM_V1_3_1_SHA1,
             SOULGOLD_V1_2_1_SHA1, SOULGOLD_V1_2_1B_SHA1,
             QUETZAL_V9_0_ALPHA_SHA1, QUETZAL_V9_0_ALPHA_ES_SHA1, QUETZAL_V9_1_ALPHA_SHA1, QUETZAL_V9_1_ALPHA_ES_SHA1, UNBOUND_V2_1_1_1_FR_SHA1, UNBOUND_V2_1_1_1_IT_SHA1,

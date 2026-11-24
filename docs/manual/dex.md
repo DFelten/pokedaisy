@@ -13,9 +13,10 @@ The `DEX` tab is your Pokédex, read from your save, with entries that go furthe
 The left side shows your counts and filters:
 
 - `SEEN` and `OWNED`: how many you've seen and caught in the dex you're looking at.
-- A filter list with the count for each: `ALL`, `CAUGHT`, `SEEN ONLY` (seen but not caught yet) and `NOT SEEN`. Tap one to narrow the list.
-- `TYPE`: shows only the Pokémon of one type. A Pokémon counts once you've seen it, as in the games' own dex search.
-- `NAME`: shows only the names starting with one letter, handy for finding a Pokémon without scrolling.
+- A filter list with the count for each: `ALL`, `CAUGHT`, `PARTY + PC`, `SEEN ONLY` (seen but not caught yet) and `NOT SEEN`. Tap one to narrow the list. `PARTY + PC` lists the Pokémon you hold right now, in your party or your boxes, while `CAUGHT` also counts ones you traded away or evolved. It shows in the games whose boxes the companion reads.
+- `TYPE`: pick a type, then how a Pokémon should relate to it. `IS` means one of its types is that type. `HITS ... HARD` means one of its own types is super effective on that type: before a gym, pick the gym's type together with `PARTY + PC`. `RESISTS` means that type does less than normal damage to it. A Pokémon counts once you've seen it, as in the games' own dex search.
+- `NAME`: opens a letter grid in place of the filters. Tap letters and the list narrows as you go to the names that contain them, handy for finding a Pokémon without scrolling. A letter that would find nothing is greyed out. `DEL` takes a letter back, `CLEAR` empties the name and `OK` closes the grid and keeps the name. In a game whose names are in Japanese or Korean, `NAME` opens a list of first letters instead: pick one to see the names starting with it.
+- `SORT`: the dex's own order (`DEX NO.`), or a base stat, highest first: `HP`, `ATTACK`, `DEFENSE`, `SP. ATK`, `SP. DEF`, `SPEED` or `TOTAL`. The first Game Boy games have one `SPECIAL` stat in place of `SP. ATK` and `SP. DEF`, so that's what they offer. Each row then shows that number at its end. Pokémon you haven't seen go last.
 - A button that flips between the regional dex and the `NATIONAL DEX`, in games that have both. It starts on the one your save is using: regional until the game gives you the national one.
 
 The right side is the numbered list. A red ball marks a Pokémon you've caught, a grey one a Pokémon you've only seen. Ones you haven't seen are greyed out.
@@ -66,8 +67,8 @@ That also means what you see depends on the game:
 
 - The **original games** (FireRed, LeafGreen, Ruby, Sapphire, Emerald) have every section.
 - **Hacks** vary. Most get the full entry; some don't have `EVOLVE`, `AREA` or the TM half of `MOVES` yet. A hack with only one dex has no regional / national button.
-- **Pokémon Red, Blue and Yellow** (and PureRed, PureBlue, Yellow Legacy and Brown) show their five stats with one `SPECIAL`, and no abilities, egg groups or genders, since that generation had none.
-- **Pokémon Gold, Silver, Crystal**, **Crystal Legacy** and **Crystal Clear** show all 251 in number order, with six stats and the gender split, but no abilities or egg groups on the page, and no `EVOLVE`, `AREA` or `MOVES` yet.
+- **Pokémon Red, Blue and Yellow** (and PureRed, PureBlue, Yellow Legacy and Brown) show their five stats with one `SPECIAL`, and no abilities, egg groups or genders, since that generation had none. The English Red, Blue and Yellow, and Red and Yellow with the Gen II Graphics patch, also have `MOVES`: the moves a Pokémon starts with show as level 1.
+- **Pokémon Gold, Silver, Crystal**, **Crystal Legacy** and **Crystal Clear** show all 251 in number order, with six stats and the gender split, but no abilities or egg groups on the page, and no `EVOLVE` or `AREA` yet. The English Gold, Silver and Crystal have `MOVES`, with Crystal's move tutor moves at the end of `TM / HM`, unnumbered.
 - **Polished Crystal** shows its 289 in National order, with heights and weights in meters and kilograms. A regional form shows as its species there. The page lists the abilities and the hidden ability (the faithful builds show their own), but no egg groups, and no `EVOLVE`, `AREA` or `MOVES` yet.
 - **Pokémon Prism** shows its own Pokédex: its 253 Pokémon in the game's order, numbered the way the game numbers them, with heights and weights in meters and kilograms as the game shows them by default. Like Crystal, the page has no abilities or egg groups, and no `EVOLVE`, `AREA` or `MOVES` yet.
 

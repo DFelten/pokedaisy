@@ -32,6 +32,7 @@
 #include "pd_font.h"
 #include "pd_gb.h"
 #include "pd_map.h"
+#include "pd_party_art.h"
 #include "pd_menu.h"
 #include "pd_romart.h"
 #include "pd_settings.h"
@@ -1477,6 +1478,9 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
     if (settings.zoom < 1)
       settings.zoom = 1;
   }
+  // The app's RETRO look (SUMMARY MINT in PokeDaisy's blues) on the desktop: the 3DS keeps the OPTION windows.
+  pd_style_enable(true);
+  pd_whole_scale_art = true; // the party's backdrop and the region map at whole scales: even pixels
   pd_look_apply(&game, &settings); // DARK MODE (pd_game_detect applied the game's windows with no settings)
   autoRunFlip = 0;
   read_options(); // the frontend's ASPECT, over the file's own
@@ -1565,8 +1569,10 @@ RETRO_API bool retro_load_game(const struct retro_game_info *g) {
   // The Game Boy games get the HUD where the field scene is known (English Yellow, Crystal: pk_wide_gb), as in the app.
   host.hasHud = PD_BE_IS_GBA() || wideSupported;
   host.hasExpand = true;
-  host.fieldSupported = fieldKnown; // AUTO-RUN (the field read tells walking from scripts, battles and bikes)
+  host.fieldSupported = fieldKnown; // AUTO-RUN and RUN INDOORS (the field read tells walking from scripts, battles and bikes)
+  host.wildSupported = wildSwitch || gbf || polishedActions; // WILD ENCOUNTERS, as the quick menu's WILD
   host.hasCoreRows = true; // AUTO-RUN, DARK MODE, RESET SETTINGS
+  host.hasFontType = true; // FONT TYPE, by DARK MODE
   host.hasFlightArea = freeFlight;
   host.flightSupported = freeFlight; // FLY STYLE / FLIGHT AREA / FLY ON (SCENIC needs scenic_ok, else classic)
   host.itemCanUse = polishedActions ? polished_potion : NULL;
@@ -2160,6 +2166,13 @@ RETRO_API void retro_run(void) {
       }
       if (!press)
         compDimHeld = false;
+      // The desktop's mouse wheel over a list scrolls it (the host passes its notches as RETRO_DEVICE_MOUSE).
+      if (realInput && compReply.ptr_inside) {
+        const int notches = realInput(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP) -
+                            realInput(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
+        if (notches)
+          pd_ui_wheel(&ui, compReply.ptr_x - PD_COMPANION_PAD, compReply.ptr_y - PD_COMPANION_PAD, notches);
+      }
     } else if (touchDown)
       pd_ui_touch(&ui, touchX, touchY, true);
     else if (touchWas)
@@ -2640,7 +2653,11 @@ RETRO_API void retro_run(void) {
       pd_font_get(&glyphs, &glyphCount);
       pd_font_set(NULL, 0);
     }
+    // FONT TYPE: PIXEL SMALL (the app's default) or PIXEL, for the companion alone; the HUD and the quick menu keep
+    // Pixel Operator as before.
+    pd_font_size_set(!settings.fontPixel);
     pd_ui_draw(&ui, &canvas, &game, &snap, &host);
+    pd_font_size_set(0);
     if (gen2)
       pd_font_set(glyphs, glyphCount);
     map_cursor_sync(&ui, &game, &snap);

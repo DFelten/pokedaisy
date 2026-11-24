@@ -20,7 +20,7 @@ interface ItemUse {
     /** A Repel's steps in [repelVar]'s value [v]: without a Lure's bit (SoulGold keeps one there), 0 while a Lure works. */
     fun repelSteps(v: Int): Int = v
 
-    /** The party can be reordered here (a GBA game whose party read is known): drag on PARTY, SWITCH in the summary. */
+    /** The party can be reordered here (a GBA game whose party read is known; Gold / Silver / Crystal through their own SWITCH): drag on PARTY, SWITCH in the summary. */
     fun canReorderParty(): Boolean = false
 
     /** Party slots [a] and [b] trade places, as the game's party menu does. */
@@ -139,6 +139,12 @@ interface ItemUse {
     /** RELEARN: the Move Tutor's screen for party slot [slot] ([personality]). */
     fun centerRelearn(slot: Int, personality: Long, done: (com.pokedaisy.app.companion.data.CenterResult) -> Unit) =
         done(com.pokedaisy.app.companion.data.CenterResult.FAILED)
+    /** QUICK HATCH (QuickHatch.kt): the setting is on and this game's daycare step counter is known. */
+    fun canHatch(): Boolean = false
+
+    /** Makes party slot [slot] ([personality]), an Egg, hatch on the player's next step on the field. */
+    fun hatch(slot: Int, personality: Long, done: (com.pokedaisy.app.companion.data.HatchResult) -> Unit) =
+        done(com.pokedaisy.app.companion.data.HatchResult.FAILED)
 
     /** WITHDRAW: box [box]'s slot [slot] ([boxPersonality]) into the party in the game. */
     fun withdrawFromBox(

@@ -153,7 +153,17 @@ You can save and load without opening the tab:
 
 Change them under `HOTKEYS` in Settings. See [Controls](controls.md).
 
-Save states are kept per game in `Android/data/com.pokedaisy.app/files/states/`, listed in Settings > `FOLDERS` > `SAVE STATES`. The library's `INFO` for a game shows how many slots it uses.
+The library's `INFO` for a game shows how many slots it uses.
+
+### Every game's states in Settings
+
+Settings > `FOLDERS` > `SAVE STATES` lists the games you have states for, each with the picture of its newest state, how many states it has and how much room they take. Tap a game to see all its states as pictures: the resume state (`RESUME`), each slot and `BOSS RETRY`'s. Tap a picture to see it large, with `DELETE` to remove that state. `DELETE ALL` removes every state of that game. Its save file is never touched.
+
+### Move your save states
+
+Save states are kept in the app's own folder (`Android/data/com.pokedaisy.app/files/states/`), which Android removes with the app. To keep them somewhere of your own, such as an SD card or a synced folder, tap `CHANGE FOLDER` on the `SAVE STATES` page and pick a folder. The states you already have move there, and new ones go there too. `USE DEFAULT` moves them back.
+
+Each game gets a folder of its own inside it, with a `game.txt` naming the game. Close any game you're playing before you change the folder.
 
 ## Rewind
 

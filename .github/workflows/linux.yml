@@ -1,7 +1,8 @@
 name: Linux foundation
 on:
+  # Every pull request: native and trimui are required checks on dev, so they must always report. `changes` decides
+  # whether a pull request touches what they test; when it doesn't they're skipped, which counts as passed.
   pull_request:
-    paths: ['linux/**', '3ds/core/**', '3ds/test/host_display_test.c', '3ds/test/configs_gen_test.c', '3ds/Makefile', '3ds/desktop/pd_png.*', '3ds/tools/gen_tr.py', '3ds/tools/tr_3ds.txt', '3ds/tools/gen_font.py', 'shared/src/commonMain/cpp/pk_savevf.*', 'shared/src/commonMain/kotlin/com/pokedaisy/app/companion/i18n/Tr*.kt', 'libretro/**', 'third_party/mgba', 'third_party/armgba', 'third_party/zlib', 'third_party/dsperate-lr', 'app/src/main/cpp/nds/pk_nds_field.*', '.github/workflows/linux.yml', 'gamedata/**']
   push:
     branches: [main, dev]
     paths: ['linux/**', '3ds/**', 'shared/src/commonMain/cpp/pk_savevf.*', 'shared/src/commonMain/kotlin/com/pokedaisy/app/companion/i18n/Tr*.kt', 'libretro/**', 'third_party/mgba', 'third_party/armgba', 'third_party/zlib', 'third_party/dsperate-lr', 'app/src/main/cpp/nds/pk_nds_field.*', '.github/workflows/linux.yml', 'gamedata/**']
@@ -18,7 +19,35 @@ concurrency:
   group: linux-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  # No permission past the workflow's contents: read (Nightly and the Release workflow call this with only that, and a
+  # called job may not ask for more): a pull request's files come from git, its merge commit against the base.
+  changes:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.diff.outputs.run }}
+    steps:
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 2
+          filter: blob:none
+          sparse-checkout: .github
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+        # The paths a pull request must touch for the builds to run (what the pull_request paths filter was).
+        run: |
+          if [ "$EVENT" != pull_request ]; then echo run=true >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          if printf '%s\n' "$files" | grep -Eq '^(linux/|3ds/core/|libretro/|gamedata/)|^3ds/test/(host_display_test|configs_gen_test)\.c$|^3ds/Makefile$|^3ds/desktop/pd_png\.[^/]*$|^3ds/tools/(gen_tr\.py|tr_3ds\.txt|gen_font\.py)$|^shared/src/commonMain/cpp/pk_savevf\.[^/]*$|^shared/src/commonMain/kotlin/com/pokedaisy/app/companion/i18n/Tr[^/]*\.kt$|^third_party/(mgba|armgba|zlib|dsperate-lr)$|^app/src/main/cpp/nds/pk_nds_field\.[^/]*$|^\.github/workflows/linux\.yml$'; then
+            echo run=true >> "$GITHUB_OUTPUT"
+          else
+            echo run=false >> "$GITHUB_OUTPUT"
+          fi
   native:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     # 22.04: the package's binaries need glibc 2.35 at most (SteamOS, older desktops).
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -83,6 +112,8 @@ jobs:
           path: ${{ runner.temp }}/linux-artifacts/*.zip
           if-no-files-found: error
   trimui:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     # 22.04: its aarch64 cross glibc (2.35) has none of 2.38's C23 redirects; armgba/glibc_compat.* bind the rest to 2.17.
     runs-on: ubuntu-22.04
     timeout-minutes: 45

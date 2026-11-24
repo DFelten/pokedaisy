@@ -11,7 +11,8 @@ class TouchEditorStateTest {
 
     @Test fun doneKeepsTheOtherOrientationAndCurrentSettingsAndClosesExactlyOnce() {
         val other = TouchLayout(mapOf(TouchButton.B to place(20f)))
-        var style = TouchControlsStyle(landscape = other)
+        // A layout of the player's in use (its other orientation set): EDIT LAYOUT changes that one.
+        var style = TouchControlsStyle(useCustom = true, landscape = other, customs = listOf(TouchCustom("MY LAYOUT 1", TouchLayout(), other)))
         var closed = 0
         val editor = TouchEditorState({ style }, { style = it }, { closed++ })
         assertTrue(editor.open(stage())); assertFalse(editor.open(stage(false)))

@@ -15,7 +15,7 @@ It's optional: achievements only run once you sign in.
 You need a free account from [retroachievements.org](https://retroachievements.org). Then:
 
 1. In the library, open Settings (the top screen's).
-2. Under `ONLINE`, tap `RetroAchievements` (it's marked `BETA`).
+2. Under `ACHIEVEMENTS`, tap `RetroAchievements` (it's marked `BETA`).
 3. Type your username and password and tap `SIGN IN`.
 
 Once you're in, the page shows your name and your points, with `SIGN OUT` to leave. Your password is never stored: it goes to RetroAchievements once, and the app keeps only the login token the site sends back.
@@ -64,7 +64,7 @@ Achievement news pops up at the top of the companion, over whatever tab you're o
 - `ACHIEVEMENT UNLOCKED`, with its badge and points, and the level-up fanfare from the games plays.
 - `GAME COMPLETE` when you've unlocked every achievement in the set.
 - How many you've unlocked so far, when a game starts.
-- `PROGRESS` when you get closer to one that counts something.
+- `PROGRESS` when you get further than before on one that counts something (a count that drops and comes back says nothing new).
 - `LEADERBOARD` when a leaderboard attempt starts or ends.
 - Connection notices, when the site can't be reached.
 
@@ -76,7 +76,7 @@ When the companion isn't on screen (a DS game's touch screen in its place, or th
 
 ### Turning popups off
 
-The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section, and the companion's `SETTINGS` has the same two switches in its COMPANION group, so you can change them in game:
+The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section, and the companion's `SETTINGS` has the same two switches in its ACHIEVEMENTS group, so you can change them in game:
 
 - `ACHIEVEMENT POPUPS` (`ON` by default) turns every popup off, in the game and on the companion, and mutes the unlock fanfare. Achievements still unlock and count on your account, and the CHEEVOS tab still lists them.
 - `PROGRESS POPUPS` (`ON` by default) turns off only the progress notices (`PROGRESS`), while unlocks and the rest still show. It's greyed out while `ACHIEVEMENT POPUPS` is off.
@@ -85,7 +85,7 @@ The top screen's Settings > RetroAchievements page has a `NOTIFICATIONS` section
 
 Some sets have leaderboards (fastest time, highest score). When the game has any, a `LEADERBOARDS` button appears on the ACHIEVEMENTS tab. Tap a board to see the top 10 and the players around your own entry, with your row highlighted.
 
-While a leaderboard attempt is running, its current value (a timer, a count) shows in the bottom-right corner of the companion. Some achievements are challenges you have to finish without breaking a rule; while one is active, its badge sits in that corner too, so you know it's still on. With the companion off screen, they sit in the game's bottom right corner. Rather not see them? Turn off `CHALLENGE ICONS` in SETTINGS (COMPANION group).
+While a leaderboard attempt is running, its current value (a timer, a count) shows in the bottom-right corner of the companion. Some achievements are challenges you have to finish without breaking a rule; while one is active, its badge sits in that corner too, so you know it's still on. With the companion off screen, they sit in the game's bottom right corner. Rather not see them? Turn off `CHALLENGE ICONS` in SETTINGS (ACHIEVEMENTS group).
 
 ## Save states and achievement progress
 
@@ -96,6 +96,8 @@ Every save state keeps your achievement progress with it. Load a state and the p
 While any cheat is loaded, achievements are paused: nothing can unlock, and the ACHIEVEMENTS tab shows `PAUSED: CHEATS ON`. A popup tells you when cheats go on or off. Turn every cheat off and achievements pick up again. See [Cheats](cheats.md).
 
 Raising `SHINY ODDS` pauses them the same way, and the tab shows `PAUSED: SHINY ODDS` until you set it back to `NORMAL`. See [SHINY ODDS](controls.md#shiny-odds). So does `EXP SHARE` while it's on (`PAUSED: EXP SHARE`): see [EXP SHARE](controls.md#exp-share).
+
+A wild Pokémon pinned from the GUIDE pauses them too, until the battle with it is over: the tab shows `PAUSED: WILD PIN`. See [Pin your next wild encounter](guide.md#pin-your-next-wild-encounter).
 
 ## When the site can't be reached
 

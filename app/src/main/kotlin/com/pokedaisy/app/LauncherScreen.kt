@@ -612,8 +612,9 @@ fun LauncherMenuOverlay(menu: LauncherMenu, m: GbaTextMetrics, onDismiss: () -> 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Two columns (down the first, then the second) when one runs past the screen's height.
         val chrome = m.rowHeight * 2 + m.u * 20 + 32.dp
-        // A little room in each entry: taller rows.
-        val rowHeight = m.rowHeight * 1.2f
+        // A little room in each entry: taller rows, the words a step smaller (the user's call).
+        val rowHeight = m.rowHeight * 1.25f
+        val om = com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(1f)
         val rows = if (rowHeight * menu.items.size + chrome <= maxHeight) menu.items.size else (menu.items.size + 1) / 2
         LaunchedEffect(rows) { menu.rows = rows }
         val noRipple = remember { MutableInteractionSource() }
@@ -625,7 +626,7 @@ fun LauncherMenuOverlay(menu: LauncherMenu, m: GbaTextMetrics, onDismiss: () -> 
                 .padding(16.dp),
         ) {
             Column(
-                Modifier.width(IntrinsicSize.Max).clickable(interactionSource = noRipple, indication = null, onClick = {}),
+                Modifier.width(IntrinsicSize.Max).widthIn(min = 360.dp).clickable(interactionSource = noRipple, indication = null, onClick = {}),
             ) {
                 OptionTitleWindow(menu.title, m, Modifier.fillMaxWidth())
                 Spacer(Modifier.height(m.u * 4))
@@ -636,10 +637,10 @@ fun LauncherMenuOverlay(menu: LauncherMenu, m: GbaTextMetrics, onDismiss: () -> 
                                 column.forEachIndexed { r, item ->
                                     val i = c * rows + r
                                     OptionLine(
-                                        item.label, null, selected = i == menu.cursor, m,
+                                        item.label, null, selected = i == menu.cursor, om,
                                         height = rowHeight,
                                         labelWeight = 1f,
-                                        divider = r < column.lastIndex,
+                                        divider = r < column.lastIndex, stripe = r % 2 == 1,
                                         labelIcon = if (item.pixel != null || item.icon != null) {
                                             {
                                                 val tint = if (item.danger) OptionColors.value else OptionColors.label

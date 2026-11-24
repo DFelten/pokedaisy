@@ -245,7 +245,7 @@ fun FeatureTipCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // The helper: the PokeDaisy flower, two lines and a bit tall.
-            PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight * 2.4f))
+            AppLogo(Modifier.size(m.lineHeight * 2.4f))
             Spacer(Modifier.width(u * 8))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -311,5 +311,52 @@ private fun KeyHint(key: String, what: String, m: GbaTextMetrics) {
         ) { GbaText(key, OptionColors.value, OptionColors.valueShadow, m) }
         Spacer(Modifier.width(u * 4))
         GbaText(what, OptionColors.label, OptionColors.labelShadow, m)
+    }
+}
+
+/** The card's words: NO SPOILERS for TRY IT, SHOW EVERYTHING for NO THANKS. */
+fun spoilerAskText(): FeatureTip = FeatureTip(
+    tr("PLAY WITHOUT SPOILERS?"),
+    tr("The companion can show only what the game has shown you: POKéMON you've met, moves you've learned, the boss ahead. Change it any time in SETTINGS > SPOILERS."),
+    tk("NO SPOILERS"),
+)
+
+/**
+ * SPOILERS' question ([com.pokedaisy.app.companion.Spoilers.asking]), sliding in from the top like [FeatureTipHost]: NO
+ * SPOILERS hides, SHOW EVERYTHING doesn't, the bar running out leaves it unanswered. [onCompanion]: this host is the
+ * companion's (a page it opened asks there, even over the game on one screen).
+ */
+@Composable
+fun SpoilerAskHost(
+    active: Boolean,
+    roomy: Boolean,
+    onCompanion: Boolean,
+    modifier: Modifier = Modifier,
+    cardModifier: Modifier = Modifier,
+    maxWidth: Dp = 760.dp,
+) {
+    val spoilers = com.pokedaisy.app.companion.Spoilers
+    // Over a page the companion opened: only the companion's host; otherwise where the tips go.
+    val asking = spoilers.asking && if (spoilers.askingOnCompanion) onCompanion else active
+    val left = remember { Animatable(1f) }
+    LaunchedEffect(asking) {
+        if (!asking) return@LaunchedEffect
+        left.snapTo(1f)
+        left.animateTo(0f, tween(TipScheduler.SHOW_MS.toInt(), easing = LinearEasing))
+        spoilers.answer(null)
+    }
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        AnimatedVisibility(
+            visible = asking,
+            enter = slideInVertically(tween(260)) { -it } + fadeIn(tween(260)),
+            exit = slideOutVertically(tween(220)) { -it } + fadeOut(tween(220)),
+        ) {
+            FeatureTipCard(
+                spoilerAskText(), cardModifier, left = left.value, roomy = roomy, maxWidth = maxWidth,
+                badge = tk("NEW"), noLabel = tk("SHOW EVERYTHING"),
+                onTry = { spoilers.answer(true) },
+                onNoThanks = { spoilers.answer(false) },
+            )
+        }
     }
 }

@@ -1,0 +1,88 @@
+# yellow_de_boxes: the save from scripts/gen1_save_from_fixture.py fixtures/yellow --yellow (six Pokemon, BOX 1 never changed), booted
+# as native-capture/boot/yellow_de.txt does, then the PC's moves by the game's own functions (gbcallat, see the fixture's README).
+wait 400
+press START
+wait 200
+press START
+wait 120
+press A
+wait 90
+press A
+wait 90
+press A
+wait 90
+press A
+wait 300
+press A
+wait 200
+press A
+wait 300
+gbpeek 1 d167 8
+gbpeek 1 d5a4 1
+gbpeek 1 da84 8
+gbcallat 0248 3a5e 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 61
+gbpoke 1 cf99 01
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3919 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 61
+gbpoke 1 cf99 00
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3a5e 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 84
+gbpoke 1 cf99 01
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3919 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 84
+gbpoke 1 cf99 00
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbpeek 1 d167 8
+gbpeek 1 d5a4 1
+gbpeek 1 da84 8
+gbcallat 0248 3e89 0 1c 7d44
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3f59 0 0 4877
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3e89 0 1c 7bf5
+gbpoke 0 cc26 07
+wait 200
+gbcallat 0248 3e9c 0 0 0
+wait 20
+gbpoke 1 d370 77 48
+gbpeek 1 d167 8
+gbpeek 1 d5a4 1
+gbpeek 1 da84 8
+gbcallat 0248 3a5e 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 13
+gbpoke 1 cf99 01
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbcallat 0248 3919 0 0 0
+gbpoke 1 cf96 1
+gbpoke 1 cf95 13
+gbpoke 1 cf99 00
+wait 4
+gbcallat 0248 3e9c 0 0 0
+wait 4
+gbpeek 1 d167 8
+gbpeek 1 d5a4 1
+gbpeek 1 da84 8
+gbpeek 1 d370 2

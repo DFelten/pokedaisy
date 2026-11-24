@@ -20,11 +20,11 @@ class LibraryProjection<T>(
     private val byView = LibraryView.entries.associateWith {
         preferences.filtered(library, it, id, platforms::get, categories::get)
     }
-    val shown = LibraryView.entries.filter { view ->
+    val shown = preferences.orderViews(LibraryView.entries.filter { view ->
         !view.byKind || available.any {
             if (view == LibraryView.HACKS) categories[it] == RomCategory.HACK else platforms[it] == view.platform
         }
-    }
+    })
     val counts = byView.mapValues { it.value.size }
     fun open(want: LibraryView) = want.takeIf { it in shown } ?: LibraryView.ALL
     fun games(want: LibraryView) = byView[open(want)].orEmpty()

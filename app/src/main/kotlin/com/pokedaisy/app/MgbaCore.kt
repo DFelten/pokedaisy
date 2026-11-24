@@ -271,6 +271,9 @@ object MgbaCore {
      * told. False on DSperate. Emu thread. */
     external fun pkNdsCodeWrite(addr: Long, bytes: ByteArray): Boolean
 
+    /** NO HMS NEEDED on Platinum / HeartGold / SoulSilver (melonDS): the party move checks' hooks in or out. Emu thread. */
+    external fun pkNdsHmFree(on: Boolean)
+
     /** A DS game's screens fading by master brightness (towards black or white): the factor 0-16, the top screen's in
      * bits 0-7, the touch screen's in 8-15; 0 = no fade. Emu thread, after [pkRunFrame]. */
     external fun pkNdsFade(): Int
@@ -331,12 +334,22 @@ object MgbaCore {
     /** How job [seq] did: 1 ran, 0 still waiting, -1 never will (the field changed under it). Emu thread. */
     external fun pkNdsActionStatus(seq: Int): Int
 
+    /** Gen 5's USE effect for the next NDS_ACTION_ITEM (companion/data/DsBag.kt's Effect: heal, heal divisor, revive,
+     * status bits, PP, all moves). Emu thread. */
+    external fun pkNdsItemEffect(heal: Int, healDiv: Int, revive: Int, statusMask: Int, pp: Int, ppAll: Int)
+
     /** PC anywhere: the Pokémon Storage System's menu, as a Pokémon Center PC opens it. */
     const val NDS_ACTION_PC = 1
     /** FLY's checks: [1] = the game's FLY error (0 = may fly from here), [1 + n] = fly spot n unlocked. */
     const val NDS_ACTION_FLY_CHECK = 2
+    /** The bag on a party Pokémon (Gen 4, companion/data/DsBag.kt): mode | slot << 8 | move << 16, the item, the
+     * Pokémon's personality, the party's count; result DsBag.RESULT = the game's answer, the next the item held before. */
+    const val NDS_ACTION_ITEM = 4
     /** FLY (slot, map header, x, z): the game's own cut-in, flight and landing. */
     const val NDS_ACTION_FLY = 3
+    /** TRADE EVOLUTIONS (companion/data/DsTradeEvo.kt): CHECK / START | slot << 8, -, the personality, the party's count;
+     * result DsTradeEvo.RESULT = the helper's answer, the six after it each slot's target (CHECK). */
+    const val NDS_ACTION_TRADE_EVO = 5
 
     // --- cheats (pk_cheats.c, see cheats/Cheats.kt) ---
 

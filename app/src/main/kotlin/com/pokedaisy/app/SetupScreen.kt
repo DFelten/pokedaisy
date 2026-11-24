@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pokedaisy.app.companion.KeyCapture
+import com.pokedaisy.app.companion.i18n.tk
 import com.pokedaisy.app.companion.i18n.tr
 import com.pokedaisy.app.companion.ui.AppBackdrop
 import com.pokedaisy.app.companion.ui.GbaText
@@ -35,7 +36,7 @@ import com.pokedaisy.app.companion.ui.OptionTextField
 import com.pokedaisy.app.companion.ui.OptionTitleWindow
 
 /**
- * First-time setup, on the library's screen: link ROMs folders, pick where saves
+ * First-time setup, on the library's screen: bring a settings file from before (a reinstall, another device), link ROMs folders, pick where saves
  * go, check the buttons, sign in to ScreenScraper (game media), add a cover key - each one
  * skippable, each one also in Settings.
  * [LibraryActivity] owns the folder pickers and background work and feeds this.
@@ -44,11 +45,11 @@ internal class SetupState(
     entered: (SetupState, Step) -> Unit = { _, _ -> },
     exited: (SetupState, com.pokedaisy.app.companion.SetupFlow.Exit) -> Unit = { _, _ -> },
 ) {
-    enum class Step { ROMS, SAVES, BUTTONS, MEDIA, COVERS }
+    enum class Step { RESTORE, ROMS, SAVES, BUTTONS, MEDIA, COVERS }
 
     /** The steps shown: GAME MEDIA only while ScreenScraper is on. */
     val flow = com.pokedaisy.app.companion.SetupFlow(
-        Step.entries.filter { it != Step.MEDIA || ScreenScraperClient.enabled },
+        Step.entries.filter { (it != Step.MEDIA || ScreenScraperClient.enabled) && (it != Step.RESTORE || com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus) },
         entered = { entered(this, it) }, exited = { exited(this, it) })
     var step: Step
         get() = flow.step
@@ -70,6 +71,10 @@ internal class SetupState(
     var toCheck by mutableIntStateOf(0)
     /** Names of the supported games in [romsFolders]; null until a scan finishes. */
     var found by mutableStateOf<List<String>?>(null)
+
+    /** SETTINGS FILE: an import running, and what the last one said when it couldn't (a good one restarts the app). */
+    var restoreBusy by mutableStateOf(false)
+    var restoreMessage by mutableStateOf<String?>(null)
 
     /** Null = the app's own saves folder. */
     var savesDir by mutableStateOf<String?>(null)
@@ -107,9 +112,12 @@ internal fun SetupScreen(
     buttonRequest: (GbaControls.Btn) -> KeyCapture.Request = { KeyCapture.Request(it.title, chord = false, onDone = {}) },
     onScreenScraperSignIn: () -> Unit = {},
     onScreenScraperSignOut: () -> Unit = {},
+    /** SETTINGS FILE: pick a settings file to import. */
+    onImportSettings: () -> Unit = {},
 ) {
     val flow = s.flow
     val skipping = when (s.step) {
+        SetupState.Step.RESTORE -> true
         SetupState.Step.ROMS -> s.romsFolders.isEmpty()
         SetupState.Step.SAVES, SetupState.Step.BUTTONS -> false
         SetupState.Step.MEDIA -> s.ssLogin.signedInAs == null
@@ -118,6 +126,7 @@ internal fun SetupScreen(
     com.pokedaisy.app.companion.ui.SetupFrame(flow.index, flow.steps.size, flow.canGoBack, flow.busy,
         last = flow.last, skipping = skipping, m, onBack, onNext) {
         when (s.step) {
+            SetupState.Step.RESTORE -> RestoreStep(s, m, small, onImportSettings)
             SetupState.Step.ROMS -> com.pokedaisy.app.companion.ui.SetupRomsPage(
                 com.pokedaisy.app.companion.ui.SetupRomsModel(s.romsFolders, s.found, s.scanning, s.checked, s.toCheck, s.hasAccess),
                 m, small, onChooseRoms, onRemoveRoms)
@@ -147,6 +156,22 @@ private fun Para(text: String, small: GbaTextMetrics, muted: Boolean = false) {
         if (muted) OptionColors.mutedShadow else OptionColors.labelShadow,
         small, maxLines = Int.MAX_VALUE, modifier = Modifier.padding(bottom = small.u * 4),
     )
+}
+
+/** SETTINGS FILE: a file exported before puts every setting back at once (the app then starts again, set up). */
+@Composable
+private fun RestoreStep(s: SetupState, m: GbaTextMetrics, small: GbaTextMetrics, onImport: () -> Unit) {
+    Heading(tr("SETTINGS FILE (OPTIONAL)"), m)
+    Para(tr("Coming from another device, or putting the app back? Import the settings file you exported: every setting comes back and setup is done."), small)
+    Para(tr("No file? Skip this. You can export one any time in SETTINGS > SETTINGS FILE."), small, muted = true)
+    Row {
+        OptionButton(if (s.restoreBusy) tr("IMPORTING…") else tk("IMPORT SETTINGS FILE"), m, emphasis = true,
+            enabled = !s.restoreBusy, onClick = onImport)
+    }
+    s.restoreMessage?.let {
+        Spacer(Modifier.height(m.u * 4))
+        GbaText(it, OptionColors.value, OptionColors.valueShadow, small, maxLines = Int.MAX_VALUE)
+    }
 }
 
 @Composable

@@ -288,6 +288,350 @@ const Gen5Fns WHITE2 = {
     },
 };
 
+// The bag on a party Pokémon (stub/pk_nds_item.c): the party menu's functions, the map's label for the friendship an
+// item gives (Pokemon_ApplyItemEffects' location), and the save's party / bag.
+struct ItemFns {
+    u32 saveDataGetBag;   // (saveData)
+    u32 mapLabel;         // (mapHeaderID): Platinum's MapHeader_GetMapLabelTextID, HG / SS' MapHeader_GetMapSec
+    PkNdsItem item;       // the helper's functions and constants; the request filled in per job
+    int offLocation;      // FieldSystem.location (its mapHeaderID first)
+    // Each function's first word, checked before a job: callSet 2 is the German and French HeartGold too, and a cart
+    // whose code isn't where this table says gets no job rather than a call into something else.
+    struct { u32 addr, word; } code[11];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1), the party menu's own calls (party_menu/main.c, callbacks.c, context_menu.c).
+const ItemFns PLATINUM_ITEMS = {
+    0x0207D991,   // SaveData_GetBag
+    0x0203A139,   // MapHeader_GetMapLabelTextID
+    {
+        0x0207A0FD,   // Party_GetPokemonBySlotIndex
+        0x02074471,   // Pokemon_GetValue
+        0x02074B31,   // Pokemon_SetValue
+        0x02096421,   // Pokemon_CheckItemEffects
+        0x02096955,   // Pokemon_ApplyItemEffects
+        0x0207D60D,   // Bag_TryRemoveItem
+        0x0207D571,   // Bag_TryAddItem
+        0x0207D55D,   // Bag_CanFitItem
+        0x02077929,   // Pokemon_SetArceusForm
+        0, 6, 76,     // MON_DATA_PERSONALITY, _HELD_ITEM, _IS_EGG
+        137, 148,     // Mail
+        112,          // the Griseous Orb: the party menu changes Giratina's form with it (and not in the Distortion World)
+        11,           // HEAP_ID_FIELD2
+    },
+    0x1C,
+    {
+        {0x0207D990, 0x21034B01}, {0x0203A138, 0xF7FFB508}, {0x0207A0FC, 0x1C05B538},
+        {0x02074470, 0x1C05B570}, {0x02074B30, 0x1C05B570}, {0x02096420, 0xB086B5F8},
+        {0x02096954, 0xB09CB5F8}, {0x0207D60C, 0xB083B5F0}, {0x0207D570, 0xB083B5F0},
+        {0x0207D55C, 0xF7FFB508}, {0x02077928, 0x47184B00},
+    },
+};
+
+// pret/pokeheartgold's xMAP (built in its Docker image: the US HeartGold byte for byte), its party menu's calls
+// (party_menu.c, party_menu_items.c, party_menu_list_items.c); SoulSilver's ARM9 is the same.
+const ItemFns HEARTGOLD_ITEMS = {
+    0x0207879D,   // Save_Bag_Get
+    0x0203B36D,   // MapHeader_GetMapSec (PartyMenu_GetCurrentMapSec)
+    {
+        0x02074645,   // Party_GetMonByIndex
+        0x0206E541,   // GetMonData
+        0x0206EC41,   // SetMonData
+        0x0208FD9D,   // CanUseItemOnPokemon
+        0x020902D1,   // UseItemOnPokemon
+        0x02078435,   // Bag_TakeItem
+        0x02078399,   // Bag_AddItem
+        0x02078385,   // Bag_HasSpaceForItem
+        0x02071BC9,   // Pokemon_UpdateArceusForm
+        0, 6, 76,
+        137, 148,
+        112,
+        11,
+    },
+    0x20,
+    {
+        {0x0207879C, 0x21034B01}, {0x0203B36C, 0xF7FFB508}, {0x02074644, 0x1C05B538},
+        {0x0206E540, 0x1C05B570}, {0x0206EC40, 0x1C05B570}, {0x0208FD9C, 0xB086B5F8},
+        {0x020902D0, 0xB09DB5F0}, {0x02078434, 0xB083B5F0}, {0x02078398, 0xB083B5F0},
+        {0x02078384, 0xF7FFB508}, {0x02071BC8, 0x47184B00},
+    },
+};
+
+const ItemFns* itemFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 1: return &PLATINUM_ITEMS;
+    case 2: return &HEARTGOLD_ITEMS;
+    default: return nullptr;
+    }
+}
+
+// Gen 5's bag on a party Pokémon (stub/pk_nds_item5.c): no decomp, so traced in the running game (nds_dump's `watch` on
+// the Pokémon's record and the bag's slot while the game's own bag used a Potion on the player's Black 2 save), each then
+// called headless. The save image (SaveControl -> backup system -> image) holds the party and the bag.
+struct ItemFns5 {
+    u32 saveControlPtr;
+    int offBackupSystem, offImage, offParty, offBag;
+    PkNdsItem5 item;
+    struct { u32 addr, word; } code[10];
+};
+
+// The MON_DATA numbers (the same in all four: Gen 4's, three lower from STATUS on), Mail, and the items GIVE / TAKE
+// leave to the game: the Griseous Orb, the Drives and the Plates (their Pokémon's form goes with them).
+#define GEN5_ITEM_PARAMS 0, 6, 76, 157, 160, 161, 58, 66, 54, 137, 148, \
+    {112, 116, 117, 118, 119, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313}, 0, 0xDC, 0, 0
+
+// Black 2 (IREO rev 0): traced on the player's save (above), each function then called headless. Its bag calls take
+// (bag, item, count) and ignore a fourth.
+const ItemFns5 BLACK2_ITEMS = {
+    0x0209A338, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {
+        0x0201CCF9,   // the getter: decrypts, reads [param], encrypts again
+        0x0201CD1D,   // the setter (by value): decrypts, writes, fixes the checksum, encrypts again
+        0x0200842D,   // the bag's remove (bag, item, count): FALSE without that many
+        0x02008269,   // its add
+        0x02008239,   // whether the add has room
+        GEN5_ITEM_PARAMS, 1,
+    },
+    {
+        {0x0201CCF8, 0x1C05B570}, {0x0201CCFC, 0x1C161C0C}, {0x0201CD1C, 0x1C05B570}, {0x0201CD20, 0x1C161C0C},
+        {0x0200842C, 0xB082B570}, {0x02008430, 0x1C0E1C05}, {0x02008268, 0xF7FFB508}, {0x0200826C, 0x2800FFEF},
+        {0x02008238, 0xF7FFB508}, {0x0200823C, 0x2800FFDD},
+    },
+};
+
+// White 2 (IRDO rev 0): Black 2's bag calls where Black 2's are, its getter / setter 0x2C later (found by Black 2's
+// code with its calls masked), its SaveControl with its statics.
+const ItemFns5 WHITE2_ITEMS = {
+    0x0209A378, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x0201CD25, 0x0201CD49, 0x0200842D, 0x02008269, 0x02008239, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x0201CD24, 0x1C05B570}, {0x0201CD28, 0x1C161C0C}, {0x0201CD48, 0x1C05B570}, {0x0201CD4C, 0x1C161C0C},
+        {0x0200842C, 0xB082B570}, {0x02008430, 0x1C0E1C05}, {0x02008268, 0xF7FFB508}, {0x0200826C, 0x2800FFEF},
+        {0x02008238, 0xF7FFB508}, {0x0200823C, 0x2800FFDD},
+    },
+};
+
+// Black (IRBO rev 0): the getter / setter found by Black 2's code, the bag calls by their shape (the field's own item
+// script commands call them, overlay 21). They take a heap for the item's data: HEAPID 1 (one the field always has;
+// 2 and 6 aren't there and hang).
+const ItemFns5 BLACK_ITEMS = {
+    0x020A7298, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x02017E1D, 0x02017E41, 0x02007F1D, 0x02007E51, 0x02007E3D, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x02017E1C, 0x1C05B570}, {0x02017E20, 0x1C161C0C}, {0x02017E40, 0x1C05B570}, {0x02017E44, 0x1C161C0C},
+        {0x02007F1C, 0xB083B5F0}, {0x02007F20, 0x1C0F1C06}, {0x02007E50, 0xB086B5F8}, {0x02007E54, 0x1C0D1C06},
+        {0x02007E3C, 0xF7FFB508}, {0x02007E40, 0x2800FFDB},
+    },
+};
+
+// White (IRAO rev 0): Black's bag calls where Black's are, its getter / setter 0x1C later.
+const ItemFns5 WHITE_ITEMS = {
+    0x020A72B8, 0x10, 0x34, 0x18E00 + 8, 0x18400,
+    {0x02017E39, 0x02017E5D, 0x02007F1D, 0x02007E51, 0x02007E3D, GEN5_ITEM_PARAMS, 1},
+    {
+        {0x02017E38, 0x1C05B570}, {0x02017E3C, 0x1C161C0C}, {0x02017E5C, 0x1C05B570}, {0x02017E60, 0x1C161C0C},
+        {0x02007F1C, 0xB083B5F0}, {0x02007F20, 0x1C0F1C06}, {0x02007E50, 0xB086B5F8}, {0x02007E54, 0x1C0D1C06},
+        {0x02007E3C, 0xF7FFB508}, {0x02007E40, 0x2800FFDB},
+    },
+};
+
+const ItemFns5* itemFns5For(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 3: return &BLACK_ITEMS;
+    case 4: return &WHITE_ITEMS;
+    case 5: return &BLACK2_ITEMS;
+    case 6: return &WHITE2_ITEMS;
+    default: return nullptr;
+    }
+}
+
+// TRADE EVOLUTIONS (stub/pk_nds_evo.c): the game's own evolution as its link trade runs it, in a field task of ours
+// that leaves and restores the map as the start menu's evolution does (StartMenu_EvolveInit / StartMenu_Evolve, HG's
+// Task_StartMenu_Evolution / _WaitEvolution: their heap, the music stopped before and the map's put back after).
+struct EvoFns {
+    u32 getParty;   // (saveData)
+    PkNdsEvo evo;   // the helper's functions and constants; the request filled in per job
+    struct { u32 addr, word; } code[21];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1); the heap id, the music and FieldSystem.location as StartMenu_Evolve uses them.
+const EvoFns PLATINUM_EVO = {
+    0x0207A269,   // SaveData_GetParty
+    {
+        0x02050905,   // FieldSystem_CreateTask
+        0x02055975,   // FieldTransition_FadeOutAndFinishMap
+        0x020559CD,   // FieldTransition_StartMapAndFadeIn
+        0x02017FC9, 0x0201807D, 3, 0x49, 0x30000,   // Heap_Create / Heap_Destroy: HEAP_ID_EVOLUTION in HEAP_ID_APPLICATION
+        0x0207AE69, 0x0207B0D1, 0x0207B0E1,         // Evolution_Begin / _IsDone / _Free
+        0x0207A0FD,   // Party_GetPokemonBySlotIndex
+        0x02074471,   // Pokemon_GetValue
+        0x02076B95,   // Pokemon_GetEvolutionTargetSpecies
+        0x02025E45, 0x0208C325, 0x02027561, 0x0207D991, 0x0202CD89, 0x02056B25,   // SaveData_GetOptions,
+        // PokemonSummaryScreen_ShowContestData, SaveData_GetPokedex / _GetBag / _GetGameRecords / _GetPoketch
+        0x0200569D, 0x020055D1, 0x475, 0x02004235, 0x020556A1,   // Sound_StopWaveOutAndSequences, Sound_StopBGM(SEQ_SHINKA),
+        // Sound_SetScene, FieldBGM_PlayEffectiveForMapHeader
+        0x1C,         // FieldSystem.location
+        0, 6, 76,     // MON_DATA_PERSONALITY, _HELD_ITEM, _IS_EGG
+        1, 4,         // EVO_CLASS_BY_TRADE; the trade's flags
+    },
+    {
+        {0x0207A268, 0x21024B01}, {0x02050904, 0x1C05B570}, {0x02055974, 0x49024B01}, {0x020559CC, 0x49024B01},
+        {0x02017FC8, 0x2304B508}, {0x0201807C, 0x1C04B510}, {0x0207AE68, 0xB089B5F0}, {0x0207B0D0, 0x78003067},
+        {0x0207B0E0, 0x1C04B510}, {0x0207A0FC, 0x1C05B538}, {0x02074470, 0x1C05B570}, {0x02076B94, 0xB091B5F0},
+        {0x02025E44, 0x21014B01}, {0x0208C324, 0xF7C4B508}, {0x02027560, 0x21074B01}, {0x0207D990, 0x21034B01},
+        {0x0202CD88, 0x21144B01}, {0x02056B24, 0x21054B01}, {0x0200569C, 0x2010B538}, {0x020055D0, 0x1C04B510},
+        {0x020556A0, 0x1C05B570},
+    },
+};
+
+// pret/pokeheartgold's xMAP (US; SoulSilver's ARM9 is the same, every word below checked in both).
+const EvoFns HEARTGOLD_EVO = {
+    0x02074905,   // SaveArray_Party_Get
+    {
+        0x020504F1,   // FieldSystem_CreateTask
+        0x020553B1,   // sub_020553B0: fade out, then CallTask_LeaveOverworld
+        0x02055409,   // sub_02055408: CallTask_RestoreOverworld, then the map name and CallTask_FadeFromBlack
+        0x0201A911, 0x0201A9C5, 3, 0x47, 0x30000,   // Heap_Create / Heap_Destroy: HEAP_ID_EVOLUTION in HEAP_ID_3
+        0x02075A7D, 0x02075D3D, 0x02075D4D,         // sub_02075A7C (the evolution), sub_02075D3C (done), sub_02075D4C (free)
+        0x02074645,   // Party_GetMonByIndex
+        0x0206E541,   // GetMonData
+        0x02070E35,   // GetMonEvolution
+        0x02028EA9, 0x02088289, 0x0202A635, 0x0207879D, 0x0202CF55, 0,   // Save_PlayerData_GetOptionsAddr, sub_02088288,
+        // Save_Pokedex_Get, Save_Bag_Get, Save_GameStats_Get; no Poketch
+        0x02005FA1, 0x02005EB5, 0x3F3, 0x02004AD9, 0x02055165,   // Sound_Stop, StopBGM(SEQ_GS_SHINKA), Sound_SetScene,
+        // FieldBGM_PlayEffectiveForMapHeader
+        0x20,
+        0, 6, 76,
+        1, 4,         // EVOCTX_TRADE; the trade's flags
+    },
+    {
+        {0x02074904, 0x21024B01}, {0x020504F0, 0x1C05B570}, {0x020553B0, 0x49024B01}, {0x02055408, 0x49024B01},
+        {0x0201A910, 0x2304B508}, {0x0201A9C4, 0x1C04B510}, {0x02075A7C, 0xB089B5F0}, {0x02075D3C, 0x78003067},
+        {0x02075D4C, 0x1C04B510}, {0x02074644, 0x1C05B538}, {0x0206E540, 0x1C05B570}, {0x02070E34, 0xB091B5F0},
+        {0x02028EA8, 0x21014B01}, {0x02088288, 0x47702001}, {0x0202A634, 0x21064B01}, {0x0207879C, 0x21034B01},
+        {0x0202CF54, 0x21104B01}, {0x02005FA0, 0x2010B538}, {0x02005EB4, 0x1C05B538}, {0x02004AD8, 0x1C05B538},
+        {0x02055164, 0x1C05B570},
+    },
+};
+
+const EvoFns* evoFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    switch (game->callSet) {
+    case 1: return &PLATINUM_EVO;
+    case 2: return &HEARTGOLD_EVO;
+    default: return nullptr;
+    }
+}
+
+// TRADE EVOLUTIONS on Gen 5 (stub/pk_nds_evo5.c): the evolution scene's proc as the link trade starts it (its param's
+// method class 1, flags 1 / 0), from a GMEVENT of ours that leaves and comes back to the field as the bag's evolution
+// does. No decomp: the functions from Ghidra on the carts' own code (the trade's and the bag's callers of the scene).
+struct EvoFns5 {
+    PkNdsEvo5 evo;   // the helper's functions and constants; the request filled in per job
+    struct { u32 addr, word; } code[10];
+};
+
+const EvoFns5 BLACK2_EVO = {
+    {
+        0x02016CB5, 0x02016AED, 0x02016D69,   // GMEVENT_Create, GameSystem_SetEvent, the child event call
+        0x021B870D, 0x020193A5, 0x02019495, 0x021B878D,   // fade out, end the field map, start it, fade in
+        0x02016A99, 0x11C, 0x021E7D9C,        // the proc call; the evolution scene's overlay 284 and proc table
+        0x0201CCF9, 0x02020789, 4,            // the Pokémon getter, the evolution check; the events' heap
+        0x1C, 0x194, 0x20, 0xC,               // GameSystem.gameData, GameData's party, GameSystem's field map / proc
+        0, 0x4C,                              // personality, is egg
+    },
+    {
+        {0x02016CB4, 0xB082B5F8}, {0x02016AEC, 0x47706181}, {0x02016D68, 0x69006008}, {0x021B870C, 0xB081B518},
+        {0x020193A4, 0x4A0AB5F8}, {0x02019494, 0x4A0AB5F8}, {0x021B878C, 0xB081B518}, {0x02016A98, 0x6880B508},
+        {0x0201CCF8, 0x1C05B570}, {0x02020788, 0xB093B5F0},
+    },
+};
+
+// White 2: Black 2's functions found again by their code (the field's 0x38 higher), its scene's proc table 0x40 higher.
+const EvoFns5 WHITE2_EVO = {
+    {
+        0x02016CB5, 0x02016AED, 0x02016D69,
+        0x021B8745, 0x020193D1, 0x020194C1, 0x021B87C5,
+        0x02016A99, 0x11C, 0x021E7DDC,
+        0x0201CD25, 0x020207B5, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x02016CB4, 0xB082B5F8}, {0x02016AEC, 0x47706181}, {0x02016D68, 0x69006008}, {0x021B8744, 0xB081B518},
+        {0x020193D0, 0x4A0AB5F8}, {0x020194C0, 0x4A0AB5F8}, {0x021B87C4, 0xB081B518}, {0x02016A98, 0x6880B508},
+        {0x0201CD24, 0x1C05B570}, {0x020207B4, 0xB093B5F0},
+    },
+};
+
+// Black: the same functions in Black's build (its fade out takes no fifth argument), the scene overlay 195's proc.
+const EvoFns5 BLACK_EVO = {
+    {
+        0x020122C1, 0x02012109, 0x02012375,
+        0x021BE8D5, 0x020144DD, 0x020145CD, 0x021BE92D,
+        0x020120B5, 0xC3, 0x02208C40,
+        0x02017E1D, 0x0201B2B1, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x020122C0, 0xB082B5F8}, {0x02012108, 0x47706181}, {0x02012374, 0x69006008}, {0x021BE8D4, 0x2A09B510},
+        {0x020144DC, 0x4A0AB5F8}, {0x020145CC, 0x4A0AB5F8}, {0x021BE92C, 0xB081B518}, {0x020120B4, 0x6880B508},
+        {0x02017E1C, 0x1C05B570}, {0x0201B2B0, 0xB093B5F0},
+    },
+};
+
+// White: Black's, found again by their code (the field's 0x18 higher), its proc table 0x20 higher.
+const EvoFns5 WHITE_EVO = {
+    {
+        0x020122C1, 0x02012109, 0x02012375,
+        0x021BE8ED, 0x020144F9, 0x020145E9, 0x021BE945,
+        0x020120B5, 0xC3, 0x02208C60,
+        0x02017E39, 0x0201B2CD, 4,
+        0x1C, 0x194, 0x20, 0xC,
+        0, 0x4C,
+    },
+    {
+        {0x020122C0, 0xB082B5F8}, {0x02012108, 0x47706181}, {0x02012374, 0x69006008}, {0x021BE8EC, 0x2A09B510},
+        {0x020144F8, 0x4A0AB5F8}, {0x020145E8, 0x4A0AB5F8}, {0x021BE944, 0xB081B518}, {0x020120B4, 0x6880B508},
+        {0x02017E38, 0x1C05B570}, {0x0201B2CC, 0xB093B5F0},
+    },
+};
+
+const EvoFns5* evoFns5For(const PkNdsFieldGame* game)
+{
+    if (!game || game->gen != 5) return nullptr;
+    switch (game->callSet) {
+    case 3: return &BLACK_EVO;
+    case 4: return &WHITE_EVO;
+    case 5: return &BLACK2_EVO;
+    case 6: return &WHITE2_EVO;
+    default: return nullptr;
+    }
+}
+
+static_assert(PK_NDS_EVO_ADDR + sizeof(PK_NDS_EVO5_CODE) <= PK_NDS_EVO_ARGS, "the Gen 5 evolution helper runs into its arguments");
+static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo5) <= PK_NDS_SCRIPT_ADDR, "the Gen 5 evolution helper's arguments run into the scripts");
+
+static_assert(PK_NDS_EVO_ADDR >= PK_NDS_JOB + sizeof(PkNdsJob), "the evolution helper runs into the job block");
+static_assert(PK_NDS_EVO_ADDR + sizeof(PK_NDS_EVO_CODE) <= PK_NDS_EVO_ARGS, "the evolution helper runs into its arguments");
+static_assert(PK_NDS_EVO_ARGS + sizeof(PkNdsEvo) <= PK_NDS_SCRIPT_ADDR, "the evolution helper's arguments run into the scripts");
+
+// The helpers' code ends before their arguments, and the arguments before the ITCM does.
+static_assert(sizeof(PK_NDS_ITEM_CODE) <= PK_NDS_ITEM_ARGS - PK_NDS_ITEM_ADDR, "Gen 4's bag helper runs into its arguments");
+static_assert(sizeof(PK_NDS_ITEM5_CODE) <= PK_NDS_INSTANT_TEXT_ADDR - PK_NDS_ITEM5_ADDR, "Gen 5's bag helper runs into INSTANT TEXT's routine");
+// The rest of the code against pk_nds_call_abi.h's map (its ranges are checked there).
+static_assert(sizeof(PK_NDS_HOOK_CODE) <= PK_NDS_JOB - PK_NDS_HOOK_ADDR, "the hook runs into the job block");
+static_assert(sizeof(PK_NDS_SKILL_CODE) <= PK_NDS_SKILL_ADDR - PK_NDS_HELPER_ADDR, "Gen 5's field-skill helper runs into its arguments");
+static_assert(sizeof(PK_NDS_PLATINUM_PC) <= PK_NDS_SCRIPT_MAX && sizeof(PK_NDS_HEARTGOLD_PC) <= PK_NDS_SCRIPT_MAX, "a script runs into the scratch");
+static_assert(PK_NDS_ITEM_ARGS + sizeof(PkNdsItem5) <= PK_NDS_HM_ADDR && PK_NDS_ITEM_ARGS + sizeof(PkNdsItem) <= PK_NDS_HM_ADDR,
+              "the bag helpers' arguments run into NO HMS NEEDED's helper");
+
 struct Pending {
     int seq;
     uint32_t parent;   // the field map's ApplicationManager the hook sits in (Gen 5: the GameSystem)
@@ -297,6 +641,7 @@ struct Pending {
 };
 
 int nextSeq = 1;
+PkNdsItem5Effect item5Effect = {};
 Pending pending = {};
 int lastDone = 0, lastFailed = 0;
 uint32_t lastResults[PK_NDS_MAX_RESULTS];
@@ -535,6 +880,185 @@ void scriptJob(Ops& o, const CallFns& f, u32 fs, const PkNdsFieldGame& g)
 
 }   // namespace
 
+// NO HMS NEEDED (stub/pk_nds_hm.c): the game's two party move checks jump into the helper at the top of the ITCM.
+// Each check's routine starts on a word (the jump's ARM half needs it): every one below does. Each
+// hook is the routine's first 16 bytes made a Thumb `bx pc; nop` into ARM `mov r3, #which; ldr pc, [pc, #-4]` and the
+// helper's address; put in only where the routine's own bytes are, taken out only where ours are.
+struct HmSite { u32 addr; u32 which; u32 orig[4]; };
+struct HmFns {
+    PkNdsHm hm;
+    HmSite sites[2];
+    struct { u32 addr, word; } code[7];
+};
+
+// pret/pokeplatinum's xMAP (US rev 1): Party_HasMonWithMove, ScrCmd_FindPartySlotWithMove and what they call.
+const HmFns PLATINUM_HM = {
+    {
+        0x0207A0F9, 0x0207A0FD, 0x02074471, 0x0207A269,   // Party_GetCurrentCount, _GetPokemonBySlotIndex, Pokemon_GetValue,
+        // SaveData_GetParty
+        0x0203E839, 0x0203F119, 0x0203F151,               // ScriptContext_ReadHalfWord, FieldSystem_GetVarPointer / _TryGetVar
+        0x80, 0x0C, 76, 54, 0xFF, 0,                      // ScriptContext.fieldSystem, FieldSystem.saveData; IS_EGG, MOVE1
+        {15, 19, 57, 70, 127, 249, 431, 432, 0},          // CUT, FLY, SURF, STRENGTH, WATERFALL, ROCK SMASH, ROCK CLIMB, DEFOG
+    },
+    {
+        {0x020549A0, PK_NDS_HM_HAS_MOVE, {0x9000B5F8, 0xF0251C0D, 0x1C07FBA7, 0x2F002600}},
+        {0x0204D2D8, PK_NDS_HM_SCRIPT, {0xB082B5F8, 0x1C211C04, 0x68093180, 0xF7F19101}},
+    },
+    {
+        {0x0207A0F8, 0x47706840}, {0x0207A0FC, 0x1C05B538}, {0x02074470, 0x1C05B570}, {0x0207A268, 0x21024B01},
+        {0x0203E838, 0x1C4B6881}, {0x0203F118, 0x1C05B538}, {0x0203F150, 0x1C0CB510},
+    },
+};
+
+// pret/pokeheartgold's xMAP (US; SoulSilver's ARM9 is the same): GetIdxOfFirstPartyMonWithMove, ScrCmd_GetPartySlotWithMove.
+const HmFns HEARTGOLD_HM = {
+    {
+        0x02074641, 0x02074645, 0x0206E541, 0x02074905,   // Party_GetCount, Party_GetMonByIndex, GetMonData, SaveArray_Party_Get
+        0x0203FE2D, 0x02040375, 0x020403AD,               // ScriptReadHalfword, GetVarPointer, FieldSystem_VarGet
+        0x80, 0x0C, 76, 54, 0xFF, 0,
+        {15, 19, 57, 70, 127, 249, 250, 431, 0},          // CUT, FLY, SURF, STRENGTH, WATERFALL, ROCK SMASH, WHIRLPOOL, ROCK CLIMB
+    },
+    {
+        {0x020542E8, PK_NDS_HM_HAS_MOVE, {0x9000B5F8, 0xF0201C0D, 0x1C07F9A7, 0x2F002600}},
+        {0x0204D3CC, PK_NDS_HM_SCRIPT, {0xB082B5F8, 0x1C211C04, 0x68093180, 0xF7F29101}},
+    },
+    {
+        {0x02074640, 0x47706840}, {0x02074644, 0x1C05B538}, {0x0206E540, 0x1C05B570}, {0x02074904, 0x21024B01},
+        {0x0203FE2C, 0x1C4B6881}, {0x02040374, 0x1C05B538}, {0x020403AC, 0x1C0CB510},
+    },
+};
+
+// Black 2 (no decomp; Ghidra on the cart's own code): the field's (gameData, move) check (Surf, Waterfall from the A
+// press) and the script command that writes the slot knowing a move (6: nobody), command 44 of the field scripts' table.
+#define GEN5_HMS {15, 19, 57, 70, 127, 291, 0}   // CUT, FLY, SURF, STRENGTH, WATERFALL, DIVE
+const HmFns BLACK2_HM = {
+    {
+        0x0201FDF9, 0x0201FF09, 0x0201CCF9, 0x0201735D,   // the party's count, its Pokemon, the getter, the game data's party
+        0x02155175, 0x021548E9, 0x02154911,               // the work's game data, the next variable's pointer, the next value
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x02182F14, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6941C0D, 0x9000FA1F, 0xFF6AF69C}},
+        {0x02156860, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFC84F7FE, 0xFD76F6C0}},
+    },
+    {
+        {0x02155174, 0x68806A00}, {0x0201735C, 0x00892165}, {0x021548E8, 0x1C0EB570}, {0x02154910, 0x1C0EB570},
+        {0x0201FDF8, 0x47706840}, {0x0201FF08, 0x300822DC}, {0x0201CCF8, 0x1C05B570},
+    },
+};
+
+// White 2: Black 2's, found again by their code.
+const HmFns WHITE2_HM = {
+    {
+        0x0201FE25, 0x0201FF35, 0x0201CD25, 0x0201735D,
+        0x021551B5, 0x02154929, 0x02154951,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x02182F54, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6941C0D, 0x9000F9FF, 0xFF60F69C}},
+        {0x021568A0, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFC84F7FE, 0xFD56F6C0}},
+    },
+    {
+        {0x021551B4, 0x68806A00}, {0x0201735C, 0x00892165}, {0x02154928, 0x1C0EB570}, {0x02154950, 0x1C0EB570},
+        {0x0201FE24, 0x47706840}, {0x0201FF34, 0x300822DC}, {0x0201CD24, 0x1C05B570},
+    },
+};
+
+// Black and White: Black 2's, found again by their code (the same calls in the same order).
+const HmFns BLACK_HM = {
+    {
+        0x0201AA19, 0x0201AB29, 0x02017E1D, 0x02012935,
+        0x0215A5E5, 0x02159AE9, 0x02159B11,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x0218B630, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6871C0D, 0x9000F97D, 0xF9ECF68F}},
+        {0x0215BAF4, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFD72F7FE, 0xFF18F6B6}},
+    },
+    {
+        {0x0215A5E4, 0x68806A00}, {0x02012934, 0x00892165}, {0x02159AE8, 0x1C0EB570}, {0x02159B10, 0x1C0EB570},
+        {0x0201AA18, 0x47706840}, {0x0201AB28, 0x300822DC}, {0x02017E1C, 0x1C05B570},
+    },
+};
+
+const HmFns WHITE_HM = {
+    {
+        0x0201AA35, 0x0201AB45, 0x02017E39, 0x02012935,
+        0x0215A605, 0x02159B09, 0x02159B31,
+        0, 0, 76, 54, 6, 1,
+        GEN5_HMS,
+    },
+    {
+        {0x0218B650, PK_NDS_HM_HAS_MOVE, {0xB082B5F8, 0xF6871C0D, 0x9000F96D, 0xF9EAF68F}},
+        {0x0215BB14, PK_NDS_HM_SCRIPT, {0x1C0DB5F8, 0x1C281C04, 0xFD72F7FE, 0xFF08F6B6}},
+    },
+    {
+        {0x0215A604, 0x68806A00}, {0x02012934, 0x00892165}, {0x02159B08, 0x1C0EB570}, {0x02159B30, 0x1C0EB570},
+        {0x0201AA34, 0x47706840}, {0x0201AB44, 0x300822DC}, {0x02017E38, 0x1C05B570},
+    },
+};
+
+static const HmFns* hmFnsFor(const PkNdsFieldGame* game)
+{
+    if (!game) return nullptr;
+    if (game->gen == 5) {
+        switch (game->callSet) {
+        case 3: return &BLACK_HM;
+        case 4: return &WHITE_HM;
+        case 5: return &BLACK2_HM;
+        case 6: return &WHITE2_HM;
+        default: return nullptr;
+        }
+    }
+    switch (game->callSet) {   // Gen 4's gen is 0
+    case 1: return &PLATINUM_HM;
+    case 2: return &HEARTGOLD_HM;
+    default: return nullptr;
+    }
+}
+
+bool pk_nds_call_hm_supported(const PkNdsFieldGame* game)
+{
+    return hmFnsFor(game) != nullptr;
+}
+
+int pk_nds_call_hm_free(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, bool on, uint32_t changed[8])
+{
+    const HmFns* h = hmFnsFor(game);
+    if (!h) return 0;
+    for (const auto& c : h->code)
+        if (rd32(mem, c.addr) != c.word) return 0;
+    if (on) {
+        // the helper first, then the jumps into it
+        u8 have[sizeof(PK_NDS_HM_CODE)];
+        itcmRead(mem, PK_NDS_HM_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_HM_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_HM_ADDR, PK_NDS_HM_CODE, sizeof(have));
+        PkNdsHm args;
+        itcmRead(mem, PK_NDS_HM_ARGS, &args, sizeof(args));
+        if (memcmp(&args, &h->hm, sizeof(args))) itcmWrite(mem, PK_NDS_HM_ARGS, &h->hm, sizeof(args));
+    }
+    int n = 0;
+    for (const HmSite& site : h->sites) {
+        const u32 hook[4] = {0x46C04778u, 0xE3A03000u | site.which, 0xE51FF004u, PK_NDS_HM_ADDR};
+        u32 now[4];
+        for (int i = 0; i < 4; i++) now[i] = rd32(mem, site.addr + 4 * i);
+        const u32* from = on ? site.orig : hook;
+        const u32* to = on ? hook : site.orig;
+        if (memcmp(now, from, sizeof(now))) continue;
+        for (int i = 0; i < 4; i++) {
+            mem.write32(mem.context, site.addr + 4 * i, to[i]);
+            changed[n++] = site.addr + 4 * i;
+        }
+    }
+    return n;
+}
+
+static_assert(PK_NDS_HM_ADDR + sizeof(PK_NDS_HM_CODE) <= PK_NDS_HM_ARGS, "NO HMS NEEDED's helper runs into its arguments");
+static_assert(PK_NDS_HM_ARGS + sizeof(PkNdsHm) <= 0x02000000u, "NO HMS NEEDED's arguments run past the ITCM");
+
 bool pk_nds_call_supported(const PkNdsFieldGame* game)
 {
     return fnsFor(game) || gen5FnsFor(game);
@@ -627,13 +1151,71 @@ static int gen5Action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, co
         o.add(f.setEvent, gs, Ops::res(ev));
         return postGen5(mem, f, gs, o, true);
     }
+    case PK_NDS_ACTION_ITEM: {
+        // arg0 = mode | slot << 8 | move << 16, arg1 = the item, arg2 = the personality, arg3 = the party's count; USE's
+        // effect from pk_nds_call_item5_effect (the app's, per item)
+        const ItemFns5* it = itemFns5For(game);
+        if (!it) return 0;
+        for (const auto& c : it->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        u32 sc = rd32(mem, it->saveControlPtr);
+        u32 bs = inMain(sc) ? rd32(mem, sc + it->offBackupSystem) : 0;
+        u32 img = inMain(bs) ? rd32(mem, bs + it->offImage) : 0;
+        if (!inMain(img)) return 0;
+        PkNdsItem5 req = it->item;
+        req.party = img + it->offParty;
+        req.bag = img + it->offBag;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.moveSlot = (args[0] >> 16) & 0xFF;
+        req.item = args[1];
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        req.heal = item5Effect.heal;
+        req.healDiv = item5Effect.healDiv;
+        req.revive = item5Effect.revive;
+        req.statusMask = item5Effect.statusMask;
+        req.pp = item5Effect.pp;
+        req.ppAll = item5Effect.ppAll;
+        u8 have[sizeof(PK_NDS_ITEM5_CODE)];
+        itcmRead(mem, PK_NDS_ITEM5_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_ITEM5_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_ITEM5_ADDR, PK_NDS_ITEM5_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_ITEM_ARGS, &req, sizeof(req));
+        // the helper's answer at PK_NDS_ITEM_RESULT and the item held before after it, as Gen 4's (padded to its op)
+        for (int i = 0; i < PK_NDS_ITEM_RESULT; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem5, mode));
+        o.add(PK_NDS_ITEM5_ADDR, PK_NDS_ITEM_ARGS);
+        o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem5, out));
+        return postGen5(mem, f, gs, o, false);
+    }
+    case PK_NDS_ACTION_TRADE_EVO: {
+        const EvoFns5* ev = evoFns5For(game);
+        if (!ev) return 0;
+        for (const auto& c : ev->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsEvo5 req = ev->evo;
+        req.gs = gs;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        u8 have[sizeof(PK_NDS_EVO5_CODE)];
+        itcmRead(mem, PK_NDS_EVO_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_EVO5_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_EVO_ADDR, PK_NDS_EVO5_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_EVO_ARGS, &req, sizeof(req));
+        // START sets its event itself; its answer at PK_NDS_EVO_RESULT (postGen5's own op first then), the targets after
+        bool starts = req.mode == PK_NDS_EVO_START;
+        for (int i = starts ? 1 : 0; i < PK_NDS_EVO_RESULT; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo5, mode));
+        o.add(PK_NDS_EVO_ADDR, PK_NDS_EVO_ARGS);
+        for (u32 i = 0; i < 6; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) (offsetof(PkNdsEvo5, targets) + 4 * i));
+        return postGen5(mem, f, gs, o, starts);
+    }
     default:
         return 0;
     }
 }
 
 // Scratch for structs a job hands the game (a FieldMoveContext): past the script, in the same unused ITCM.
-constexpr u32 SCRATCH = PK_NDS_SCRIPT_ADDR + PK_NDS_SCRIPT_MAX;
+constexpr u32 SCRATCH = PK_NDS_SCRATCH_ADDR;
 
 int pk_nds_call_action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, int action, const uint32_t args[4])
 {
@@ -683,6 +1265,61 @@ int pk_nds_call_action(const PkNdsCallMemory& mem, const PkNdsFieldGame* game, i
         int ev = o.add(f->journalCreateEventUsedMove, (u32) f->fieldMoveFly, args[1], (u32) f->heapField2);
         int j = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offJournalEntry);
         o.add(f->journalSaveData, Ops::res(j), Ops::res(ev), (u32) f->journalLocation);
+        break;
+    }
+    case PK_NDS_ACTION_ITEM: {
+        const ItemFns* it = itemFnsFor(game);
+        if (!it) return 0;
+        for (const auto& c : it->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsItem req = it->item;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.moveSlot = (args[0] >> 16) & 0xFF;
+        req.item = args[1];
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        u8 have[sizeof(PK_NDS_ITEM_CODE)];
+        itcmRead(mem, PK_NDS_ITEM_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_ITEM_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_ITEM_ADDR, PK_NDS_ITEM_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_ITEM_ARGS, &req, sizeof(req));
+        int sd = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offSaveData);
+        int party = o.add(f->saveDataGetParty, Ops::res(sd));
+        int bag = o.add(it->saveDataGetBag, Ops::res(sd));
+        int loc = o.add(PK_NDS_OP_LOAD32, fs, (u32) it->offLocation);
+        int hdr = o.add(PK_NDS_OP_LOAD32, Ops::res(loc), 0);
+        int label = o.add(it->mapLabel, Ops::res(hdr));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, party), Ops::res(party));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, bag), Ops::res(bag));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, location), Ops::res(label));
+        int answer = o.add(PK_NDS_ITEM_ADDR, PK_NDS_ITEM_ARGS);
+        o.add(PK_NDS_OP_LOAD32, PK_NDS_ITEM_ARGS, (u32) offsetof(PkNdsItem, out));
+        if (answer != PK_NDS_ITEM_RESULT) return 0;
+        break;
+    }
+    case PK_NDS_ACTION_TRADE_EVO: {
+        const EvoFns* ev = evoFnsFor(game);
+        if (!ev) return 0;
+        for (const auto& c : ev->code)
+            if (c.addr && rd32(mem, c.addr) != c.word) return 0;
+        PkNdsEvo req = ev->evo;
+        req.fieldSystem = fs;
+        req.mode = args[0] & 0xFF;
+        req.slot = (args[0] >> 8) & 0xFF;
+        req.personality = args[2];
+        req.count = args[3] < 6 ? args[3] : 6;
+        req.state = PK_NDS_EVO_IDLE;   // the field is free here, so none of ours is playing
+        u8 have[sizeof(PK_NDS_EVO_CODE)];
+        itcmRead(mem, PK_NDS_EVO_ADDR, have, sizeof(have));
+        if (memcmp(have, PK_NDS_EVO_CODE, sizeof(have))) itcmWrite(mem, PK_NDS_EVO_ADDR, PK_NDS_EVO_CODE, sizeof(have));
+        itcmWrite(mem, PK_NDS_EVO_ARGS, &req, sizeof(req));
+        int sd = o.add(PK_NDS_OP_LOAD32, fs, (u32) f->offSaveData);
+        int party = o.add(ev->getParty, Ops::res(sd));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo, saveData), Ops::res(sd));
+        o.add(PK_NDS_OP_STORE32, PK_NDS_EVO_ARGS, (u32) offsetof(PkNdsEvo, party), Ops::res(party));
+        int answer = o.add(PK_NDS_EVO_ADDR, PK_NDS_EVO_ARGS);
+        for (u32 i = 0; i < 6; i++) o.add(PK_NDS_OP_LOAD32, PK_NDS_EVO_ARGS, (u32) (offsetof(PkNdsEvo, targets) + 4 * i));
+        if (answer != PK_NDS_EVO_RESULT) return 0;
         break;
     }
     default:
@@ -772,4 +1409,9 @@ void pk_nds_call_itcm_write(const PkNdsCallMemory& mem, uint32_t addr, const voi
 void pk_nds_call_reset(void)
 {
     pending = {};
+}
+
+void pk_nds_call_item5_effect(const PkNdsItem5Effect& effect)
+{
+    item5Effect = effect;
 }

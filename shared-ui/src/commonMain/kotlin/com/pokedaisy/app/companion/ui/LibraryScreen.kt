@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -95,6 +97,38 @@ private fun LibraryCard(
     val here = remember { FocusRequester() }
     val hasFocus by interaction.collectIsFocusedAsState()
     val focused = hasFocus || cursor
+    // RETRO's list: one long window, a row a part of it, a line between rows (not a box per game: the user's call).
+    val segment = LocalListSegment.current
+    if (segment != null && !modernView) {
+        val u = m.u
+        val layers = OptionColors.listLayers
+        val frame = layers.sumOf { it.second }
+        Box(
+            modifier
+                .gbaFocusRing(focused, PixelRoundedShape(m.u * 2))
+                .focusProperties { upTo()?.let { up = it } }
+                .keyDrivenFocus()
+                .drawBehind {
+                    val px = u.toPx()
+                    drawLayeredBox(
+                        layers.inPx(px), if (selected || focused) OptionColors.rowSelected
+                        else if (segment.index % 2 == 1) OptionColors.style?.stripe?.let { OptionColors.tint(it) } ?: OptionColors.listFill
+                        else OptionColors.listFill,
+                        radius = 2 * px, openTop = !segment.first, openBottom = !segment.last,
+                    )
+                    if (!segment.last) {
+                        val inset = (frame + 2) * px
+                        drawRect(OptionColors.divider, Offset(inset, size.height - px), androidx.compose.ui.geometry.Size(size.width - 2 * inset, px))
+                    }
+                }
+                .combinedClickable(interactionSource = interaction, indication = null, onLongClick = onLongClick, onClick = onClick)
+                .padding(
+                    start = u * (frame + 2), end = u * (frame + 2),
+                    top = u * (if (segment.first) frame + 2 else 4), bottom = u * (if (segment.last) frame + 2 else 4),
+                ),
+        ) { content() }
+        return
+    }
     OptionListWindow(
         m,
         modifier
@@ -214,13 +248,30 @@ fun LibraryRomTile(
                 else -> null
             }
             Column {
-                // The tags sit on the cover's top-left corner, inside its frame, so they take no line of their own.
+                // On the cover, inside its frame, so nothing takes a line of its own: the favorite's star and the save's disk
+                // together on one small window in the top-left corner, the tags (NEW, BLOCKED...) along the bottom.
                 Box {
                     cover(Modifier.fillMaxWidth())
+                    if (favorite || hasSave) {
+                        val shape = if (modernView) RoundedCornerShape(m.u * 4) else PixelRoundedShape(m.u * 2)
+                        Row(
+                            Modifier.align(Alignment.TopStart).padding(m.u * 3)
+                                .background(OptionColors.titleFill.copy(alpha = 0.92f), shape)
+                                .padding(horizontal = m.u * 2.5f, vertical = m.u * 1.5f),
+                            horizontalArrangement = Arrangement.spacedBy(m.u * 2),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (favorite) LibraryFavoriteStar(small.lineHeight)
+                            if (hasSave) Icon(
+                                LibraryIcons.Save, contentDescription = tr("Save file exists"),
+                                tint = OptionColors.label, modifier = Modifier.size(small.lineHeight * 0.95f),
+                            )
+                        }
+                    }
                     if (isNew || support != null) {
-                        Column(
-                            Modifier.align(Alignment.TopStart).padding(m.u * 3),
-                            verticalArrangement = Arrangement.spacedBy(m.u * 2),
+                        Row(
+                            Modifier.align(Alignment.BottomStart).padding(m.u * 3),
+                            horizontalArrangement = Arrangement.spacedBy(m.u * 2),
                         ) {
                             if (isNew) OptionBadge(tk("NEW"), m, fill = OptionColors.newBadge)
                             support?.let { (label, fill) -> OptionBadge(label, m, fill = fill) }
@@ -228,20 +279,7 @@ fun LibraryRomTile(
                     }
                 }
                 Spacer(Modifier.height(m.u * 3))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    GbaText(display, OptionColors.label, OptionColors.labelShadow, small, Modifier.weight(1f))
-                    if (favorite) {
-                        Spacer(Modifier.width(m.u * 2))
-                        LibraryFavoriteStar(small.lineHeight)
-                    }
-                    if (hasSave) {
-                        Spacer(Modifier.width(m.u * 2))
-                        Icon(
-                            LibraryIcons.Save, contentDescription = tr("Save file exists"),
-                            tint = OptionColors.label, modifier = Modifier.size(small.lineHeight),
-                        )
-                    }
-                }
+                GbaText(display, OptionColors.label, OptionColors.labelShadow, small, Modifier.fillMaxWidth())
             }
         }
         menu()
@@ -308,18 +346,19 @@ fun LibraryFrame(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val wide = maxWidth >= maxHeight
+        // MENU BAR: AUTO = down the left of a wide screen, along the bottom of a tall one; or the side the player picked.
+        val place = com.pokedaisy.app.companion.ui.theme.CustomLook.menuBarPlace.on(maxWidth >= maxHeight)
         AppBackdrop(logos = true)
         Row(Modifier.fillMaxSize()) {
-            if (wide) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
+            if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.LEFT) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, onPick = onSection)
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                if (showHeader) {
-                    LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
-                    Spacer(Modifier.height(headerGap))
-                }
+                if (showHeader) LibraryHeaderBar(if (compactTitle) "" else "POKéDAISY", m, compactActions = compactHeader, actions = header)
+                if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.TOP) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, far = true, onPick = onSection)
+                if (showHeader) Spacer(Modifier.height(headerGap))
                 content()
-                if (!wide) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, onPick = onSection)
+                if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.BOTTOM) LibraryNav(section, vertical = false, m, small, toolsBadge = toolsBadge, onPick = onSection)
             }
+            if (place == com.pokedaisy.app.companion.ui.theme.MenuBarPlace.RIGHT) LibraryNav(section, vertical = true, m, small, toolsBadge = toolsBadge, top = libraryMargin, far = true, onPick = onSection)
         }
         overlays()
     }
@@ -328,7 +367,8 @@ fun LibraryFrame(
 /**
  * The library's / TOOLS' / Settings' / the tools' header: a band along the top of the screen, its full width (the user's
  * call, 2026-11-22: docked to the edge, not a window floating in the page), the title window's colours with its frame
- * along the bottom only. The logo (or [leading]) and [title] on the left, [actions] on the right.
+ * along the bottom only (VIEW MODERN: its blue, a soft shadow under it). The logo (or [leading]) and [title] on the left,
+ * [actions] on the right.
  */
 @Composable
 fun LibraryHeaderBar(
@@ -367,9 +407,14 @@ fun LibraryHeaderBar(
             .fillMaxWidth()
             .onSizeChanged { barWidth = it.width }
             .drawBehind {
-                val u = m.u.toPx()
-                drawLayeredBox(
-                    OptionColors.headerLayers.inPx(u), OptionColors.headerFill, radius = 0f,
+                val px = m.u.toPx()
+                if (modernView) {
+                    // A soft shadow under it, its blue top to bottom.
+                    for (i in 1..4) drawRect(Color(0x101B2A55), Offset(0f, size.height), androidx.compose.ui.geometry.Size(size.width, i * px * 0.8f))
+                    val fill = OptionColors.headerFill
+                    drawRect(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(fill, Color.White, 0.14f), fill)))
+                } else drawLayeredBox(
+                    OptionColors.headerLayers.inPx(px), OptionColors.headerFill, radius = 0f,
                     openTop = true, openLeft = true, openRight = true,
                 )
             }
@@ -379,19 +424,22 @@ fun LibraryHeaderBar(
             CompanionBackHandler(onBack = onBack)
             // Not a D-pad stop: B / BACK is the same thing.
             Box(Modifier.focusProperties { canFocus = false }.soundClickable(onClick = onBack).padding(end = u * 6)) {
-                val cell = with(androidx.compose.ui.platform.LocalDensity.current) { m.fontPixel.toDp() }
-                Box(Modifier.size(m.lineHeight).semantics { contentDescription = tr("Back") }, contentAlignment = Alignment.Center) {
-                    ShadowedPixelIcon(PixelIcons.arrowBack, OptionColors.headerText, OptionColors.headerShadow, m, cell = cell)
+                if (modernView) ModernIcon(ModernGlyph.BACK, OptionColors.headerText, Modifier.size(m.lineHeight * 1.2f))
+                else {
+                    val cell = with(androidx.compose.ui.platform.LocalDensity.current) { m.fontPixel.toDp() }
+                    Box(Modifier.size(m.lineHeight).semantics { contentDescription = tr("Back") }, contentAlignment = Alignment.Center) {
+                        ShadowedPixelIcon(PixelIcons.arrowBack, OptionColors.headerText, OptionColors.headerShadow, m, cell = cell)
+                    }
                 }
             }
         }
         if (logo) {
-            PixelArt(LOGO_ROWS, LOGO_PALETTE, Modifier.size(m.lineHeight))
+            AppLogo(Modifier.size(m.lineHeight * if (modernView) 1.25f else 1f))
             Spacer(Modifier.width(u * 6))
         }
         leading?.let { it(); Spacer(Modifier.width(u * 6)) }
         Box(Modifier.weight(1f)) {
-            if (title.isNotEmpty()) GbaText(shownTitle, OptionColors.headerText, OptionColors.headerShadow, m)
+            if (title.isNotEmpty()) GbaText(shownTitle, OptionColors.headerText, OptionColors.headerShadow, m, bold = modernView)
         }
         Row(Modifier.onSizeChanged { if (!compact) fullActions = it.width }, verticalAlignment = Alignment.CenterVertically) {
             if (compact) compactActions?.invoke(this) else actions()
@@ -406,6 +454,22 @@ fun LibraryHeaderIcon(icon: ImageVector, label: String, m: GbaTextMetrics, modif
     val short = LocalShortScreen.current
     val narrow = compact || short
     Spacer(Modifier.width(m.u * if (narrow) 2 else 4))
+    if (modernView) {
+        // A round see-through button on the blue band, the icon white.
+        val interaction = remember { MutableInteractionSource() }
+        val focused by interaction.collectIsFocusedAsState()
+        val circle = m.rowHeight * if (short) 0.9f else 1.05f
+        Box(
+            modifier.size(circle)
+                .gbaFocusRing(cursor || focused, androidx.compose.foundation.shape.CircleShape)
+                .drawBehind { drawCircle(Color.White.copy(alpha = if (cursor || focused) 0.32f else 0.16f)) }
+                .keyDrivenFocus()
+                .soundClickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .semantics { contentDescription = label },
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, contentDescription = null, tint = OptionColors.headerText, modifier = Modifier.size(circle * 0.56f)) }
+        return
+    }
     OptionButton(null, m, onClick = onClick, modifier = modifier.keyDrivenFocus().gbaFocusRing(cursor, PixelRoundedShape(m.u * 3)),
         icon = icon, contentDescription = label, sidePadding = if (narrow) 4 else 8, verticalPadding = if (short) 2 else 4)
 }
@@ -421,10 +485,14 @@ private val LibraryMenuBorder get() = if (OptionColors.dark) Color(0xFF4A5262) e
 @Composable
 fun LibraryGameMenu(expanded: Boolean, onDismiss: () -> Unit, items: List<LibraryMenuItem>, m: GbaTextMetrics, screenSize: DpSize) {
     @Composable
-    fun MenuItem(item: LibraryMenuItem) {
+    fun MenuItem(item: LibraryMenuItem, odd: Boolean = items.indexOf(item) % 2 == 1) {
         val fg = if (item.danger) OptionColors.value else OptionColors.label
         DropdownMenuItem(
-            text = { GbaText(item.label, fg, if (item.danger) OptionColors.valueShadow else OptionColors.labelShadow, m) },
+            // A step smaller than the list's text, in roomier rows (the user's call).
+            text = { GbaText(item.label, fg, if (item.danger) OptionColors.valueShadow else OptionColors.labelShadow, rememberGbaTextMetrics(1f)) },
+            // Every other row banded, so a long menu is easy to follow across.
+            modifier = Modifier.heightIn(min = 52.dp).widthIn(min = 240.dp)
+                .then(if (odd) Modifier.background(OptionColors.rowStripe) else Modifier),
             leadingIcon = {
                 val px = item.pixel
                 if (px != null) com.pokedaisy.app.companion.ui.PixelIcon(px, fg, Modifier.size(24.dp)) else Icon(item.icon, null, tint = fg)
@@ -462,9 +530,10 @@ fun LibraryGameMenu(expanded: Boolean, onDismiss: () -> Unit, items: List<Librar
                 val rowWidth = if (upright) Modifier.width(screenSize.width - 32.dp) else Modifier
                 Row(rowWidth.height(IntrinsicSize.Min)) {
                     val column = if (upright) Modifier.weight(1f) else Modifier.width(IntrinsicSize.Max)
-                    Column(column) { items.take(half).forEach { MenuItem(it) } }
+                    // Banded like a chess board: a row's band flips from one column to the next.
+                    Column(column) { items.take(half).forEachIndexed { i, it -> MenuItem(it, odd = i % 2 == 1) } }
                     Box(Modifier.fillMaxHeight().padding(vertical = u * 4).width(u).background(LibraryMenuBorder))
-                    Column(column) { items.drop(half).forEach { MenuItem(it) } }
+                    Column(column) { items.drop(half).forEachIndexed { i, it -> MenuItem(it, odd = i % 2 == 0) } }
                 }
             }
         }
@@ -486,6 +555,12 @@ fun libraryLongPress(open: () -> Unit): () -> Unit {
     return { haptic.performHapticFeedback(HapticFeedbackType.LongPress); open() }
 }
 
+/** Where a row sits in RETRO's one long library list ([LibraryCard]): its place and whether it starts / ends the window. */
+class ListSegment(val index: Int, val first: Boolean, val last: Boolean)
+
+/** Set round each row of a library list (null: a card of its own, as in the grid and in MODERN). */
+val LocalListSegment = androidx.compose.runtime.compositionLocalOf<ListSegment?> { null }
+
 /** The same list/grid spacing, stable keys and UP-to-header routing on every host. Items keep their native identity. */
 @Composable
 fun <T> LibraryCollection(
@@ -505,9 +580,12 @@ fun <T> LibraryCollection(
             }
         }
     } else {
-        LazyColumn(modifier.fillMaxWidth(), contentPadding = padding, verticalArrangement = gap) {
+        // RETRO: the rows one window, no gaps; MODERN: cards apart.
+        LazyColumn(modifier.fillMaxWidth(), contentPadding = padding, verticalArrangement = if (modernView) gap else Arrangement.Top) {
             itemsIndexed(games, key = { _, game -> key(game) }) { index, game ->
-                item(game) { headerUp().takeIf { index == 0 } }
+                androidx.compose.runtime.CompositionLocalProvider(LocalListSegment provides ListSegment(index, index == 0, index == games.lastIndex)) {
+                    item(game) { headerUp().takeIf { index == 0 } }
+                }
             }
         }
     }
@@ -519,6 +597,8 @@ data class LibraryPresentation<T>(
     val views: List<LibraryView>, val view: LibraryView, val counts: Map<LibraryView, Int>,
     val hasCatalog: Boolean, val query: String, val emptyText: String,
     val tools: List<LibraryTool> = emptyList(),
+    /** LIBRARY VIEW; a host without [LibraryShowcase] support shows the immersive ones as the grid. */
+    val layout: com.pokedaisy.app.companion.LibraryLayout = if (grid) com.pokedaisy.app.companion.LibraryLayout.GRID else com.pokedaisy.app.companion.LibraryLayout.LIST,
 )
 
 typealias LibraryActions = com.pokedaisy.app.companion.LibraryActions
@@ -540,8 +620,8 @@ private fun <T> RowScope.LibraryHeaderButtons(
             Modifier.focusRequester(focus.header), compact = compact, onClick = actions.sort)
         DisposableEffect(focus) { focus.headerAttached = true; onDispose { focus.headerAttached = false } }
         LibraryHeaderIcon(Icons.Filled.Search, tr("SEARCH"), m, compact = compact, onClick = actions.search)
-        LibraryHeaderIcon(if (state.grid) LibraryIcons.ViewList else LibraryIcons.GridView,
-            tr("Toggle view"), m, compact = compact, onClick = actions.toggleGrid)
+        LibraryHeaderIcon(if (state.grid || state.layout.immersive) LibraryIcons.ViewList else LibraryIcons.GridView,
+            tr("Library view"), m, compact = compact, onClick = actions.toggleGrid)
         LibraryHeaderIcon(Icons.Filled.Add, tr("Add games"), m, compact = compact, onClick = actions.add)
         LibraryHeaderIcon(Icons.Filled.Refresh, tr("Refresh"), m, compact = compact, onClick = actions.refresh)
     }
@@ -553,6 +633,8 @@ fun <T> LibraryScreen(
     state: LibraryPresentation<T>, actions: LibraryActions, m: GbaTextMetrics, small: GbaTextMetrics,
     key: (T) -> String, modifier: Modifier = Modifier, focus: LibraryFocus = remember { LibraryFocus() },
     overlays: @Composable () -> Unit = {}, settings: @Composable ColumnScope.() -> Unit = {},
+    /** The immersive views' look at a game ([LibraryLayout.immersive]); null = this host shows them as the grid. */
+    showcase: LibraryShowcase<T>? = null,
     item: @Composable (T, () -> FocusRequester?) -> Unit,
 ) {
     BoxWithConstraints(modifier.fillMaxSize()) {
@@ -578,7 +660,8 @@ fun <T> LibraryScreen(
                     LibrarySearchStrip(state.query, m, actions.search, actions.query)
                     if (state.hasCatalog) {
                         QuickViewPills(state.views, state.view, state.counts, m, small, actions.view,
-                            contentPadding = PaddingValues(horizontal = margin), focusRequester = focus.views)
+                            contentPadding = PaddingValues(horizontal = margin), focusRequester = focus.views,
+                            onReorder = actions.reorderViews.takeIf { com.pokedaisy.app.companion.FlaggedFeatures.modernLook })
                         DisposableEffect(focus) { focus.viewsAttached = true; onDispose { focus.viewsAttached = false } }
                         Spacer(Modifier.height(m.u * if (short) 3 else 8))
                     }
@@ -590,7 +673,11 @@ fun <T> LibraryScreen(
                                 modifier = Modifier.padding(m.u * 4))
                         }
                     } else androidx.compose.runtime.key(state.view) {
-                        LibraryCollection(state.games, state.grid, m, key, Modifier.weight(1f), headerUp = { focus.up }, item = item)
+                        if (state.layout.immersive && showcase != null) {
+                            LibraryShowcaseView(state.games, state.layout, showcase, key, m, small, Modifier.weight(1f), headerUp = { focus.up })
+                        } else {
+                            LibraryCollection(state.games, state.grid || state.layout.immersive, m, key, Modifier.weight(1f), headerUp = { focus.up }, item = item)
+                        }
                     }
                 }
             }

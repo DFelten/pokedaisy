@@ -756,8 +756,23 @@ internal fun PlatinumButton(
                 } else Modifier.gbaFocusRing(focused || highlighted, shape),
             )
             .then(
+                // VIEW MODERN: a soft shadow, the colour top to bottom, a light rim along its top, a thin darker edge.
+                if (modernView && !gen1Buttons) Modifier.drawBehind {
+                    val r = androidx.compose.ui.geometry.CornerRadius(minOf(16.dp.toPx(), size.minDimension / 2f))
+                    CompanionSkins.MODERN.dropShadow?.let { drawSoftShadow(it, r.x) }
+                    drawRoundRect(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(fill, Color.White, 0.2f), fill, androidx.compose.ui.graphics.lerp(fill, frame, 0.55f))),
+                        cornerRadius = r,
+                    )
+                    drawRoundRect(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.35f), Color.Transparent), endY = size.height * 0.45f),
+                        cornerRadius = r, size = Size(size.width, size.height * 0.45f),
+                    )
+                    drawRoundRect(androidx.compose.ui.graphics.lerp(frame, Color.Black, 0.15f).copy(alpha = 0.5f), cornerRadius = r,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                }
                 // Gen 1 (Yellow): a button is its text box - white inside the double line.
-                if (gen1Buttons) Modifier.drawBehind {
+                else if (gen1Buttons) Modifier.drawBehind {
                     drawLayeredBox(OptionColors.listLayers.inPx(gbaPixelPx()), OptionColors.listFill, radius = 3 * gbaPixelPx())
                 } else Modifier
                     // HeartGold's: a thick dark outline, a thin white ring, then [fill] over [frame].
@@ -804,6 +819,14 @@ internal fun ButtonLabel(
         textGeometricTransform = if (scaleX == 1f) null else androidx.compose.ui.text.style.TextGeometricTransform(scaleX = scaleX),
     )
     val weight = if (bold && !gen1Buttons) FontWeight.Bold else FontWeight.Normal
+    // VIEW MODERN: white bold letters with a soft shadow, never HeartGold's outline.
+    if (modernView && !gen1Buttons) {
+        Text(
+            text, color = Color.White, fontSize = fontSize * (if (text.length > 5) 0.66f else 0.8f), maxLines = 1, fontWeight = FontWeight.Bold,
+            style = style.copy(shadow = Shadow(Color(0x55000000), Offset(0f, shadow), shadow * 2.5f)),
+        )
+        return
+    }
     if (outlined && !gen1Buttons) {
         val edge = kotlin.math.round(fontPixel).toInt().coerceAtLeast(1)
         val plain = style.copy(shadow = null)

@@ -115,8 +115,8 @@ static void build(const struct pd_game* g, const struct pd_host_info* host) {
 // While it's off for this game: what it does, and the same switch as SETTINGS' NUZLOCKE.
 static void off_page(struct pd_ui* ui, struct pd_canvas* c) {
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr("NUZLOCKE"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr("NUZLOCKE"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     pd_text_right(c, x + w - f - 6, pd_text_y(y, TITLE_H), pd_tr("OFF"), PD_VALUE, PD_VALUE_SHADOW);
     y += TITLE_H + 4;
     int h = c->h - y - MARGIN;
@@ -143,8 +143,8 @@ void ui_nuzlocke_tab(struct pd_ui* ui, struct pd_canvas* c, const struct pd_game
     shownRun = host->nuzRun;
     build(g, host);
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr("NUZLOCKE"), PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text(c, x + f + 6, pd_text_y(y, TITLE_H), pd_tr("NUZLOCKE"), PD_HEADER_TEXT, PD_HEADER_SHADOW);
     char counts[40];
     snprintf(counts, sizeof counts, pd_tr("%d ALIVE · %d FAINTED"), pd_nuz_alive(host->nuzRun), pd_nuz_dead(host->nuzRun));
     pd_text_right(c, x + w - f - 6, pd_text_y(y, TITLE_H), counts, PD_VALUE, PD_VALUE_SHADOW);
@@ -211,8 +211,8 @@ void ui_nuzlocke_overlay(struct pd_ui* ui, struct pd_canvas* c) {
     pd_dim(c, 0xE6);
     ui_add_hit(ui, 0, 0, c->w, c->h, HIT_SCRIM);
     int x = MARGIN, w = c->w - 2 * MARGIN, y = CONTENT_Y + 8;
-    int f = pd_title_box(c, x, y, w, TITLE_H, PD_TITLE_FILL);
-    pd_text_fit(c, x + f + 6, pd_text_y(y, TITLE_H), w - 2 * f - 12, ui->nuzTitle, PD_TITLE_TEXT, PD_TITLE_SHADOW);
+    int f = pd_header_box(c, x, y, w, TITLE_H);
+    pd_text_fit(c, x + f + 6, pd_text_y(y, TITLE_H), w - 2 * f - 12, ui->nuzTitle, PD_HEADER_TEXT, PD_HEADER_SHADOW);
     y += TITLE_H + 4;
     if (ui->overlay == PD_OVERLAY_NUZ_PICK) {
         static const char* const OPTIONS[3] = { "CAUGHT", "MISSED", "NOT USED" };

@@ -23,6 +23,7 @@ together. You pair first, the link between your devices stays alive, and then th
 - A save you have saved in the game at least once.
 - Both devices on the internet. The same Wi-Fi is not required.
 - No cheats loaded. The link stays off while any cheat is on. Once the link is on, switching a cheat on is refused with a notice.
+- No `WILD PIN`. Once the link is on, a pin comes off and `PIN` is greyed out.
 
 ## The pairing page
 

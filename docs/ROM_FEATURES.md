@@ -6,116 +6,119 @@ change to any of the places listed under "Where it's decided" updates its rows h
 
 ✅ yes · ◐ partly (see the note) · — no · n/a doesn't apply
 
-| Game | Version | EXPAND | Battle buttons | One-press picks | POKéMON switch | Field items | FLY | Trainer card | Field reads | Bike / surf | Wild encounters | PC anywhere | Reusable TMs | Player look | Shiny odds | TMs from the bag | FLASH | Area map |
-| ---- | ------- | :----: | :------------: | :-------------: | :------------: | :---------: | :-: | :----------: | :---------: | :---------: | :-------------: | :---------: | :----------: | :---------: | :--------: | :--------------: | :---: | :------: |
-| Yellow (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Yellow (GB) | DE / FR / IT / ES | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ |
-| Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ |
-| Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ |
-| PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ |
-| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ |
-| Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
-| Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ |
-| Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Polished Crystal (GBC) | 3.2.0 - 3.2.3 (16 builds) | ◐ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| FireRed | USA/Europe rev 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed | USA/Europe rev 0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed | ES | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed | DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| LeafGreen | USA/Europe rev 0 and 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| LeafGreen | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| LeafGreen | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Emerald | USA/Europe | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Emerald | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Emerald | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed, randomized (UPR ZX 4.6.1) | USA/Europe rev 1 | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| FireRed, randomized (UPR ZX 4.6.1) | USA/Europe rev 0 | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | — | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Emerald, randomized (UPR ZX 4.6.1) | USA/Europe | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Ruby / Sapphire | USA rev 1 and 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ⁵³ | ✅ | ✅ |
-| Ruby / Sapphire | USA rev 0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ⁵³ | ✅ | ✅ |
-| Ruby / Sapphire | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ |
-| Ruby / Sapphire | JP | ✅ | ✅ | ✅ | — | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ |
-| Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| Platinum (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| Platinum (DS) | Spain, Germany rev 0 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| HeartGold (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| HeartGold (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ |
-| SoulSilver (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| SoulSilver (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| SoulSilver (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ |
-| HeartGold (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| SoulSilver (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ |
-| Black (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| Black (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Black (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| White (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| White (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| White (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Black 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| Black 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| White 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ |
-| White 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Origin HeartGold (DS) | 4.0.3 English 1.0.0 | ✅ ¹⁴ | — ²⁹ | — | — | — | ✅ ²⁹ | — | ✅ ²⁹ | ✅ ¹⁴ | ✅ ²⁹ | ✅ ²⁹ | — | n/a | — | — | — | — ³⁶ |
-| Heartfelt Gold (DS) | 1.0.15 (+ Zoomed In) | ✅ ³⁷ | ✅ ³⁷ | — | — | — | ✅ ³⁷ | — | ✅ ³⁷ | — | ✅ ³⁷ | ✅ ³⁷ | — | n/a | — | — | — | — ³⁶ |
-| Sacred Gold (DS), Storm Silver (DS) | 1.05 (Sacred Gold's Classic too) | ✅ ⁴³ | ◐ ⁴³ | — | — | — | ◐ ⁴³ | — | ✅ ⁴³ | ◐ ⁴³ | ◐ ⁴³ | ◐ ⁴³ | — | n/a | — | — | — | — ³⁶ |
-| Renegade Platinum (DS) | 1.3.0 (+ Classic, shiny rate, Speed Up), 1.2.0 | ✅ ³² | ✅ ³² | — | — | — | ✅ ³² | — | ✅ ³² | ◐ ³² | ◐ ³² | ✅ ³² | — | n/a | — | — | — | — ³⁶ |
-| Blaze Black 2 Redux (DS) | 1.4.1, + Classic / EVless / Classic EVless | ✅ ³⁵ | ✅ ³⁵ | — | — | — | ✅ ³⁵ | — | ✅ ³⁵ | ◐ ¹⁴ | ✅ ³⁵ | ✅ ³⁵ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Volt White 2 Redux (DS) | 1.4.1, + Classic / EVless / Classic EVless | ✅ ³⁵ | ✅ ³⁵ | — | — | — | ✅ ³⁵ | — | ✅ ³⁵ | ◐ ¹⁴ | ✅ ³⁵ | ✅ ³⁵ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ |
-| Amethyst | 1.3.0, 1.4.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — ³³ | ✅ ³³ | ✅ |
-| Ash Gray | 4.5.3, Fork Bug Fix 1.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | ✅ ¹⁹ | ✅ | — ³³ | ✅ |
-| Celia's Stupid Romhack | 1.1.4 | ✅ | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | ✅ | — | ✅ ¹⁵ | — | — | — | — | ✅ |
-| Dreamstone Mysteries | the one release | — | ✅ | ✅ | ✅ | — | — | — | — | — | — ²² | — | — | — | — | — | — | ✅ |
-| Elite Redux | 2.65.3b, 2.65.4.1b | ✅ | ✅ ¹⁰ | ✅ ¹⁰ | ✅ | — | — | — | ✅ ¹⁰ | ✅ ¹⁰ | ✅ ¹⁰ | — ¹⁰ | n/a ¹⁵ | — | ✅ ¹⁹ | — | — | ✅ |
-| Emerald Imperium | 1.3.1 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ ³³ | ✅ |
-| Emerald Kaizo | 2.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ⁴ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Emerald Legacy | 1.1.4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ³³ | ✅ ³³ | ✅ |
-| Emerald Rogue | 2.2.1-EX | ✅ | — | — | — | — | — | — | ◐ ⁶ | — | — | — | — | — | — | — | — | ✅ |
-| Emerald Seaglass | 3.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | — | ✅ |
-| FireRed Rocket Edition | the one release | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ✅ ¹⁵ | — | ✅ ¹⁹ | ✅ | — ³³ | ✅ |
-| Gaia | 3.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ |
-| Ghost Grey (blocked ¹¹) | 1.0.1, 1.0.2, 1.0.4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹¹ ³⁴ | — | ✅ ¹¹ | ✅ ¹¹ | ✅ ¹¹ | ✅ ¹¹ | — | — | — | ✅ | ✅ ³³ | — ¹¹ |
-| Let's Go Pikachu / Eevee | English, Translation Only (4 builds) | ✅ ²⁸ | ✅ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ ³⁴ | — | ✅ ²⁸ | ◐ ²⁸ | ◐ ²⁸ | ✅ ²⁸ | — | — | — | ✅ | ✅ ³³ | ✅ |
-| Clover | 1.3.3 | ✅ ⁴¹ | ✅ | ✅ ⁴¹ | — | — ⁴¹ | — ⁴¹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — ⁴¹ | — | — | — | — | — | ✅ |
-| Elysium (Part A), Elysium (Part B) | 2.5.0 | ✅ ⁴² | ✅ | ✅ ⁴² | — | ◐ ⁹ | ◐ ⁹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | — | — | — | ✅ |
-| Glazed | 9.2.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁷ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ |
-| GS Chronicles | 2.7.6 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁹ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | — ³⁶ |
-| Rhythm | 1.4.0 | — | ✅ | ✅ ⁴⁴ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ |
-| Oops All Eevees! | 1.3.2 | — | ✅ | ✅ ⁴⁵ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ |
-| Ceruleum | 1.1.1 | — | ✅ ⁴⁶ | ✅ ⁴⁶ | ✅ ⁴⁶ | — | — | — | — | — | — ⁴⁶ | — | — | — | — | — | — | — ³⁶ |
-| RecordKeepers | 1.2.1 | — | — ⁴⁷ | — ⁴⁷ | — ⁴⁷ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ |
-| Heart and Soul | 2.0.6 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | ✅ | — | — | — | — | ✅ ³³ | ✅ |
-| Lazarus | 2.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ |
-| Modern Emerald | 3.6 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ |
-| Epsilon Emerald | 1.0.0 | ✅ ³⁹ | ✅ | ✅ | ✅ | — | ✅ ³⁹ | — | ✅ ³⁹ | — | ✅ ³⁹ | ✅ ³⁹ | — | — | — | — | — | — |
-| Monomyth | 1.0, 1.1, 1.2 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ |
-| Odyssey | 4.1.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ |
-| Orange Islands | Beta 5.7, an older beta | ◐ ³ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | — | ✅ ¹⁹ ²⁰ | ✅ | ✅ ³³ | ✅ |
-| Quetzal | English / Spanish Alpha 9 v0 | ◐ ³ | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | ◐ ⁶ | — | — | ✅ | — | — | — | — | — | — ³⁶ |
-| Quetzal | English / Spanish Alpha 9 v1 | — | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | — | — | — | ✅ | — | — | — | — | — | — ³⁶ |
-| Quetzal, Moemon Quetzal | English / Spanish Alpha 0.8.4 (+ Hotfix) | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ |
-| R.O.W.E. | 2.1.9.1 Experimental | ✅ ³ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | — | ✅ |
-| Radical Red | 4.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ |
-| Recharged Emerald | 2.2.5, 2.2.8, Rebalanced 2.2.8 | — | ✅ | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | ✅ ¹⁹ | ✅ ³³ | ✅ ³³ | ✅ |
-| Recharged Yellow | 1.8.0, 1.9.0, 1.9.4, 1.9.7 | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ | — | — | — | ✅ ¹⁹ | — | — | ✅ |
-| SoulGold | 1.1.4, 1.2 (3 builds), 1.2.1 (2 builds) | ✅ | ✅ | ✅ | ✅ | ◐ ¹⁷ | ✅ ³⁴ | ✅ | ◐ ⁶ | — | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ |
-| Super Mariomon | 1.2.1-1.3, 1.5.1, 1.5.2 | ✅ | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | ✅ | ✅ | ✅ | ◐ | — | — | ✅ ¹⁹ | — | — | ✅ |
-| Sword and Shield Ultimate Plus | 1.2.1.2 + its 3 patches | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ◐ ³⁶ |
-| Team Rocket Dragonsden | 1.5 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | ✅ ¹⁹ | — | — | — ³⁶ |
-| Team Rocket Dragonsden | 2026 3.0.9, 3.1 (Spanish) | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ |
-| Too Many Types 2 | 1.5.2 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | — | — | — | ✅ ¹⁹ | — | — | ✅ |
-| Ultra Violet | 1.22 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ |
-| Unbound | 2.1.1.1, 2.1.1.1 French, 2.1.1.1 Italian (patch v7) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ ⁴⁰ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ |
-| Wishes of Tomorrow | 1.2.6 | — | ✅ ²¹ | ✅ ²¹ | ✅ ²¹ | — | — | — | — | — | — ²¹ | — | — | — | — | — | — | ◐ ³⁶ |
-| Unknown FireRed / Emerald hacks edited in place | any (proven by code) | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | — | — | — | ◐ ³⁰ | ◐ ³⁰ | — | — | — | — | — | — | — | — ³⁶ |
+| Game | Version | EXPAND | Battle buttons | One-press picks | POKéMON switch | Field items | FLY | Trainer card | Field reads | Bike / surf | Wild encounters | PC anywhere | Reusable TMs | Player look | Shiny odds | TMs from the bag | FLASH | Area map | Wild pin |
+| ---- | ------- | :----: | :------------: | :-------------: | :------------: | :---------: | :-: | :----------: | :---------: | :---------: | :-------------: | :---------: | :----------: | :---------: | :--------: | :--------------: | :---: | :------: | :------: |
+| Yellow (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow (GB) | DE (Gelbe Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow (GB) | FR / IT / ES | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
+| Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
+| Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
+| Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
+| Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Polished Crystal (GBC) | 3.2.0 - 3.2.3 (16 builds) | ◐ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| FireRed | USA/Europe rev 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| FireRed | USA/Europe rev 0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| FireRed | ES | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| FireRed | DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| FireRed | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| LeafGreen | USA/Europe rev 0 and 1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| LeafGreen | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| LeafGreen | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| Emerald | USA/Europe | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| Emerald, MWisBest's RTC + RNG fix | 1.0 | ✅ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ ³⁴ ⁶⁰ | ✅ | ✅ ⁶⁰ | ✅ | ✅ | ✅ ⁶⁰ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| Emerald | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ ⁴⁹ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| Emerald | JP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| FireRed, randomized (UPR ZX 4.6.1) | USA/Europe rev 1 | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| FireRed, randomized (UPR ZX 4.6.1) | USA/Europe rev 0 | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | — | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| Emerald, randomized (UPR ZX 4.6.1) | USA/Europe | ✅ ²³ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ ³⁴ | ✅ | ✅ ²³ | ✅ | ✅ ²³ | ✅ ²³ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | ✅ ⁶³ |
+| Ruby / Sapphire | USA rev 1 and 2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ⁵³ | ✅ | ✅ | — |
+| Ruby / Sapphire | USA rev 0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ⁵³ | ✅ | ✅ | — |
+| Ruby / Sapphire | ES / DE / FR / IT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ | — |
+| Ruby / Sapphire | JP | ✅ | ✅ | ✅ | — | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ | — |
+| Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| Platinum (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| Platinum (DS) | Spain, Germany rev 0 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| HeartGold (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| HeartGold (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ | — |
+| SoulSilver (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| SoulSilver (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| SoulSilver (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ | — |
+| HeartGold (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| SoulSilver (DS) | Germany rev 0 | ✅ ¹⁴ | ✅ ²⁵ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| Black (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| Black (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Black (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| White (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| White (DS) | France | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| White (DS) | Germany, Spain, Italy, Japan, Korea ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Black 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| Black 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| White 2 (DS) | USA/Europe | ✅ ¹⁴ | ✅ ²⁷ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
+| White 2 (DS) | France, Germany, Spain, Italy, Korea; Japan rev 1 ³¹ | ✅ ¹⁴ | ✅ ²⁷ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Origin HeartGold (DS) | 4.0.3 English 1.0.0 | ✅ ¹⁴ | ✅ ²⁹ | — | — | — | ✅ ²⁹ | — | ✅ ²⁹ | ✅ ¹⁴ | ✅ ²⁹ | ✅ ²⁹ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Heartfelt Gold (DS) | 1.0.15 (+ Zoomed In) | ✅ ³⁷ | ✅ ³⁷ | — | — | — | ✅ ³⁷ | — | ✅ ³⁷ | — | ✅ ³⁷ | ✅ ³⁷ | — | n/a | — | — | — | — ³⁶ | — |
+| Sacred Gold (DS), Storm Silver (DS) | 1.05 (Sacred Gold's Classic too) | ✅ ⁴³ | ◐ ⁴³ | — | — | — | ◐ ⁴³ | — | ✅ ⁴³ | ◐ ⁴³ | ◐ ⁴³ | ◐ ⁴³ | — | n/a | — | — | — | — ³⁶ | — |
+| Renegade Platinum (DS) | 1.3.0 (+ Classic, shiny rate, Speed Up), 1.2.0 | ✅ ³² | ✅ ³² | — | — | — | ✅ ³² | — | ✅ ³² | ◐ ³² | ◐ ³² | ✅ ³² | — | n/a | — | — | — | — ³⁶ | — |
+| Blaze Black 2 Redux (DS) | 1.4.1, + Classic / EVless / Classic EVless | ✅ ³⁵ | ✅ ³⁵ | — | — | — | ✅ ³⁵ | — | ✅ ³⁵ | ◐ ¹⁴ | ✅ ³⁵ | ✅ ³⁵ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Volt White 2 Redux (DS) | 1.4.1, + Classic / EVless / Classic EVless | ✅ ³⁵ | ✅ ³⁵ | — | — | — | ✅ ³⁵ | — | ✅ ³⁵ | ◐ ¹⁴ | ✅ ³⁵ | ✅ ³⁵ | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
+| Amethyst | 1.3.0, 1.4.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — ³³ | ✅ ³³ | ✅ | — |
+| Ash Gray | 4.5.3, Fork Bug Fix 1.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | ✅ ¹⁹ | ✅ | — ³³ | ✅ | — |
+| Celia's Stupid Romhack | 1.1.4 | ✅ | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | ✅ | — | ✅ ¹⁵ | — | — | — | — | ✅ | — |
+| Dreamstone Mysteries | the one release | — | ✅ | ✅ | ✅ | — | — | — | — | — | — ²² | — | — | — | — | — | — | ✅ | — |
+| Elite Redux | 2.65.3b, 2.65.4.1b | ✅ | ✅ ¹⁰ | ✅ ¹⁰ | ✅ | — | — | — | ✅ ¹⁰ | ✅ ¹⁰ | ✅ ¹⁰ | — ¹⁰ | n/a ¹⁵ | — | ✅ ¹⁹ | — | — | ✅ | — |
+| Emerald Imperium | 1.3.1 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
+| Emerald Kaizo | 2.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ⁴ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| Emerald Legacy | 1.1.4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ ³³ | ✅ ³³ | ✅ | — |
+| Emerald Rogue | 2.2.1-EX | ✅ | — | — | — | — | — | — | ◐ ⁶ | — | — | — | — | — | — | — | — | ✅ | — |
+| Emerald Seaglass | 3.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | — | ✅ | — |
+| FireRed Rocket Edition | the one release | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ✅ ¹⁵ | — | ✅ ¹⁹ | ✅ | — ³³ | ✅ | — |
+| Gaia | 3.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| Ghost Grey (blocked ¹¹) | 1.0.1, 1.0.2, 1.0.4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹¹ ³⁴ | — | ✅ ¹¹ | ✅ ¹¹ | ✅ ¹¹ | ✅ ¹¹ | — | — | — | ✅ | ✅ ³³ | — ¹¹ | — |
+| Let's Go Pikachu / Eevee | English, Translation Only (4 builds) | ✅ ²⁸ | ✅ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ ³⁴ | — | ✅ ²⁸ | ◐ ²⁸ | ◐ ²⁸ | ✅ ²⁸ | — | — | — | ✅ | ✅ ³³ | ✅ | — |
+| Clover | 1.3.3 | ✅ ⁴¹ | ✅ | ✅ ⁴¹ | — | — ⁴¹ | — ⁴¹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — ⁴¹ | — | — | — | — | — | ✅ | — |
+| Elysium (Part A), Elysium (Part B) | 2.5.0 | ✅ ⁴² | ✅ | ✅ ⁴² | — | ◐ ⁹ | ◐ ⁹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | — | — | — | ✅ | — |
+| Glazed | 9.2.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁷ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| GS Chronicles | 2.7.6 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁹ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | — ³⁶ | — |
+| Rhythm | 1.4.0 | — | ✅ | ✅ ⁴⁴ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
+| Oops All Eevees! | 1.3.2 | — | ✅ | ✅ ⁴⁵ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
+| Ceruleum | 1.1.1 | — | ✅ ⁴⁶ | ✅ ⁴⁶ | ✅ ⁴⁶ | — | — | — | — | — | — ⁴⁶ | — | — | — | — | — | — | — ³⁶ | — |
+| RecordKeepers | 1.2.1 | — | — ⁴⁷ | — ⁴⁷ | — ⁴⁷ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
+| Heart and Soul | 2.0.6 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | ✅ | — | — | — | — | ✅ ³³ | ✅ | — |
+| Lazarus | 2.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
+| Modern Emerald | 3.6 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ | — |
+| Epsilon Emerald | 1.0.0 | ✅ ³⁹ | ✅ | ✅ | ✅ | — | ✅ ³⁹ | — | ✅ ³⁹ | — | ✅ ³⁹ | ✅ ³⁹ | — | — | — | — | — | — | — |
+| Monomyth | 1.0, 1.1 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ | ✅ ⁶³ |
+| Monomyth | 1.2 | ✅ ²³ | ✅ | ✅ | ✅ | — | — | — | ✅ ²³ | — | — ²³ | ✅ ²³ | — | — | — | — | — | ✅ | — ⁶³ |
+| Odyssey | 4.1.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| Orange Islands | Beta 5.7, an older beta | ◐ ³ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | — | ✅ ¹⁹ ²⁰ | ✅ | ✅ ³³ | ✅ | — |
+| Quetzal | English / Spanish Alpha 9 v0 | ◐ ³ | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | ◐ ⁶ | — | — | ✅ | — | — | — | — | — | — ³⁶ | — |
+| Quetzal | English / Spanish Alpha 9 v1 | — | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | — | — | — | ✅ | — | — | — | — | — | — ³⁶ | — |
+| Quetzal, Moemon Quetzal | English / Spanish Alpha 0.8.4 (+ Hotfix) | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ | — |
+| R.O.W.E. | 2.1.9.1 Experimental | ✅ ³ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | — | ✅ | — |
+| Radical Red | 4.1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| Recharged Emerald | 2.2.5, 2.2.8, Rebalanced 2.2.8 | — | ✅ | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | ✅ ¹⁹ | ✅ ³³ | ✅ ³³ | ✅ | — |
+| Recharged Yellow | 1.8.0, 1.9.0, 1.9.4, 1.9.7 | ✅ | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | ✅ | — | — | — | ✅ ¹⁹ | — | — | ✅ | — |
+| SoulGold | 1.1.4, 1.2 (3 builds), 1.2.1 (2 builds) | ✅ | ✅ | ✅ | ✅ | ◐ ¹⁷ | ✅ ³⁴ | ✅ | ◐ ⁶ | — | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
+| Super Mariomon | 1.2.1-1.3, 1.5.1, 1.5.2 | ✅ | ✅ | ✅ | ✅ | — | ◐ ³⁴ | — | ✅ | ✅ | ✅ | ◐ | — | — | ✅ ¹⁹ | — | — | ✅ | — |
+| Sword and Shield Ultimate Plus | 1.2.1.2 + its 3 patches | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ◐ ³⁶ | — |
+| Team Rocket Dragonsden | 1.5 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | ✅ ¹⁹ | — | — | — ³⁶ | — |
+| Team Rocket Dragonsden | 2026 3.0.9, 3.1 (Spanish) | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
+| Too Many Types 2 | 1.5.2 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | — | — | — | ✅ ¹⁹ | — | — | ✅ | — |
+| Ultra Violet | 1.22 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ | — | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | ✅ | ✅ | ✅ | — |
+| Unbound | 2.1.1.1, 2.1.1.1 French, 2.1.1.1 Italian (patch v7) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ³⁴ ⁴⁰ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ¹⁶ | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
+| Wishes of Tomorrow | 1.2.6 | — | ✅ ²¹ | ✅ ²¹ | ✅ ²¹ | — | — | — | — | — | — ²¹ | — | — | — | — | — | — | ◐ ³⁶ | — |
+| Unknown FireRed / Emerald hacks edited in place | any (proven by code) | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | ◐ ³⁰ | — | — | — | ◐ ³⁰ | ◐ ³⁰ | — | — | — | — | — | — | — | — ³⁶ | — |
 
 1. Yellow's and Crystal's battle controls steer from the cursor they read off the screen (`readGen1BattleInput`,
    `readGen2BattleInput`: the menu's own cursor variables, checked against the filled ▶ on screen), not from addresses
@@ -299,7 +302,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 16. Built into the game: its own TMs never run out, so there's nothing to patch and the row shows ON, greyed
     (`ReusableTms.BUILT_IN`). Radical Red, Unbound and SoulGold checked headless on their saves (a TM taught, unpatched,
     stayed in the TM Case / bag: SoulGold v1.1.4 and v1.2's third build, the others share its code); Prism and Polished
-    Crystal keep a bit per TM, no count.
+    Crystal keep a bit per TM, no count. Origin HeartGold checked headless on a new game (TM01 taught from the bag, still
+    there with its count of 1); it runs as HEARTGOLD, so `ReusableTms.builtIn` checks its flag too.
 17. SoulGold: the Repels only (USE on the bag, the QUICK MENU's REPEL), its own item ids 114..116 and its expansion
     Repel rules (a Lure's bit 15 in VAR_REPEL_STEP_COUNT, VAR_LAST_REPEL_LURE_USED 0x40BD), every build
     (`scripts/find_field_items_soulgold.py`); checked headless on v1.2 with a player's save (GitHub #242: the bag 5 -> 4,
@@ -484,10 +488,14 @@ change to any of the places listed under "Where it's decided" updates its rows h
     found through the US code that uses it (`pk_nds_field.cpp`'s `ORIGIN_HEARTGOLD`, `pk_nds_call.cpp`'s `ORIGIN_HEARTGOLD`).
     PC anywhere and FLY ran headless through its own script engine and flight task (landed in Pallet Town); WILD ENCOUNTERS'
     cart rates come from its map headers and encounter archive (`NdsArt.readOrigin`). Its battle engine is its own (a
-    manager at 0x02255BAC, no BattleSystem): the BATTLE tab reads its battle objects (`Gen4ManagedBattle`), but there are no
-    battle buttons (its panels aren't HeartGold's): DS LAYOUT floats the game's
-    touch screen in while its battle UI's input handler is set (+0x238 -> +0x10: the commands, the moves, the party), and
-    SMART FF slows down then. EXPAND and STEADY music work as HeartGold's (widecheck's overlap as US HeartGold's).
+    manager at 0x02255BAC, no BattleSystem): the BATTLE tab reads its battle objects (`Gen4ManagedBattle`). Its commands and
+    moves sit where HeartGold's do, so BATTLE BUTTONS press them with HeartGold's taps (`NdsBattleTaps.GEN4`): its battle
+    UI's input handler is set while it waits (+0x238 -> +0x10) and another UI object (+0x234) runs the waiting panel's
+    handler at +0x57C (0x02202445 the commands, 0x02202F4D the moves, 0x02202955 the bag, 0x0220270D the party;
+    `readManagedBattleInput`, `battleTouch`), checked headless in a wild and a trainer battle. Not the panel's id at
+    +0x580: the bag and the party share one, and on the way back to the commands after a turn it still reads the moves'
+    for a few frames while the commands' handler runs. The bag, the party and any other panel float the game's touch
+    screen in (DS LAYOUT), and SMART FF slows down while it waits. No POKéMON switch (its party panel isn't HeartGold's). EXPAND and STEADY music work as HeartGold's (widecheck's overlap as US HeartGold's).
 30. A FireRed (rev 0 / 1) or Emerald hack nothing knows by its hash, made by editing retail in place: `RetailEngine.kt`
     proves from its code that it kept retail's engine (every RAM global these features use is loaded by retail's code,
     unchanged, from a pool word still holding retail's address; docs/DEVELOPMENT.md's "Retail engine"). Proven, it gets
@@ -741,6 +749,26 @@ change to any of the places listed under "Where it's decided" updates its rows h
     party's bits each frame (fainted ones left out: Gen 1 counts every bit), FULL makes the `cp` a `ret`. Yellow headless (a Lv 2
     Rattata, 16 EXP): the others got 0 / 2 / 16 with OFF / SPLIT / FULL; Crystal and Gold / Silver's places match pret's symbols.
     Every retail cart here, Brown, Yellow Legacy, Crystal Clear, PureRed / PureBlue (not Crystal Legacy, Polished, Prism).
+    MODERN (Gen 2, 2026-11-23: `GbGamePatches.expModern`): FULL's `ret` plus three hooks into bank 0F's padding, two passes
+    as Gen 6 pays. The loop's NotFainted check pays only the fighters (wBattleParticipantsIncludingFainted) on the first pass, with
+    their boxes, level ups and moves; at .done one line ("The others gained EXP. Points!", German "Die anderen erhalten auch EP!",
+    two lines of the text box) shows when anyone else is marked, and the loop runs again for them alone: wStringBuffer2 (the amount)
+    halved, no gained box, their level ups and moves kept. The pass is wGivingExperienceToExpShareHolders = 2 (nothing reads that
+    byte; the win code writes 0, then 1 for a held Exp. Share's pass), put back to 0 before ResetBattleParticipants. Played headless on
+    Crystal rev 1 and Kristall: the fighter's box and level up, the line, then the other's level up (+16 / +8); with the Exp. Share
+    held the game's own two passes as with FULL. Found in every retail Gold / Silver / Crystal in English and German
+    (`GbGamePatchesTest`); other languages get the English line. Falls back to FULL where not found.
+    MODERN on Red / Blue / Yellow (2026-11-24, `GbGamePatches.expModernGen1`): the same two passes in GainExperience's bank (0x15 in
+    Red / Blue, the end of its padding), four hooks. The loop's flag check pays on the first pass the marked ones that fought
+    (wPartyFoughtCurrentEnemyFlags, set with the gain bit as a Pokémon goes out), on the rest's pass the marked ones that didn't;
+    `call nz, BoostExp` goes by a trampoline that, on the rest's pass, halves hQuotient's EXP after the boosts (stat EXP stays whole);
+    `ld hl, GainedText; call PrintText` shows no box on that pass; .done's `ld hl, wPartyGainExpFlags` jumps to the line and the second
+    pass. The pass is wBoostExpByExpAll = 2 (FaintEnemyPokemon writes 0 before the first pass and 1 before the EXP.ALL item's; only
+    the gained box reads it), back to 0 after. German carts (their box says "erhält") get the German line. Played headless: Rote
+    Edition and English Red (the German save), English Yellow (a new game with Red's party poked in): the fighter's box and level up,
+    the line, the others' level ups (+23 / +11 each; FULL +23 each); with EXP.ALL in the bag MODERN's passes, then the item's own
+    as the game. Found in Red / Blue / Yellow (USA, Europe), Rote / Blaue Edition (pret's builds of the English carts byte for byte);
+    the hacks on that code aren't checked.
 
 49. The European FireRed / LeafGreen / Emerald carts' TRAINER CARD (2026-11-18, `CardStyle.KANTO_DE` ... `HOENN_ES`): English's save
     offsets, each cart's own card tiles (their words are drawn in them), FONT_NORMAL, widths and redrawn tilemaps (found by mapping
@@ -832,6 +860,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 - **Field items**: ITEMS' USE (Repels, medicine, PP items) and GIVE / TAKE on a Pokémon (`FieldItems.kt`).
 - **FLY**: the MAP tab's FLY button (`Fly.kt`); ³⁴ marks FREE FLIGHT and the scenic FLY too (`Flight.kt`).
 - **Trainer card**: the CARD tab (`TrainerCard.kt`).
+- **Wild pin**: GUIDE > HERE's and the HUD's PIN, the next encounter that way (grass / cave, surfing, rock smash, a rod) on the map (`WildPin.kt`).
 - **AUTO-RUN**: never while surfing or diving (B surfaces: `TrySetupDiveEmergeScript`, GitHub #338; Ruby / Sapphire by the map's type). SoulGold's Autorun option and Odyssey's L are their own, on by default, so the row is ON and greyed there (`GAMES_WITH_OWN_AUTO_RUN`): our flip of B made them walk. Other hacks have one that starts off (Unbound, Radical Red, Lazarus, Seaglass, Imperium, Quetzal, R.O.W.E., Heart and Soul, Elite Redux, the Recharged games): with both on, B flips back.
 - **Field reads**: SCENE SPEEDS' TEXT SPEED, CONTROLS > AUTO-RUN and RUN INDOORS (`pk_field_state`). BATTLE / MENU
   SPEED and GUIDE > HERE's caught count need no per-ROM table: every game.
@@ -840,7 +869,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 - **PC anywhere**: the BAG's `PC` button (`Pc.kt`).
 - **Instant text**: GAMEPLAY > INSTANT TEXT, a text box's words at once, nothing else sped up (`InstantText.kt`). FireRed / LeafGreen / Emerald in every language and the hacks on agbcc's build of their text code: RenderFont rewritten in its own 40 bytes; Ruby / Sapphire: one branch in UpdateWindowText. gcc builds (expansion, Recharged) show N/A. Played headless with `rompatch` on FireRed, Emerald and Ruby: pages, scrolling, a wild battle's messages.
 - **Reusable TMs**: GAMEPLAY > REUSABLE TMS, a TM kept in the bag after it teaches a move (`ReusableTms.kt`).
-- **No HMs needed**: GAMEPLAY > NO HMS NEEDED, the field moves (Cut, Surf, Strength, Rock Smash, Waterfall, Dive) with the badge alone, the first Pokémon that isn't an egg doing them when nobody knows the move; the companion's FLY / FREE FLIGHT / FLASH follow it (`HmFree.kt`). ScrCmd_checkpartymove rewritten in its own 124 bytes (`scripts/hm_free.s`) and PartyHasMonWithSurf's `beq` made a `nop`, both found by agbcc's code: retail FireRed / LeafGreen / Emerald / Ruby / Sapphire in every language and revision and the hacks on that code (Unbound, Radical Red, the other CFRU hacks, Glazed, Kaizo, Emerald Legacy, Ultra Violet, Orange Islands, Rocket Edition, Ash Gray, Ghost Grey, Let's Go, Team Rocket Edition 1.5); gcc builds and Celia (Surf's check rebuilt) show N/A. Played headless with `rompatch`: FireRed rev 1 (Cut, nobody knowing it; Surf with and without a Pokémon knowing it), Emerald (Rock Smash), Ruby rev 1 (the command and Surf's check called directly; Secret Power keeps the game's rule).
+- **No HMs needed**: GAMEPLAY > NO HMS NEEDED, the field moves (Cut, Surf, Strength, Rock Smash, Waterfall, Dive) with the badge alone, the first Pokémon that isn't an egg doing them when nobody knows the move; the companion's FLY / FREE FLIGHT / FLASH follow it (`HmFree.kt`). ScrCmd_checkpartymove rewritten in its own 124 bytes (`scripts/hm_free.s`) and PartyHasMonWithSurf's `beq` made a `nop`, both found by agbcc's code: retail FireRed / LeafGreen / Emerald / Ruby / Sapphire in every language and revision and the hacks on that code (Unbound, Radical Red, the other CFRU hacks, Glazed, Kaizo, Emerald Legacy, Ultra Violet, Orange Islands, Rocket Edition, Ash Gray, Ghost Grey, Let's Go, Team Rocket Edition 1.5); gcc builds and Celia (Surf's check rebuilt) show N/A. Played headless with `rompatch`: FireRed rev 1 (Cut, nobody knowing it; Surf with and without a Pokémon knowing it), Emerald (Rock Smash), Ruby rev 1 (the command and Surf's check called directly; Secret Power keeps the game's rule). The Game Boy (`HmFreeGb.kt`, the English Red / Blue / Yellow / Gold / Silver / Crystal): our code in a bank's unused end (`scripts/hm_free_gb.asm`, assembled per cart from pret's .sym by `scripts/gen_hm_free_gb.py`). Gen 1 uses field moves only from the party menu: GetMonFieldMoves is wrapped to add the HMs whose badge is in (CUT, SURF, STRENGTH, FLASH, FLY, four rows at most), the game's handlers running them. Gen 2's CheckPartyMove (Cut, Surf, Strength, Whirlpool, Waterfall from the field) answers the first Pokémon that isn't an egg for those five; Headbutt / Rock Smash (TMs) keep the game's rule; the party submenu gets FLY / FLASH with their badges and room beside CANCEL. The companion's Game Boy FLY follows it. Played headless with `rompatch`: Red / Blue / Yellow's menus (STRENGTH, FLASH used), Gold's (FLY to New Bark) and Gold surfing with nobody knowing the move; CheckPartyMove called directly on Gold, Silver and Crystal with an egg in the lead. The DS (`DsHmFree.kt`, melonDS only): the game's two party move checks - the field move scripts' command (Platinum's FindPartySlotWithMove, HG / SS's GetPartySlotWithMove, Gen 5's command 44 of the field scripts' table) and the field's own (Party_HasMonWithMove / GetIdxOfFirstPartyMonWithMove: the A press on water and waterfalls; Gen 5's (gameData, move) counterpart) - start with a Thumb `bx pc` into an ARM jump to `stub/pk_nds_hm.c` at the ITCM's top (`pk_nds_call_hm_free`, every frame, only where the routine's own bytes are; out again where ours are), which answers the first Pokémon that isn't an egg for that game's HMs (Gen 4: Cut, Fly, Surf, Strength, Waterfall, Rock Smash, Rock Climb, Defog / Whirlpool; Gen 5: Cut, Fly, Surf, Strength, Waterfall, Dive). US Platinum rev 1 / HeartGold / SoulSilver from pret's xMAPs; Black / White / Black 2 / White 2 found with Ghidra on Black 2 and matched by code in the others. Checked headless with nds_dump's `hmfree`: every cart's field check (and Gen 4's script command run as a script) answering slot 0 for the HMs and the game's own answer for other moves, back when off; Black 2 surfing from Route 19 with nobody knowing Surf.
 - **Exp share**: GAMEPLAY > EXP SHARE, OFF / SPLIT / FULL EXP (`ExpShare.kt`): getexp's gSentPokesToOpponent set to the party's non-egg slots every frame (only getexp reads it), and for FULL EXP its two divisions by the count `nop`ed. Found by agbcc's Cmd_getexp, only where the game runs it (`ExpShare.getexp`: its address in a battle script command table the code loads): FireRed / LeafGreen / Emerald in every language and the hacks on that code (Gaia, Glazed, Kaizo, Emerald Legacy, Ultra Violet, Orange Islands, Rocket Edition, Ash Gray, Ghost Grey, the randomized builds). Ruby / Sapphire too (2026-11-18: their own build of it, `ExpShare.GETEXP_RS`, every language; played headless on Ruby rev 1: OFF nothing past the Lv 100 lead, SPLIT +454 to each of the three below 100, FULL EXP +2731 each). Not Odyssey and Let's Go (one division left), or the CFRU hacks (Radical Red, Unbound, Amethyst, Sword and Shield, GS Chronicles: they keep the old getexp but run their own). Pauses RetroAchievements. Played headless: a wild battle on FireRed rev 1 and Emerald, every party Pokémon's EXP read before and after, each mode.
   The DS: Platinum US rev 1, HeartGold / SoulSilver US, on melonDS (`ExpShare.dsFind`; `pk_nds_exp_share_tick` in `pk_nds_field.cpp`, run after every frame by `pk_nds.cpp` and `nds_dump`'s `expshare`). BtlCmd_CalcExpGain (Platinum 0x02241D34, HG / SS 0x0223E6A0, in the battle's overlay) counts the standing Pokémon with their bit in BattleContext.sideGetExpMask (+0xA4) and gives each `gainedExp` (+0x9C) = the EXP over that count, or with an Exp. Share held half of it over the count and the other half over the holders (`sharedExp`, +0xA0). SPLIT sets both sides' masks to the non-egg party slots every frame of a battle; FULL EXP patches three halfwords at +0x102 / +0x104 / +0x142 (the count -> 1, the halved EXP -> the whole on the item's path), all three or none, only over the expected bytes, put back when FULL goes, so with the item everyone gets the whole EXP and a holder its half on top. Gen 5 (Black / White / Black 2 / White 2, `IRBO` / `IRAO` / `IREO` / `IRDO`; no decomp: the battle overlay's EXP routine - Black 0x021CB2D4 in overlay 93, Black 2 0x021AEE0C in overlay 167; White / White 2 the same code 0x20 / 0x40 higher - found by the traded bonus's fx32 0x1B33 and read in Ghidra) keeps who fought each foe on the foe's BTL_POKEPARAM (+0xD0 a count, +0xD1 the ids, up to 24), counts the standing ones and divides by them, after halving for an Exp. Share (item 216) held. The EXP routine reads the server's BTL_POKECON (the main module's second, +0xC8 + 0xE8; the clients' at +0xC8), so SPLIT fills every foe's list in both with the party's non-egg places; FULL EXP is two halfwords: the halving's `subs r1, r1, r0` -> `nop`, the count -> 1. Played headless on all four the same six ways (Black 2 gains 34 / 17 + 17 / 34 + 34; held 17 + 17, 9 + 26, 34 + 51), FULL off and on mid-battle putting the bytes back. Not on DSperate (a code patch its recompiler wouldn't see), Renegade Platinum or the Redux builds (retail's headers, their battle code not checked), or the other languages. Played headless on all three Gen 4 carts: the same wild battle won with OFF / SPLIT / FULL, and again with the second Pokémon holding the item (Platinum 24 / 12 + 12 / 24 + 24; held: 12 + 12, 6 + 18, 24 + 36; the fainted third nothing), and FULL turned off and on mid-battle putting the game's bytes back.
   The Game Boy (GbGamePatches' `EXP1` / `EXP2`): the participants byte is written only while the game's battle byte says a wild (1) or trainer (2) battle is on (`ExpShare.mark`): outside one, Gen 2's wBattleParticipantsNotFainted shares its RAM with wSurroundingTiles and the PC's wBoxPartialData (pokecrystal's `SECTION UNION`). Gen 1's battle byte is wIsInBattle, the byte before wPartyGainExpFlags in every pokered build (`GbExpShareGateTest`); Gen 2's the config's wBattleMode. While a party Pokémon holds the Exp. Share (0x39) Gen 2 marks nothing: its holders' pass sets the byte itself. The mark used to stop at `GameRuntime.sampled`'s GBA-only return, so until 2026-11-19 it never reached a Game Boy game.
@@ -874,7 +903,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
   invisible sprite whose callback is SpriteCallbackDummy (`SwitchAddrs.cursorSpriteCallback`), checked headless on English and French
   Ruby rev 1 (DOWN, A, SHIFT sent slot 1 in; gPlayerParty in battle order while the menu is up, as FireRed's); not Japanese R / S.
 - **Hide battle menu** (two screens; not a column: it follows the battle buttons): `PokeDaisyActivity.battleMenuHideSupported`
-  (a BPR / BPG / BPE header running as FireRed / Emerald with the battle buttons' addresses and the one-press picks' cursors:
+  (a BPR / BPG / BPE header, or Ultra Violet's PUVV, running as FireRed / Emerald with the battle buttons' addresses and the one-press picks' cursors:
   the D-pad steers the hidden action menu by writing gActionSelectionCursor, `HiddenMenuSteer`), the menus found on screen by
   `pk_wide.c`'s `menuHideBegin` (no address of its own; gBattleTypeFlags keeps doubles' and the Safari Zone's). Checked
   headless on English FireRed rev 1 and Emerald (mgba_dump `battlemenu`), then (2026-11-15) a wild battle in every covered
@@ -886,7 +915,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
   edge with the frame's T + 6 tile, so the plain middle is T + 7 (the Western ones' too). Ruby / Sapphire too (2026-11-18): their cursor is
   sprites (menu_cursor.c), hidden for the frame with the menu (the shown OBJ entries whose top is inside the box), and their empty
   message box has no text tiles of its own, so the sign borrows the hidden menu's (off screen that frame); both menus hidden with the
-  sign drawn on English Ruby rev 1.
+  sign drawn on English Ruby rev 1. Ultra Violet too (2026-11-24): FireRed rev 0 under its own code PUVV, which the check now takes;
+  both menus hidden with the sign drawn on its own save.
 - **One-press picks**: `NativeConfig.actionCursor` / `moveCursor`, handed out only for a hash-verified ROM
   (`TelemetrySampler.knownCursorAddrs`; a randomized retail ROM's masked hash counts, `RandomizedRetail`), or for a hack
   whose code proves retail's engine (`RetailEngine`, note 30). Configs made with `.copy()` inherit them: zero them where the RAM moved.
@@ -1075,7 +1105,20 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     addresses come from its own code (`scripts/find_crystal_card.py`); Kristall's are English's shifted, its top line without
     NAME/. Every frame of both pages matched the games' own card headless, English and German, on the save as it is and with
     everything poked in (`CrystalTrainerCardTest`). Not on Crystal's hacks (Clear, Legacy, Prism, Polished).
-59. FOLLOWER on Crystal (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+    Gold / Silver (2026-11-24, `CardStyle.GOLD_SILVER`, English and German, `gen2/gold_silver/trainer_card.bin`): the same code
+    in pokegold, but the picture and frame are one blob drawn row by row (`Tables.rowMajor`), the border's corner is the
+    picture's tile $04, BADGES sits two tiles right in English, and the RAM is pokegold's (`Gen2TrainerCard.Ram`). Silver's
+    card art is Gold's byte for byte. Checked the same way (`GoldSilverTrainerCardTest`).
+    Red / Blue and Yellow (2026-11-24, `Gen1TrainerCard`, `CardStyle.RED_BLUE` / `YELLOW` and their `_DE`, English and German,
+    `gen1/<style>/trainer_card.bin`): pokered / pokeyellow's DrawTrainerInfo + DrawBadges, one screen (no second page, so no
+    flip): the player's picture (RedPicFront, columns 1-4 of its box after the game's tile shift), NAME / MONEY / TIME and the
+    leaders, a badge for each one beaten, coloured by SET_PAL_TRAINER_CARD (the POKéDEX's palette table: SuperPalettes on
+    Red / Blue, which run as a Super Game Boy; CGBBasePalettes on Yellow) and the cart's own BlkPacket_TrainerCard (Red / Blue's
+    RAINBOWBADGE blocks are a row taller). Addresses from DrawTrainerInfo's immediates (`scripts/find_gen1_card.py`). English
+    Yellow, German Yellow, English Blue and German Red each matched the game's card headless pixel for pixel, with every badge,
+    none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. Not yet: French, Italian
+    and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
+59. FOLLOWER on Crystal, Gold and Silver (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
     player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's
@@ -1084,4 +1127,126 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     tile, the window and, with wStateFlags bit 6, the menu / text tiles (0x60+) cover it; it goes behind the game's sprites
     unless it stands lower than the player. Its colours follow fades and the time of day off the player's OBJ palette.
     Checked headless on rev 1 (`gbfollow` / `gbfollowinfo`): turns, tall grass, the START menu, a wild battle and back.
-    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Other Game Boy games: no.
+    Route 29 into New Bark Town headless; played on the Thor (2026-11-20). Gold / Silver in English and German (2026-11-24): pokegold's
+    RAM, their own party icons; they keep no menu / text flag, so the font's tiles (0x60+) always cover it. Checked headless on Gold and
+    the Goldene Edition: turns, tall grass, the START menu, a wild battle and running from it. Other Game Boy games: no.
+60. MWisBest's "32-bit RTC + Timer RNG Fix" v1.0 of retail Emerald (USA, Europe), 2026-11-22: retail byte for byte but 76
+    bytes (AgbMain calls a new routine, one callback pointer, the routine itself in retail's zero space at 0x089C0D00), so it
+    runs as retail by its SHA-1 (`EMERALD_MWISBEST_V1_0_SHA1`, retail's config and cursors) and EXPAND / the field reads take
+    retail's CRC (`TelemetrySampler.retailTablesCrc`, through `WideTables.resolve`). Headless on the user's own save
+    (`emerald_mwisbest*`): `wideon 22 <retail CRC>` + `widecheck` walking, 271 of 271 frames exact, `fieldinfo` known; a
+    scripted wild battle with FIGHT on the cursor, a written move cell + A spending that move's PP; the PC opened through
+    special 63. Every field item, FLY, PC, trade evolution, TM and FLASH function passes its code CRC on the file, WILD
+    ENCOUNTERS', REUSABLE TMS' and INSTANT TEXT's sites are retail's (`MWisBestDecodeTest`). FLY wasn't flown (the save has
+    no badge yet). RetroAchievements knows the file's MD5 as Emerald (game 668).
+61. The DS games' bag on a Pokémon (`DsBag.kt`, `nds/stub/pk_nds_item.c`, `pk_nds_call.cpp`'s `PK_NDS_ACTION_ITEM`, 2026-11-14):
+    USE of medicine, PP items, vitamins and the field berries, GIVE and TAKE, each the party menu's own functions in one job
+    (Platinum's `Pokemon_CheckItemEffects` / `Pokemon_ApplyItemEffects` / `Bag_TryRemoveItem` / `Bag_TryAddItem` /
+    `Pokemon_SetValue` / `Pokemon_SetArceusForm`, HeartGold / SoulSilver's `CanUseItemOnPokemon` / `UseItemOnPokemon` /
+    `Bag_TakeItem` / `Bag_AddItem` / `SetMonData` / `Pokemon_UpdateArceusForm`; addresses from pret's xMAPs - Platinum's
+    `xmap` branch, HeartGold built in its Docker image, its checksum test passing) through a helper in the spare ITCM (the
+    apply takes five arguments). It re-reads the Pokémon's personality before acting, takes the item out of the bag only after
+    the game's own check says it would do something, and leaves Rare Candy, the stones, Sacred Ash, Mail and the Griseous Orb
+    to the game's menus. Proved headless on each cart (a new game, two Pokémon and items given by its own script commands,
+    HP / PP / status set with `Pokemon_SetValue`, every case through nds_dump's `action 4`, then an in-game save and a cold
+    reboot with every change kept); SoulSilver on the HeartGold save. The German / French carts share callSet 2 but aren't
+    tried, so `DsBag.CARTS` leaves them out, as it does the language ports; Renegade Platinum, Blaze Black 2 / Volt White 2
+    Redux, Heartfelt Gold and Sacred Gold / Storm Silver keep a retail header and are turned away by their layout (the
+    activity's `dsRetailHeaderHack`, which TRADE EVOLUTIONS and NO HMS NEEDED share).
+    Black, White, Black 2 and White 2 (US / Europe) have no decomp, and their item effects live in an overlay only the party
+    screen loads, where the field's own overlay sits: the field can't call them. So there USE applies the effect `DsBag`
+    gives the item (HP, a revive, status, PP; not the herbs, vitamins, PP Up or Rare Candy) through the game's own getter /
+    setter of a Pokémon (`stub/pk_nds_item5.c`; the setter takes the value itself, fixes the checksum and encrypts) and its
+    own bag calls; GIVE / TAKE are the game's calls alone, the Drives, Plates and Griseous Orb left to the game. Found by
+    nds_dump's `watch` on the Pokémon's record and the bag's slot while the game's own bag used a Potion on the player's
+    Black 2 save, then White 2's / Black's / White's by Black 2's code with calls masked and by shape (Black / White's bag
+    calls take a heap: HEAPID 1, which the field always has). Each proved like Gen 4 (every case, an in-game save through
+    the X menu, a cold reboot), Black and White on the player's Black save, Black 2 and White 2 on the Black 2 one.
+62. Bag USE on Crystal (2026-11-23, `Gen2ItemCalls` in `Gen2ItemUse.kt`, `GbField.CrystalEngine.useItem`; rev 0 / rev 1 / AU and the
+    German cart, each by its code): healing items, status cures, REVIVE / MAX REVIVE, FULL RESTORE, ETHER / ELIXER kinds and the
+    three Repels, the BICYCLE and the three rods, on the field only (the engine's `free`). The BICYCLE and the rods run ReanchorMap first, as SELECT's item
+    use does (without it the get-off script's CloseText left EXPAND's margins wrong until the next map), then far-calls the game's BikeFunction with
+    wUsingItemWithSelect set (its checks, the music) and moves the script it queues into wMapReentryScriptQueue, which the overworld runs; a rod far-calls its own item effect (OldRodEffect + 4 * rod: FishFunction) the same way. The item leaves the bag through the game's own TossItem (called from the
+    overworld loop like the PC), then the effect is written into the party struct by the decomp's rules (HealingHPAmounts /
+    StatusHealingActions / the moves' PP read from the cart; PP Ups kept), wRepelEffect for a Repel. Every other item the pack can use
+    goes through the game's own SELECT item use, UseRegisteredItem (bank 04, EN 0x73C3 / DE 0x73C8) far-called from the overworld loop with
+    wCurItem set: COIN CASE / BLUE CARD
+    show their text (ITEMMENU_CURRENT), ESCAPE ROPE, SACRED ASH, ITEMFINDER, SQUIRTBOTTLE and the two keys (ITEMMENU_CLOSE) run their
+    effect and queue its script like the bike (wItemEffectSucceeded = 1), else the game's own "not the time". TMs / HMs pick the Pokémon
+    in the companion like the medicine: who can learn it by the cart's BaseData TM / HM bits (CanLearnTMHMMove), not one that knows it
+    (KnowsMove), and with four moves the one it forgets, never an HM's (ForgetMove's rule), asked once more (FORGET / CANCEL). A routine at
+    wStackBottom (C000, `Gen2TmFns.routine`: 42 bytes, 47 with a move to forget) runs TeachTMHM over the map with wCurPartyMon /
+    wCurPartySpecies set: OpenText, GetTMHMItemMove, the move's name, wOptions' NO_TEXT_SCROLL off, the forgotten move's slot zeroed (so
+    LearnMove puts the new move and its PP there without ForgetMove's menu, which over the field leaves the map's attributes on the text
+    palette until CloseText; zeroed by the routine itself, so a call that never runs leaves the move alone), TeachTMHM (it spends a TM),
+    CloseText.
+    The bitter herbs, the vitamins and PP UP pick the Pokémon here as well: the herbs heal like their kind, then ChangeHappiness's row of
+    HappinessChanges (bank 01, EN 0x7221 / DE 0x7242) by the friendship's band; a vitamin adds 10 to its stat experience's high byte while
+    it's under 100 (VitaminEffect), its friendship change, then RareCandy_StatBooster_GetParameters + UpdateStatsAfterItem (bank 03, EN
+    0x6EF5 / 0x6E8C, DE 0x6EC4 / 0x6E60) far-called by a 13-byte routine at C000 (`vitaminRoutine`); PP UP one move, not SKETCH, under
+    three PP Ups, the count + 1 and ApplyPPUp's ComputeMaxPP, which with wUsePPUp (= wTempPP) at 1 adds min(base / 5, 7) once.
+    RARE CANDY (below level 100, a fainted one too) and the stones (EvosAttacks has that stone, no EVERSTONE held) pick the Pokémon here,
+    then an 81-byte routine at C000 (`partyItemRoutine`, `Gen2PartyItemFns`) runs SELECT's ITEMMENU_PARTY with the pick left out:
+    ReanchorMap, FadeToMenu, wPartyMenuActionText / wPartyMenuCursor, ClearBGPalettes, ChooseMonToUseItemOn's party menu up to
+    PartyMenuSelect (bank 14), wCurPartyMon / wCurPartySpecies, then RareCandyEffect / EvoStoneEffect + 8 (bank 03, past their
+    UseItem_SelectMon; EN 0x6F14 / 0x6E0F, DE 0x6EE3 / 0x6DE3) far-called: the game's level-up text and stats, LearnLevelMoves, the
+    evolution, UseDisposableItem; CloseSubmenu, CloseText. The companion window closes for it (`USING_IN_GAME`).
+    Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
+    cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY
+    picked here on a level 35 QUILAVA: level 36, the stats box, the evolution, one candy spent, back on the map; a THUNDERSTONE on a
+    PIKACHU: RAICHU, the stone spent; ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    `Gen2ItemUseTest`.
+63. WILD PIN (`WildPin.kt`): while a pin is on, the pinned method's slots on the map ({u8 min, u8 max, u16 species},
+    the WildPokemonInfo's slot array, `GuideRomSource.pinSlots`: `WildPin.Method` LAND 12, WATER 5, ROCK_SMASH 5,
+    FISHING 10 - all three rods' slots, so any rod catches it) are one ROM block beside PLAYER LOOK's (one `pkRomBlocks`
+    call: each replaces every block), every slot the pinned species at its own level range over that method's slots,
+    guarded by the file's bytes' CRC32. One pin at a time. It goes out on the frame a battle starts with
+    gBattleTypeFlags' TRAINER clear, on another map, on UNPIN, when NUZLOCKE goes on or co-op starts for the game (PIN is
+    greyed in both), and with its core; RetroAchievements stay paused until that wild battle ends. Offered by the running GUIDE tables
+    (`WildPin.offered`): retail English FireRed rev 1, LeafGreen rev 0 / 1 and Emerald, so their randomized builds too
+    (the ROM's own species), and Monomyth v1.0 / v1.1 (vanilla's wild headers; every v1.1 water / rock smash / fishing
+    table checked: 93 / 39 / 87, all valid 5 / 5 / 10 slots, like retail Emerald's 55 / 6 / 53; not v1.2 yet). Headless:
+    mgba_dump `romblocks` takes `WildPin.Pin.toText()`'s line.
+64. Bag USE on Gold / Silver (2026-11-24, `GEN2_ITEM_CALLS_GOLD` / `_SILVER` / `_GOLD_DE` / `_SILVER_DE` in `Gen2ItemUse.kt`,
+    `GbField.GoldSilver(itemCalls)`; English and German, each by its code): note 62's whole set, the same way, from pret/pokegold's
+    symbols (each function and table found by its bytes in all four carts). Its RAM is its own (wCurItem D002, wCurPartyMon D005,
+    wRepelEffect D9EB, wPlayerState D682, the registered item D681), and the routines run at wStackBottom DF03, not C000. Gold and
+    Silver have no BLUE CARD. Checked headless on all four carts (`GoldItemUseLiveTest`, opt-in `POKEDAISY_GB_LIVE=1`, with the German
+    saves: no English one exists here): a Repel, a Potion, a vitamin, PP UP, HM01 taught, RARE CANDY, a MOON STONE evolution, the bike on
+    and off, a rod and ESCAPE ROPE refused in town; the COIN CASE's text on the German carts only (a German save in an English cart
+    leaves the game's own SELECT COIN CASE broken too).
+65. Bag USE on Red / Blue (English and German) and Yellow (English and German) (2026-11-24, `Gen1ItemCalls` in `Gen1ItemUse.kt`,
+    `GbField.Gen1.bagUse`, each cart by its code): healing items, FULL RESTORE, status cures, REVIVE / MAX REVIVE, ETHER / ELIXER kinds,
+    PP UP and the three Repels, on the field only. The item leaves the bag through the game's own RemoveItemFromInventory (home, called
+    from the overworld loop like the PC: hl = wNumBagItems, wWhichPokemon = its place, wItemQuantity = 1), then the effect is written
+    into the party struct by pokered's / pokeyellow's item_effects.asm (the moves' base PP read from the cart's Moves table, PP Ups
+    kept), wRepelRemainingSteps for a Repel. Yellow's starter Pikachu gets ModifyPikachuHappiness's PIKAHAPPY_USEDITEM for an item up
+    to CALCIUM (HappinessChangeTable / PikachuMoods read from the cart) and follows again after a REVIVE (wPikachuSpawnState =
+    PIKACHU_SPAWN_DELAYED). TMs / HMs (ItemUseTMHM): CanLearnTM's bit in the cart's BaseStats by Pokédex number (Red's MEW in
+    MewBaseStats), not known already; LearnMove's slot (the first empty one, else the one picked to forget, never an HM's move) gets the
+    move and its base PP; a TM is spent, an HM stays (checked on the field first); Yellow's starter gets PIKAHAPPY_USEDTMHM and THUNDERBOLT
+    / THUNDER's mood. The BICYCLE (ItemUseBicycle): not surfing, not off where BIT_ALWAYS_ON_BIKE holds the player on it, on only where
+    IsBikeRidingAllowed (ROUTE 23, INDIGO PLATEAU, BikeRidingTilesets read from the cart); wWalkBikeSurfState written, then PlayDefaultMusic
+    and LoadPlayerSpriteGraphics called from the loop; Yellow's Pikachu back on getting off. The rods and the ESCAPE ROPE (`Gen1GameUse`)
+    run the game's own UseItem: a routine in the stack section's bottom (0xDF1A, past Yellow's CGB palette buffer) saves the ROM bank,
+    calls DisplayTextIDInit, sets wPseudoItemID 0 / wCurItem / wWhichPokemon = the bag slot and jumps to UseItem with the return pointed
+    at the start menu's closing rebuilt inline (CloseTextDisplay's body: it ends in `pop af`; no GBPalWhiteOutWithDelay3, which flashed the
+    screen white); a bite (wCurOpponent) or a warp (wStatusFlags6 FLY_WARP / DUNGEON_WARP) leaves the rest to the overworld loop. The
+    vitamins, RARE CANDY and the stones are picked on the companion (vitamins: stat experience's high byte under 100; RARE CANDY: under
+    level 100; a stone: an EVOLVE_ITEM entry in the cart's EvosMovesPointerTable for it at the Pokémon's level, never Yellow's starter)
+    and skip their party menu: the same routine pushes what their routine pushes before DisplayPartyMenu (wWhichPokemon, wCurItem; the
+    stone's wEvoStoneItemID), sets wWhichPokemon / wCurPartySpecies as the menu leaves them, switches to bank 3 with carry clear and jumps
+    past the menu's call (ItemUseMedicine's `jp c`, ItemUseEvoStone's next line). RARE CANDY first runs DisplayPartyMenu but its
+    input (GBPalWhiteOutWithDelay3, ClearSprites, PartyMenuInit with the cursor on the Pokémon, DrawPartyMenu): its level-up message
+    redraws the party menu, which without its tiles showed the field's in their place. That part sits right after the closing, low,
+    since it runs after the menu's calls (in the way in, the stack overwrote it). RARE CANDY and the stones get the whiteout and
+    RestoreScreenTilesAndReloadTilePatterns back (their screens), then the bank is put back. Evolution, level-up, learned moves and the bag
+    are the game's. Left out: GIVE / TAKE (Gen 1 has no held items). English Red is pokered's build (= the cart); Blue shares its code. The
+    removal was run headless on the German Red cart (three POTIONs out one by one, the emptied slot closed up, the game running on), and
+    the BICYCLE there (on in Vermilion City with the bike sprite and speed, then off), and the game's own UseItem on German Red (a stone's
+    evolution, HP UP, B on its party menu, the OLD ROD's bite and battle, the ESCAPE ROPE's warp, RARE CANDY learning a move; picked from
+    the companion: HP UP with no white flash, RARE CANDY's level and stats over the party menu, a THUNDER STONE evolving PIKACHU, the OLD ROD's bite with the
+    light closing) and German Yellow (the rope, a stone, RARE CANDY forgetting a move; the partner back behind the player; picked: a vitamin,
+    a stone refused by the starter with the bag untouched, the rod refused indoors); Yellow and English Red only by their code (no save
+    here). `Gen1ItemUseTest`.
+

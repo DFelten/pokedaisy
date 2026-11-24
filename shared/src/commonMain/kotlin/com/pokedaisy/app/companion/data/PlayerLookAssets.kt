@@ -37,6 +37,7 @@ class PlayerLookAssets(private val files: Path, private val isRetail: (String) -
         val rev = rom.getOrNull(0xBC)?.toInt()?.and(0xFF)
         val size = rom.size.toLong()
         val verified = isRetail(hash) || hash in PlayerLook.HACKS ||
+            hash == TelemetrySampler.EMERALD_MWISBEST_V1_0_SHA1 ||
             RetailDumps.matchStream(code, rev, size) { Buffer().write(rom) } != null ||
             RandomizedRetail.matchStream(code, rev, size) { Buffer().write(rom) } != null
         if (!verified || !current()) return null

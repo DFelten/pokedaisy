@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +67,7 @@ internal fun MissingPage(
                 else -> LazyColumn(Modifier.fillMaxSize()) {
                     // Room for the line under each row (its level and the way it comes, or why it can't).
                     val rowHeight = m.rowHeight + subtitleLine
-                    items(shown, key = { it.species }) { e ->
+                    itemsIndexed(shown, key = { _, it -> it.species }) { i, e ->
                         val best = e.best
                         OptionLine(
                             "No.${e.number.toString().padStart(3, '0')} ${MissingDex.speciesName(state.editor, e.species)?.let(::caps) ?: "#${e.species}"}",
@@ -74,7 +75,7 @@ internal fun MissingPage(
                             selected = false, m, height = if (best != null) rowHeight else m.rowHeight, labelWeight = 0.55f, divider = true,
                             // Which game it's in, then its level and the way it comes, or why it can't yet.
                             subtitle = best?.let { wayLine(it, view.sources) },
-                            enabled = best?.reachable == true, chevron = best?.reachable == true,
+                            enabled = best?.reachable == true, chevron = best?.reachable == true, stripe = i % 2 == 1,
                         ) { best?.takeIf { it.reachable }?.let(onGet) }
                     }
                 }

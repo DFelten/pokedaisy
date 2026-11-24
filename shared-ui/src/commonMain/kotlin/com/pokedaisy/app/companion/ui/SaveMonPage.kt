@@ -178,10 +178,12 @@ private fun InfoTab(state: PcBoxesState, mon: SaveMon, level: Int, at: MonRef, e
     val e = state.editor
     OptionListWindow(m, modifier) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            // Every other row banded, counted as they're drawn.
+            var rows = 0
             @Composable
             fun row(label: String, value: String, open: (() -> Unit)?) = OptionLine(
                 label, value, selected = false, m, labelWeight = 0.36f, divider = true, chevron = editable && open != null,
-                onClick = { if (editable) open?.invoke() },
+                stripe = rows++ % 2 == 1, onClick = { if (editable) open?.invoke() },
             )
             val rename = e.canWriteNames && e.isOwn(mon) && (mon as? com.pokedaisy.app.companion.data.save.Gen3BoxMon)?.language != 1
             row(tk("NICKNAME"), monLabel(mon), if (rename) ({ state.editing = PcBoxesState.Editing.Nickname(at) }) else null)
@@ -287,11 +289,11 @@ private fun MovesTab(state: PcBoxesState, mon: SaveMon, at: MonRef, editable: Bo
                 val ups = (mon.ppBonuses shr (i * 2)) and 3
                 OptionLine(
                     moveLabel(id, mon.game), "PP ${mon.pp[i]}/${mon.game.ppWithBonus(id, ups)}", selected = false, m, labelWeight = 0.62f, divider = true,
-                    chevron = editable, onClick = { if (editable) state.editing = PcBoxesState.Editing.Move(at, i) },
+                    chevron = editable, stripe = i % 2 == 1, onClick = { if (editable) state.editing = PcBoxesState.Editing.Move(at, i) },
                 )
             }
             if (editable && moves.size < 4) {
-                OptionLine(tr("ADD MOVE"), null, selected = false, m, chevron = true) { state.editing = PcBoxesState.Editing.Move(at, moves.size) }
+                OptionLine(tr("ADD MOVE"), null, selected = false, m, chevron = true, stripe = moves.size % 2 == 1) { state.editing = PcBoxesState.Editing.Move(at, moves.size) }
             }
             if (editable) {
                 GbaText(

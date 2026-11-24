@@ -154,6 +154,14 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
                    style: com.pokedaisy.app.companion.BattleStyle = com.pokedaisy.app.companion.BattleStyle.GEN4,
                    private val dsperate: Boolean = false) : CompanionSettings {
     private var battleFocusOn = battleFocus
+    // SETTINGS FOR: a game with two settings of its own (FF SPEED, REWIND); a tap on the row flips it.
+    override val gameSettings = object : com.pokedaisy.app.companion.GameSettingsControl {
+        private var own = false
+        override val thisGame get() = own
+        override fun setThisGame(on: Boolean) { own = on }
+        override val overridden = setOf(com.pokedaisy.app.companion.SharedSetting.FF_SPEED, com.pokedaisy.app.companion.SharedSetting.REWIND)
+        override fun reset() {}
+    }
     // A DS game on DS CORE DSPERATE (no EXPAND): the `*-settings-expand-dsperate` shot.
     override val dsCore get() = if (dsperate) com.pokedaisy.app.companion.DsCore.DSPERATE else null
     override val dsMelonDs get() = !dsperate
@@ -233,6 +241,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override fun setRunIndoors(on: Boolean) { runIndoorsOn = on }
     override val runIndoorsSupported get() = true
     override val tradeEvolutionsSupported get() = true
+    override val quickHatchSupported get() = true
     private var volumePercent = 70
     override val gameVolume get() = volumePercent
     override fun setGameVolume(percent: Int) { volumePercent = percent }
@@ -262,6 +271,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override val expShare get() = expShareMode
     override fun setExpShare(mode: com.pokedaisy.app.companion.data.ExpShare.Mode) { expShareMode = mode }
     override val expShareSupported get() = true
+    override val expShareModernSupported get() = true
     private var levelCapOn = false
     override val levelCap get() = levelCapOn
     override fun setLevelCap(on: Boolean) { levelCapOn = on }
@@ -287,6 +297,8 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     private var battleRetryOn = false
     override val battleRetry get() = battleRetryOn
     override fun setBattleRetry(on: Boolean) { battleRetryOn = on }
+    override val levelUpAllSupported get() = true
+    override fun levelUpOffer(done: (com.pokedaisy.app.companion.data.LevelUpOffer?) -> Unit) = done(previewLevelUpOffer())
     private var shinyOddsValue = com.pokedaisy.app.companion.data.ShinyOdds.NORMAL
     override val shinyOdds get() = shinyOddsValue
     override fun setShinyOdds(odds: Int) { shinyOddsValue = odds }
@@ -294,7 +306,7 @@ class FakeSettings(showHintsInitially: Boolean = true, initialTabs: List<String>
     override val shinyOddsSupported get() = com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.FIRERED ||
         com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.EMERALD
     override val autoRunBuiltIn get() = com.pokedaisy.app.companion.data.activeGame in com.pokedaisy.app.companion.data.GAMES_WITH_OWN_AUTO_RUN
-    override val reusableTmsBuiltIn get() = com.pokedaisy.app.companion.data.activeGame in com.pokedaisy.app.companion.data.ReusableTms.BUILT_IN
+    override val reusableTmsBuiltIn get() = com.pokedaisy.app.companion.data.ReusableTms.builtIn
     // PLAYER LOOK: the other games' heroes kept, the player in their own.
     private var lookWorn: String? = null
     override val playerLookSupported get() = true
@@ -540,9 +552,15 @@ fun companion(
     lock: com.pokedaisy.app.companion.coop.lock.CoopLockUi? = null,
     dsperate: Boolean = false,
     partyStorage: Boolean = false,
+    /** TAB BAR > SHOW AS ICONS, POSITION, SIZE COMPACT. */
+    tabIcons: Boolean = false,
+    tabPlace: com.pokedaisy.app.companion.ui.theme.TabBarPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM,
+    tabCompact: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons)
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabBar(tabPlace, tabCompact)
     DeviceBattery.status.value = battery
     val sv = snap()
     val back = com.pokedaisy.app.companion.ui.CompanionBack().also { previewBack = it }
@@ -557,6 +575,8 @@ fun companion(
 
 /** The preview party with personalities (the POKéMON CENTER's button needs one to check it against). */
 fun centerSnapshot() = snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> m.copy(personality = 0x1000L + i, moves = m.moves.mapIndexed { j, mv -> mv.copy(id = 33 + j) }) }) }
+/** The preview save with its lead an Egg (QUICK HATCH's shots). */
+fun eggSnapshot(): SnapshotView = snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> if (i == 0) m.copy(isEgg = true) else m }) }
 
 /**
  * USE / GIVE as retail FireRed rev 1 answers them (FieldItems.kt), for every game's preview - so each
@@ -580,6 +600,10 @@ class PreviewItemUse(private val party: List<MonView>, private val bagFull: Bool
     override fun centerHeal(done: (com.pokedaisy.app.companion.data.CenterResult) -> Unit) = done(com.pokedaisy.app.companion.data.CenterResult.OK)
     override fun centerForget(slot: Int, personality: Long, moveIndex: Int, move: Int, done: (com.pokedaisy.app.companion.data.CenterResult) -> Unit) =
         done(com.pokedaisy.app.companion.data.CenterResult.OK)
+    // QUICK HATCH: an Egg's summary has HATCH; confirming it says to take a step.
+    override fun canHatch() = true
+    override fun hatch(slot: Int, personality: Long, done: (com.pokedaisy.app.companion.data.HatchResult) -> Unit) =
+        done(com.pokedaisy.app.companion.data.HatchResult.HATCHING)
     // PC anywhere: the button shows; a tap answers "not now" (a menu open), as the BAG pops it up.
     override fun canPc() = true
     override fun openPc(done: (com.pokedaisy.app.companion.data.ItemUseOutcome) -> Unit) =
@@ -697,6 +721,25 @@ fun realShinyBattle(state: Int): SnapshotView {
     com.pokedaisy.app.companion.data.DecompIconSource.tables = icons
     // The preview's own battle (connected, its game, its party) with the real battlers in it.
     return battle(state).copy(battlePlayer = real.battlePlayer, battleOpponent = real.battleOpponent)
+}
+
+/** LEVEL UP ALL over made-up records: nine below Lv34, six below the next boss's Lv21, two with a move to answer. */
+private fun previewLevelUpOffer(): com.pokedaisy.app.companion.data.LevelUpOffer {
+    val rules = com.pokedaisy.app.companion.data.LevelUpRules(
+        com.pokedaisy.app.companion.data.MONOMYTH_PARTY_MON, expRow = { null }, baseStats = { null }, movePp = { 20 },
+    )
+    val planned = (0 until 9).map { i ->
+        com.pokedaisy.app.companion.data.PlannedRaise(
+            com.pokedaisy.app.companion.data.RosterSlot(0x02000000L + i * 100, true, ByteArray(100)),
+            com.pokedaisy.app.companion.data.RaisePlan(12, 34, 25, if (i == 0) 1 else 25, if (i < 2) listOf(85) else emptyList()),
+            intArrayOf(33, 45, 98, 84),
+        )
+    }
+    return com.pokedaisy.app.companion.data.LevelUpOffer(
+        rules, com.pokedaisy.app.companion.data.LevelUpChoice(34, planned),
+        com.pokedaisy.app.companion.data.LevelUpChoice(21, planned.take(6)), "SANTANA",
+        partyLowest = 12, pcLowest = 9, planAt = { planned },
+    )
 }
 
 /** The wild foe shiny (SHINY ODDS' marks). */
@@ -836,7 +879,65 @@ fun dexShots(game: GameKind, live: ((SnapshotView) -> SnapshotView)?, w: Int, h:
         com.pokedaisy.app.companion.ui.DexSection.AREA to if (game == GameKind.EMERALD) 263 else 129,
         com.pokedaisy.app.companion.ui.DexSection.MOVES to if (game == GameKind.EMERALD) 252 else 1,
     )
-    return entries.map { (section, entry) ->
+    // The list's filters: a type relation with a stat SORT, NAME's letter grid, PARTY + PC (five caught entries stand in
+    // for the party and boxes), and the pick-lists.
+    fun listShot(name: String, setUp: com.pokedaisy.app.companion.ui.DexUiState.() -> Unit, tap: (SkikoComposeUiTest.() -> Unit)? = null) =
+        Shot("$g-dex-list-$name", w, h, d, {
+            val holdings = dex.caught.sorted().take(5).withIndex().associate { (i, n) -> PokedexSource.speciesFor(dex.tables, n) to i }
+            val content: @Composable () -> Unit = {
+                com.pokedaisy.app.companion.ui.theme.AppTheme {
+                    val ui = androidx.compose.runtime.remember {
+                        com.pokedaisy.app.companion.ui.DexUiState(androidx.compose.foundation.lazy.LazyListState()).apply(setUp)
+                    }
+                    com.pokedaisy.app.companion.ui.CompanionScreenSize { com.pokedaisy.app.companion.ui.PokedexScreen(dex, ui, holdings = holdings) }
+                }
+            }
+            content
+        }) { waitUntil(5_000) { onAllNodesWithText("LOADING").fetchSemanticsNodes().isEmpty() }; tap?.invoke(this) }
+    // Back from an entry of a sorted list: the list is where the entry is (three rows above it), not at its top.
+    var backUi: com.pokedaisy.app.companion.ui.DexUiState? = null
+    val backEntry = dex.caught.sorted().getOrNull(3) ?: 1
+    val backShot = Shot("$g-dex-list-sorted-back", w, h, d, {
+        val content: @Composable () -> Unit = {
+            com.pokedaisy.app.companion.ui.theme.AppTheme {
+                val ui = androidx.compose.runtime.remember {
+                    com.pokedaisy.app.companion.ui.DexUiState(androidx.compose.foundation.lazy.LazyListState())
+                        .apply { sort = com.pokedaisy.app.companion.data.DexSort.SPEED }.also { backUi = it }
+                }
+                com.pokedaisy.app.companion.ui.CompanionScreenSize {
+                    val open = ui.open
+                    if (open != null) com.pokedaisy.app.companion.ui.PokedexEntryScreen(dex, ui, open)
+                    else com.pokedaisy.app.companion.ui.PokedexScreen(dex, ui)
+                }
+            }
+        }
+        content
+    }) {
+        waitUntil(5_000) { onAllNodesWithText("LOADING").fetchSemanticsNodes().isEmpty() }
+        runOnIdle { backUi!!.open = backEntry }
+        waitForIdle()
+        runOnIdle { backUi!!.open = null }
+        waitForIdle()
+        println("sorted-back: entry No.$backEntry = species ${PokedexSource.speciesFor(dex.tables, backEntry)}, first row index ${backUi!!.list.firstVisibleItemIndex}")
+    }
+    val listShots = listOf(
+        backShot,
+        listShot("query", {
+            filter = com.pokedaisy.app.companion.ui.DexFilter.SEEN
+            type = "Water"; relation = com.pokedaisy.app.companion.data.TypeRelation.HITS
+            sort = com.pokedaisy.app.companion.data.DexSort.ATTACK
+        }),
+        listShot("name-grid", { name = "AR"; typing = true }),
+        listShot("name", { name = "AR"; sort = com.pokedaisy.app.companion.data.DexSort.SPEED }),
+        listShot("held", { filter = com.pokedaisy.app.companion.ui.DexFilter.HELD; sort = com.pokedaisy.app.companion.data.DexSort.TOTAL }),
+        listShot("relation-pick", {}) {
+            onNodeWithText("TYPE: ALL").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("WATER").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        listShot("sort-pick", {}) { onNodeWithText("SORT: DEX NO.").performSemanticsAction(SemanticsActions.OnClick) },
+    )
+    return listShots + entries.map { (section, entry) ->
         Shot("$g-dex-${section.name.lowercase()}", w, h, d, {
             val s = live(snapshot())
             val content: @Composable () -> Unit = {
@@ -1056,7 +1157,7 @@ fun palPark(setup: com.pokedaisy.app.companion.ui.PalParkState.() -> Unit = {}):
 fun transfer(setup: com.pokedaisy.app.companion.ui.PokeTransferState.() -> Unit = {}): () -> (@Composable () -> Unit) = {
     val state = transferDemo().apply(setup)
     val content: @Composable () -> Unit = { com.pokedaisy.app.companion.ui.SaveEditorText {
-        com.pokedaisy.app.companion.ui.PokeTransferScreen(state, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(), onBack = {}, onSave = {})
+        com.pokedaisy.app.companion.ui.PokeTransferScreen(state, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(), onBack = {}, onSave = {}, iconsGen4 = demoIcons, iconsGen5 = demoIcons)
     } }
     content
 }
@@ -1104,6 +1205,13 @@ fun previewThemeDay(t: com.pokedaisy.app.companion.ui.theme.ThemeSpec): kotlinx.
 
 /** What PokeDaisyApp.onCreate hands the shared screens on Android: art files and theme storage over the shim Context. */
 fun installPreviewHosts() {
+    // Every screen as the next release has it: every batch on (-PflagsOff=true: as players have it now).
+    (System.getProperty("flagsOff") != "true").let {
+        com.pokedaisy.app.companion.FlaggedFeatures.settingsPlus = it
+        com.pokedaisy.app.companion.FlaggedFeatures.modernLook = it
+        com.pokedaisy.app.companion.FlaggedFeatures.shinyHunt = it
+        com.pokedaisy.app.companion.FlaggedFeatures.spoilerFree = it
+    }
     val context = android.content.Context()
     com.pokedaisy.app.companion.data.RomArt.filesDir = okio.Path.Companion.run { context.filesDir.toOkioPath() }
     val prefs = Prefs(context)
@@ -1146,10 +1254,60 @@ fun seasonalLibrary(label: String) = run {
     LibraryActivity().apply { seasonalTheme = t }
 }
 
+/**
+ * MY LOOK with things added, for its shots: two themes from files (MIDNIGHT worn when [wearTheme]), a font (the app's own
+ * Nunito under another name, standing in for a player's), and with [picture] a drawn landscape behind the app ([companion]:
+ * behind the companion too). No third-party picture or font is ever used here.
+ */
+fun withMyLook(picture: Boolean = false, companion: Boolean = false, wearTheme: Boolean = false, wearFont: Boolean = false) {
+    val look = com.pokedaisy.app.companion.ui.theme.CustomLook
+    fun theme(json: String) = com.pokedaisy.app.companion.ui.theme.ThemeFiles.import(mapOf("theme.json" to json.encodeToByteArray()))
+    val midnight = theme("""{ "name": "MIDNIGHT", "color": "#3D6FE0", "glows": ["#C4DAFF", "#FFD6E8", "#D6F0FF"] }""")
+    theme("""{ "name": "PEACH", "color": "#E8743C" }""")
+    val font = look.addFont("Rounded Demo.ttf", File("fonts/Nunito-ExtraBold.ttf").readBytes())
+    if (wearTheme) { Prefs(android.content.Context()).appTheme = midnight.id; com.pokedaisy.app.companion.ui.theme.AppColors.applyTheme(midnight) }
+    if (wearFont) com.pokedaisy.app.companion.ui.theme.AppFonts.wear(font)
+    if (picture) {
+        look.previewApp = demoLookPicture()
+        look.setBackground(false, com.pokedaisy.app.companion.ui.theme.LookBackground.PICTURE)
+    }
+    if (companion) {
+        look.previewCompanion = demoLookPicture()
+        look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.SAME_AS_APP)
+    }
+}
+
+/** The library's view pick-list (the header's view button), then [label]'s view. */
+fun androidx.compose.ui.test.SkikoComposeUiTest.pickLibraryView(label: String) {
+    onNodeWithContentDescription("Library view").performClick()
+    onNodeWithText(label).performClick()
+}
+
+/** A landscape drawn in code (a dusk sky, a sun, two rows of hills): MY LOOK's stand-in for a player's photo. */
+fun demoLookPicture(w: Int = 1280, h: Int = 720): androidx.compose.ui.graphics.ImageBitmap {
+    val px = IntArray(w * h)
+    fun mix(a: Int, b: Int, t: Float): Int {
+        fun ch(s: Int) = (((a shr s) and 0xFF) * (1 - t) + ((b shr s) and 0xFF) * t).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+    val sunX = w * 0.68f; val sunY = h * 0.5f; val sunR = h * 0.16f
+    for (y in 0 until h) for (x in 0 until w) {
+        var c = mix(0xFF8C78D0.toInt(), 0xFFFFCDA0.toInt(), (y.toFloat() / (h * 0.72f)).coerceIn(0f, 1f))
+        val d = kotlin.math.hypot(x - sunX, y - sunY)
+        if (d < sunR) c = mix(c, 0xFFFFF2C8.toInt(), 0.9f) else if (d < sunR * 2.2f) c = mix(c, 0xFFFFE8B8.toInt(), 0.35f * (1 - (d - sunR) / (sunR * 1.2f)).coerceIn(0f, 1f))
+        val far = h * (0.66f + 0.06f * kotlin.math.sin(x / (w * 0.13f)))
+        val near = h * (0.8f + 0.07f * kotlin.math.sin(x / (w * 0.21f) + 1.7f))
+        if (y > far) c = mix(0xFF5E8F9E.toInt(), 0xFF4A7686.toInt(), ((y - far) / (h - far)).coerceIn(0f, 1f))
+        if (y > near) c = mix(0xFF3F6B5E.toInt(), 0xFF2C5046.toInt(), ((y - near) / (h - near)).coerceIn(0f, 1f))
+        px[y * w + x] = c
+    }
+    return com.pokedaisy.app.companion.ui.imageBitmapOf(px, w, h)
+}
+
 /** The activity [activity] made last (a shot's action presses its keys). */
 var lastActivity: androidx.activity.ComponentActivity? = null
 
-fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIntro: Boolean = false, make: () -> androidx.activity.ComponentActivity): () -> (@Composable () -> Unit) = {
+fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIntro: Boolean = false, viewIntro: Boolean = false, make: () -> androidx.activity.ComponentActivity): () -> (@Composable () -> Unit) = {
     val ctx = android.content.Context()
     val roms = File(ctx.filesDir, "roms").apply { mkdirs() }
     // Dump-style file names, as players have them; firered-hack stays unrecognised (a hack it doesn't know).
@@ -1173,13 +1331,15 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
     File(ctx.filesDir, "saves").mkdirs()
     File(ctx.filesDir, "saves/firered-hack.sav").writeText("x")
     val prefs = Prefs(ctx)
-    // ScreenScraper off, as players get it (FeatureFlags): its shots turn it on with withScreenScraper in their make().
-    com.pokedaisy.app.BuildConfig.FEATURE_SCREENSCRAPER = false
-    com.pokedaisy.app.ScreenScraperClient.enabled = false
+    // ScreenScraper on, as players get it since 2026-11-23 (FeatureFlags): signed out, so it shows no media.
+    com.pokedaisy.app.BuildConfig.FEATURE_SCREENSCRAPER = true
+    com.pokedaisy.app.ScreenScraperClient.enabled = true
     // EXPAND's one-time introduction covers the Library: only its own shot shows it.
     prefs.expandIntroSeen = !expandIntro
     // BATTLE STYLE's one-time pick, likewise.
     prefs.battleStyleAsked = !battleStyleIntro
+    // VIEW's one-time pick, likewise.
+    prefs.appViewAsked = !viewIntro
     prefs.battleStyle = 0
     // The classic library, no ScreenScraper popup: the launcher / popup shots turn them on in their make().
     prefs.dualScreenLauncher = false
@@ -1195,6 +1355,22 @@ fun activity(expandIntro: Boolean = false, start: Boolean = false, battleStyleIn
     prefs.savesDirOverride = null
     prefs.gameAspect = com.pokedaisy.app.companion.GameAspect.ORIGINAL
     prefs.statusBar = false
+    // MY LOOK: nothing added (no themes, fonts or pictures of the player's); a shot that wants some calls withMyLook().
+    File(ctx.filesDir, "look").deleteRecursively()
+    com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+        look.dir = okio.Path.Companion.run { File(ctx.filesDir, "look").toOkioPath() }
+        look.load()
+        look.setBackground(false, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
+        look.setBackground(true, com.pokedaisy.app.companion.ui.theme.LookBackground.DEFAULT)
+        look.changeSideBars(com.pokedaisy.app.companion.ui.theme.SideBars.DEFAULT)
+        look.changeTabIcons(false)
+        look.changeTabBar(com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM, false)
+        look.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.AUTO, false)
+        look.previewApp = null; look.previewCompanion = null; look.previewBars = null
+    }
+    if (com.pokedaisy.app.companion.ui.theme.AppFonts.setting == com.pokedaisy.app.companion.ui.theme.AppFont.CUSTOM) {
+        com.pokedaisy.app.companion.ui.theme.AppFonts.set(com.pokedaisy.app.companion.ui.theme.AppFont.DEFAULT)
+    }
     // The default theme (PokéDaisy, or -Ptheme's); a shot that wants another sets it in its make().
     wearPreviewTheme(previewTheme)
     // No limited-time theme's popup over the library shots: only the shots that want one.
@@ -1551,6 +1727,18 @@ fun main(args: Array<String>) {
     com.pokedaisy.app.companion.ui.SettingsLook.lazyHome = false
     // -Pdark=true: DARK MODE on for every shot.
     if (System.getProperty("dark") == "true") com.pokedaisy.app.companion.ui.theme.DarkMode.override = true
+    // -Pview=MODERN: VIEW MODERN for every shot, its font with it (unless -Pfont names another).
+    System.getProperty("view").orEmpty().takeIf { it.isNotBlank() }?.let {
+        val view = com.pokedaisy.app.companion.ui.theme.AppView.valueOf(it)
+        com.pokedaisy.app.companion.ui.theme.AppViews.override = view
+        if (view == com.pokedaisy.app.companion.ui.theme.AppView.MODERN) {
+            com.pokedaisy.app.companion.ui.theme.AppFonts.override = com.pokedaisy.app.companion.ui.theme.AppFont.MODERN
+        }
+    }
+    // -PfontSize=LARGE: that FONT SIZE for every shot.
+    System.getProperty("fontSize").orEmpty().takeIf { it.isNotBlank() }?.let {
+        com.pokedaisy.app.companion.ui.theme.AppFonts.sizeOverride = com.pokedaisy.app.companion.ui.theme.AppFontSize.valueOf(it)
+    }
     // -Pfont=SMOOTH: that FONT for every shot.
     System.getProperty("font").orEmpty().takeIf { it.isNotBlank() }?.let {
         com.pokedaisy.app.companion.ui.theme.AppFonts.override = com.pokedaisy.app.companion.ui.theme.AppFont.valueOf(it)
@@ -1661,6 +1849,17 @@ fun main(args: Array<String>) {
     ) else emptyList()
     val all = real + listOf(
         Shot("$g-party", bw, bh, bd, companion("PARTY")),
+        // MY LOOK's picture behind the companion (COMPANION BACKGROUND), in place of the game's backdrop.
+        Shot("$g-party-my-look", bw, bh, bd, run {
+            val c = companion("PARTY")
+            ({ com.pokedaisy.app.companion.ui.theme.CustomLook.previewCompanion = demoLookPicture(); c() })
+        }),
+        // TAB BAR > SHOW AS ICONS: the tabs as their icons (RETRO's pixel tiles; -Pview=MODERN for the glyphs).
+        Shot("$g-party-tab-icons", bw, bh, bd, companion("PARTY", tabIcons = true)),
+        // TAB BAR > POSITION / SIZE: a rail down the left with icons, the top bar compact, a rail on the right with names.
+        Shot("$g-party-tabs-left", bw, bh, bd, companion("PARTY", tabIcons = true, tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT)),
+        Shot("$g-party-tabs-top-compact", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP, tabCompact = true)),
+        Shot("$g-party-tabs-right", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.RIGHT)),
         // BOXES: the PC's box screen (FireRed's art from -Prom / the decomp build), a summary, the box list, the next box.
         Shot("$g-boxes", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot)),
         Shot("$g-boxes-detail", bw, bh, bd, companion("BOXES", snap = ::boxesSnapshot, items = true)) {
@@ -1760,6 +1959,14 @@ fun main(args: Array<String>) {
         Shot("$g-party-detail-center-healed", bw, bh, bd, companion("PARTY", mon = 1, items = true, snap = ::centerSnapshot)) {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("CENTER")).performSemanticsAction(SemanticsActions.OnClick)
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("HEAL THE PARTY")).performSemanticsAction(SemanticsActions.OnClick)
+        },
+        // QUICK HATCH: the lead as an Egg gets HATCH; its question; what it says once done.
+        Shot("$g-party-detail-hatch", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)),
+        Shot("$g-party-detail-hatch-ask", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)) {
+            onNodeWithText("HATCH").performClick()
+        },
+        Shot("$g-party-detail-hatch-done", bw, bh, bd, companion("PARTY", mon = 0, items = true, snap = ::eggSnapshot)) {
+            onNodeWithText("HATCH").performClick(); waitForIdle(); onAllNodesWithText("HATCH").onLast().performClick()
         },
         Shot("$g-expand-offer", bw, bh, bd, companion("PARTY", expandOffer = true)),
         Shot("$g-party-detail", bw, bh, bd, companion("PARTY", mon = 0)),
@@ -2064,6 +2271,11 @@ fun main(args: Array<String>) {
                 blocked = com.pokedaisy.app.companion.data.BlockedGames.GHOST_GREY)
         }),
         Shot("$g-settings", bw, bh, bd, companion("SETTINGS")),
+        // SETTINGS FOR flipped to THIS GAME: only the settings a game can have its own value of.
+        Shot("$g-settings-thisgame", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("SETTINGS FOR").performClick() },
+        Shot("$g-settings-thisgame-ff", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("SETTINGS FOR").performClick(); waitForIdle(); onNodeWithText("REWIND").performScrollTo()
+        },
         // DESCRIPTIONS and GROUP TABS hidden: the rows without their grey lines, the list without its tabs.
         Shot("$g-settings-look-hidden", bw, bh, bd, companion("SETTINGS"), {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("DESCRIPTIONS")).performSemanticsAction(SemanticsActions.OnClick)
@@ -2101,6 +2313,14 @@ fun main(args: Array<String>) {
             }
             seeded
         }),
+        // SHINY HUNT (behind its flag): no hunt yet, then one under way with a phase and earlier hunts.
+        Shot("$g-hunt-none", bw, bh, bd, companion("HUNT")),
+        Shot("$g-hunt", bw, bh, bd, { huntPreview(companion("HUNT")()) }),
+        Shot("$g-hunt-resets", bw, bh, bd, { huntPreview(companion("HUNT")(), resets = true) }),
+        Shot("$g-hunt-options", bw, bh, bd, { huntPreview(companion("HUNT")()) }) {
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("OPTIONS")).performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+        },
         Shot("$g-more-full", bw, bh, bd, companion("MORE", barTabs = listOf("PARTY", "MAP"))),
         // Every app icon at once (a game can't have all of them off the bar with a ROM-less preview).
         Shot("$g-more-icons", bw, bh, bd, {
@@ -2148,6 +2368,14 @@ fun main(args: Array<String>) {
         },
         // GAME BUTTONS' subtitle, further down the list.
         Shot("$g-settings-subtitles", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("TWEAKS").performScrollTo() },
+        // GAMEPLAY's QUALITY OF LIFE row (how many are on), its page, and BATTLE's page (SETTINGS_PAGES).
+        Shot("$g-settings-qol-row", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("QUALITY OF LIFE").performScrollTo() },
+        Shot("$g-settings-qol", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-battle", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("How the BATTLE tab helps you", substring = true).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         Shot("$g-settings-ffmusic", bw, bh, bd, companion("SETTINGS")) { onNodeWithText("SPEED OPTIONS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick); onAllNodesWithText("FF MUSIC").onFirst().performScrollTo().performClick() },
         // ASPECT's pick-list: WIDE tagged NOT YET (the preview's settings know no game).
         Shot("$g-settings-aspect", bw, bh, bd, companion("SETTINGS")) {
@@ -2265,6 +2493,65 @@ fun main(args: Array<String>) {
         Shot("$g-settings-player-look-pick", bw, bh, bd, companion("SETTINGS")) {
             onNodeWithText(com.pokedaisy.app.companion.i18n.tr("PLAYER LOOK")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         },
+        // LEVEL UP ALL's pop-ups, one step further each.
+        Shot("$g-settings-level-up-who", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-target", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY AND PC").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-pick", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY AND PC").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PICK A LEVEL").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-picked", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY ONLY").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PICK A LEVEL").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("DONE").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-moves", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY AND PC").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("HIGHEST", substring = true).performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-confirm", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY AND PC").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("HIGHEST", substring = true).performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("ASK FOR EACH").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("$g-settings-level-up-ask", bw, bh, bd, companion("SETTINGS")) {
+            onNodeWithText("QUALITY OF LIFE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText(com.pokedaisy.app.companion.i18n.tr("LEVEL UP ALL")).performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("PARTY AND PC").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("HIGHEST", substring = true).performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("ASK FOR EACH").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("RAISE").performSemanticsAction(SemanticsActions.OnClick)
+        },
         // SHINY ODDS under REUSABLE TMS, then its pick-list (the debug build's, with 1 IN 4 and 1 IN 1).
         Shot("$g-settings-shiny-odds", bw, bh, bd, companion("SETTINGS")) {
             openQol()
@@ -2363,6 +2650,61 @@ fun main(args: Array<String>) {
         Shot("$g-guide-stuck", bw, bh, bd, companion("GUIDE") { live?.invoke(snapshot()) ?: snapshot() }) {
             onNodeWithText("STUCK?").performClick()
         },
+        // WILD PIN (WildPins.preview): HERE's GRASS / CAVE rows with a PIN each, the rarest one pinned, and greyed with the
+        // NUZLOCKE tracker on. The wild lists need -Prom; the list is scrolled to them.
+        *listOf("pin" to 0, "pinned" to 1, "pin-nuzlocke" to 2).map { (name, mode) ->
+            Shot("$g-guide-$name", bw, bh, bd, {
+                val s = live?.invoke(snapshot()) ?: snapshot()
+                val rarest = s.guideTables?.let { com.pokedaisy.app.companion.data.GuideRomSource.encounters(it, s.mapGroup, s.mapNum) }
+                    ?.grass?.lastOrNull()?.species ?: 0
+                com.pokedaisy.app.companion.WildPins.preview(pinned = if (mode == 1) rarest else 0, nuzlocke = mode == 2)
+                val content: @Composable () -> Unit = {
+                    com.pokedaisy.app.companion.ui.theme.AppTheme {
+                        val ui = androidx.compose.runtime.remember { com.pokedaisy.app.companion.ui.GuideUiState() }
+                        val source = com.pokedaisy.app.companion.ui.rememberGuide(s.game, s.pokedex, s.guideTables)
+                        if (source != null) com.pokedaisy.app.companion.ui.GuideScreen(source, ui, s)
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            repeat(20) { androidx.compose.runtime.withFrameNanos { } }
+                            ui.list.scrollToItem(1)
+                        }
+                    }
+                }
+                content
+            })
+        }.toTypedArray(),
+        // The HUD's WILD (WildPins.preview): its panel with a PIN on every grass, surfing and rod row, one pinned (a grass
+        // one, then a fishing one: both rods' rows), NUZLOCKE greyed (its reason once); and the WILD button wearing the pin.
+        *listOf("pin" to 0, "pinned" to 1, "pin-nuzlocke" to 2, "pinned-button" to 3, "pinned-rod" to 4).map { (name, mode) ->
+            Shot("hud-wild-$name", tw, th, td, {
+                val wild = listOf(
+                    com.pokedaisy.app.companion.ui.HudWild("GRASS / CAVE", 16, 2, 4, 45, seen = true, caught = true),
+                    com.pokedaisy.app.companion.ui.HudWild("GRASS / CAVE", 19, 2, 4, 45, seen = true, caught = false),
+                    com.pokedaisy.app.companion.ui.HudWild("GRASS / CAVE", 63, 5, 5, 10, seen = false, caught = false),
+                    com.pokedaisy.app.companion.ui.HudWild("SURFING", 72, 5, 30, 100, seen = true, caught = false),
+                    com.pokedaisy.app.companion.ui.HudWild("OLD ROD", 129, 5, 5, 100, seen = true, caught = true),
+                    com.pokedaisy.app.companion.ui.HudWild("SUPER ROD", 129, 25, 30, 60, seen = true, caught = true),
+                    com.pokedaisy.app.companion.ui.HudWild("SUPER ROD", 130, 25, 30, 40, seen = false, caught = false),
+                )
+                com.pokedaisy.app.companion.WildPins.preview(
+                    pinned = when (mode) { 1, 3 -> 19; 4 -> 129; else -> 0 }, nuzlocke = mode == 2,
+                    method = if (mode == 4) com.pokedaisy.app.companion.data.WildPin.Method.FISHING else com.pokedaisy.app.companion.data.WildPin.Method.LAND,
+                )
+                val s = snapshot()
+                val content: @Composable () -> Unit = {
+                    com.pokedaisy.app.companion.ui.theme.AppTheme {
+                        androidx.compose.foundation.layout.Box(
+                            androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF3A6A48)),
+                        ) {
+                            com.pokedaisy.app.companion.ui.FieldHud(
+                                s, shown = true, com.pokedaisy.app.companion.FieldHudStyle(), wild = wild,
+                                initialPanel = if (mode == 3) null else com.pokedaisy.app.companion.ui.FieldHudPanel.WILD,
+                            )
+                        }
+                    }
+                }
+                content
+            })
+        }.toTypedArray(),
         // A randomized FireRed / Emerald (RandomizedRetail): TIPS with its RANDOMIZED section, WHERE IS without the gifts and
         // legendaries (Randomized.HIDE). The tables are retail's here; only the guide's lines change.
         *(if (game != GameKind.FIRERED && game != GameKind.EMERALD) emptyArray() else arrayOf(
@@ -2462,11 +2804,20 @@ fun main(args: Array<String>) {
             }
         }),
         Shot("library-list", tw, th, td, activity { LibraryActivity() }),
+        // A quick view held and dragged: RECENT carried two places right, past GBA and HACKS (QuickViewPills' onReorder).
+        Shot("library-views-dragged", tw, th, td, activity { LibraryActivity() }) {
+            onNodeWithText("RECENT", substring = true).performTouchInput {
+                down(center)
+                advanceEventTime(900)
+                repeat(30) { moveBy(androidx.compose.ui.geometry.Offset(14f, 0f)); advanceEventTime(16) }
+                up()
+            }
+        },
         // The quick views (pills over the games): ALL, FAVORITES, RECENT, one per console the library holds and HACKS,
         // each in its colour; the open one striped like the console's cover art.
         Shot("library-views", tw, th, td, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-views-grid", tw, th, td, activity { platformLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-views-favorites", tw, th, td, activity { platformLibrary(com.pokedaisy.app.companion.data.LibraryView.FAVORITES); LibraryActivity() }),
         Shot("library-views-recent", tw, th, td, activity { platformLibrary(com.pokedaisy.app.companion.data.LibraryView.RECENT); LibraryActivity() }),
@@ -2484,7 +2835,7 @@ fun main(args: Array<String>) {
         Shot("library-loading-phone", 1080, 2400, 2.625f, activity { LibraryActivity().apply { preparing = File(android.content.Context().filesDir, "roms/firered-hack.gba") } }) {
             mainClock.advanceTimeBy(1200)
         },
-        Shot("library-tools", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { onNodeWithContentDescription("Toggle view").performClick() },
+        Shot("library-tools", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("GRID") },
         Shot("library-tools-open", tw, th, td, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
         Shot("library-tools-phone", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-tools-phone-open", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
@@ -2716,6 +3067,20 @@ fun main(args: Array<String>) {
         // Picks are set on the state (Emerald's KADABRA is its 4th, MEW its 6th; FireRed's box 1 has slot 22 free).
         Shot("trade", tw, th, td, trade()),
         Shot("trade-send", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }),
+        // TRADE WITH: the other games, the ones of another generation greyed out with why (SaveEditorActivity.pickPartner).
+        Shot("trade-with", tw, th, td, {
+            val c: @Composable () -> Unit = {
+                com.pokedaisy.app.companion.ui.AppBackdrop()
+                val games = listOf("Pokémon Emerald" to null, "Pokémon LeafGreen" to null,
+                    "Pokémon HeartGold" to "Another generation: PAL PARK moves Pokémon from GBA to DS",
+                    "Pokémon Black" to "Another generation: these games can't trade")
+                com.pokedaisy.app.companion.ui.OptionSelector(
+                    "TRADE WITH", games.indices.toList(), -1, { games[it].first }, com.pokedaisy.app.companion.ui.rememberGbaTextMetrics(),
+                    onPick = {}, onDismiss = {}, enabled = { games[it].second == null }, subtitle = { games[it].second },
+                )
+            }
+            c
+        }),
         Shot("trade-evolve", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }) { onNodeWithText("SEND").performClick() },
         Shot("trade-evolved", tw, th, td, trade { selA = pc(0, 21); selB = pc(0, 3) }) {
             onNodeWithText("SEND").performClick(); onNodeWithText("EVOLVE").performClick()
@@ -2737,6 +3102,10 @@ fun main(args: Array<String>) {
         // COLLECTION: the three made-up saves' Pokémon in one list; by level, one game, a search; a Pokémon's choices.
         Shot("collection", tw, th, td, collection()),
         Shot("collection-level", tw, th, td, collection { sort = com.pokedaisy.app.companion.data.save.SaveCollection.Sort.LEVEL }),
+        // VIEW: a grid of sprites (names hidden, then shown) and cards.
+        Shot("collection-grid", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.GRID }),
+        Shot("collection-grid-names", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.GRID }) { onNodeWithText("NAMES").performClick() },
+        Shot("collection-cards", tw, th, td, collection { view = com.pokedaisy.app.companion.ui.CollectionView.CARDS }),
         Shot("collection-search", tw, th, td, collection { query = "tr" }),
         Shot("collection-game", tw, th, td, collection()) { onNodeWithText("ALL GAMES").performClick() },
         Shot("collection-picked", tw, th, td, collection { picked = shown().first { it.palParkable } }),
@@ -2756,6 +3125,12 @@ fun main(args: Array<String>) {
         Shot("pc-boxes-missing-phone", 1080, 2400, 2.625f, pcBoxes(missing = true)) { onNodeWithText("TRAINER").performClick(); onNodeWithText("MISSING").performClick() },
         Shot("library-expand-intro", tw, th, td, activity(expandIntro = true) { LibraryActivity() }),
         Shot("library-battle-style", tw, th, td, activity(battleStyleIntro = true) { LibraryActivity() }),
+        // VIEW's one-time pick: the two looks drawn side by side (Thor, RG DS, a phone upright).
+        Shot("library-view-intro", tw, th, td, activity(viewIntro = true) { LibraryActivity() }),
+        Shot("library-view-intro-rgds", 640, 480, 1.5f, activity(viewIntro = true) { LibraryActivity() }),
+        Shot("library-view-intro-phone", 1080, 2400, 2.625f, activity(viewIntro = true) { LibraryActivity() }),
+        // The modern icons, every one as a tile and as a glyph.
+        Shot("modern-icons", 1240, 1080, 2.625f, { { ModernIconSheet() } }),
         // Picking GEN 5 closes it and saves the choice.
         Shot("library-battle-style-picked", tw, th, td, activity(battleStyleIntro = true) { LibraryActivity() }) {
             onNodeWithText("GEN 5").performClick()
@@ -2775,7 +3150,7 @@ fun main(args: Array<String>) {
         // The RG DS's 640x480 top screen (r/PokeDaisy, 2026-11-21: the rail, header and rows didn't fit): the short library.
         Shot("library-rgds", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }),
         Shot("library-rgds-grid", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-rgds-tools", 640, 480, 1.5f, activity { platformLibrary(); LibraryActivity().apply { toolsOpen = true } }),
         Shot("launcher-rgds", 640, 480, 1.5f, launcher(media = false, signedIn = false)),
@@ -2906,7 +3281,7 @@ fun main(args: Array<String>) {
             File(ctx.filesDir, "rom-folder-scan.tsv").writeText("$hack\t1\t1700000000000\t0\n")
             LibraryActivity().apply { unsupportedRoms = setOf(hack) }
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // A game on the blocked list (BlockedGames): a black BLOCKED tag, in the list and the grid.
         Shot("library-tag-blocked", tw, th * 2, td, activity {
@@ -2921,7 +3296,7 @@ fun main(args: Array<String>) {
             File(ctx.filesDir, "rom-folder-scan.tsv").writeText("$hack\t1\t1700000000000\t0\n")
             LibraryActivity().apply { blockedRoms = setOf(hack) }
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // Games added in the last day (not by setup): a green NEW tag, in the list and the grid; SORT BY,
         // and the library by DATE ADDED (newest first).
@@ -2931,7 +3306,7 @@ fun main(args: Array<String>) {
             Prefs(android.content.Context()).librarySort = com.pokedaisy.app.LibrarySort.DATE_ADDED.id
             LibraryActivity()
         }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-sort", tw, th, td, activity { LibraryActivity().also { datedLibrary() } }) {
             onNodeWithContentDescription("Sort").performClick()
@@ -2954,7 +3329,7 @@ fun main(args: Array<String>) {
         // list row opens its menu like a grid tile's (ADD TO / REMOVE FROM FAVORITES on top).
         Shot("library-favorites", tw, th, td, activity { favoriteLibrary(); LibraryActivity() }),
         Shot("library-favorites-grid", tw, th * 2, td, activity { favoriteLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         Shot("library-list-menu", tw, th, td, activity { favoriteLibrary(); LibraryActivity() }) {
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.OnLongClick)
@@ -2968,14 +3343,14 @@ fun main(args: Array<String>) {
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.RequestFocus)
         },
         Shot("library-grid-focus", tw, th * 2, td, activity { favoriteLibrary(); LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
             mainClock.advanceTimeBy(500)
             onAllNodesWithText("Pokémon Radical Red")[0].performSemanticsAction(SemanticsActions.RequestFocus)
         },
         // A phone held upright (1080x2400 @ 2.625, a Pixel 6): the library before a game opens.
         Shot("library-list-phone", 1080, 2400, 2.625f, activity { LibraryActivity() }),
         Shot("library-grid-phone", 1080, 2400, 2.625f, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // The one-time "send crash reports?" ask (CrashReports.shouldAsk).
         Shot("library-crash-ask", tw, th, td, activity { LibraryActivity().apply { crashAsk = true } }),
@@ -2991,11 +3366,11 @@ fun main(args: Array<String>) {
             SettingsActivity()
         }) { onNodeWithText("DS CPU BOOST").performScrollTo() },
         Shot("library-grid", tw, th, td, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
         },
         // Long-pressing a library tile opens its options. Taller than the screen so the first row of tiles is whole.
         Shot("library-grid-menu", tw, th * 2, td, activity { LibraryActivity() }) {
-            onNodeWithContentDescription("Toggle view").performClick()
+            pickLibraryView("GRID")
             mainClock.advanceTimeBy(500) // lay the grid out before looking for its tiles
             onAllNodesWithText("Pokémon Emerald")[0].performSemanticsAction(SemanticsActions.OnLongClick)
         },
@@ -3077,24 +3452,26 @@ fun main(args: Array<String>) {
             LibraryActivity().apply { coverPickerFor = File("firered-hack.gba") }
         }),
         // First-time setup: each step, before and after its folder is picked.
-        Shot("setup-roms", tw, th, td, activity { LibraryActivity().apply { setup = SetupState() } }),
-        Shot("setup-roms-from-settings", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { fromSettings = true } } }),
-        Shot("setup-roms-noaccess", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { hasAccess = false } } }),
+        Shot("setup-restore", tw, th, td, activity { LibraryActivity().apply { setup = SetupState() } }),
+        Shot("setup-roms", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { step = SetupState.Step.ROMS } } }),
+        Shot("setup-roms-from-settings", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { fromSettings = true; step = SetupState.Step.ROMS } } }),
+        Shot("setup-roms-noaccess", tw, th, td, activity { LibraryActivity().apply { setup = SetupState().apply { hasAccess = false; step = SetupState.Step.ROMS } } }),
         Shot("setup-roms-scanning", tw, th, td, activity {
             LibraryActivity().apply {
-                setup = SetupState().apply { romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/XXXX-XXXX/ROMs/NDS"); scanning = true; checked = 14; toCheck = 41 }
+                setup = SetupState().apply { step = SetupState.Step.ROMS; romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/XXXX-XXXX/ROMs/NDS"); scanning = true; checked = 14; toCheck = 41 }
             }
         }),
         Shot("setup-roms-found", tw, th, td, activity {
             LibraryActivity().apply {
                 setup = SetupState().apply {
+                    step = SetupState.Step.ROMS
                     romsFolders = listOf("/storage/XXXX-XXXX/ROMs/GBA", "/storage/emulated/0/ROMs/GBC")
                     found = listOf("Pokémon FireRed", "Pokémon Emerald", "Pokémon Unbound", "Pokémon Radical Red", "Pokemon Emerald Imperium")
                 }
             }
         }),
         Shot("setup-roms-none", tw, th, td, activity {
-            LibraryActivity().apply { setup = SetupState().apply { romsFolders = listOf("/storage/emulated/0/Download"); found = emptyList() } }
+            LibraryActivity().apply { setup = SetupState().apply { step = SetupState.Step.ROMS; romsFolders = listOf("/storage/emulated/0/Download"); found = emptyList() } }
         }),
         Shot("setup-saves", tw, th, td, activity {
             LibraryActivity().apply {
@@ -3384,6 +3761,71 @@ fun main(args: Array<String>) {
         Shot("overlay-imported", tw, th, 1f, overlayView(OverlayChoice.Imported("wood-frame"), tw, th)),
         Shot("overlay-imported-stretch", tw, th, 1f, overlayView(OverlayChoice.Imported("wood-frame"), tw, th, stretch = true)),
         Shot("settings-theme", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("THEME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        // FONT TYPE's pick-list (each name in its own letters) and FONT SIZE's.
+        Shot("settings-font-type", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        Shot("settings-font-size", tw, th, td, activity { SettingsActivity() }) { onNodeWithText("FONT SIZE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick) },
+        // FONT SIZE > MORE SIZES: its slider pop-up.
+        Shot("settings-font-more", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("FONT SIZE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("MORE SIZES").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        // MY LOOK: empty, then with two themes and a font added and a picture behind the app (MIDNIGHT and the font worn).
+        Shot("settings-my-look", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-my-look-added", tw, th, td, activity { withMyLook(picture = true); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-theme-custom", tw, th, td, activity { withMyLook(wearTheme = true); SettingsActivity() }) {
+            onNodeWithText("THEME").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-font-custom", tw, th, td, activity { withMyLook(wearFont = true); SettingsActivity() }) {
+            onNodeWithText("FONT TYPE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("library-my-look", tw, th, td, activity { withMyLook(picture = true, wearTheme = true); LibraryActivity() }),
+        // MENU BAR: GAMES / TOOLS / SETTINGS down the right, along the top compact; Settings' HOME with it on the right.
+        Shot("library-menu-right", tw, th, td, activity { com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.RIGHT); LibraryActivity() }),
+        Shot("library-menu-top-compact", tw, th, td, activity { com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(com.pokedaisy.app.companion.ui.theme.MenuBarPlace.TOP, compact = true); LibraryActivity() }),
+        Shot("library-menu-compact-modern", tw, th, td, activity {
+            com.pokedaisy.app.companion.ui.theme.CustomLook.changeMenuBar(compact = true)
+            com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity()
+        }),
+        // A theme of two colours with its own text colour (EDIT THEME's TEXT COLOR / SECOND COLOR), worn on Settings.
+        Shot("settings-theme-two-colors", tw, th, td, activity {
+            val t = com.pokedaisy.app.companion.ui.theme.ThemeFiles.import(mapOf("theme.json" to
+                """{ "name": "SUNSET", "color": "#8A4FD0", "secondColor": "#E8743C", "textColor": "#1F2E5C" }""".encodeToByteArray()))
+            com.pokedaisy.app.companion.ui.theme.pickTheme(t)
+            SettingsActivity()
+        }),
+        // LIBRARY VIEW: its pick-list, then the three immersive views (CARTRIDGES, CAROUSEL, SPOTLIGHT), RETRO and MODERN.
+        Shot("library-view-pick", tw, th, td, activity { platformLibrary(); LibraryActivity() }) {
+            onNodeWithContentDescription("Library view").performClick()
+        },
+        Shot("library-cartridges", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800) },
+        Shot("library-carousel", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CAROUSEL"); mainClock.advanceTimeBy(800) },
+        Shot("library-spotlight", tw, th, td, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("SPOTLIGHT"); mainClock.advanceTimeBy(800) },
+        Shot("library-cartridges-modern", tw, th, td, activity { platformLibrary(); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }) {
+            pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800)
+        },
+        Shot("library-spotlight-modern", tw, th, td, activity { platformLibrary(); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }) {
+            pickLibraryView("SPOTLIGHT"); mainClock.advanceTimeBy(800)
+        },
+        Shot("library-cartridges-phone", 1080, 2400, 2.625f, activity { platformLibrary(); LibraryActivity() }) { pickLibraryView("CARTRIDGES"); mainClock.advanceTimeBy(800) },
+        // MY LOOK > a theme's page (EDIT THEME), made with CREATE A THEME.
+        Shot("settings-theme-edit", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("CREATE A THEME").performSemanticsAction(SemanticsActions.OnClick)
+        },
+        Shot("settings-theme-edit-files", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("CREATE A THEME").performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("EXPORT").performScrollTo()
+        },
+        Shot("settings-my-look-bars", tw, th, td, activity { withMyLook(); SettingsActivity() }) {
+            onNodeWithText("MY LOOK").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            onNodeWithText("RIGHT BAR").performScrollTo()
+        },
+        Shot("library-my-look-modern", tw, th, td, activity { withMyLook(picture = true); com.pokedaisy.app.companion.ui.theme.AppViews.override = com.pokedaisy.app.companion.ui.theme.AppView.MODERN; LibraryActivity() }),
         // THEME: a few themes on the Library and Settings (the rest with -Ptheme), and a limited-time one's popup.
         Shot("library-theme-cherry", tw, th, td, activity { themedLibrary("CHERRY") }),
         Shot("library-theme-rainbow", tw, th, td, activity { themedLibrary("RAINBOW") }),
@@ -3493,6 +3935,35 @@ fun main(args: Array<String>) {
             waitForIdle()
             onNodeWithText("SAVE BACKUPS").performSemanticsAction(SemanticsActions.OnClick)
         },
+        // FOLDERS > SAVE STATES: every game's states with its newest picture, then one game's, then a picture large.
+        Shot("settings-folders-states", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        Shot("settings-folders-states-game", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("Pokémon Emerald").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        Shot("settings-folders-states-preview", tw, th, td, activity { previewStates(); SettingsActivity() }) {
+            onNodeWithText("FOLDERS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle()
+            onNodeWithText("SAVE STATES").performSemanticsAction(SemanticsActions.OnClick)
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("Pokémon Emerald").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+            onNodeWithText("SLOT 1").performScrollTo().performClick()
+            waitForIdle(); Thread.sleep(300); waitForIdle()
+        },
+        // APP > SETTINGS FILE.
+        Shot("settings-file", tw, th, td, activity { SettingsActivity() }) {
+            onNodeWithText("SETTINGS FILE").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        },
         // CHEATS from the hub (no cheats yet), then as a game's library menu opens it.
         Shot("settings-cheats-empty", tw, th, td, activity { SettingsActivity() }) {
             onNodeWithText("CHEATS").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
@@ -3558,6 +4029,7 @@ fun main(args: Array<String>) {
             com.pokedaisy.app.companion.ui.SettingsLook.descriptions = true
             com.pokedaisy.app.companion.ui.SettingsLook.tabs = true
             Prefs(android.content.Context()).setBetaUpdates(false) // only settings-beta-updates-on turns it on
+            com.pokedaisy.app.companion.WildPins.endPreview() // only the WILD PIN shots set it
             val content = shot.content()
             runSkikoComposeUiTest(Size(shot.w.toFloat(), shot.h.toFloat()), Density(shot.density)) {
                 // Manual clock: the party icons / map highlight animate forever,
@@ -3743,4 +4215,73 @@ fun DsBattlePreview(dsGame: GameKind, state: Int) {
         }
         com.pokedaisy.app.companion.ui.DsBattleMenu(snap, menu, FakeBattleInput(false), picture, shown = true, gameFills = wide != null)
     }
+}
+
+/** Every [com.pokedaisy.app.companion.ui.ModernGlyph]: its tile over its glyph, its name under them. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun ModernIconSheet() {
+    androidx.compose.foundation.layout.FlowRow(
+        androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFFF3F6FD)).padding(12.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+    ) {
+        for (g in com.pokedaisy.app.companion.ui.ModernGlyph.entries) {
+            androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                if (g.top != androidx.compose.ui.graphics.Color.Unspecified) com.pokedaisy.app.companion.ui.ModernTile(g, androidx.compose.ui.Modifier.size(52.dp))
+                com.pokedaisy.app.companion.ui.ModernIcon(g, androidx.compose.ui.graphics.Color(0xFF232B40), androidx.compose.ui.Modifier.size(28.dp))
+                androidx.compose.material3.Text(g.name, fontSize = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp))
+            }
+        }
+    }
+}
+
+/** SAVE STATES' shots: two games' states in the preview's files, each picture an invented scene (no game art). */
+internal fun previewStates() {
+    val root = java.io.File(android.content.Context().filesDir, "states")
+    root.deleteRecursively()
+    fun scene(file: java.io.File, sky: Int, ground: Int, seed: Int) {
+        val img = java.awt.image.BufferedImage(240, 160, java.awt.image.BufferedImage.TYPE_INT_RGB)
+        val r = java.util.Random(seed.toLong())
+        for (y in 0 until 160) for (x in 0 until 240) {
+            val c = if (y < 70 + ((x / 16 + seed) % 3) * 8) sky else ground
+            img.setRGB(x, y, if ((x / 8 + y / 8) % 2 == 0) c else (c and 0xFEFEFE) shr 1 or 0x202020)
+        }
+        repeat(6) { val x = r.nextInt(220); val y = 80 + r.nextInt(60); for (dy in 0 until 12) for (dx in 0 until 12) img.setRGB(x + dx, y + dy, 0x3D6FE0) }
+        javax.imageio.ImageIO.write(img, "png", file)
+    }
+    val day = 24 * 3600 * 1000L
+    val now = 1_795_000_000_000L
+    listOf(
+        Triple("1a2b3c4d", "Pokémon Emerald", listOf(-1, 0, 1, 2, 5)),
+        Triple("5e6f7a8b", "Pokémon FireRed", listOf(-1, 3)),
+    ).forEachIndexed { g, (crc, name, slots) ->
+        val dir = java.io.File(root, crc).apply { mkdirs() }
+        java.io.File(dir, "game.txt").writeText(name)
+        slots.forEachIndexed { i, slot ->
+            val f = java.io.File(dir, if (slot < 0) "resume" else "ss$slot")
+            f.writeBytes(ByteArray(400_000 + i * 1000))
+            f.setLastModified(now - (g * 3 + i) * day)
+            scene(java.io.File(dir, f.name + ".png"), listOf(0x88C8F8, 0xF8C070, 0x6080C0, 0xA0E0A0)[i % 4], listOf(0x58A848, 0xC09050, 0x406030)[(i + g) % 3], i + g * 7)
+        }
+    }
+}
+
+/** SHINY HUNT's preview log: a hunt under way (4,321 encounters, a phase) and two earlier ones; stored nowhere. */
+fun huntPreview(content: @Composable () -> Unit, resets: Boolean = false): @Composable () -> Unit = {
+    DisposableEffect(Unit) {
+        val d = com.pokedaisy.app.companion.data.HuntLog(listOf(
+            com.pokedaisy.app.companion.data.Hunt(id = 3, target = if (resets) 4 else 16, targetName = if (resets) "EMBERPUP" else "SKYLARK",
+                method = if (resets) com.pokedaisy.app.companion.data.HuntMethod.RESETS else com.pokedaisy.app.companion.data.HuntMethod.ENCOUNTERS,
+                count = 4321, playMillis = 3 * 3_600_000L + 17 * 60_000L,
+                phases = listOf(com.pokedaisy.app.companion.data.HuntShiny(19, "NIBBLER", 2875, 2))),
+            com.pokedaisy.app.companion.data.Hunt(id = 2, method = com.pokedaisy.app.companion.data.HuntMethod.RESETS, target = 4, targetName = "EMBERPUP",
+                count = 612, status = com.pokedaisy.app.companion.data.HuntStatus.ON_HOLD),
+            com.pokedaisy.app.companion.data.Hunt(id = 1, count = 9120, status = com.pokedaisy.app.companion.data.HuntStatus.FOUND,
+                found = com.pokedaisy.app.companion.data.HuntShiny(10, "BUGSY", 9120, 1)),
+        ))
+        val game = com.pokedaisy.app.companion.ShinyHunts.preview(d)
+        onDispose { com.pokedaisy.app.companion.ShinyHunts.close(game) }
+    }
+    content()
 }

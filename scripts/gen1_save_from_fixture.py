@@ -5,7 +5,10 @@ sGameData, its checksum, every other PC box empty (with their bank checksums). E
 RAM layout loads it (the German Red / Blue's saves were made this way from the `red` fixture: their RAM is English's
 + 5 bytes from wOnSGB up, the save image is the same bytes).
 
-usage: gen1_save_from_fixture.py <fixture dir> <out.sav>"""
+A Yellow fixture (`--yellow`: pret/pokeyellow's RAM is Red's - 1, its SRAM layout Red's) gives a Yellow save the
+same way, which every Yellow cart loads (the European ones keep English's SRAM layout).
+
+usage: gen1_save_from_fixture.py <fixture dir> <out.sav> [--yellow]"""
 import sys
 
 fx, out = sys.argv[1], sys.argv[2]
@@ -13,7 +16,11 @@ wram = open(fx + "/wram.bin", "rb").read()   # C000-DFFF
 hram = open(fx + "/hram.bin", "rb").read()   # FF80-FFFE
 
 
+SHIFT = 1 if "--yellow" in sys.argv[3:] else 0   # Yellow's WRAM from wPlayerName up: Red's - 1
+
+
 def w(lo, hi):
+    lo, hi = (a - SHIFT if a >= 0xD000 else a for a in (lo, hi))
     return wram[lo - 0xC000:hi - 0xC000]
 
 

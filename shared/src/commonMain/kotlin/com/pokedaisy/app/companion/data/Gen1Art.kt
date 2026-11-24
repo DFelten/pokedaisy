@@ -53,7 +53,7 @@ object Gen1Art {
     const val BROWN_ICONS = "gen1/brown/pokemon"
     const val BROWN_TOWN_MAP_NAME = "brown"
     /** Bump when what [extractTo] writes changes, so a cached ROM's art is rebuilt once. */
-    private const val VERSION = 4
+    private const val VERSION = 5
 
     /** Where a Gen 1 game's own art sits in its ROM (bank, address). */
     class Gen1ArtTables(
@@ -84,6 +84,8 @@ object Gen1Art {
         /** Yellow Legacy's party icons: an icon of 8 tiles a species, frame 1 then frame 2 (TL, TR, BL, BR each), from [iconSheet]
          * for ids below 0x80 and this sheet above; [monPartyData] an id per Dex number from BULBASAUR at 0. */
         val iconSheet2: Pair<Int, Int>? = null,
+        /** Where its TRAINER CARD's pieces are ([Gen1TrainerCard]); null: no card. */
+        val card: Gen1TrainerCard.Tables? = null,
     )
 
     val YELLOW = Gen1ArtTables(
@@ -104,6 +106,7 @@ object Gen1Art {
         townMapColors = intArrayOf(0xFFFFFFFF.toInt(), 0xFF00ADFF.toInt(), 0xFF52E700.toInt(), 0xFF080808.toInt()),
         playerSprite = 0x05 to 0x4571,         // RedSprite: 16x16 frames of 4 tiles (TL, TR, BL, BR)
         playerPath = YELLOW_PLAYER,
+        card = Gen1TrainerCard.YELLOW_TABLES,
     )
     val YELLOW_GEN2_GRAPHICS = Gen1ArtTables(
         sha1 = TelemetrySampler.YELLOW_GEN2_GRAPHICS_V1_1_SHA1,
@@ -128,16 +131,16 @@ object Gen1Art {
      * checked: their icons, town map and player are English's pixel for pixel - `Gen1ArtTest` - so they share
      * its files), their own font (its accented letters).
      */
-    private fun europe(sha1: String, language: Char, icons: Int, monParty: Int, townMap: Int, charset: Gen1Charset) =
+    private fun europe(sha1: String, language: Char, icons: Int, monParty: Int, townMap: Int, charset: Gen1Charset, card: Gen1TrainerCard.Tables? = null) =
         Gen1ArtTables(
             sha1 = sha1, font = YELLOW.font, fontPath = yellowFont(language),
             iconPointers = 0x1C to icons, iconPointerCount = YELLOW.iconPointerCount, monPartyData = 0x1C to monParty,
             dexCount = YELLOW.dexCount, iconsDir = YELLOW.iconsDir, iconColors = YELLOW.iconColors,
             townMap = 0x1C to townMap, townMapTiles = 0x04 to 0x5148, townMapPath = YELLOW.townMapPath,
             townMapColors = YELLOW.townMapColors, playerSprite = YELLOW.playerSprite, playerPath = YELLOW.playerPath,
-            charset = charset,
+            charset = charset, card = card,
         )
-    val YELLOW_DE = europe(TelemetrySampler.YELLOW_DE_SHA1, 'D', 0x582C, 0x5999, 0x5188, Gen1Charset.DF)
+    val YELLOW_DE = europe(TelemetrySampler.YELLOW_DE_SHA1, 'D', 0x582C, 0x5999, 0x5188, Gen1Charset.DF, Gen1TrainerCard.YELLOW_DE_TABLES)
     val YELLOW_FR = europe(TelemetrySampler.YELLOW_FR_SHA1, 'F', 0x581E, 0x598B, 0x518D, Gen1Charset.DF)
     val YELLOW_IT = europe(TelemetrySampler.YELLOW_IT_SHA1, 'I', 0x588D, 0x59FA, 0x518B, Gen1Charset.IS)
     val YELLOW_ES = europe(TelemetrySampler.YELLOW_ES_SHA1, 'S', 0x583D, 0x59AA, 0x518E, Gen1Charset.IS)
@@ -150,7 +153,8 @@ object Gen1Art {
      * icon loads a frame.
      */
     private fun redBlue(sha1: String, language: Char = 'E', icons: Int = 0x57C0, monParty: Int = 0x590D, townMap: Int = 0x5100,
-                        townMapTiles: Int = 0x65A8, charset: Gen1Charset = Gen1Charset.EN) = Gen1ArtTables(
+                        townMapTiles: Int = 0x65A8, charset: Gen1Charset = Gen1Charset.EN,
+                        card: Gen1TrainerCard.Tables? = null) = Gen1ArtTables(
         sha1 = sha1,
         font = 0x04 to 0x5A80,
         fontPath = redBlueFont(language),
@@ -168,8 +172,9 @@ object Gen1Art {
         playerPath = RED_BLUE_PLAYER,
         playerColors = intArrayOf(0, 0xFFFFEFFF.toInt(), 0xFFA5D6FF.toInt(), 0xFF181010.toInt()),
         charset = charset,
+        card = card,
     )
-    val RED = redBlue(TelemetrySampler.RED_SHA1)
+    val RED = redBlue(TelemetrySampler.RED_SHA1, card = Gen1TrainerCard.RED_BLUE_TABLES)
     /** Red's art tables at Red's places, written to files of its own ([RED_GEN2_GRAPHICS_ICONS]). */
     val RED_GEN2_GRAPHICS = redBlue(TelemetrySampler.RED_GEN2_GRAPHICS_V2_0_SHA1).let {
         Gen1ArtTables(
@@ -180,11 +185,11 @@ object Gen1Art {
             charset = it.charset, playerColors = it.playerColors,
         )
     }
-    val BLUE = redBlue(TelemetrySampler.BLUE_SHA1)
+    val BLUE = redBlue(TelemetrySampler.BLUE_SHA1, card = Gen1TrainerCard.RED_BLUE_TABLES)
     /** German Red / Blue: English's art, some of it moved (scripts/port_gen1.py; the icons, town map and player are
      * English's pixel for pixel - RedBlueGermanDecodeTest - so they share its files), their own font (German Yellow's letters). */
-    val RED_DE = redBlue(TelemetrySampler.RED_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF)
-    val BLUE_DE = redBlue(TelemetrySampler.BLUE_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF)
+    val RED_DE = redBlue(TelemetrySampler.RED_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
+    val BLUE_DE = redBlue(TelemetrySampler.BLUE_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
 
     /**
      * PureRed and PureBlue v2.7.6 (pureRGB's pokered.sym: the same addresses in both). A Color cart, its default COLORS
@@ -509,6 +514,7 @@ object Gen1Art {
         write(t.townMapPath, townMap(rom, t).png())
         write(t.playerPath, player(rom, t).png())
         balls(rom).forEach { (id, img) -> write("$BALLS/ball-$id.png", img.png()) }
+        t.card?.let { c -> Gen1TrainerCard.extract(rom, c)?.let { write(Gen1TrainerCard.path(c.style), it) } }
         marker.writeText(wrote.size.toString())
         return wrote
     }

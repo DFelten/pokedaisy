@@ -83,6 +83,7 @@ struct Ds {
     int expShare = 0;                        // EXP SHARE: 0 off, 1 SPLIT, 2 FULL EXP (expShareTick)
     uint32_t expMask = 0;                    // the party slots that aren't eggs (sideGetExpMask's bits)
     bool expPatched = false;                 // FULL EXP's patch is ours, so taking it out puts the game's back
+    bool hmFree = false;                     // NO HMS NEEDED (pk_nds_call_hm_free_frame: its hooks in or out)
     bool cpuBoost = false;                   // DS CPU BOOST: the ARM9 at twice the DS's clock (setArm9Shift)
     int menuLitFrames = 0;                   // frames this menu screen has been lit (its closing fade comes after)
     int scaleWant = 1;                       // DS RESOLUTION: 1 = the software renderer, 2-8 the GPU's (pk_nds_gl.h)
@@ -371,6 +372,7 @@ void pk_ndsm_run_frame(void)
     ds->fieldBits = pk_ndsm_field_bits();
     expShareTick();
     pk_nds_call_frame(nds, ds->field);
+    pk_nds_call_hm_free_frame(nds, ds->field, ds->hmFree);
     if (ds->wide) {
         // The overworld only: the field map on screen with nothing over it (a text box keeps it) - or a battle that's
         // all 3D like it (Black's).
@@ -698,6 +700,11 @@ int pk_ndsm_action(int action, const uint32_t args[4])
     return ds ? pk_nds_call_action(ds->nds, ds->field, action, args) : 0;
 }
 
+void pk_ndsm_item5_effect(const uint32_t effect[6])
+{
+    pk_nds_call_item5_effect({effect[0], effect[1], effect[2], effect[3], effect[4], effect[5]});
+}
+
 bool pk_ndsm_action_results(int seq, uint32_t* out)
 {
     return pk_nds_call_results(seq, out);
@@ -711,6 +718,11 @@ int pk_ndsm_action_status(int seq)
 void pk_ndsm_set_wild_off(bool off)
 {
     if (ds) ds->wildOff = off;
+}
+
+void pk_ndsm_set_hm_free(bool on)
+{
+    if (ds) ds->hmFree = on;
 }
 
 void pk_ndsm_set_keep_start_menu(bool on)

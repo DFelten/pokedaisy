@@ -43,3 +43,30 @@ fun LibraryRenameDialog(
         }
     }
 }
+
+/** A name typed in a window (EDIT THEME's NAME): [title], the name now, SAVE / CANCEL. */
+@Composable
+fun LookNameDialog(
+    title: String,
+    current: String,
+    m: GbaTextMetrics,
+    small: GbaTextMetrics,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(current) }
+    OptionOverlay(onDismiss, Modifier.widthIn(max = 520.dp)) {
+        Column {
+            OptionTitleWindow(tr(title), m)
+            Spacer(Modifier.height(m.u * 4))
+            OptionListWindow(m, Modifier.fillMaxWidth()) {
+                Column {
+                    OptionTextField(text, { text = it.take(com.pokedaisy.app.companion.ui.theme.ThemeDraft.MAX_NAME) }, small,
+                        Modifier.padding(horizontal = m.u * 8, vertical = m.u * 2), typeAtOnce = true)
+                    OptionLine(tr("SAVE"), null, selected = false, m, height = m.rowHeight * 1.3f) { onConfirm(text) }
+                    OptionLine(tr("CANCEL"), null, selected = true, m, height = m.rowHeight * 1.3f, onClick = onDismiss)
+                }
+            }
+        }
+    }
+}
