@@ -52,6 +52,12 @@ sealed class GbField {
     /** The PC's moves on the current box (Gen1BoxSwap.kt, Gen2BoxSwap.kt), where they're mapped: null otherwise. */
     open val pcBox: GbBoxMoves? get() = null
 
+    /** The party order can be changed here ([swapParty]). */
+    open val swapsParty: Boolean get() = false
+
+    /** Party slots [a] ([keyA]) and [b] ([keyB]) trade places, as the game's party menu SWITCH does. */
+    open fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult = PartySwapResult.FAILED
+
     /** Where the bag's PC could open: a PC move or a box change only then. */
     protected open fun pcFree(g: GameCalls): Boolean = false
 
@@ -153,8 +159,43 @@ sealed class GbField {
         private val noFlyMaps: Set<Int> = emptySet(),
         /** The PC's moves on the current box (Gen1BoxSwap.kt), where they're mapped. */
         private val boxCalls: Gen1BoxCalls? = null,
+        /** The party order ([swapParty]): the retail carts, whose party lists are pokered's / pokeyellow's. */
+        private val partySwap: Boolean = false,
     ) : GbField() {
         private val flags7 = flags6 + 1
+
+        override val swapsParty get() = partySwap
+
+        /**
+         * The party menu's SWITCH: what SwitchPartyMon_InitVarOrSwapData does (engine/menus/start_sub_menus.asm, the same
+         * in Red / Blue and Yellow), written straight into the party's lists: the species entries, the 44-byte records,
+         * the OT names and the nicknames (11 bytes each) of both slots. Gen 1 has no mail or anything else per slot. Only
+         * where the bag's PC could open, refused if the party isn't what the companion showed; read back. The party
+         * reaches the save at the next in-game save.
+         */
+        override fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
+            if (!partySwap) return PartySwapResult.FAILED
+            if (u8(g, inBattle) != 0) return PartySwapResult.IN_BATTLE
+            if (!free(g)) return PartySwapResult.NOT_NOW
+            val n = u8(g, partyCount).coerceAtMost(PARTY_MAX)
+            if (a == b || a !in 0 until n || b !in 0 until n) return PartySwapResult.FAILED
+            val mons = partyCount + 8
+            val ots = mons + PARTY_MAX * PARTY_MON_SIZE
+            val nicks = ots + PARTY_MAX * NAME_LENGTH
+            fun key(i: Int) = gen1MonKey(g.read(mons + i * PARTY_MON_SIZE, PARTY_MON_SIZE), 0)
+            if (key(a) != keyA || key(b) != keyB) return PartySwapResult.FAILED
+            fun trade(base: Long, size: Int) {
+                val x = g.read(base + a * size, size)
+                val y = g.read(base + b * size, size)
+                g.write(base + a * size, y)
+                g.write(base + b * size, x)
+            }
+            trade(partyCount + 1, 1)
+            trade(mons, PARTY_MON_SIZE)
+            trade(ots, NAME_LENGTH)
+            trade(nicks, NAME_LENGTH)
+            return if (key(a) == keyB && key(b) == keyA) PartySwapResult.SWAPPED else PartySwapResult.FAILED
+        }
 
         override val pcBox: GbBoxMoves? get() = boxCalls
         override fun pcFree(g: GameCalls) = free(g)
@@ -243,6 +284,8 @@ sealed class GbField {
         private companion object {
             const val JOY_IGNORE = 0xCD6BL     // the same in every Gen 1 cart
             const val PARTY_MON_SIZE = 44
+            const val PARTY_MAX = 6
+            const val NAME_LENGTH = 11
             const val NUM_CITY_MAPS = 11
         }
     }
@@ -318,8 +361,10 @@ sealed class GbField {
             return if (!free(g)) BoxSwapResult.NOT_NOW else move(calls, cfg)
         }
 
+        override val swapsParty get() = boxCalls != null
+
         /** The party menu's SWITCH ([Gen2BoxCalls.swapParty]) where the bag's PC could open: NOT_NOW otherwise. */
-        fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
+        override fun swapParty(g: GameCalls, a: Int, keyA: Long, b: Int, keyB: Long): PartySwapResult {
             val calls = boxCalls ?: return PartySwapResult.FAILED
             if (u8(g, BATTLE_MODE) != 0) return PartySwapResult.IN_BATTLE
             return if (!free(g)) PartySwapResult.NOT_NOW else calls.swapParty(g, cfg, a, keyA, b, keyB)
@@ -509,6 +554,7 @@ val GB_FIELD_YELLOW = GbField.Gen1(
     partyCount = 0xD162L, partyMoves = 0xD172L, curMap = 0xD35DL, grassRate = 0xD886L,
     waterRate = 0xD8A3L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd641ecd2a34cd6f1ecde10ffac4cfa7c2c303cd",
         0x3E84L to "f0b8f578e0b8ea0020cd983e",
@@ -527,6 +573,7 @@ val GB_FIELD_YELLOW_DE = GbField.Gen1(
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
     boxCalls = GEN1_BOX_CALLS_YELLOW_DE,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd691ecd2f34cd741ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -544,6 +591,7 @@ val GB_FIELD_YELLOW_FR = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd601ecd2d34cd6b1ecde10ffac9cfa7c2c303cd",
         0x3E87L to "f0b8f578e0b8ea0020cd9b3e",
@@ -561,6 +609,7 @@ val GB_FIELD_YELLOW_IT = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd641ecd2834cd6f1ecde10ffac9cfa7c2c303cd",
         0x3E82L to "f0b8f578e0b8ea0020cd963e",
@@ -578,6 +627,7 @@ val GB_FIELD_YELLOW_ES = GbField.Gen1(
     tileset = 0xD36BL, townsVisited = 0xD70FL, destination = 0xD71EL, flags6 = 0xD736L, pikachuFlags = 0xD434L, pikachuImage = 0xC1F2L,
     partyCount = 0xD167L, partyMoves = 0xD177L, curMap = 0xD362L, grassRate = 0xD88BL,
     waterRate = 0xD8A8L, wildDataPointers = 0x4B95,
+    partySwap = true,
     signatures = listOf(
         0x245L to "cd631ecd2f34cd6e1ecde10ffac9cfa7c2c303cd",
         0x3E89L to "f0b8f578e0b8ea0020cd9d3e",
@@ -614,6 +664,7 @@ val GB_FIELD_RED_BLUE = GbField.Gen1(
     partyCount = 0xD163L, partyMoves = 0xD173L, curMap = 0xD35EL, grassRate = 0xD887L,
     waterRate = 0xD8A4L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED,
+    partySwap = true,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa36d7cb77c49e03fac5cfa7c2b5",
         0x35D6L to "f0b8f578e0b8ea002001e435",
@@ -665,6 +716,7 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
     partyCount = 0xD168L, partyMoves = 0xD178L, curMap = 0xD363L, grassRate = 0xD88CL,
     waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
     boxCalls = GEN1_BOX_CALLS_RED_DE,
+    partySwap = true,
     signatures = listOf(
         0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
         0x35F0L to "f0b8f578e0b8ea002001fe35",
