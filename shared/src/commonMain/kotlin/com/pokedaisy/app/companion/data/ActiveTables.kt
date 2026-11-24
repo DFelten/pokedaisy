@@ -178,6 +178,13 @@ private inline val drayanoHgss get() = sacredGold && (activeGame == GameKind.HEA
 var renegadePlatinum = false
 private inline val renegade get() = renegadePlatinum && activeGame == GameKind.PLATINUM
 
+/** Diamond or Pearl is running (they run as PLATINUM on its reader with their own config, [GEN4_DIAMOND_US]: their own save
+ * offsets and map headers; Platinum's species, moves and items, whose ids theirs are the first of). Set with [activeGame] by
+ * the Poller. */
+@Volatile
+var diamondPearl = false
+private inline val dp get() = diamondPearl && activeGame == GameKind.PLATINUM
+
 /** Blaze Black 2 Redux or Volt White 2 Redux is running (they run as BLACK2 / WHITE2, their tables from their cart:
  * [Black2Redux.data]). Set with [activeGame] by the Poller. */
 @Volatile
@@ -850,6 +857,7 @@ val activeMonSpriteDir: String get() = when {
     black2 -> NdsArt.BLACK2_ICONS
     black -> NdsArt.BLACK_ICONS
     renegade -> NdsArt.RENEGADE_ICONS
+    dp -> NdsArt.DIAMOND_ICONS
     platinum -> NdsArt.PLATINUM_ICONS   // the cart's icon archive, rebuilt from it (NdsArt)
     origin -> NdsArt.ORIGIN_ICONS
     heartfelt -> NdsArt.HEARTFELT_ICONS
@@ -871,6 +879,7 @@ val activeItemSpriteDir: String? get() = when {
     heartfelt -> NdsArt.HEARTFELT_ITEMS
     heartGold -> NdsArt.HEARTGOLD_ITEMS   // the cart's item_icon.narc, rebuilt from it (NdsArt)
     renegade -> NdsArt.RENEGADE_ITEMS
+    dp -> NdsArt.DIAMOND_ITEMS
     platinum -> NdsArt.PLATINUM_ITEMS
     crystal -> null   // nor has Gen 2
     else -> "items"

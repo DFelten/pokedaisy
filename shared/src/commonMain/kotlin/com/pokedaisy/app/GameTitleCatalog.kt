@@ -21,6 +21,7 @@ object GameTitleCatalog {
     /** The DS carts [BY_SHA1] names (the website's ROM check reads DS carts by their header: compat.json's `ds`). */
     val NDS_SHA1S = setOf(
         "0862ec35b24de5c7e2dcb88c9eea0873110d755c", "4fcded0e2713dc03929845de631d0932ea2b5a37", "f8dc38ea20c17541a43b58c5e6d18c1732c7e582",
+        "a46233d8b79a69ea87aa295a0efad5237d02841e", "99083bf15ec7c6b81b4ba241ee10abd9e80999ac",
         "13b6853aa93121069df1d17446d3ecb36872aecf", "576cdb7eec728c49aed85b9dd7e1e084ba1f08f9",
         "62f9ec7a412d06bd518f7dc065e4612812e327b9", "dba64620a959d5f69ed1cf3e43fcfcf2786d417e",
         "6ed98d446eb65861c71fc5f94bdc35691667f665", "a559da54839663d8f8f3f03382e5665a61873d22",
@@ -38,6 +39,9 @@ object GameTitleCatalog {
         "0862ec35b24de5c7e2dcb88c9eea0873110d755c" to "Pokémon Platinum",
         "4fcded0e2713dc03929845de631d0932ea2b5a37" to "Pokémon HeartGold",
         "f8dc38ea20c17541a43b58c5e6d18c1732c7e582" to "Pokémon SoulSilver",
+        // pret/pokediamond's builds (USA rev 5).
+        "a46233d8b79a69ea87aa295a0efad5237d02841e" to "Pokémon Diamond",
+        "99083bf15ec7c6b81b4ba241ee10abd9e80999ac" to "Pokémon Pearl",
         // German HeartGold / SoulSilver, rev 0 (the contributor's dumps; GitHub #349).
         "13b6853aa93121069df1d17446d3ecb36872aecf" to "Pokémon Goldene Edition HeartGold",
         "576cdb7eec728c49aed85b9dd7e1e084ba1f08f9" to "Pokémon Silberne Edition SoulSilver",

@@ -62,6 +62,8 @@ class TelemetrySampler {
     private var dsOrigin = false
     /** The DS cart is Renegade Platinum's ([RenegadePlatinum]: the retail Platinum header, its own tables). */
     private var dsRenegade = false
+    /** The DS cart is English Diamond / Pearl's ([GEN4_DIAMOND_US], run as PLATINUM). */
+    private var dsDiamondPearl = false
     /** The DS cart is Heartfelt Gold's ([HeartfeltGold]: the US HeartGold's header, its own tables). */
     private var dsHeartfelt = false
     /** The DS cart is Sacred Gold / Storm Silver ([SacredGold]: the retail HeartGold's / SoulSilver's header, their own tables). */
@@ -376,6 +378,7 @@ class TelemetrySampler {
             teamRocketV3 = base === NATIVE_TEAM_ROCKET_V3 || base === NATIVE_TEAM_ROCKET_V3_1
             originHeartGold = dsOrigin
             renegadePlatinum = dsRenegade
+            diamondPearl = dsDiamondPearl
             heartfeltGold = dsHeartfelt
             sacredGold = dsSacredGold
             black2Redux = dsRedux
@@ -809,6 +812,7 @@ class TelemetrySampler {
         val rev = runCatching { reader0x1E() }.getOrDefault(-1)
         dsRevision = rev
         dsOrigin = code == OriginHeartGold.CODE && OriginHeartGold.matches { off, len -> EmulatorCore.current.readBytes(0x08000000L + off, len) }
+        dsDiamondPearl = code == "ADAE" || code == "APAE"
         dsRenegade = code == RenegadePlatinum.CODE && RenegadePlatinum.matches { off, len -> EmulatorCore.current.readBytes(0x08000000L + off, len) }
         dsHeartfelt = code == HeartfeltGold.CODE && HeartfeltGold.matches { off, len -> EmulatorCore.current.readBytes(0x08000000L + off, len) }
         dsSacredGold = (code == SacredGold.CODE_SACRED_GOLD || code == SacredGold.CODE_STORM_SILVER) &&
@@ -837,6 +841,8 @@ class TelemetrySampler {
                 "IREO" -> { kind = GameKind.BLACK2; gen5Cfg = if (dsRedux) GEN5_BLACK2_REDUX else GEN5_BLACK2 }
                 "IRDO" -> { kind = GameKind.WHITE2; gen5Cfg = if (dsRedux) GEN5_WHITE2_REDUX else GEN5_WHITE2 }
                 "CPUF" -> { kind = GameKind.PLATINUM; gen4Cfg = GEN4_PLATINUM_FR }
+                "ADAE" -> { kind = GameKind.PLATINUM; gen4Cfg = GEN4_DIAMOND_US }
+                "APAE" -> { kind = GameKind.PLATINUM; gen4Cfg = GEN4_PEARL_US }
                 else -> { kind = GameKind.PLATINUM; gen4Cfg = if (dsRenegade) GEN4_RENEGADE_PLATINUM else GEN4_PLATINUM_US }
             }
             else -> {
@@ -1429,6 +1435,8 @@ class TelemetrySampler {
         val NDS_GAMES: List<Pair<String, Int>> = listOf(
             "CPUE" to 1, "CPUF" to 0, "IPKE" to 0, "IPKD" to 0, "IPKF" to 0, "IPGE" to 0, "IPGD" to 0, "IPGF" to 0,
             "IRBO" to 0, "IRBF" to 0, "IRAO" to 0, "IRAF" to 0, "IREO" to 0, "IRDO" to 0,
+            // English Diamond / Pearl rev 5 (pret/pokediamond's builds; GEN4_DIAMOND_US / GEN4_PEARL_US).
+            "ADAE" to 5, "APAE" to 5,
         ) + NDS_PORTS.map { it.code to it.revision }
 
         private val NDS_GAME_SET by lazy { NDS_GAMES.toSet() }

@@ -48,6 +48,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
 | Platinum (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
 | Platinum (DS) | Spain, Germany rev 0 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| Diamond / Pearl (DS) | USA rev 5 ⁶⁷ | — | — | — | — | — | — | — | — | — | — | — | — | n/a | — | — | — | — | — |
 | HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
 | HeartGold (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
 | HeartGold (DS) | Spain, Italy, Japan, Korea rev 0; Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ◐ ⁵⁴ | — | — | — ³⁶ | — |
@@ -1260,3 +1261,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     party handlers read live, a written action cell + A opened the bag and the party, a written move cell + A used that move,
     and the POKéMON switch (FireRed's list) sent party slot 1 in. Its target handler (a double battle), wild-encounter switch,
     field reads, EXPAND, FLY and the rest weren't mapped yet.
+67. Diamond / Pearl (USA rev 5, `GEN4_DIAMOND_US` / `GEN4_PEARL_US`; 2026-11-24): the companion only so far, run as PLATINUM on
+    its reader with their own config (`diamondPearl`): party, bag, money and place, icons from the cart. The native side (field
+    reads, EXPAND, the DS touch rules, battle buttons, FLY, PC, key items, the code patches) keys on the game code and knows
+    `ADAE` / `APAE` nowhere yet, so every column here is off.

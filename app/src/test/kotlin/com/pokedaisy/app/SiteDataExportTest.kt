@@ -44,7 +44,8 @@ class SiteDataExportTest {
         "IPGE" to "Pokémon SoulSilver", "IPGD" to "Pokémon Silberne Edition SoulSilver", "IRBO" to "Pokémon Black",
         "IRAO" to "Pokémon White", "IREO" to "Pokémon Black 2", "IRDO" to "Pokémon White 2",
         "CPUF" to "Pokémon Version Platine", "IPKF" to "Pokémon Version Or HeartGold", "IPGF" to "Pokémon Version Argent SoulSilver",
-        "IRBF" to "Pokémon Version Noire", "IRAF" to "Pokémon Version Blanche") +
+        "IRBF" to "Pokémon Version Noire", "IRAF" to "Pokémon Version Blanche",
+        "ADAE" to "Pokémon Diamond", "APAE" to "Pokémon Pearl") +
         com.pokedaisy.app.companion.data.NDS_PORTS.associate { it.code to it.title }
 
     /** The base game of each hack that has a game code of its own ([TelemetrySampler.HACK_GAME_CODES]). */

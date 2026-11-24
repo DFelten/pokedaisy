@@ -3396,6 +3396,17 @@ and `nationalDexOff`: the struct's languages array differs in size, so the Natio
 0x337 in HG / SS). The TM / HM lists differ in HM05 (Defog / Whirlpool): `tmMovesPlatinum` lives in
 `Gen4MachinesPlatinum.kt`, a file of its own, since `Gen4TablesPlatinum.kt`'s static initializer is at the JVM's limit.
 
+**Diamond / Pearl** (USA rev 5, `ADAE` / `APAE`, SHA-1 `a46233d8…` / `99083bf1…`; 2026-11-24): run as PLATINUM on its reader
+with their own config (`GEN4_DIAMOND_US`, one for both: Pearl's RAM is Diamond's) and the `diamondPearl` flag for what differs
+(no GUIDE, no DEX yet, no key items, their own art folders). There was no build of pret/pokediamond to take a `.xMAP` from, so
+the save pointer was found in a dump: the headless Diamond save (edited by the save editor's own test to have a party) booted to
+the field, the save file's general block found in RAM by its bytes, and the one static pointing just before it
+(`0x021C59C8` -> SaveData, the body 0x214 in, where Platinum's is 0x14). The body's offsets are the save file's
+(`Gen4Layout.DP`), its Location at 0x1238 (moved as the player walked). Their 559 map headers aren't Platinum's 593:
+`gen_gen4_tables.py diamond` writes each header's place from pokediamond's `map_header.c` and the location names'
+bank (msg.narc 382), and each item's icon members from `itemtool.c`'s `sItemIndexMappings` (Platinum's item_icon.narc
+holds 8 members more, in among them). The native side keys on the game code and doesn't know theirs yet.
+
 German HeartGold rev 0 (`IPKD`, SHA-1 `13b6853aa93121069df1d17446d3ecb36872aecf`) shares the US save layout and
 message banks. Its ARM9 literal pools give `sSaveDataPtr` at `0x021D2208` (`SaveData_Get`, `0x020272B0`),
 `sFieldSysPtr` at `0x021D4138`, and `sSoundWork` at `0x02111938`; the battle template is `0x020FA438` and overlay 1's

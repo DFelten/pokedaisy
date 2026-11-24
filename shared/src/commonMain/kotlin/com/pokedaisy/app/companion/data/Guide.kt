@@ -211,7 +211,8 @@ fun guideId(game: GameKind?, live: GuideTables?): GuideId? = live?.guide ?: when
     GameKind.CRYSTAL_LEGACY -> GuideId.CRYSTAL_LEGACY
     // A DS game: its guide carries its own tables too (Gen4World).
     // Renegade Platinum runs as PLATINUM, but its wild Pokémon and trainers are its own: no guide.
-    GameKind.PLATINUM -> if (renegadePlatinum) null else GuideId.PLATINUM
+    // Diamond / Pearl run as PLATINUM too, in a world of their own: no guide yet.
+    GameKind.PLATINUM -> if (renegadePlatinum || diamondPearl) null else GuideId.PLATINUM
     // Origin HeartGold runs as HEARTGOLD, but its world isn't HeartGold's (its own wild Pokémon, trainers, story): no guide.
     // So does Heartfelt Gold (hg-engine over the US cart: its own wild Pokémon and trainers).
     // So do Sacred Gold / Storm Silver (Drayano's: their own wild Pokémon and trainers).

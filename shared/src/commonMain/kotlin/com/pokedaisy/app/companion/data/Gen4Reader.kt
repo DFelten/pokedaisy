@@ -333,6 +333,31 @@ val GEN4_PLATINUM_FR = GEN4_PLATINUM_US.copy(
 )
 
 /**
+ * Pokémon Diamond (USA, rev 5; pret/pokediamond builds it, sha1 a46233d8…), run as PLATINUM on its reader. Its SaveData is
+ * Platinum's shape with the body 0x214 in (sSaveDataPtr 0x021C59C8: the only static pointing at the block that holds the
+ * save file's general block, in a dump of the headless save on the field), and the save file's own offsets for the rest
+ * ([com.pokedaisy.app.companion.data.save.Gen4Layout.DP]: trainer 0x64, party 0x90, bag 0x624); its Location at 0x1238
+ * (the player's room, map 415, moved x / y as the player walked). Its 559 map headers are its own ([mapPlaceIdsDiamond],
+ * from pokediamond's map_header.c); species, moves and items are Platinum's first ids. No DEX, GUIDE, FLY, Town Map or
+ * battle reads yet.
+ */
+val GEN4_DIAMOND_US = Gen4Config(
+    saveDataPtr = 0x021C59C8,
+    bodyOff = 0x214,
+    trainerOff = 0x64,
+    partyOff = 0x90,
+    bagOff = 0x624,
+    locationOff = 0x1238,
+    repelStepsOff = null,
+    mapPlaces = mapPlacesDiamond,
+    mapPlaceIds = mapPlaceIdsDiamond,
+    itemPockets = itemPocketsPlatinum,
+)
+
+/** Pokémon Pearl (USA, rev 5): Diamond's code at the same addresses (the headless Diamond save reads the same there). */
+val GEN4_PEARL_US = GEN4_DIAMOND_US
+
+/**
  * Renegade Platinum ([RenegadePlatinum]): retail Platinum edited in place, its RAM and save unchanged (party, bag, money,
  * place, Pokédex and a wild battle read headless on a new game, also after an in-game save and a reboot). Only its DEX
  * differs: its pages, pictures and machines from its own cart ([POKEDEX_RENEGADE]).
@@ -480,6 +505,8 @@ fun gen4ConfigFor(kind: GameKind?, code: String = romGameCode): Gen4Config? = wh
     GameKind.PLATINUM -> when {
         renegadePlatinum -> GEN4_RENEGADE_PLATINUM
         code == "CPUF" -> GEN4_PLATINUM_FR
+        code == "ADAE" -> GEN4_DIAMOND_US
+        code == "APAE" -> GEN4_PEARL_US
         else -> DsPorts.byCode(code)?.let(DsPorts::gen4Config) ?: GEN4_PLATINUM_US
     }
     GameKind.HEARTGOLD -> when {
