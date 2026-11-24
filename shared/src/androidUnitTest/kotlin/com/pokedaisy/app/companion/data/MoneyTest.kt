@@ -72,6 +72,7 @@ class MoneyTest {
         assertEquals(3000L, money("wishes", NATIVE_WISHES))
         assertEquals(3000L, money("wishes_random", NATIVE_WISHES))
         assertEquals(258984L, money("ceruleum", NATIVE_CERULEUM))
+        assertEquals(258984L, money("ceruleum_alt", NATIVE_CERULEUM_ALT))
         assertEquals(3000L, money("recordkeepers", NATIVE_RECORDKEEPERS))
         assertEquals(3000L, money("gen3_evolved", NATIVE_GEN3_EVOLVED))
         assertEquals(3000L, money("gen3_evolved_v1_0_17", NATIVE_GEN3_EVOLVED_V1_0_17))

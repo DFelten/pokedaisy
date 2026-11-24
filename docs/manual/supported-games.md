@@ -75,7 +75,7 @@ The companion reads their party, bag, map, Pokédex and guide, with pictures, Po
 | Pokémon GS Chronicles | 2.7.6 |
 | Pokémon Rhythm | 1.4.0 and 1.6.0 |
 | Pokémon OAE (the "Oops All" Kanto hack) | 1.3.2 |
-| Pokémon Ceruleum | 1.1.1 |
+| Pokémon Ceruleum | 1.1.1 (both of its builds) |
 | Pokémon RecordKeepers | 1.2.1 |
 | Pokémon Generation 3 Evolved | 1.0.17, 1.0.22 and 1.0.26 |
 | Pokémon Recharged Yellow | 1.8.0, 1.9.0, 1.9.4 and 1.9.7 |

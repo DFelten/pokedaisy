@@ -378,6 +378,23 @@ GAMES = {
                     items={1: "Poké Ball", 28: "Potion", 43: "Antidote", 114: "Repel"},
                     moves={1: (1, 40), 33: (1, 40), 52: (11, 40), 57: (12, 90), 89: (5, 100), 585: (19, 95)}),
     ),
+    # Ceruleum v1.1.1's other build (sha1 1e27af00...): the same code at the same places (its five battle handlers byte for
+    # byte), its data 0x30 lower (the GF header: gSpeciesInfo 0x08748C58, gItemsInfo 0x086FBC78, gMovesInfo 0x08720044, the
+    # icon palettes 0x08CD27A8; gRegionMapEntries 0x08CE594C; the chart 0x18 lower, 0x083EBFF4); every table equal to the first build's.
+    "ceruleum_alt": dict(
+        suffix="Ceruleum",
+        same_as="ceruleum",
+        label="Pokemon Ceruleum v1.1.1 (its other build)",
+        sha1="1e27af00f8969375428a4393faccc87eebb93dca",
+        species_name1=0x08748DB8 - 0x30, species_stride=0x104, species_max=1526,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x086FBCA8 - 0x30 + 0x14, items_stride=0x2C, items_desc_off=-8,
+        moves_base=0x08720074 - 0x30, moves_stride=0x30, move_bits_off=0x0A,
+        chart=0x083EBFF4, chart_n=21,
+        mapsec_base=0x08CE597C - 0x30, mapsec_name_off=4, mapsec_keep_case=True,
+        checks=dict(species={1: "Natu", 6: "Charizard", 25: "Pikachu"}, types={1: (15, 3)}, gender={1: 127},
+                    growth={1: 3}, items={1: "Poké Ball", 28: "Potion"}, moves={1: (1, 40), 57: (12, 90)}),
+    ),
     # Pokemon RecordKeepers v1.2.1 (Eventide Devs; BPEE, 32 MB, the Hackdex patch over Emerald): a roguelike on a newer
     # pokeemerald-expansion (its PRET x RHH splash) with no RHHEXP block and no GF ROM header, so every table was found by its
     # contents:

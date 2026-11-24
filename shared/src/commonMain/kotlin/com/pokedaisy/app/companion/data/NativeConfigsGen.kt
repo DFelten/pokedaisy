@@ -3053,6 +3053,18 @@ val NATIVE_CERULEUM = NATIVE_EMERALD.copy(
     itemPalCompressed = false,
 )
 
+// Ceruleum v1.1.1's other build (sha1 1e27af00…, the one some players have): the same code at the same places (its battle
+// handlers byte for byte) and RAM (v1.1.1's save boots to the same party, save blocks, map and bag: `ceruleum_alt`), its data
+// 0x30 lower (the GF header's tables; the chart 0x18), every table equal to the first build's (gen_expansion_tables.py
+// ceruleum_alt). Its cursors and handlers read the same in its own scripted wild battle (`ceruleum_alt_battle`).
+val NATIVE_CERULEUM_ALT = NATIVE_CERULEUM.copy(
+    itemDescs = ItemDescTable(0x086FBC8CL, 0x2C, -8),
+    monIconTable = 0x08748CC0L, // gSpeciesInfo[0].iconSprite
+    monIconPaletteIndices = 0x08748CE2L, // gSpeciesInfo[0].iconPalIndex
+    monIconPaletteTable = 0x08CD27A8L,
+    itemIconTable = 0x086FBC9CL, // gItemsInfo[0].iconPic
+)
+
 // ---- gamedata/gen3/hacks/dreamstone.toml ----
 
 // Pokémon Dreamstone Mysteries (32 MB, BPEE, sha1 20e91aec…; dsmyst, no version shown in the game): the Cormoria region on

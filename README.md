@@ -264,7 +264,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | GS Chronicles                  | 2.7.6                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Rhythm                         | 1.4.0, 1.6.0               |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |
 | Oops All Eevees!               | 1.3.2                      |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |
-| Ceruleum                       | 1.1.1                      |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
+| Ceruleum                       | 1.1.1 (2 builds)           |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
 | RecordKeepers                  | 1.2.1                      |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
 | Generation 3 Evolved           | 1.0.17, 1.0.22, 1.0.26     |  ✅   | ✅  |   ◐    | ◐  |   —    |   —   |
 | Recharged Yellow               | 1.8.0, 1.9.0, 1.9.4, 1.9.7 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |

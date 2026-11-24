@@ -648,6 +648,7 @@ class TelemetrySampler {
                 TEAM_ROCKET_2026_V3_1_ES_SHA1 -> { kind = GameKind.TEAM_ROCKET; nativeCfg = NATIVE_TEAM_ROCKET_V3_1 }
                 WISHES_OF_TOMORROW_V1_2_6_SHA1 -> { kind = GameKind.WISHES; nativeCfg = NATIVE_WISHES }
                 CERULEUM_V1_1_1_SHA1 -> { kind = GameKind.CERULEUM; nativeCfg = NATIVE_CERULEUM; ramVerified = true }
+                CERULEUM_V1_1_1_ALT_SHA1 -> { kind = GameKind.CERULEUM; nativeCfg = NATIVE_CERULEUM_ALT; ramVerified = true }
                 RECORDKEEPERS_V1_2_1_SHA1 -> { kind = GameKind.RECORDKEEPERS; nativeCfg = NATIVE_RECORDKEEPERS }
                 DREAMSTONE_MYSTERIES_UNVERSIONED_SHA1 -> { kind = GameKind.DREAMSTONE; nativeCfg = NATIVE_DREAMSTONE }
                 MONOMYTH_V1_1_SHA1 -> { kind = GameKind.MONOMYTH; nativeCfg = NATIVE_MONOMYTH_V1_1 }
@@ -1199,6 +1200,8 @@ class TelemetrySampler {
 
         // Pokémon Ceruleum v1.1.1 (selenol; the PokeCommunity thread's xdelta over Emerald): pokeemerald-expansion 1.13.2, 32 MB.
         const val CERULEUM_V1_1_1_SHA1 = "2b0b608666cc2d553ce08d88fa76dce1fa577e51"
+        // Its other v1.1.1 build (the same code, its data 0x30 lower): NATIVE_CERULEUM_ALT.
+        const val CERULEUM_V1_1_1_ALT_SHA1 = "1e27af00f8969375428a4393faccc87eebb93dca"
 
         // Pokémon RecordKeepers v1.2.1 (Eventide Devs; the Hackdex patch over Emerald): a roguelike on pokeemerald-expansion, 32 MB.
         const val RECORDKEEPERS_V1_2_1_SHA1 = "8df1c9720842c668448d5ad880e9c48bb29d7200"
@@ -1475,7 +1478,7 @@ class TelemetrySampler {
             LETS_GO_EEVEE_UNVERSIONED_SHA1, LETS_GO_EEVEE_TRANSLATION_ONLY_UNVERSIONED_SHA1,
             ELITE_REDUX_V2_65_3B_SHA1, ELITE_REDUX_V2_65_4_1B_SHA1, TEAM_ROCKET_DRAGONSDEN_V1_5_SHA1,
             TEAM_ROCKET_2026_V3_0_9_ES_SHA1, TEAM_ROCKET_2026_V3_1_ES_SHA1,
-            WISHES_OF_TOMORROW_V1_2_6_SHA1, CERULEUM_V1_1_1_SHA1, RECORDKEEPERS_V1_2_1_SHA1,
+            WISHES_OF_TOMORROW_V1_2_6_SHA1, CERULEUM_V1_1_1_SHA1, CERULEUM_V1_1_1_ALT_SHA1, RECORDKEEPERS_V1_2_1_SHA1,
             DREAMSTONE_MYSTERIES_UNVERSIONED_SHA1, MONOMYTH_V1_0_SHA1, MONOMYTH_V1_1_SHA1, MONOMYTH_V1_2_SHA1,
             ULTRA_VIOLET_V1_22_SHA1, SWORD_SHIELD_ULTIMATE_PLUS_V1_2_1_2_SHA1, SWORD_SHIELD_ULTIMATE_PLUS_V1_2_1_2_CASUAL_SHA1,
             SWORD_SHIELD_ULTIMATE_PLUS_V1_2_1_2_PERFORMANCE_SHA1, SWORD_SHIELD_ULTIMATE_PLUS_V1_2_1_2_CASUAL_PERFORMANCE_SHA1,

@@ -110,6 +110,7 @@ class RomItemTextTest {
         // Wishes of Tomorrow's POTION, as its bag screen prints it.
         Case("Pokemon Wishes of Tomorrow (v1.2.6).gba", GameKind.WISHES, NATIVE_WISHES, mapOf(28 to "by 20 points")),
         Case("Pokemon Ceruleum (v1.1.1).gba", GameKind.CERULEUM, NATIVE_CERULEUM, mapOf(28 to "20 points")),
+        Case("Pokemon Ceruleum (v1.1.1) (Alt 1).gba", GameKind.CERULEUM, NATIVE_CERULEUM_ALT, mapOf(28 to "20 points")),
         Case("Pokemon RecordKeepers (v1.2.1).gba", GameKind.RECORDKEEPERS, NATIVE_RECORDKEEPERS, mapOf(28 to "20 points")),
         Case("Pokemon Generation 3 Evolved (v1.0.22).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED, mapOf(28 to "20 points")),
         Case("Pokemon Generation 3 Evolved (v1.0.17).gba", GameKind.GEN3_EVOLVED, NATIVE_GEN3_EVOLVED_V1_0_17, mapOf(28 to "20 points")),

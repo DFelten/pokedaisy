@@ -50,7 +50,7 @@ class BattleCursorTest {
             "elite_redux_battle" to NATIVE_ELITE_REDUX_V2_65_4_1B, "elite_redux_v2653_battle" to NATIVE_ELITE_REDUX_V2_65_3B,
             "team_rocket_battle" to NATIVE_TEAM_ROCKET, "team_rocket_trainer" to NATIVE_TEAM_ROCKET,
             "wishes_battle" to NATIVE_WISHES, "wishes_trainer" to NATIVE_WISHES,
-            "ceruleum_battle" to NATIVE_CERULEUM,
+            "ceruleum_battle" to NATIVE_CERULEUM, "ceruleum_alt_battle" to NATIVE_CERULEUM_ALT,
             "gen3_evolved_battle" to NATIVE_GEN3_EVOLVED,
             "gen3_evolved_v1_0_17_battle" to NATIVE_GEN3_EVOLVED_V1_0_17,
             "gen3_evolved_v1_0_26_battle" to NATIVE_GEN3_EVOLVED_V1_0_26,
