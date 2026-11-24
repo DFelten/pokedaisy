@@ -34,9 +34,12 @@ package com.pokedaisy.app.companion.data
  *   BikeRidingTilesets), then PlayDefaultMusic and LoadPlayerSpriteGraphics (which the game's text box closing runs) from
  *   the loop; Yellow's Pikachu comes back on getting off (PIKACHU_SPAWN_DEFAULT).
  *
- * - RARE CANDY, the stones, the vitamins, the rods and the ESCAPE ROPE ([inGame]): their stats, evolution, move learning,
- *   bites and warps are the game's own sums and screens, so the game's own UseItem runs them from the start menu's way in
- *   ([Gen1GameUse]); the companion window gets out of its way and the game takes it from there.
+ * - RARE CANDY, the stones and the vitamins ([PICKED]): the Pokémon is picked here (RARE CANDY below level 100, a vitamin
+ *   while its stat experience's high byte is under 100, a stone for one whose EvosMovesPointerTable entry has it; not
+ *   Yellow's starter Pikachu, which refuses), then the game's own ItemUseMedicine / ItemUseEvoStone run past their party
+ *   menu ([Gen1GameUse]): the stats, the level-up, its moves and the evolution are the game's sums and screens.
+ * - The rods and the ESCAPE ROPE ([inGame]): the game's own UseItem from the start menu's way in; the bite or the warp is
+ *   the game's.
  */
 class Gen1ItemCalls(
     /** OverworldLoopLessDelay past its `call DelayFrame`: where a call is injected. */
@@ -63,7 +66,7 @@ class Gen1ItemCalls(
         rom(off, want.size)?.contentEquals(want) == true
     } && game.codeMatches(rom)
 
-    override fun usable(itemId: Int) = inGame(itemId) || itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
+    override fun usable(itemId: Int) = inGame(itemId) || itemId in PICKED || itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
         itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId == PP_UP || itemId in REPELS ||
         tmIndex(itemId) >= 0 || itemId == BICYCLE
     override fun inGame(itemId: Int) = itemId in IN_GAME
@@ -127,6 +130,18 @@ class Gen1ItemCalls(
         return if (ok) SlotVerdict.OK else SlotVerdict.NO_EFFECT
     }
 
+    /** RARE CANDY, a vitamin or a stone on slot [slot]: the game's own checks, so it does something (see the class's notes). */
+    private fun pickedVerdict(g: GameCalls, p: Party, slot: Int, itemId: Int): SlotVerdict {
+        val o = slot * MON_SIZE
+        val ok = when {
+            itemId == RARE_CANDY -> u8(p.mons, o + LEVEL) < MAX_LEVEL
+            itemId in VITAMINS -> u8(p.mons, o + STAT_EXP + 2 * (itemId - VITAMINS.first)) < VITAMIN_CAP
+            else -> game.evolvesWith(g, u8(p.mons, o), itemId, u8(p.mons, o + LEVEL)) &&
+                pikachu?.isStarter(g, partyMons + o, partyOt + slot * NAME_LENGTH) != true
+        }
+        return if (ok) SlotVerdict.OK else SlotVerdict.NO_EFFECT
+    }
+
     /** The move TM / HM [tm] (TechnicalMachines' index: TM01-50, then HM01-05) teaches. */
     private fun tmMove(g: GameCalls, tm: Int) = g.rom(machines.technicalMachines + tm, 1)?.let { u8(it, 0) } ?: 0
 
@@ -154,7 +169,7 @@ class Gen1ItemCalls(
         val tm = tmIndex(itemId)
         return PartyTargets(ItemUseResult.USED, move = if (tm >= 0) tmMove(g, tm) else 0, targets = (0 until p.count).map { slot ->
             PartyTarget(slot, gen1MonKey(p.mons, slot * MON_SIZE), 0,
-                if (tm >= 0) tmVerdict(g, p, slot, tm) else verdict(g, p, slot, itemId),
+                when { tm >= 0 -> tmVerdict(g, p, slot, tm); itemId in PICKED -> pickedVerdict(g, p, slot, itemId); else -> verdict(g, p, slot, itemId) },
                 when {
                     tm >= 0 -> forgettable(g, p, slot)
                     itemId in PP_ONE_MOVE -> ppMoves(g, p, slot)
@@ -190,7 +205,11 @@ class Gen1ItemCalls(
     }
 
     override fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome = when {
-        target != null -> if (tmIndex(itemId) >= 0) teach(g, itemId, target, moveIndex) else useOn(g, itemId, target, moveIndex)
+        target != null -> when {
+            tmIndex(itemId) >= 0 -> teach(g, itemId, target, moveIndex)
+            itemId in PICKED -> playOn(g, itemId, target)
+            else -> useOn(g, itemId, target, moveIndex)
+        }
         itemId == BICYCLE -> useBike(g)
         inGame(itemId) -> openInGame(g, itemId)
         else -> useRepel(g, itemId)
@@ -255,6 +274,23 @@ class Gen1ItemCalls(
         if (!g.gbCallAt(at, entry, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
         g.write(Gen1GameUse.ROUTINE.toLong(), code)
         return ItemUseOutcome(ItemUseResult.IN_GAME)
+    }
+
+    /**
+     * RARE CANDY, a vitamin or a stone on [target]: [Gen1GameUse.routine] runs the game's own routine past its party menu.
+     * The rest is the game's (its text, the level-up, the evolution, the item spent), so this says it started: TEACHING.
+     */
+    fun playOn(g: GameCalls, itemId: Int, target: PartyTarget): ItemUseOutcome {
+        if (itemId !in PICKED) return ItemUseOutcome(ItemUseResult.FAILED)
+        val p = party(g)
+        val slot = target.slot
+        if (slot !in 0 until p.count || gen1MonKey(p.mons, slot * MON_SIZE) != target.personality) return ItemUseOutcome(ItemUseResult.PARTY_CHANGED)
+        if (pickedVerdict(g, p, slot, itemId) != SlotVerdict.OK) return ItemUseOutcome(ItemUseResult.NO_EFFECT)
+        val bag = bagSlot(g, itemId).takeIf { it >= 0 } ?: return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        val (entry, code) = game.routine(itemId, bag, whichPokemon, bike.statusFlags6, slot, u8(p.mons, slot * MON_SIZE))
+        if (!g.gbCallAt(at, entry, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
+        g.write(Gen1GameUse.ROUTINE.toLong(), code)
+        return ItemUseOutcome(ItemUseResult.TEACHING)
     }
 
     /** USE of a Repel on the spot. */
@@ -331,6 +367,11 @@ class Gen1ItemCalls(
         private const val MOVES = 0x08
         private const val PP = 0x1D
         private const val MAX_HP = 0x22
+        private const val STAT_EXP = 0x11
+        private const val LEVEL = 0x21
+        private const val MAX_LEVEL = 100
+        /** ItemUseMedicine's `cp 100` on the stat experience's high byte: 25600 and over, a vitamin does nothing. */
+        private const val VITAMIN_CAP = 100
         private const val PP_MASK = 0x3F
         private const val PP_UP_MASK = 0xC0
         private const val PP_UP_ONE = 0x40
@@ -367,11 +408,15 @@ class Gen1ItemCalls(
             in HM01 until TM01 -> NUM_TMS + itemId - HM01
             else -> -1
         }
-        /**
-         * The items the game's own UseItem runs ([Gen1GameUse]): MOON STONE, ESCAPE ROPE, FIRE / THUNDER / WATER STONE, HP UP,
-         * PROTEIN, IRON, CARBOS, CALCIUM, RARE CANDY, LEAF STONE, OLD / GOOD / SUPER ROD.
-         */
-        val IN_GAME = setOf(0x0A, 0x1D, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x2F, 0x4C, 0x4D, 0x4E)
+        /** The items the game's own UseItem runs from the start menu's way in ([Gen1GameUse]): ESCAPE ROPE, OLD / GOOD / SUPER ROD. */
+        val IN_GAME = setOf(0x1D, 0x4C, 0x4D, 0x4E)
+        const val RARE_CANDY = 0x28
+        /** HP UP, PROTEIN, IRON, CARBOS, CALCIUM: their stat experience in that order. */
+        val VITAMINS = 0x23..0x27
+        /** MOON, FIRE, THUNDER, WATER, LEAF STONE. */
+        val STONES = setOf(0x0A, 0x20, 0x21, 0x22, 0x2F)
+        /** Picked here, then the game's own routine past its party menu ([Gen1ItemCalls.playOn]). */
+        val PICKED = STONES + VITAMINS + RARE_CANDY
         /** REPEL, SUPER REPEL, MAX REPEL and their steps. */
         val REPELS = mapOf(0x1E to 100, 0x38 to 200, 0x39 to 250)
     }
@@ -466,14 +511,17 @@ class Gen1Machines(
 }
 
 /**
- * The start menu's way into an item's own routine (StartMenu_Item's USE): DisplayTextIDInit (bank 1, else the party menu
- * draws over the map), then UseItem with wCurItem, wWhichPokemon = its place in the bag (RemoveUsedItem goes by it) and
- * wPseudoItemID 0. UseItem opens the party menu itself and runs the stats, evolution, level-up and move screens. Back on
- * the field the start menu's closing: GBPalWhiteOutWithDelay3, RestoreScreenTilesAndReloadTilePatterns (the sprites' tiles,
- * the SGB / Color palettes), then CloseTextDisplay's body (it can't be called: it ends on DisplayTextID's `pop af`). A
- * bite (wCurOpponent) returns at once and a warp (wStatusFlags6's FLY_WARP / DUNGEON_WARP: the ESCAPE ROPE) skips the
- * list's closing and, as CloseTextDisplay does, the player's sprite: the overworld loop checks both right after the call
- * and starts the battle or the warp itself.
+ * The start menu's way into an item's own routine (StartMenu_Item's USE): DisplayTextIDInit (bank 1, for the text box),
+ * then UseItem with wCurItem, wWhichPokemon = its place in the bag (RemoveUsedItem goes by it) and wPseudoItemID 0: the
+ * rods and the ESCAPE ROPE. RARE CANDY, the vitamins and the stones skip their party menu: the pushes their routine makes
+ * before DisplayPartyMenu (wWhichPokemon, wCurItem; the stone's wEvoStoneItemID), wWhichPokemon = the Pokémon and
+ * wCurPartySpecies (wCurItem's byte) = its species as the menu leaves them, ROM bank 3, carry clear, then a jump past
+ * the menu's call ([medicinePick], [evoStonePick]). Back on the field CloseTextDisplay's body (it can't be called: it ends
+ * on DisplayTextID's `pop af`), after GBPalWhiteOutWithDelay3 and RestoreScreenTilesAndReloadTilePatterns where the game
+ * drew a screen of its own (RARE CANDY's party menu, an evolution), and the ROM bank put back. A bite (wCurOpponent)
+ * leaves at once and a warp (wStatusFlags6's FLY_WARP / DUNGEON_WARP: the ESCAPE ROPE) skips the whiteout and, as
+ * CloseTextDisplay does, the player's sprite: the overworld loop checks both right after the call and starts the battle
+ * or the warp itself.
  *
  * The routine is written at [ROUTINE], the stack's far end: checked headless on German Red and Yellow with the deepest of
  * them, an evolution and a move to forget.
@@ -497,8 +545,36 @@ class Gen1GameUse(
     val curOpponent: Long,
     val fontLoaded: Long,
     val updateSpritesEnabled: Long,
+    /** ItemUseMedicine.getPartyMonDataAddress (bank 3): the `jp c` after its DisplayPartyMenu. */
+    val medicinePick: Int,
+    /** ItemUseEvoStone's first instruction after its DisplayPartyMenu (bank 3). */
+    val evoStonePick: Int,
+    val evoStoneItemId: Long,
+    /** EvosMovesPointerTable (bank 0x0E) as a cart offset: a pointer per internal species id. */
+    val evosMoves: Long,
     val signatures: List<Pair<Long, String>>,
 ) {
+    /** Whether [species] (an internal id) at [level] evolves with stone [itemId]: an EVOLVE_ITEM entry for it. */
+    fun evolvesWith(g: GameCalls, species: Int, itemId: Int, level: Int): Boolean {
+        if (species == 0) return false
+        val ptr = g.rom(evosMoves + (species - 1) * 2L, 2) ?: return false
+        val at = (ptr[0].toInt() and 0xFF) or ((ptr[1].toInt() and 0xFF) shl 8)
+        if (at !in 0x4000..0x7FFF) return false
+        val e = g.rom(0x0E * 0x4000L + (at - 0x4000), 32) ?: return false
+        var i = 0
+        while (i < e.size) {
+            when (e[i].toInt() and 0xFF) {
+                0 -> return false
+                EVOLVE_ITEM -> {
+                    if (i + 2 < e.size && (e[i + 1].toInt() and 0xFF) == itemId && level >= (e[i + 2].toInt() and 0xFF)) return true
+                    i += 4
+                }
+                else -> i += 3
+            }
+        }
+        return false
+    }
+
     fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
         val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         rom(off, want.size)?.contentEquals(want) == true
@@ -509,16 +585,20 @@ class Gen1GameUse(
      * the closing's address and jumps to UseItem, so UseItem returns into the closing. Only the closing has to outlast
      * UseItem, so it sits lowest, farthest from the stack. Returns (where the call goes, the bytes).
      */
-    fun routine(itemId: Int, slot: Int, whichPokemon: Long, statusFlags6: Long): Pair<Int, ByteArray> {
+    fun routine(itemId: Int, slot: Int, whichPokemon: Long, statusFlags6: Long, target: Int = -1, species: Int = 0): Pair<Int, ByteArray> {
         val b = ArrayList<Int>()
         fun le(x: Long) { b += (x and 0xFF).toInt(); b += ((x shr 8) and 0xFF).toInt() }
         fun call(x: Int) { b += 0xCD; le(x.toLong()) }
         fun far(bank: Int, x: Int) { if (bank == 0) call(x) else { b += 0x06; b += bank; b += 0x21; le(x.toLong()); call(bankswitch) } }
+        val stone = itemId in Gen1ItemCalls.STONES
         // The closing.
-        b += 0xFA; le(curOpponent); b += 0xA7; b += 0xC0                 // a bite: ret nz
-        b += 0xFA; le(statusFlags6); b += 0xE6; b += WARPS; b += 0x20; b += 0x06  // a warp: past the list's closing
-        call(whiteOutWithDelay3)
-        call(restoreScreenTiles)
+        b += 0xFA; le(curOpponent); b += 0xA7; b += 0x20; b += 0x00       // a bite: jr nz, the bank put back
+        val bite = b.size - 1
+        if (stone || itemId == Gen1ItemCalls.RARE_CANDY) {
+            b += 0xFA; le(statusFlags6); b += 0xE6; b += WARPS; b += 0x20; b += 0x06  // a warp: past the screen's closing
+            call(whiteOutWithDelay3)
+            call(restoreScreenTiles)
+        }
         b += 0x3E; b += 0x90; b += 0xE0; b += H_WY                       // the window off the screen
         call(loadGbPal)
         b += 0xAF; b += 0xE0; b += H_AUTO_BG_TRANSFER
@@ -529,15 +609,29 @@ class Gen1GameUse(
         call(loadCurrentMapView)
         b += 0x3E; b += 0x01; b += 0xEA; le(updateSpritesEnabled)
         call(updateSprites)
+        b[bite] = b.size - (bite + 1)
+        b += 0xF1; b += 0xE0; b += H_LOADED_ROM_BANK; b += 0xEA; le(MBC_ROM_BANK)  // pop af; the bank back
         b += 0xC9
         // The way in.
         val entry = ROUTINE + b.size
+        b += 0xF0; b += H_LOADED_ROM_BANK; b += 0xF5                      // ldh a, [hLoadedROMBank]; push af
         far(1, textIdInit)
         b += 0xAF; b += 0xEA; le(pseudoItemId)                           // xor a; ld [wPseudoItemID], a
         b += 0x3E; b += itemId; b += 0xEA; le(curItem)                   // ld a, item; ld [wCurItem], a
         b += 0x3E; b += slot; b += 0xEA; le(whichPokemon)                // ld a, slot; ld [wWhichPokemon], a
         b += 0x21; le(ROUTINE.toLong()); b += 0xE5                       // ld hl, the closing; push hl
-        b += 0xC3; le(useItem.toLong())                                  // jp UseItem
+        if (target < 0) {
+            b += 0xC3; le(useItem.toLong())                              // jp UseItem
+        } else {
+            b += 0x3E; b += slot; b += 0xF5; b += 0x3E; b += itemId; b += 0xF5      // the routine's pushes: wWhichPokemon, wCurItem
+            if (stone) { b += 0xEA; le(evoStoneItemId) }
+            b += 0x3E; b += 0xFF; b += 0xEA; le(updateSpritesEnabled)
+            b += 0x3E; b += target; b += 0xEA; le(whichPokemon)          // what DisplayPartyMenu leaves: the Pokémon
+            b += 0x3E; b += species; b += 0xEA; le(curItem)              // and wCurPartySpecies (wCurItem's byte)
+            b += 0x3E; b += ITEM_BANK; b += 0xE0; b += H_LOADED_ROM_BANK; b += 0xEA; le(MBC_ROM_BANK)
+            b += 0xA7                                                    // and a: carry clear, the menu not cancelled
+            b += 0xC3; le((if (stone) evoStonePick else medicinePick).toLong())
+        }
         return entry to ByteArray(b.size) { b[it].toByte() }
     }
 
@@ -548,6 +642,11 @@ class Gen1GameUse(
          */
         const val ROUTINE = 0xDF1A
         private const val H_WY = 0xB0
+        private const val H_LOADED_ROM_BANK = 0xB8
+        private const val MBC_ROM_BANK = 0x2000L
+        /** ItemUseMedicine / ItemUseEvoStone's bank. */
+        private const val ITEM_BANK = 3
+        private const val EVOLVE_ITEM = 2
         private const val H_AUTO_BG_TRANSFER = 0xBA
         /** wStatusFlags6's BIT_FLY_WARP and BIT_DUNGEON_WARP. */
         private const val WARPS = 0x18
@@ -601,7 +700,11 @@ val GEN1_ITEM_CALLS_RED = Gen1ItemCalls(
         restoreScreenTiles = 0x3DBE, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
         loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
         curItem = 0xCF91L, pseudoItemId = 0xD152L, curOpponent = 0xD059L, fontLoaded = 0xCFC4L, updateSpritesEnabled = 0xCFCBL,
+        medicinePick = 0x5B05, evoStonePick = 0x5A7A, evoStoneItemId = 0xD156L, evosMoves = 0x0E * 0x4000L + (0x705C - 0x4000),
         signatures = listOf(
+            0x03 * 0x4000L + (0x5B02 - 0x4000) to "cdfc13dae15d216bd1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea91cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x705C - 0x4000) to "d871e671f2710372",                 // EvosMovesPointerTable
             0x35D6L to "f0b8f578e0b8ea00",
             0x01 * 0x4000L + (0x7096 - 0x4000) to "afea94cffa0ccfcb",
             0x30BCL to "060321c755c3d635",
@@ -640,7 +743,11 @@ val GEN1_ITEM_CALLS_RED_DE = Gen1ItemCalls(
         restoreScreenTiles = 0x3DD8, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
         loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
         curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        medicinePick = 0x5B09, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, evosMoves = 0x0E * 0x4000L + (0x7064 - 0x4000),
         signatures = listOf(
+            0x03 * 0x4000L + (0x5B06 - 0x4000) to "cdfc13dae55d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x7064 - 0x4000) to "e071ee71fa710b72",                 // EvosMovesPointerTable
             0x35F0L to "f0b8f578e0b8ea00",
             0x01 * 0x4000L + (0x70B6 - 0x4000) to "afea99cffa11cfcb",
             0x30D6L to "060321c755c3f035",
@@ -683,7 +790,11 @@ val GEN1_ITEM_CALLS_YELLOW = Gen1ItemCalls(
         restoreScreenTiles = 0x3DC2, loadGbPal = 0x1E6F, initMapSprites = 0x3DBA, initMapSpritesBank = 0,
         loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x231C,
         curItem = 0xCF90L, pseudoItemId = 0xD151L, curOpponent = 0xD058L, fontLoaded = 0xCFC3L, updateSpritesEnabled = 0xCFCAL,
+        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD155L, evosMoves = 0x0E * 0x4000L + (0x71E5 - 0x4000),
         signatures = listOf(
+            0x03 * 0x4000L + (0x58D2 - 0x4000) to "cdc811dae15b216ad1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x57EC - 0x4000) to "cdc811fa90cfea97cfc1385f",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x71E5 - 0x4000) to "61736f737b738c73",                 // EvosMovesPointerTable
             0x3E84L to "f0b8f578e0b8ea00",
             0x01 * 0x4000L + (0x6F0E - 0x4000) to "afea93cffa0ccfcb",
             0x2FE4L to "060321ed52c3843e",
@@ -724,7 +835,11 @@ val GEN1_ITEM_CALLS_YELLOW_DE = Gen1ItemCalls(
         restoreScreenTiles = 0x3DC7, loadGbPal = 0x1E74, initMapSprites = 0x3DBF, initMapSpritesBank = 0,
         loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x2321,
         curItem = 0xCF95L, pseudoItemId = 0xD156L, curOpponent = 0xD05DL, fontLoaded = 0xCFC8L, updateSpritesEnabled = 0xCFCFL,
+        medicinePick = 0x58D5, evoStonePick = 0x57EF, evoStoneItemId = 0xD15AL, evosMoves = 0x0E * 0x4000L + (0x71F2 - 0x4000),
         signatures = listOf(
+            0x03 * 0x4000L + (0x58D2 - 0x4000) to "cdc811dae15b216fd1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x57EC - 0x4000) to "cdc811fa95cfea9ccfc1385f",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x71F2 - 0x4000) to "6e737c7388739973",                 // EvosMovesPointerTable
             0x3E89L to "f0b8f578e0b8ea00",
             0x01 * 0x4000L + (0x6F10 - 0x4000) to "afea98cffa11cfcb",
             0x2FE9L to "060321ed52c3893e",

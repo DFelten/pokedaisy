@@ -306,8 +306,10 @@ class Gen1ItemUseTest {
         val calls = GEN1_ITEM_CALLS_RED
         for (id in listOf(0x14, 0x10, 0x0B, 0x35, 0x50, 0x52, 0x4F)) assertTrue(calls.usable(id) && calls.picksMon(id))
         for (id in listOf(0x1E, 0x38, 0x39)) assertTrue(calls.usable(id) && !calls.picksMon(id))
-        // RARE CANDY, HP UP, MOON STONE, ESCAPE ROPE, OLD ROD: the game's own UseItem, no party pick here.
-        for (id in listOf(0x28, 0x23, 0x0A, 0x1D, 0x4C)) assertTrue(calls.usable(id) && calls.inGame(id) && !calls.picksMon(id))
+        // ESCAPE ROPE, OLD ROD: the game's own UseItem, no party pick here.
+        for (id in listOf(0x1D, 0x4C)) assertTrue(calls.usable(id) && calls.inGame(id) && !calls.picksMon(id))
+        // RARE CANDY, HP UP, MOON STONE: picked here, then the game's own routine past its party menu.
+        for (id in listOf(0x28, 0x23, 0x0A)) assertTrue(calls.usable(id) && calls.picksMon(id) && !calls.inGame(id) && !calls.picksMove(id))
         assertFalse(calls.inGame(0x14) || calls.inGame(0x06) || calls.inGame(0xC9))
         assertTrue(calls.picksMove(0x50) && calls.picksMove(0x4F) && !calls.picksMove(0x52))
         assertTrue(calls.usable(0x06) && !calls.picksMon(0x06))   // BICYCLE: on the spot
@@ -316,19 +318,32 @@ class Gen1ItemUseTest {
     }
 
     @Test
-    fun `the game's own UseItem routine, German Red's bytes as run headless, its closing lowest`() {
-        val (entry, code) = GEN1_ITEM_CALLS_RED_DE.game.routine(0x20, 1, GEN1_ITEM_CALLS_RED_DE.whichPokemon, GEN1_ITEM_CALLS_RED_DE.bike.statusFlags6)
-        assertEquals(0xDF57, entry)
-        assertEquals("fa5ed0a7c0fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ea" +
-            "d0cfcd2924c9060121b670cdf035afea57d13e20ea96cf3e01ea97cf211adfe5c3d630", code.joinToString("") { "%02x".format(it) })
-        // Yellow's InitMapSprites is a home homecall: called directly, no Bankswitch.
-        val (yEntry, yCode) = GEN1_ITEM_CALLS_YELLOW_DE.game.routine(0x28, 2, GEN1_ITEM_CALLS_YELLOW_DE.whichPokemon, GEN1_ITEM_CALLS_YELLOW_DE.bike.statusFlags6)
-        assertEquals(0xDF52, yEntry)
-        assertEquals(85, yCode.size)
-        // Every routine stays under the deepest stack seen (0xDF91), its closing (all that outlasts UseItem) well under it.
-        for (c in listOf(GEN1_ITEM_CALLS_RED, GEN1_ITEM_CALLS_RED_DE, GEN1_ITEM_CALLS_YELLOW, GEN1_ITEM_CALLS_YELLOW_DE)) {
-            val (e, b) = c.game.routine(0x28, 19, c.whichPokemon, c.bike.statusFlags6)
-            assertTrue(e < 0xDF60 && Gen1GameUse.ROUTINE + b.size < 0xDF80)
+    fun `the game's own item routines, German Red's bytes as run headless, their closing lowest`() {
+        val c = GEN1_ITEM_CALLS_RED_DE
+        fun hex(item: Int, slot: Int, target: Int = -1, species: Int = 0) =
+            c.game.routine(item, slot, c.whichPokemon, c.bike.statusFlags6, target, species).let { (e, b) -> e to b.joinToString("") { "%02x".format(it) } }
+        // OLD ROD: UseItem, a bite leaves at once, no whiteout (nothing of the game's drawn over the field).
+        assertEquals(0xDF51 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8" +
+            "ea0020c9f0b8f5060121b670cdf035afea57d13e4cea96cf3e01ea97cf211adfe5c3d630", hex(0x4C, 1))
+        // RARE CANDY on the second Pokémon: its routine past the party menu, the whiteout after its screens.
+        assertEquals(0xDF5E to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cd" +
+            "aa0c3e01ead0cfcd2924f1e0b8ea0020c9f0b8f5060121b670cdf035afea57d13e28ea96cf3e02ea97cf211adfe53e02f53e28f53effead0cf3e01ea97" +
+            "cf3e99ea96cf3e03e0b8ea0020a7c3095b", hex(0x28, 2, 1, 0x99))
+        // THUNDER STONE: wEvoStoneItemID too, into ItemUseEvoStone.
+        assertEquals(0xDF5E to "fa5ed0a72037fa37d7e6182006cdee3dcdd83d3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cd" +
+            "aa0c3e01ead0cfcd2924f1e0b8ea0020c9f0b8f5060121b670cdf035afea57d13e21ea96cf3e03ea97cf211adfe53e03f53e21f5ea5bd13effead0cf3e00" +
+            "ea97cf3e54ea96cf3e03e0b8ea0020a7c37a5a", hex(0x21, 3, 0, 0x54))
+        // HP UP: only its text, so no whiteout.
+        assertEquals(0xDF51 to "fa5ed0a7202a3e90e0b0cdba20afe0ba0605215b78cdf03521c9cfcb86fa37d7cb5fcc9709cdaa0c3e01ead0cfcd2924f1e0b8" +
+            "ea0020c9f0b8f5060121b670cdf035afea57d13e23ea96cf3e00ea97cf211adfe53e00f53e23f53effead0cf3e00ea97cf3e99ea96cf3e03e0b8ea0020a7" +
+            "c3095b", hex(0x23, 0, 0, 0x99))
+        // The closing (all that outlasts the jump) stays well under the deepest stack seen (0xDF91); the way in only runs
+        // before the game's routine, from the overworld loop's shallow stack.
+        for (g in listOf(GEN1_ITEM_CALLS_RED, GEN1_ITEM_CALLS_RED_DE, GEN1_ITEM_CALLS_YELLOW, GEN1_ITEM_CALLS_YELLOW_DE)) {
+            for ((item, target) in listOf(0x4C to -1, 0x28 to 5, 0x0A to 5, 0x27 to 5)) {
+                val (e, b) = g.game.routine(item, 19, g.whichPokemon, g.bike.statusFlags6, target, 0xFF)
+                assertTrue(e < 0xDF60 && Gen1GameUse.ROUTINE + b.size < 0xDFB0)
+            }
         }
     }
 
@@ -336,16 +351,44 @@ class Gen1ItemUseTest {
     fun `an item the game runs is handed over, the routine written once the call is set up, nothing spent here`() {
         val g = Game(GEN1_ITEM_CALLS_RED_DE)
         g.party(30 to 50)
-        g.bag(0x14 to 1, 0x28 to 2)
-        val out = GEN1_ITEM_CALLS_RED_DE.use(g, 0x28, null, 0)
+        g.bag(0x14 to 1, 0x4C to 1)
+        val out = GEN1_ITEM_CALLS_RED_DE.use(g, 0x4C, null, 0)
         assertEquals(ItemUseResult.IN_GAME, out.result)
-        val (entry, code) = GEN1_ITEM_CALLS_RED_DE.game.routine(0x28, 1, GEN1_ITEM_CALLS_RED_DE.whichPokemon, GEN1_ITEM_CALLS_RED_DE.bike.statusFlags6)
+        val (entry, code) = GEN1_ITEM_CALLS_RED_DE.game.routine(0x4C, 1, GEN1_ITEM_CALLS_RED_DE.whichPokemon, GEN1_ITEM_CALLS_RED_DE.bike.statusFlags6)
         assertEquals(listOf(entry), g.called)
         assertTrue(g.read(Gen1GameUse.ROUTINE.toLong(), code.size).contentEquals(code))
-        assertEquals(2, g.qty(0x28))
-        assertEquals(ItemUseResult.NONE_LEFT, GEN1_ITEM_CALLS_RED_DE.use(g, 0x0A, null, 0).result)
+        assertEquals(1, g.qty(0x4C))
+        assertEquals(ItemUseResult.NONE_LEFT, GEN1_ITEM_CALLS_RED_DE.use(g, 0x1D, null, 0).result)
         g.onField = false
-        assertEquals(ItemUseResult.FAILED, GEN1_ITEM_CALLS_RED_DE.use(g, 0x28, null, 0).result)
+        assertEquals(ItemUseResult.FAILED, GEN1_ITEM_CALLS_RED_DE.use(g, 0x4C, null, 0).result)
+    }
+
+    @Test
+    fun `RARE CANDY, a vitamin or a stone picked here goes to the game's routine past its party menu, for the Pokemon it works on`() {
+        val calls = GEN1_ITEM_CALLS_RED_DE
+        val g = Game(calls)
+        g.party(30 to 50, 40 to 50)
+        g.bag(0x14 to 1, 0x28 to 2, 0x23 to 1, 0x21 to 1)
+        g[g.mon(0) + 0x21] = 12
+        g[g.mon(1) + 0x21] = 100
+        g[g.mon(0) + 0x11] = 100                     // HP stat experience at the vitamins' cap
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.NO_EFFECT), calls.targets(g, 0x28).targets.map { it.verdict })
+        assertEquals(listOf(SlotVerdict.NO_EFFECT, SlotVerdict.OK), calls.targets(g, 0x23).targets.map { it.verdict })
+        // No EVOLVE_ITEM entry yet: the stone works on nobody.
+        assertEquals(listOf(SlotVerdict.NO_EFFECT, SlotVerdict.NO_EFFECT), calls.targets(g, 0x21).targets.map { it.verdict })
+        val evos = calls.game.evosMoves
+        g.cart[evos + (0x99 - 1) * 2] = 0x00; g.cart[evos + (0x99 - 1) * 2 + 1] = 0x78
+        listOf(0x02, 0x21, 0x01, 0x54, 0x00).forEachIndexed { i, v -> g.cart[0x0E * 0x4000L + 0x3800 + i] = v.toByte() }
+        assertEquals(listOf(SlotVerdict.OK, SlotVerdict.OK), calls.targets(g, 0x21).targets.map { it.verdict })
+        assertFalse(calls.game.evolvesWith(g, 0x99, 0x0A, 50))
+
+        assertEquals(ItemUseResult.NO_EFFECT, calls.use(g, 0x28, on(g, 1), 0).result)
+        assertEquals(ItemUseResult.TEACHING, calls.use(g, 0x28, on(g, 0), 0).result)
+        val (entry, code) = calls.game.routine(0x28, 1, calls.whichPokemon, calls.bike.statusFlags6, 0, 0x99)
+        assertEquals(listOf(entry), g.called)
+        assertTrue(g.read(Gen1GameUse.ROUTINE.toLong(), code.size).contentEquals(code))
+        assertEquals(2, g.qty(0x28))                 // the game's routine spends it
+        assertEquals(ItemUseResult.PARTY_CHANGED, calls.use(g, 0x21, PartyTarget(1, key(g, 0), 0, SlotVerdict.OK), 0).result)
     }
 
     @Test
