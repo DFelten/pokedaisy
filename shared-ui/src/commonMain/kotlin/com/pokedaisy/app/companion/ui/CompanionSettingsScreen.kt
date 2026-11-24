@@ -253,7 +253,11 @@ fun CompanionSettingsScreen(
                                 "BOXES" -> NewFeatures.badge(NewFeatures.BOXES_TAB)
                                 "HUNT" -> NewFeatures.badge(NewFeatures.SHINY_HUNT)
                                 "STATES" -> settings.statesBadge
-                                "CARD" -> if (com.pokedaisy.app.companion.data.activeGame == com.pokedaisy.app.companion.data.GameKind.CRYSTAL) NewFeatures.badge(NewFeatures.CRYSTAL_CARD) else null
+                                "CARD" -> when (com.pokedaisy.app.companion.data.activeGame) {
+                                    com.pokedaisy.app.companion.data.GameKind.CRYSTAL -> NewFeatures.badge(NewFeatures.CRYSTAL_CARD)
+                                    com.pokedaisy.app.companion.data.GameKind.GOLD, com.pokedaisy.app.companion.data.GameKind.SILVER -> NewFeatures.badge(NewFeatures.GOLD_SILVER_CARD)
+                                    else -> null
+                                }
                                 else -> null
                             },
                         ) {

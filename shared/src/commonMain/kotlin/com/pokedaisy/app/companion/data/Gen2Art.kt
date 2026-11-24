@@ -64,7 +64,7 @@ object Gen2Art {
     val PRISM_TOWN_MAPS = arrayOf("prism_naljo", "prism_rijon", "prism_johto", "prism_kanto", "prism_sevii", "prism_tunod")
 
     /** Bump when what [extractTo] writes changes, so a cached ROM's art is rebuilt once. */
-    private const val VERSION = 8
+    private const val VERSION = 9
 
     /** Where a Gen 2 game's own art sits in its ROM (bank, address). */
     class Gen2ArtTables(
@@ -129,7 +129,7 @@ object Gen2Art {
         val ballColors: Pair<Int, Int>? = null,
         val battleObjectPals: Pair<Int, Int>? = null,
         val ballsDir: String? = null,
-        // Crystal's TRAINER CARD (the CARD tab): where its tiles, palettes and words are ([Gen2TrainerCard.PATH]).
+        // Crystal's / Gold and Silver's TRAINER CARD (the CARD tab): where its tiles, palettes and words are ([Gen2TrainerCard.path]).
         val card: Gen2TrainerCard.Tables? = null,
     )
 
@@ -231,6 +231,7 @@ object Gen2Art {
         ballColors = 0x33 to 0x51B1,
         battleObjectPals = 0x02 to 0x5C09,
         ballsDir = GOLD_SILVER_BALLS,
+        card = Gen2TrainerCard.GOLD_SILVER_TABLES,
     )
 
     /** Silver: Gold's art, the party icons' tables 0x1A bytes earlier. */
@@ -240,6 +241,7 @@ object Gen2Art {
             0x23 to 0x68C1, it.partyMenuObPals, it.iconsDir, it.holdIconsPath, it.townMapGfx, it.townMaps, it.townMapPalMap,
             it.pokegearPals, it.townMapPaths, it.playerSprites, it.objectPals, it.playerPaths,
             ballGfx = it.ballGfx, ballColors = it.ballColors, battleObjectPals = it.battleObjectPals, ballsDir = it.ballsDir,
+            card = it.card,
         )
     }
 
@@ -254,6 +256,7 @@ object Gen2Art {
             listOf(0x24 to 0x5F84, 0x24 to 0x60ED), 0x24 to 0x5EDE, it.pokegearPals, it.townMapPaths, it.playerSprites,
             it.objectPals, it.playerPaths,
             ballGfx = 0x21 to 0x5159, ballColors = 0x33 to 0x51B2, battleObjectPals = it.battleObjectPals, ballsDir = it.ballsDir,
+            card = Gen2TrainerCard.GOLD_SILVER_DE_TABLES,
         )
     }
     val SILVER_DE = GOLD_DE.let {
@@ -262,6 +265,7 @@ object Gen2Art {
             0x23 to 0x68C3, it.partyMenuObPals, it.iconsDir, it.holdIconsPath, it.townMapGfx, it.townMaps, it.townMapPalMap,
             it.pokegearPals, it.townMapPaths, it.playerSprites, it.objectPals, it.playerPaths,
             ballGfx = it.ballGfx, ballColors = it.ballColors, battleObjectPals = it.battleObjectPals, ballsDir = it.ballsDir,
+            card = it.card,
         )
     }
 
@@ -664,7 +668,7 @@ object Gen2Art {
         t.townMapPaths.forEachIndexed { i, path -> townMap(rom, t, i)?.let { write(path, it.png()) } }
         t.playerPaths.forEachIndexed { g, path -> write(path, player(rom, t, g).png()) }
         t.ballsDir?.let { d -> balls(rom, t).forEach { (id, img) -> write("$d/ball-$id.png", hudLegible(img).png()) } }
-        t.card?.let { write(Gen2TrainerCard.PATH, Gen2TrainerCard.extract(rom, it, t.font)) }
+        t.card?.let { write(Gen2TrainerCard.path(it.style), Gen2TrainerCard.extract(rom, it, t.font)) }
         marker.writeText(stamp)
         return wrote
     }

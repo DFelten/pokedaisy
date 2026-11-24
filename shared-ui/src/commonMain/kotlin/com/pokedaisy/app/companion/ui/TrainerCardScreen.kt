@@ -57,7 +57,7 @@ fun rememberTrainerCardArt(style: CardStyle?): CardArt? {
     val generation = rememberArtGeneration()
     val start: CardArt? = when (style) {
         null -> null
-        CardStyle.CRYSTAL -> Gen2TrainerCard.cached()
+        in Gen2TrainerCard.STYLES -> Gen2TrainerCard.cached(style)
         else -> TrainerCardArt.cached(style)
     }
     return produceKeyedState(start, style, generation) {
@@ -66,7 +66,7 @@ fun rememberTrainerCardArt(style: CardStyle?): CardArt? {
         val s = style ?: run { value = null; return@produceKeyedState }
         if (value != null && cardArtGeneration[s] == generation) return@produceKeyedState
         value = withContext(Dispatchers.IO) {
-            runCatching { if (s == CardStyle.CRYSTAL) Gen2TrainerCard.load(RomArt.dir()) else TrainerCardArt.load(RomArt.dir(), s) }.getOrNull()
+            runCatching { if (s in Gen2TrainerCard.STYLES) Gen2TrainerCard.load(RomArt.dir(), s) else TrainerCardArt.load(RomArt.dir(), s) }.getOrNull()
         }
         if (value != null) cardArtGeneration[s] = generation
     }.value
@@ -111,7 +111,7 @@ fun TrainerCardScreen(card: TrainerCardInfo, art: CardArt, modifier: Modifier = 
 }
 
 /**
- * Crystal's card ([Gen2TrainerCard]): the whole 160x144 screen the game draws, its two pages flipped like the GBA
+ * Crystal's and Gold / Silver's card ([Gen2TrainerCard]): the whole 160x144 screen the game draws, its two pages flipped like the GBA
  * cards' sides. The game's 64-frame cycle in eighths: the badges spin a step each, the play time's colon blinks.
  */
 @Composable
