@@ -228,7 +228,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Ruby                           | ES/DE/FR/IT/JP, rev 0-1    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Sapphire                       | USA, rev 0, 1 and 2        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Sapphire                       | ES/DE/FR/IT/JP, rev 0-1    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
-| Platinum (DS)                  | USA rev 1, FR/ES/DE rev 0  |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Platinum (DS)                  | USA rev 0 / 1, Europe rev 10, FR/ES/DE rev 0 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Diamond / Pearl (DS)           | USA rev 5                  |  ✅   | ✅  |   —    | ◐  |   —    |   —   |
 | HeartGold (DS)                 | USA, EU, every language    |  ✅   | ✅  |   —    | ✅  |   ✅    |  ✅   |
 | SoulSilver (DS)                | USA, EU, every language    |  ✅   | ✅  |   —    | ✅  |   ✅    |  ✅   |

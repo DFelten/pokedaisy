@@ -34,7 +34,7 @@ Any GBA, Game Boy or DS game plays in PokeDaisy. "Supported" is about the compan
 
 **Nintendo DS:**
 
-- Pokémon Platinum: the USA release (revision 1), and the French, Spanish and German ones (revision 0).
+- Pokémon Platinum: the USA releases (revisions 0 and 1), the European English one (revision 10), and the French, Spanish and German ones (revision 0).
 - Pokémon Diamond and Pearl: the USA releases (revision 5). The companion reads their party, bag, money and the place you're in, with icons from your cart; their Pokédex, guide, map picture and battles come later.
 - Pokémon HeartGold: the USA, German, French, Spanish, Italian, Japanese and Korean releases (revision 0), and the English one sold in Europe (revision 10).
 - Pokémon SoulSilver: the USA, German, French, Spanish, Italian, Japanese and Korean releases (revision 0), and the English one sold in Europe (revision 10).

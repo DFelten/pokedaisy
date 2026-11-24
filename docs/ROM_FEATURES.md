@@ -47,7 +47,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Ruby / Sapphire | JP | ✅ | ✅ | ✅ | — | ✅ | ✅ ³⁴ | — | ◐ ⁵ | ✅ | ✅ | ✅ | ✅ ¹⁵ | ✅ ¹⁸ | ✅ ¹⁹ | — | ✅ | ✅ | — |
 | Platinum (DS) | USA rev 1 | ✅ ¹⁴ | ✅ ²⁶ | — | — | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
 | Platinum (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
-| Platinum (DS) | Spain, Germany rev 0 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
+| Platinum (DS) | Spain, Germany rev 0, USA rev 0, Europe rev 10 ³¹ | ✅ ¹⁴ | ✅ ²⁶ | — | — | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ◐ ³¹ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
 | Diamond / Pearl (DS) | USA rev 5 ⁶⁷ | — | — | — | — | — | — | — | — | — | — | — | — | n/a | — | — | — | — | — |
 | HeartGold (DS) | USA | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | ✅ ⁶¹ | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | ✅ ⁵⁴ | — | — | — ³⁶ | — |
 | HeartGold (DS) | France rev 0 | ✅ ¹⁴ | ✅ ²⁴ | — | ✅ ⁵⁰ | — | ✅ ¹⁴ | — | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ¹⁴ | ✅ ⁵² | n/a | — | — | — | — ³⁶ | — |
@@ -513,7 +513,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
 
 31. The DS language ports (`gamedata/nds/ports.toml`, 2026-11-07): Spanish / Italian / Japanese / Korean HeartGold and SoulSilver
     and Europe's rev 10 (the USA carts' code under the same game code, a revision of its own), German / Spanish / Italian / Japanese
-    / Korean Black and White, and Black 2 / White 2 in French, German, Spanish, Italian, Korean and Japanese (rev 1). Each is its USA cart's tables with its own globals (`scripts/gen_nds_ports.py`
+    / Korean Black and White, Black 2 / White 2 in French, German, Spanish, Italian, Korean and Japanese (rev 1), and Platinum in
+    Spanish, German, USA rev 0 and Europe's rev 10 (the last two rev 1's code byte for byte). Each is its USA cart's tables with its own globals (`scripts/gen_nds_ports.py`
     writes `pk_nds_ports_gen.h` and `NdsPortsGen.kt`), found by `scripts/port_nds_fns.py` and run headless next to its USA cart on
     the USA save with the same script: the field, the X menu, EXPAND's `widecheck`, FLY's checks and the PC equal, and on
     HeartGold / SoulSilver the party, options and Pokédex pages (their touch moments) and a wild battle's command menu too.

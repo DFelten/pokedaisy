@@ -3470,7 +3470,11 @@ are top-screen pages, so no X menu task is listed): its functions are the French
 field overlays 0x20 above French's. No Platinum save is kept here, so it was proven on a new game played in it headless (the
 intro's yes / no and the Poké Ball are touches): the field read, the save and field pointers, PC anywhere. **German Platinum**
 (`CPUD` rev 0, 2026-11-18) is the same again, its globals and field overlays 0x40 below French's; the USA cart's save loads in
-it, so it ran beside the USA cart on a new game saved there. **Japanese and Korean carts**: the US saves load in all of them but Korean HeartGold /
+it, so it ran beside the USA cart on a new game saved there. **USA Platinum rev 0 and Europe's rev 10** (`CPUE` rev 0 / 10,
+2026-11-24): rev 1's game code, ARM9 and every word (rev 0's overlay 94 is 4 bytes shifted inside; rev 10 moved five data files),
+so their rows repeat rev 1's words and `gen4ConfigFor` gives `CPUE` rev 1's config whatever the revision. A new game played
+headless in rev 1 and saved in the bedroom loads in both: the field read, the X menu, FLY's checks and PC anywhere gave the same
+results line for line. The features proven on rev 1 alone (field items, SHINY ODDS, ...) stay off on them. **Japanese and Korean carts**: the US saves load in all of them but Korean HeartGold /
 SoulSilver, whose save footer's magic is 0x20070903 (the US / Japanese carts' 0x20060623, outside the checksums: change the word
 and the US save loads). Japanese HeartGold / SoulSilver's X menu, options and Pokédex differ in code (the tool leaves them
 UNRESOLVED): read off the running game (the X menu's field task +4, each page's child init). Their text banks are numbered their own

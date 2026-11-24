@@ -87,6 +87,79 @@ FieldSystem_CreateTask = 0x020509A9
 Journal_CreateEventUsedMove = 0x0202BE71
 Journal_SaveData = 0x0202B7C9
 
+# USA Platinum rev 0 and Europe's rev 10: the same game code (CPUE) as the USA rev 1 cart, their ARM9 byte for byte
+# rev 1's and every word at rev 1's address (port_nds_fns.py); they differ in a few files (rev 0) or in where the files
+# sit (rev 10). Both ran headless beside rev 1 on its save with one script.
+[[port]]
+code = "CPUE"
+rev = 0
+kind = "PLATINUM"
+base = "platinum"
+name = "Platinum (USA, rev 0)"
+title = "Pokémon Platinum"
+sha1 = "ce81046eda7d232513069519cb2085349896dec7"
+cart = "Pokemon - Platinum Version (USA).nds"
+sFieldSystem = 0x021C07DC
+gBattleApplicationTemplate = 0x020EA358
+sSoundSystem = 0x02101DF8
+sSeqPlayer = 0x021CAF64
+sSaveDataPtr = 0x021C0794
+FieldMap_Main = 0x021D0F69
+PartyMenu_Init = 0x0207E0B9
+OptionsMenu_Init = 0x021D0D81
+ScriptManager_Set = 0x0203E881
+FieldTask_GetEnv = 0x02050A65
+ScriptContext_CreateAndStart = 0x0203EAB9
+ScriptContext_Jump = 0x0203E819
+StringTemplate_New = 0x0200B369
+String_Init = 0x02023791
+ScriptManager_GetMemberPtr = 0x0203EF61
+FieldMoves_SetUsableMoves = 0x02070729
+FieldMoves_CheckFly = 0x02070951
+CheckFlyLocationUnlocked = 0x0203A921
+SaveData_GetParty = 0x0207A269
+Party_GetPokemonBySlotIndex = 0x0207A0FD
+FlyContext_New = 0x0207064D
+FieldMoves_FlyTask = 0x02070681
+FieldSystem_CreateTask = 0x02050905
+Journal_CreateEventUsedMove = 0x0202BE01
+Journal_SaveData = 0x0202B759
+
+[[port]]
+code = "CPUE"
+rev = 10
+kind = "PLATINUM"
+base = "platinum"
+name = "Platinum (Europe, rev 10)"
+title = "Pokémon Platinum"
+sha1 = "8d15cd443d4e83e20493c79d3f9dc408c4f51ae0"
+cart = "Pokemon - Platinum Version (Europe) (Rev 10).nds"
+sFieldSystem = 0x021C07DC
+gBattleApplicationTemplate = 0x020EA358
+sSoundSystem = 0x02101DF8
+sSeqPlayer = 0x021CAF64
+sSaveDataPtr = 0x021C0794
+FieldMap_Main = 0x021D0F69
+PartyMenu_Init = 0x0207E0B9
+OptionsMenu_Init = 0x021D0D81
+ScriptManager_Set = 0x0203E881
+FieldTask_GetEnv = 0x02050A65
+ScriptContext_CreateAndStart = 0x0203EAB9
+ScriptContext_Jump = 0x0203E819
+StringTemplate_New = 0x0200B369
+String_Init = 0x02023791
+ScriptManager_GetMemberPtr = 0x0203EF61
+FieldMoves_SetUsableMoves = 0x02070729
+FieldMoves_CheckFly = 0x02070951
+CheckFlyLocationUnlocked = 0x0203A921
+SaveData_GetParty = 0x0207A269
+Party_GetPokemonBySlotIndex = 0x0207A0FD
+FlyContext_New = 0x0207064D
+FieldMoves_FlyTask = 0x02070681
+FieldSystem_CreateTask = 0x02050905
+Journal_CreateEventUsedMove = 0x0202BE01
+Journal_SaveData = 0x0202B759
+
 [[port]]
 code = "IPKE"
 rev = 10

@@ -39,7 +39,8 @@ class DsPortsTest {
         for (p in NDS_PORTS) {
             assertTrue(p.code, supported(p.code, p.revision))
             assertTrue(p.code, WideScreen.ndsKnows(p.code, p.revision))
-            assertFalse(p.code, supported(p.code, p.revision + 1))
+            // The next revision may be another known cart (USA Platinum rev 0, then rev 1).
+            if ((p.code to p.revision + 1) !in TelemetrySampler.NDS_GAMES) assertFalse(p.code, supported(p.code, p.revision + 1))
             assertEquals(p.code, p.title, GameTitles.BY_SHA1[p.sha1])
             assertTrue(p.code, p.sha1 in GameTitles.NDS_SHA1S)
         }

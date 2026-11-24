@@ -505,6 +505,8 @@ fun gen4ConfigFor(kind: GameKind?, code: String = romGameCode): Gen4Config? = wh
     GameKind.PLATINUM -> when {
         renegadePlatinum -> GEN4_RENEGADE_PLATINUM
         code == "CPUF" -> GEN4_PLATINUM_FR
+        // USA rev 0 / Europe rev 10 are ports under the same code with rev 1's globals: rev 1's config for all three.
+        code == "CPUE" -> GEN4_PLATINUM_US
         code == "ADAE" -> GEN4_DIAMOND_US
         code == "APAE" -> GEN4_PEARL_US
         else -> DsPorts.byCode(code)?.let(DsPorts::gen4Config) ?: GEN4_PLATINUM_US
