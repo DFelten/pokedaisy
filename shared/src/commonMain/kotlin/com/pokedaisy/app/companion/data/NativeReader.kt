@@ -1065,6 +1065,7 @@ private fun Mon.withNativeGender(raw: ByteArray, off: Int, layout: PartyMonLayou
         GameKind.WISHES -> genderRatiosWishes
         GameKind.CERULEUM -> genderRatiosCeruleum
         GameKind.GEN3_EVOLVED -> genderRatiosGen3Evolved
+        GameKind.HNS_LEGENDS -> genderRatiosHnsLegends
         GameKind.RECORDKEEPERS -> genderRatiosRecordKeepers
         GameKind.MONOMYTH -> genderRatiosMonomyth
         GameKind.DREAMSTONE -> genderRatiosDreamstone

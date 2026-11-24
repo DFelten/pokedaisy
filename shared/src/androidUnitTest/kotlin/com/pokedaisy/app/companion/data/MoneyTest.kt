@@ -48,6 +48,7 @@ class MoneyTest {
         assertEquals(3848L, money("unbound_it", NATIVE_UNBOUND_IT)) // English's save, booted in the Italian build
         assertEquals(3848L, money("unbound_es", NATIVE_UNBOUND_ES)) // and in the Spanish one
         assertEquals(13000L, money("crystal_advance_redux", NATIVE_CRYSTAL_ADVANCE_REDUX)) // its new game's 3000 + 10000 given
+        assertEquals(3000L, money("heart_and_soul_legends", NATIVE_HNS_LEGENDS)) // Heart and Soul's save, booted in it
         assertEquals(2000L, money("orange_islands", NATIVE_ORANGE_ISLANDS))
         assertEquals(3080L, money("ultra_violet", NATIVE_ULTRA_VIOLET))
         // Retail FireRed's save, booted in FireRed Rocket Edition and Ash Gray.

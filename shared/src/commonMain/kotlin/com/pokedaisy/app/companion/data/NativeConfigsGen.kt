@@ -3815,6 +3815,67 @@ val NATIVE_HEART_AND_SOUL = NATIVE_EMERALD.copy(
     guideTables = GUIDE_TABLES_HEART_AND_SOUL,
 )
 
+// ---- gamedata/gen3/hacks/hns_legends.toml ----
+
+// Pokémon Heart and Soul Legends M9.16 (32 MB, BPEE, sha1 18624b59…): Heart and Soul rebuilt on pokeemerald-expansion 1.15.2
+// (its RHHEXP block: 1573 species, 848 moves, 901 items), gcc, no source (GameKind.HNS_LEGENDS). Heart and Soul v2.0.6's save
+// from the Discord folder loads in it (`heart_and_soul_legends`: SHIINOTIC Lv5 21/21 on the game's own party screen, 3000
+// money, Cherrygrove City). Its RAM is laid out unlike the 1.15.2 reference's, so each address is a literal-pool word of the
+// ~1,100 functions matched code for code into a plain Emerald build of the tag (votes in brackets), then read live:
+// gPlayerParty 0x020002D8 [5/5] with gPlayerPartyCount 0x020210B8 [2/2] (one SHIINOTIC, as the game shows), gMain 0x03003650
+// [19/19], gSaveBlock1Ptr / 2Ptr 0x030035C8 / 0x030035C4 [30], the key SB2+0xAC and money SB1+0x494 (3000; SB1's position +4,
+// as HnS's), gObjectEvents 0x020009A8 [19/19], gMapHeader 0x0201FBD0 (mapsec 0x40, Cherrygrove), gBagPockets 0x02020F8C (HnS's
+// six pockets, their capacities byte for byte). Battle isn't read yet: no battle could be captured (its script command table
+// isn't where the other expansion builds keep it), so the battle addresses are left off.
+// Icons: gSpeciesInfo 0x088A3834 (0x10C-byte entries, HnS's: iconSprite +0x6C, iconPalIndex +0x8E), gMonIconPaletteTable
+// 0x0886F8F4 (the GF header's), gItemsInfo 0x08899918 (0x2C, icon +0x24). Names / types / moves / chart / map sections:
+// scripts/gen_expansion_tables.py hns_legends.
+val NATIVE_HNS_LEGENDS = NATIVE_EMERALD.copy(
+    itemDescs = ItemDescTable(0x0889992CL, 0x2C, -8),
+    playerParty = 0x020002D8L,
+    playerPartyCount = 0x020210B8L,
+    enemyParty = 0,
+    gMain = 0x03003650L,
+    saveBlock1Ptr = 0x030035C8L,
+    saveBlock2Ptr = 0x030035C4L,
+    saveBlock1PosOff = 4,
+    moneyOff = 0x494L,
+    objectEvents = 0x020009A8L,
+    mapHeader = 0x0201FBD0L,
+    bagPockets = 0x02020F8CL,
+    bagPocketCount = 6,
+    bagPocketOrder = HNS_BAG_POCKET_ORDER,
+    speciesMask = 0x07FF,
+    moveMask = 0x07FF,
+    ppMask = 0x7F,
+    battleTypeFlags = 0,
+    battlersCount = 0,
+    battlerPartyIndexes = 0,
+    battlerPositions = 0,
+    battleMons = 0,
+    battleStructPtr = 0,
+    actionCursor = 0,
+    moveCursor = 0,
+    battlerControllerFuncs = 0,
+    handleInputChooseAction = 0,
+    handleInputChooseMove = 0,
+    completeWhenChoseItem = 0,
+    waitForMonSelection = 0,
+    handleInputChooseTarget = 0,
+    partyMenu = 0,
+    monIconTable = 0x088A38A0L, // gSpeciesInfo[0].iconSprite
+    monIconStride = 0x10C,
+    monIconPaletteIndices = 0x088A38C2L, // gSpeciesInfo[0].iconPalIndex
+    monPalIdxStride = 0x10C,
+    monPalIdxMask = 0x07,
+    monIconPaletteTable = 0x0886F8F4L,
+    itemIconTable = 0x0889993CL, // gItemsInfo[0].iconPic
+    itemIconStride = 0x2C,
+    itemPalCompressed = false,
+    pokedex = null,
+    guideTables = null,
+)
+
 // ---- gamedata/gen3/hacks/imperium.toml ----
 
 // Pokémon Emerald Imperium v1.3.1 - BPEE, 32 MB, pokeemerald-expansion 1.10.0 (its

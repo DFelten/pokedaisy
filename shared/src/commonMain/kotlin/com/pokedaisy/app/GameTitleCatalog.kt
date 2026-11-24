@@ -162,6 +162,7 @@ object GameTitleCatalog {
         "eb660caffbc26e1f09f86714d03af4c3eccd9e4d" to "Pokémon Monomyth",
         "742e62ffa5a8d607171fdb8477eb1f417dc36086" to "Pokémon Monomyth",
         "60182b934d2e8eb3eef226a9bbc25e5df6becd4f" to "Pokémon Wishes of Tomorrow",
+        "18624b59e398eb1406d236150bfac2c685e84c45" to "Pokémon Heart and Soul Legends",
         "2b0b608666cc2d553ce08d88fa76dce1fa577e51" to "Pokémon Ceruleum",
         "1e27af00f8969375428a4393faccc87eebb93dca" to "Pokémon Ceruleum",
         "558de0902cc92f67d10f0524724a46a37afbe003" to "Pokémon Generation 3 Evolved",

@@ -625,7 +625,7 @@ private fun buildGameBackground(game: GameKind): GameBackground? {
         // Recharged Emerald's own (teal stripes), from its ROM.
         GameKind.EMERALD -> (if (com.pokedaisy.app.companion.data.runningRechargedEmerald) com.pokedaisy.app.companion.data.RomArt.RE_BACKDROP
             else "partybg/emerald.png") to false
-        GameKind.HEART_AND_SOUL -> "partybg/hns.png" to false
+        GameKind.HEART_AND_SOUL, GameKind.HNS_LEGENDS -> "partybg/hns.png" to false
         // Elite Redux kept Emerald's party backdrop (and its ROM has the art).
         GameKind.ELITE_REDUX -> "partybg/emerald.png" to false
         GameKind.UNBOUND, GameKind.RADICAL_RED, GameKind.ODYSSEY, GameKind.AMETHYST, GameKind.GS_CHRONICLES, GameKind.RHYTHM, GameKind.OOPS_ALL_EEVEES -> "partybg/cfru_tile.png" to true

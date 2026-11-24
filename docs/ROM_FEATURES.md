@@ -99,6 +99,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | RecordKeepers | 1.2.1 | — | — ⁴⁷ | — ⁴⁷ | — ⁴⁷ | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
 | Generation 3 Evolved | 1.0.17, 1.0.22, 1.0.26 | — | ✅ ⁶⁶ | ✅ ⁶⁶ | ✅ ⁶⁶ | — | — | — | — | — | — ⁶⁶ | — | — | — | — | — | — | — | — |
 | Heart and Soul | 2.0.6 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | — | ◐ ⁶ | — | ✅ | ✅ | — | — | — | — | ✅ ³³ | ✅ | — |
+| Heart and Soul Legends | M9.16 ⁶⁹ | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — |
 | Lazarus | 2.0 | ✅ | ✅ | ✅ | ✅ | — | ✅ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | — | ✅ ³³ | ✅ | — |
 | Modern Emerald | 3.6 | — | ✅ | ✅ | ✅ | — | — | — | — | — | — | — | — | — | — | — | — | ✅ | — |
 | Epsilon Emerald | 1.0.0, 1.0.3 | ✅ ³⁹ | ✅ | ✅ | ✅ | — | ✅ ³⁹ | — | ✅ ³⁹ | — | ✅ ³⁹ | ✅ ³⁹ | — | — | — | — | — | — | — |
@@ -1276,3 +1277,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     used that move (its PP spent), the field read by retail's addresses. Field items, FLY, PC, the bike and wild encounters
     weren't checked there, so they're left off; its Pokédex keeps 753 species past FireRed's flag bytes (no DEX yet), and its
     region map isn't FireRed 1.0's code any more (the MAP tab names the place only).
+69. Heart and Soul Legends (M9.16, pokeemerald-expansion 1.15.2, 2026-11-25): the companion only so far, on Heart and Soul's
+    save booted in it: party, bag, money and place, HnS's party look and Johto + Kanto map from its own ROM. Its code was
+    compiled unlike the 1.15.2 reference (no battle handler matched by bytes) and no battle could be scripted headless (its
+    script command table isn't where the other expansion builds keep it), so nothing in battle is read, and the field
+    features (EXPAND, field items, FLY, wild encounters, the code patches) aren't mapped yet.

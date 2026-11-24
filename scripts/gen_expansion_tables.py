@@ -79,6 +79,27 @@ GAMES = {
         checks=dict(species={1: "BULBASAUR", 155: "CYNDAQUIL"}, types={1: (13, 4)}, gender={1: 31},
                     items={1: "POKé BALL", 28: "POTION"}, moves={33: (1, 40), 57: (12, 90), 89: (5, 100)}),
     ),
+    # Pokemon Heart and Soul Legends M9.16: Heart and Soul rebuilt on pokeemerald-expansion 1.15.2 (its RHHEXP block:
+    # 1573 species, 848 moves, 901 items). Its GF ROM header names gSpeciesInfo 0x088A3834 (0x10C-byte entries, HnS's),
+    # gItemsInfo 0x08899918 (0x2C, name pointer +0x14) and gMovesInfo 0x0890A7FC (0x44); the chart is Wishes of Tomorrow's
+    # bytes (0x08A07270); the place names HnS's {x, y, w, h, name*} entries (the live gMapHeader in Cherrygrove reads 0x40),
+    # its region map grid HnS's byte for byte (0x08D1DD7C).
+    "hns_legends": dict(
+        suffix="HnsLegends",
+        label="Pokemon Heart and Soul Legends M9.16",
+        sha1="18624b59e398eb1406d236150bfac2c685e84c45",
+        species_name1=0x088A3834 + 0x10C + 0x2C, species_stride=0x10C, species_max=1573,
+        species_types_off=-0x26, species_gender_off=-0x1A, species_growth_off=-0x17,
+        items_base=0x08899918 + 0x14, items_stride=0x2C, items_desc_off=-8,
+        moves_base=0x0890A7FC, moves_stride=0x44, move_bits_off=0x0A,
+        chart=0x08A07270, chart_n=21,
+        mapsec_base=0x08D1D408, mapsec_name_off=4,
+        region_map=dict(image="hns", layout=0x08D1DD7C, w=28, h=15, ox=1, oy=2, none=0x7D),
+        checks=dict(species={1: "BULBASAUR", 4: "CHARMANDER", 25: "PIKACHU", 155: "CYNDAQUIL", 756: "SHIINOTIC"},
+                    types={1: (13, 4)}, gender={1: 31, 25: 127}, growth={1: 3, 25: 0},
+                    items={1: "POKé BALL", 2: "GREAT BALL", 28: "POTION"},
+                    moves={1: (1, 40), 33: (1, 40), 57: (12, 90), 89: (5, 100)}),
+    ),
     # Pokemon Lazarus v2.0 (splash: "PRET x RHH"). Same gSpeciesInfo field
     # offsets as HnS, 0xD4-byte entries: "Fennekin" -> "Braixen" spacing, and
     # "Pikachu" lands exactly at 25 (no Bulbasaur - the dex is regional, with

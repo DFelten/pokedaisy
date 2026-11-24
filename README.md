@@ -251,6 +251,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Gaia                           | 3.2                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Odyssey                        | 4.1.1                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Heart and Soul                 | 2.0.6                      |  ✅   | ✅  |   ✅   | ✅  |   ✅    |  ✅   |
+| Heart and Soul Legends         | M9.16                      |  ✅   | ✅  |   —    | ✅  |   —     |   —   |
 | Amethyst                       | 1.3.0, 1.4.1, 1.4.3        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Celia's Stupid Romhack         | 1.1.4                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Orange Islands                 | Beta 5.7, an older beta    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
