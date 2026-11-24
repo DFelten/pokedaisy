@@ -64,6 +64,8 @@ constexpr int OW = PK_NDS_WIDE_MAX_W, OH = PK_NDS_WIDE_MAX_H;
 // and only a sprite that has kept its place across the screen EDGE_STEADY frames (a box that has slid in; not one sliding).
 constexpr int EDGE_BAND = 5;
 constexpr int EDGE_STEADY = 8;
+// GPU mode: drawn frames between the screen copy EXPAND plans from and the frame shown (Wide::edgeRowsWas).
+constexpr int GPU_LAG = 2;
 // A carried box goes this far past the screen's side, then ends in its own outline (its top line's colour and
 // thickness), its corners stepped round like a pixel-art window's (BOX_CORNER: how far each row from the top / bottom
 // stops short): the box closed just past where the DS's screen ended, the battle's scene beyond it. Carried to the
@@ -157,6 +159,13 @@ struct Wide {
     // pixel still holds) - a sprite that stays put while its picture changes (the trainer throwing) doesn't.
     u32 edgeSeen[2][192] = {};
     u8 edgeSteady[2][192] = {};
+    // GPU mode: the screen the margins are planned from is the 1x copy read back two drawn frames before
+    // (pk_nds.cpp's topArgb, filled from the last frame's PBO), while the sprites are this frame's and the compositor
+    // fills the carried rows from this frame's screen. So each drawn frame's edge-sprite rows are kept (GPU_LAG + 1 of
+    // them): the plan is worked out with the rows its screen had, then moved by how far the box has moved since (an HP
+    // box bobbing a pixel while the battle waits blinked doubled for two frames at every bob: GitHub #1401).
+    bool edgeRowsWas[GPU_LAG + 1][2][192] = {};
+    int edgeRowsHave = 0;
     // Frames run since the last drawn one: what's held counts game frames, so fast-forward (one frame drawn in a few)
     // carries a box on at the same frame as 1x does.
     int undrawn = 0;
@@ -1489,6 +1498,35 @@ bool pk_nds_wide_frame(NDS* nds, const uint32_t* top, bool draw, bool margins, b
         }
     }
     if (draw) wide.objHeld.swap(wide.objHeldNext);
+    // GPU mode: the rows the stale screen's sprites had, and each side's shift to this frame's (0: none, or not one
+    // clean shift - sprites coming or going, a box sliding - when the plan stays as it was).
+    int lagShift[2] = {0, 0};
+    if (draw && planning && battleBg) {
+        for (int k = GPU_LAG; k > 0; k--) std::memcpy(wide.edgeRowsWas[k], wide.edgeRowsWas[k - 1], sizeof(wide.edgeRowsWas[0]));
+        std::memcpy(wide.edgeRowsWas[0][0], edgeObjL, sizeof(edgeObjL));
+        std::memcpy(wide.edgeRowsWas[0][1], edgeObjR, sizeof(edgeObjR));
+        wide.edgeRowsHave = std::min(wide.edgeRowsHave + 1, GPU_LAG + 1);
+        if (wide.gpu && wide.edgeRowsHave > GPU_LAG) {
+            for (int side = 0; side < 2; side++) {
+                const bool* now = side ? edgeObjR : edgeObjL;
+                const bool* then = wide.edgeRowsWas[GPU_LAG][side];
+                int shift = 0;
+                for (int d : {0, 1, -1, 2, -2}) {
+                    bool same = true;
+                    for (int y = 0; y < H3D && same; y++) {
+                        int from = y - d;
+                        same = now[y] == (from >= 0 && from < H3D && then[from]);
+                    }
+                    if (same) { shift = d; break; }
+                }
+                lagShift[side] = shift;
+                // Plan with the rows the stale screen had.
+                if (shift) std::memcpy(side ? edgeObjR : edgeObjL, then, sizeof(edgeObjL));
+            }
+        }
+    } else if (draw) {
+        wide.edgeRowsHave = 0;
+    }
     if (draw) {
         u32 mb = unitA.MasterBrightness;
         if (!(unitA.DispCnt & 0x30000)) mb = 0;   // display off / VRAM modes: the 2D engine's call
@@ -1555,6 +1593,23 @@ bool pk_nds_wide_frame(NDS* nds, const uint32_t* top, bool draw, bool margins, b
                     }
                 }
             }
+        // GPU mode: the carried rows moved to where this frame's box is, each still taken from its own row of the box.
+        for (int side = 0; side < 2; side++) {
+            int d = lagShift[side];
+            if (!d) continue;
+            u32 c[H3D] = {};
+            int r[H3D] = {};
+            for (int y = 0; y < H3D; y++) {
+                int from = y - d;
+                if (from < 0 || from >= H3D || !carry[side][from]) continue;
+                int row = carryRow[side][from] + d;
+                if (row < 0 || row >= H3D) continue;
+                c[y] = carry[side][from];
+                r[y] = row;
+            }
+            std::memcpy(carry[side], c, sizeof(c));
+            std::memcpy(carryRow[side], r, sizeof(r));
+        }
         // Each run of carried rows (a box, or boxes touching): its outline row (the run's first) and that line's
         // thickness, for the end drawn past BOX_RUN.
         int runTop[2][H3D] = {}, runBottom[2][H3D] = {}, capW[2][H3D] = {};
