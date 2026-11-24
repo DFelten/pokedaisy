@@ -407,6 +407,27 @@ val FIELD_ITEMS_EPSILON_EMERALD = FieldItemFns(
 )
 
 /**
+ * Epsilon Emerald v1.0.3: v1.0.0's functions moved +0x10..+0x80 (each found by its code with BLs and pools masked; seven of
+ * them changed bytes in their first 32, so new CRCs), gSpecials by its PC entry, sMapHealLocations +0x86C. The PC opened and
+ * closed, and FLY landed in Rustboro (heal location 6), headless on retail Emerald's save.
+ */
+val FIELD_ITEMS_EPSILON_EMERALD_V1_0_3 = FIELD_ITEMS_EPSILON_EMERALD.copy(
+    varGet = 0x088CBD6CL, varSet = 0x088CBDA4L, fieldControlsLocked = 0x088C65DCL,
+    party = FIELD_ITEMS_EPSILON_EMERALD.party!!.copy(
+        getMonData = 0x0888C994L, setMonData = 0x0888D464L, codeCrcs = listOf(0xDE003991L, 0x88D12BDDL),
+    ),
+    pc = PcFns(0x088C6668L, 63, 0x08A49C98L, 0x088FFD05L, listOf(0x794EBC3DL, 0xF3FC1878L)),
+    fly = FIELD_ITEMS_EPSILON_EMERALD.fly!!.copy(
+        flagGet = 0x088CBEB8L, setUpFieldMoveFly = 0x08A12F34L, getMapsecType = 0x0896AD54L,
+        fadeScreen = 0x088DBDECL, lockControls = 0x088C65C4L, unlockControls = 0x088C65D0L, destinations = 0x0901DBDCL,
+        codeCrcs = listOf(0xC3EAF912L, 0x72BBB298L, 0x712D24ABL, 0xCE0E8C28L, 0xB9FB85A7L, 0xB037C8AFL, 0x19171C52L, 0x2F1D18CAL, 0x4C6658DDL),
+        healWarp = FIELD_ITEMS_EPSILON_EMERALD.fly!!.healWarp!!.copy(
+            toHealLocation = 0x088ABECCL, toMapWarp = 0x088ABE28L, returnToField = 0x088E82E4L,
+        ),
+    ),
+)
+
+/**
  * Lazarus 2.0 (pokeemerald-expansion, no source): mapped like Imperium from expansion 1.10.0's build - FlagGet,
  * GetMapsecType and FadeScreen through their callers' BLs, the field-lock trio by its byte (0x03003B38), RAM from
  * NATIVE_LAZARUS / the battle switch. Its sMapHealLocations is retail's 50 Hoenn rows grown to 122: its own towns are

@@ -10,8 +10,12 @@ import org.junit.Test
  * NATIVE_EPSILON_EMERALD (Pokémon Epsilon Emerald v1.0.0): retail Emerald's save, which it loads as it is (the
  * `epsilon_emerald` fixtures' READMEs). What each check expects is what the game's own party, bag and battle screens showed.
  */
-class EpsilonEmeraldDecodeTest {
-    private val cfg = NATIVE_EPSILON_EMERALD
+open class EpsilonEmeraldDecodeTest {
+    open val cfg = NATIVE_EPSILON_EMERALD
+    open val fixture = "epsilon_emerald"
+    open val romFile = "Pokemon Epsilon Emerald (v1.0.0).gba"
+    open val pokedex = POKEDEX_EPSILON_EMERALD
+    open val fieldItems = FIELD_ITEMS_EPSILON_EMERALD
 
     private fun use() {
         activeGame = GameKind.EMERALD
@@ -25,7 +29,7 @@ class EpsilonEmeraldDecodeTest {
     @Test
     fun `the save's party, bag, money and place`() {
         use()
-        val t = decodeNative("epsilon_emerald", cfg)
+        val t = decodeNative(fixture, cfg)
         // Its party screen: KADABRA Lv36, MANECTRIC Lv36, TRAPINCH Lv27, BLAZIKEN Lv44, PELIPPER Lv43, DOTS (a SEEDOT) Lv11.
         assertEquals(
             listOf("Kadabra" to 36, "Manectric" to 36, "Trapinch" to 27, "Blaziken" to 44, "Pelipper" to 43, "Seedot" to 11),
@@ -59,8 +63,8 @@ class EpsilonEmeraldDecodeTest {
     @Test
     fun `a scripted wild battle`() {
         use()
-        val ram = FixtureMemoryReader.load("epsilon_emerald_battle")
-        val t = decodeNative("epsilon_emerald_battle", cfg)
+        val ram = FixtureMemoryReader.load(fixture + "_battle")
+        val t = decodeNative(fixture + "_battle", cfg)
         assertTrue(t.inBattle)
         assertFalse(t.isDoubleBattle)
         val me = t.battleMons[BATTLE_POS_PLAYER_LEFT]
@@ -95,11 +99,11 @@ class EpsilonEmeraldDecodeTest {
     @Test
     fun `DEX - the save's Hoenn counts and its pages`() {
         use()
-        val t = POKEDEX_EPSILON_EMERALD
+        val t = pokedex
         assertEquals(t, cfg.pokedex)
-        val dex = readPokedexState(FixtureMemoryReader.load("epsilon_emerald"), cfg, t)!!
+        val dex = readPokedexState(FixtureMemoryReader.load(fixture), cfg, t)!!
         assertFalse(dex.national)   // retail Emerald's save never got the National Dex
-        val rom = RomFileReader.load(RETAIL_ROM_DIR + "Pokemon Epsilon Emerald (v1.0.0).gba") ?: return
+        val rom = RomFileReader.load(RETAIL_ROM_DIR + romFile) ?: return
         PokedexSource.reader = rom
         assertTrue(pokedexMatchesRom(rom, t))
         // Its Hoenn Pokédex on this save: Seen 083, Own 028 (the game's own screen, headless).
@@ -137,7 +141,7 @@ class EpsilonEmeraldDecodeTest {
         val g = cfg.guideTables!!
         assertEquals(GuideId.EPSILON_EMERALD, g.guide)
         assertTrue(gameGuide(GuideId.EPSILON_EMERALD)!!.bosses.isEmpty())
-        val rom = RomFileReader.load(RETAIL_ROM_DIR + "Pokemon Epsilon Emerald (v1.0.0).gba") ?: return
+        val rom = RomFileReader.load(RETAIL_ROM_DIR + romFile) ?: return
         PokedexSource.reader = rom
         assertTrue(guideTablesMatchRom(rom, g))
         // ROUTE 101 (0.16): WURMPLE, POOCHYENA and ZIGZAGOON at Lv2-3 in the grass, no water.
@@ -156,19 +160,28 @@ class EpsilonEmeraldDecodeTest {
 
     @Test
     fun `PC anywhere and FLY - its table matches the ROM, no bag USE`() {
-        assertEquals(FIELD_ITEMS_EPSILON_EMERALD, cfg.fieldItems)
-        val rom = RomFileReader.load(RETAIL_ROM_DIR + "Pokemon Epsilon Emerald (v1.0.0).gba") ?: return
+        assertEquals(fieldItems, cfg.fieldItems)
+        val rom = RomFileReader.load(RETAIL_ROM_DIR + romFile) ?: return
         val read = { a: Long, n: Int -> rom.readCoreMemory(a, n) }
-        val support = fieldItemSupport(FIELD_ITEMS_EPSILON_EMERALD, read)!!
+        val support = fieldItemSupport(fieldItems, read)!!
         assertTrue(support.canPc)
         assertTrue(support.canFly)
         assertFalse(support.canUse(86))   // a Repel: not from the bag
         // Its sMapHealLocations: Littleroot {0, 9, heal 1}, Rustboro heal 6, Route 101 {0, 16, heal 23}, its last row 0xEE.
-        val rows = read(FIELD_ITEMS_EPSILON_EMERALD.fly!!.destinations, 0xEF * 3)
+        val rows = read(fieldItems.fly!!.destinations, 0xEF * 3)
         fun row(i: Int) = (0..2).map { rows[i * 3 + it].toInt() and 0xFF }
         assertEquals(listOf(0, 9, 1), row(0))
         assertEquals(6, row(0x0A)[2])
         assertEquals(listOf(0, 16, 23), row(0x10))
         assertEquals(listOf(0, 62, 62), row(0xEE))
     }
+}
+
+/** v1.0.3: the same checks on its own fixtures, config and ROM (retail Emerald's save; v1.0.0's RAM and tables, its ROM moved). */
+class EpsilonEmeraldV103DecodeTest : EpsilonEmeraldDecodeTest() {
+    override val cfg = NATIVE_EPSILON_EMERALD_V1_0_3
+    override val fixture = "epsilon_emerald_v1_0_3"
+    override val romFile = "Pokemon Epsilon Emerald (v1.0.3).gba"
+    override val pokedex = POKEDEX_EPSILON_EMERALD_V1_0_3
+    override val fieldItems = FIELD_ITEMS_EPSILON_EMERALD_V1_0_3
 }

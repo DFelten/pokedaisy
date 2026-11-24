@@ -8,6 +8,8 @@ package com.pokedaisy.app.companion.data
  */
 object EpsilonEmerald {
     const val V1_0_0_SHA1 = TelemetrySampler.EPSILON_EMERALD_V1_0_0_SHA1
+    /** v1.0.3: v1.0.0's RAM, tables and save; its ROM moved ([NATIVE_EPSILON_EMERALD_V1_0_3]). */
+    const val V1_0_3_SHA1 = TelemetrySampler.EPSILON_EMERALD_V1_0_3_SHA1
 }
 
 /** Its bag ([PackedBagLayout]): 6-byte pocket entries, the TM pocket (index 2) a bit per machine. */

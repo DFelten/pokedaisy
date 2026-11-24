@@ -148,6 +148,7 @@ object GameTitleCatalog {
         "92ed82145c013069472153391c7aab1cfbf37b75" to "Pokémon Ash Gray Fork Bug Fix",
         "ab3bc012598d73dce965450df79893aeff97c834" to "Pokémon Modern Emerald",
         "8decf0571ba3f17d31c76168346e240a14e248ce" to "Pokémon Epsilon Emerald",
+        "fec5d3190cf396fa21d4bed815f088289501a78d" to "Pokémon Epsilon Emerald",
         "5b38a681b6924ef3e0bb9f6cfbf22426c4c4e523" to "Pokémon Elite Redux",
         "2f3e17e55c6afe23da97ec0f96a067eeb142ad15" to "Pokémon Elite Redux",
         "40780347d0b4df6bf491eaf12603e5422caee677" to "Pokémon Team Rocket Edition: Dragonsden Version",

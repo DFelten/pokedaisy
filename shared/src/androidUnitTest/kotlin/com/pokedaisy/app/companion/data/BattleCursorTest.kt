@@ -64,6 +64,7 @@ class BattleCursorTest {
             // Epsilon Emerald: RIGHT / DOWN walk 0 -> 1 -> 3, a written 2 + A opens the party, a written move 1 + A spent its
             // PP (headless, 2026-11-15).
             "epsilon_emerald_battle" to NATIVE_EPSILON_EMERALD,
+            "epsilon_emerald_v1_0_3_battle" to NATIVE_EPSILON_EMERALD_V1_0_3,
         ).forEach { (fixture, cfg) ->
             val ram = FixtureMemoryReader.load(fixture)
             assertEquals(fixture, 0, ram.readCoreMemory(cfg.actionCursor, 1)[0].toInt())

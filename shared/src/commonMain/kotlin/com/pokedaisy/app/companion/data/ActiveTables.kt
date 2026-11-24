@@ -316,7 +316,7 @@ val gameRandomized: Boolean get() = runningRandomized != null
 fun emeraldHackFor(cfg: NativeConfig?): HackText? = when {
     cfg === NATIVE_RECHARGED_EMERALD_V2_2_5 || cfg === NATIVE_RECHARGED_EMERALD_V2_2_8 -> hackTextRechargedEmerald
     cfg === NATIVE_RECHARGED_EMERALD_REBALANCED_V2_2_8 -> hackTextRechargedEmeraldRebalanced
-    cfg === NATIVE_EPSILON_EMERALD -> hackTextEpsilonEmerald
+    cfg === NATIVE_EPSILON_EMERALD || cfg === NATIVE_EPSILON_EMERALD_V1_0_3 -> hackTextEpsilonEmerald
     else -> null
 }
 

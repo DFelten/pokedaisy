@@ -1075,6 +1075,14 @@ val GUIDE_TABLES_EPSILON_EMERALD = GUIDE_TABLES_EMERALD.copy(
     mapGroups = 0x08E299DCL,
 )
 
+/** Epsilon Emerald v1.0.3: v1.0.0's, moved (gTrainers +0x680, gWildMonHeaders +0x86C, gMapGroups found through the live
+ * gMapHeader's record and its group's table: +0x808). */
+val GUIDE_TABLES_EPSILON_EMERALD_V1_0_3 = GUIDE_TABLES_EPSILON_EMERALD.copy(
+    trainers = 0x08BFACA4L,
+    wildHeaders = 0x08FB4284L,
+    mapGroups = 0x08E2A1E4L,
+)
+
 /**
  * Pokémon Team Rocket Edition: Dragonsden Version: HERE only. Vanilla-shaped tables: gWildMonHeaders 0x08C2A974 (20 bytes,
  * 443 headers, 14 literal-pool words; Route 101's land set decodes to its Lv70-85 Hoenn Pokémon), gTrainers 0x0857F588 (40

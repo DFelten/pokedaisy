@@ -3438,6 +3438,29 @@ val NATIVE_EPSILON_EMERALD = NativeConfig(
     fieldItems = FIELD_ITEMS_EPSILON_EMERALD,
 )
 
+// Pokémon Epsilon Emerald v1.0.3 (sha1 fec5d319…; the author's BPS over retail Emerald): v1.0.0's RAM (retail Emerald's save
+// boots to the same party, save blocks and map on ROUTE 114: `epsilon_emerald_v1_0_3`), names, types, moves and chart
+// (gen_epsilon_emerald_tables.py compares them), its ROM moved: each v1.0.0 address found in it by its bytes (ROM pointers and
+// BLs masked), a pointer table by what its pointers point at - code +0x10..+0x80, data +0x680 / +0x6A0 / +0x86C. Its battle
+// handlers are v1.0.0's + 0x10, read live in its own scripted wild battle (`epsilon_emerald_v1_0_3_battle`), where the cursors,
+// gPartyMenu, a written cell + A and the POKéMON switch behaved as in v1.0.0.
+val NATIVE_EPSILON_EMERALD_V1_0_3 = NATIVE_EPSILON_EMERALD.copy(
+    itemDescs = ItemDescTable(0x08FEECA4L, 36, 0x14, count = 629),
+    monIconTable = 0x08FE0CD0L,
+    monIconPaletteIndices = 0x08FE15A4L,
+    monIconPaletteTable = 0x08FE17ECL,
+    monIconPalettes = 0x08BE5D40L,
+    itemIconTable = 0x090A38B8L,
+    handleInputChooseAction = 0x08875869L,
+    handleInputChooseMove = 0x088762F9L,
+    completeWhenChoseItem = 0x088783E1L,
+    waitForMonSelection = 0x08878325L,
+    handleInputChooseTarget = 0x08875B95L,
+    pokedex = POKEDEX_EPSILON_EMERALD_V1_0_3,
+    guideTables = GUIDE_TABLES_EPSILON_EMERALD_V1_0_3,
+    fieldItems = FIELD_ITEMS_EPSILON_EMERALD_V1_0_3,
+)
+
 // ---- gamedata/gen3/hacks/gaia.toml ----
 
 // Pokémon Gaia v3.2 - another large (32 MB) BPRE hack, verified 2026-09-20 the

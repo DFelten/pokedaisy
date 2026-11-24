@@ -74,6 +74,7 @@ class WildEncountersTest {
         "Pokemon Monomyth (v1.2).gba" to 0L,
         // Epsilon Emerald (gcc): OFF walked 180 steps of Route 101's grass without a battle, NORMAL met one within 20.
         "Pokemon Epsilon Emerald (v1.0.0).gba" to 0x020398E0L,
+        "Pokemon Epsilon Emerald (v1.0.3).gba" to 0x020398E0L,
         "Pokemon Emerald Rogue (v2.2.1-EX).gba" to 0L,
         "Pokemon Quetzal (Alpha 9.0) (English).gba" to 0L,
     )

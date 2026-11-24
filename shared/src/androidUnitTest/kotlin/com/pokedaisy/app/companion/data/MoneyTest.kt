@@ -99,6 +99,7 @@ class MoneyTest {
         assertEquals(3000L, money("modern_emerald", NATIVE_MODERN_EMERALD))
         // Epsilon Emerald: retail Emerald's save as it is, retail's offsets.
         assertEquals(185092L, money("epsilon_emerald", NATIVE_EPSILON_EMERALD))
+        assertEquals(185092L, money("epsilon_emerald_v1_0_3", NATIVE_EPSILON_EMERALD_V1_0_3))
         // Super Mariomon: vanilla's offsets in every release (its card says P3100).
         for ((key, cfg) in listOf("mariomon_v1_5_2" to NATIVE_MARIOMON_V1_5_2, "mariomon_v1_5_1" to NATIVE_MARIOMON_V1_5_1,
                 "mariomon_v1_3" to NATIVE_MARIOMON_V1_3, "mariomon_v1_2_2" to NATIVE_MARIOMON_V1_2_2, "mariomon_v1_2_1" to NATIVE_MARIOMON_V1_2_1)) {

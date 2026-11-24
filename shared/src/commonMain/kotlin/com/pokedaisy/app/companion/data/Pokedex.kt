@@ -1356,6 +1356,18 @@ val POKEDEX_EPSILON_EMERALD = POKEDEX_EMERALD.copy(
 )
 
 /**
+ * Epsilon Emerald v1.0.3: v1.0.0's tables, moved with the rest of its ROM (each found by its bytes, or a pointer table by
+ * what its pointers point at: +0x680 around the base stats, +0x6A0 the evolutions / learnsets, +0x86C the entries and
+ * footprints). The `epsilon_emerald_v1_0_3` save reads the same counts and pages.
+ */
+val POKEDEX_EPSILON_EMERALD_V1_0_3 = POKEDEX_EPSILON_EMERALD.copy(
+    entries = 0x08FD0510L, frontPics = 0x08BEDDD4L, palettes = 0x08BE5D40L, speciesInfo = 0x08C192DCL,
+    speciesToNational = 0x08C150BCL, abilityNames = 0x08C0B11CL, footprints = 0x08FD39D0L, regionalOrder = 0x08C15524L,
+    evoLayout = EvoLayout(EvoScheme.EPSILON_EMERALD, table = 0x08C2966EL, perMon = 7, record = 6),
+    levelUpLearnsets = 0x08C2F320L,
+)
+
+/**
  * Super Mariomon v1.5.1-Anniversary: vanilla-shaped tables (an old pokeemerald-expansion's), the
  * Mario species from 906 numbered 1..155 (sSpeciesToNationalPokedexNum: PIRANHA P. 906 = No.1,
  * BOB-OMB 912 = No.7). Its TATTLEDEX lists the WORLD dex (sHoennToNationalOrder, the national

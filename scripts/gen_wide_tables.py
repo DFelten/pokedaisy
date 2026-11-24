@@ -334,6 +334,13 @@ HACKS = [
          a=dict(VMAP=0x03004580, MAP_HEADER=0x02037F68, MAP_GROUPS=0x08E299DC, SAVE_BLOCK1_PTR=0x0300454C,
                 CAMERA_OFFSET=0x03000E20, OBJECT_EVENTS=0x02038020, SPRITES=0x020206B0, COORD_OFFSET=0x02021BBC,
                 COORD_OFFSET_Y=0x02021BBE, SPRITE_ORDER=0x020217F4, GMAIN=0x03002BE0, CONTROLS_LOCKED=0x03000F2C)),
+    # v1.0.3: v1.0.0's RAM, its ROM moved (gMapGroups +0x808: found through the live gMapHeader's record; its
+    # ScriptContext_SetupScript +0x48).
+    dict(name="Epsilon Emerald v1.0.3", sha1="fec5d3190cf396fa21d4bed815f088289501a78d", family="EX32", save="epsilon_emerald_v1_0_3",
+         boot_file="epsilon_emerald.txt", script=0x088C6669,
+         a=dict(VMAP=0x03004580, MAP_HEADER=0x02037F68, MAP_GROUPS=0x08E2A1E4, SAVE_BLOCK1_PTR=0x0300454C,
+                CAMERA_OFFSET=0x03000E20, OBJECT_EVENTS=0x02038020, SPRITES=0x020206B0, COORD_OFFSET=0x02021BBC,
+                COORD_OFFSET_Y=0x02021BBE, SPRITE_ORDER=0x020217F4, GMAIN=0x03002BE0, CONTROLS_LOCKED=0x03000F2C)),
     # pokeemerald-expansion builds: scripts/find_wide_addrs.py's dumps (gMapHeader, gSaveBlock1Ptr and gMapGroups from
     # the app's NativeConfig / GuideTables), ScriptContext_SetupScript from their battle fixtures' READMEs.
     dict(name="Lazarus v2.0", sha1="7dcdc7e280bc4631487e13dd37e6e0cea04adea6", family="EX", save="lazarus_srm",

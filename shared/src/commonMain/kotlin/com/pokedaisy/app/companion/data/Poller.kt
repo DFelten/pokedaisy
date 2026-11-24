@@ -655,6 +655,7 @@ class TelemetrySampler {
                 ModernEmerald.V3_6_SHA1 -> { kind = GameKind.EMERALD; nativeCfg = NATIVE_MODERN_EMERALD }
                 // Epsilon Emerald: a gcc pokeemerald on Emerald's ids with an expansion battle engine (EpsilonEmerald).
                 EpsilonEmerald.V1_0_0_SHA1 -> { kind = GameKind.EMERALD; nativeCfg = NATIVE_EPSILON_EMERALD }
+                EpsilonEmerald.V1_0_3_SHA1 -> { kind = GameKind.EMERALD; nativeCfg = NATIVE_EPSILON_EMERALD_V1_0_3 }
                 else -> {
                     kind = GameKind.EMERALD
                     unsupportedRom(reader, code, size, hash, "unrecognized Emerald-based ROM hack " +
@@ -1286,6 +1287,8 @@ class TelemetrySampler {
 
         // Pokémon Epsilon Emerald (pokemerrp; BPEE, 32 MB, closed): NATIVE_EPSILON_EMERALD (EpsilonEmerald).
         const val EPSILON_EMERALD_V1_0_0_SHA1 = "8decf0571ba3f17d31c76168346e240a14e248ce"
+        // v1.0.3 (the author's BPS over retail Emerald): NATIVE_EPSILON_EMERALD_V1_0_3.
+        const val EPSILON_EMERALD_V1_0_3_SHA1 = "fec5d3190cf396fa21d4bed815f088289501a78d"
 
         /** Recharged Emerald's config for a build's hash; null for any other ROM. */
         fun rechargedEmeraldConfig(hash: String?): NativeConfig? = when (hash) {
@@ -1476,7 +1479,7 @@ class TelemetrySampler {
             RECHARGED_YELLOW_V1_9_7_SHA1,
             RECHARGED_EMERALD_V2_2_5_SHA1, RECHARGED_EMERALD_V2_2_8_SHA1, RECHARGED_EMERALD_REBALANCED_V2_2_8_SHA1,
             ModernEmerald.V3_6_SHA1,
-            EpsilonEmerald.V1_0_0_SHA1,
+            EpsilonEmerald.V1_0_0_SHA1, EpsilonEmerald.V1_0_3_SHA1,
             MARIOMON_V1_2_1_SHA1, MARIOMON_V1_2_2_SHA1, MARIOMON_V1_3_SHA1, MARIOMON_V1_5_1_Anniversary_SHA1,
             MARIOMON_V1_5_2_Anniversary_SHA1,
             GS_CHRONICLES_V2_7_6_SHA1,
