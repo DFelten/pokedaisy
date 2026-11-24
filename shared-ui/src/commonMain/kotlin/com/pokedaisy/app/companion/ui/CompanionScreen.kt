@@ -1346,14 +1346,21 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
     // TAB BAR > SHOW AS ICONS: the tab's icon (MORE's pixel tile in RETRO, its glyph in MODERN) where it has one.
     if (id != null && com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) {
         val modern = modernView
+        val plain = com.pokedaisy.app.companion.ui.theme.CustomLook.tabIconsPlain
         val glyph = if (modern) ModernGlyph.forTab(id) else null
         val pixel = if (!modern) TabIcons.forTab(id) else null
         if (glyph != null || pixel != null) {
             val tint = if (rainbow != null) rainbow.text else key?.text ?: if (selected) OptionColors.value else OptionColors.label
             TabChipShell(selected, m, modifier.fillMaxHeight().alpha(if (enabled) 1f else 0.4f).semantics { contentDescription = label }, onClick, enabled, rainbow) {
-                // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph in the label's colour, a little larger than a capital.
-                if (glyph != null) ModernIcon(glyph, tint, Modifier.size(m.u * if (LocalTabBarCompact.current) 15 else 22))
-                else PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                // A GBA pixel an icon pixel in RETRO (crisp); MODERN's glyph a little larger than a capital: its coloured app tile,
+                // or PLAIN ICONS: the glyph / the pixel drawing in the label's one colour.
+                val side = m.u * if (LocalTabBarCompact.current) 15 else 22
+                when {
+                    glyph != null && plain -> ModernIcon(glyph, tint, Modifier.size(side))
+                    glyph != null -> ModernTile(glyph, Modifier.size(side))
+                    plain -> PixelArt(pixel!!.bitmap, plainPalette(pixel.palette, tint), Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                    else -> PixelArt(pixel!!.bitmap, pixel.palette, Modifier.size(m.u * if (LocalTabBarCompact.current) 12 else TabIcons.SIZE))
+                }
             }
             return
         }
@@ -1370,6 +1377,24 @@ internal fun TabChip(label: String, selected: Boolean, modifier: Modifier = Modi
         )
     }
 }
+
+/**
+ * TAB BAR > SHOW AS PLAIN ICONS: a [TabIcons] drawing in one colour, [tint]: its dark outline solid, each other colour
+ * the tint a little see-through by how light it was (a light fill faint, a dark one strong), so the drawing keeps its
+ * shapes. Cached per palette and tint.
+ */
+internal fun plainPalette(palette: Map<Char, androidx.compose.ui.graphics.Color>, tint: androidx.compose.ui.graphics.Color): Map<Char, androidx.compose.ui.graphics.Color> =
+    plainPalettes.getOrPut(palette to tint) {
+        palette.mapValues { (_, c) ->
+            if (c.alpha == 0f) c
+            else {
+                val light = 0.299f * c.red + 0.587f * c.green + 0.114f * c.blue
+                tint.copy(alpha = if (light < 0.25f) 1f else (0.95f - light * 0.6f).coerceIn(0.3f, 0.9f))
+            }
+        }
+    }
+
+private val plainPalettes = HashMap<Pair<Map<Char, androidx.compose.ui.graphics.Color>, androidx.compose.ui.graphics.Color>, Map<Char, androidx.compose.ui.graphics.Color>>()
 
 /** The SETTINGS and MORE tabs: a fixed-width chip (narrower than the weighted text tabs)
  * showing only a pixel-art [icon] (the gear, MORE's nine squares) rather than a word. Same

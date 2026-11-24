@@ -371,7 +371,7 @@ DEFAULT; picking a theme with a font wears it (`pickTheme` -> `wearThemeFont`). 
 rule: checked by its bytes, size-capped; `FontFileInfo.problem`, `PictureKind` / `PictureMotion`, the zip's caps in `ThemePackFiles.unzip`).
 SIDE BARS (`SideBars`, `Prefs.sideBars`; GAME SCREEN on both screens): DEFAULT (theme's bar pictures, else the DS blur / black) / BLACK / MY
 PICTURES, drawn by `SideBarsFill` in `sideBarsView` (behind the game in `GameViewportView`, `onContent` gives the game's rect) or inside
-the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / `ModernGlyph`. Several
+the DS backdrop (`dsBarsOwn`). TAB BAR > SHOW AS ICONS (`CustomLook.tabIcons`): `TabChip(id)` draws `TabIcons` / MODERN's `ModernTile`; PLAIN ICONS (`tabIconsPlain`, 2026-11-24) the same in the tab's one colour (`plainPalette`, `ModernIcon`). Several
 custom layouts: touch (`TouchControlsStyle.customs` / `customIndex`, `TouchCustom`, prefs `touch_layouts`; EDIT LAYOUT on a preset makes a new
 one, never writes over another) and HUD (`FieldHudStyle.customs` / `custom`, `HudCustom` places per `HudBlock` as shares of the room;
 `HudEditor` over the game from the companion's HUD > EDIT LAYOUT, `CustomHudLayout`). LIBRARY VIEW (`LibraryLayout`, `Prefs.libraryViewMode`

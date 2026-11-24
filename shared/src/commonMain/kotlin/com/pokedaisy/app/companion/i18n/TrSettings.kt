@@ -460,6 +460,7 @@ internal val trSettings: Map<String, Tr> = mapOf(
     "GREY" to Tr(ja = "はいいろ", fr = "GRIS", de = "GRAU", it = "GRIGIO", es = "GRIS", br = "CINZA", pt = "CINZENTO", ko = "회색"),
     "SHOW AS" to Tr(ja = "ひょうじ", fr = "AFFICHER EN", de = "ANZEIGEN ALS", it = "MOSTRA COME", es = "MOSTRAR COMO", br = "MOSTRAR COMO", pt = "MOSTRAR COMO", ko = "표시 방식"),
     "ICONS" to Tr(ja = "アイコン", fr = "ICÔNES", de = "SYMBOLE", it = "ICONE", es = "ICONOS", br = "ÍCONES", pt = "ÍCONES", ko = "아이콘"),
+    "PLAIN ICONS" to Tr(ja = "たんしょくの アイコン", fr = "ICÔNES SIMPLES", de = "EINFARBIGE SYMBOLE", it = "ICONE SEMPLICI", es = "ICONOS SIMPLES", br = "ÍCONES SIMPLES", pt = "ÍCONES SIMPLES", ko = "단색 아이콘"),
     "TABS" to Tr(ja = "タブ", fr = "ONGLETS", de = "TABS", it = "SCHEDE", es = "PESTAÑAS", br = "ABAS", pt = "SEPARADORES", ko = "탭"),
     "The tabs' names, or their icons" to Tr(ja = "タブの なまえか アイコン", fr = "Le nom des onglets ou leurs icônes", de = "Die Namen der Tabs oder ihre Symbole", it = "I nomi delle schede o le loro icone", es = "Los nombres de las pestañas o sus iconos", br = "Os nomes das abas ou seus ícones", pt = "Os nomes dos separadores ou os ícones", ko = "탭 이름 또는 아이콘"),
     "NEW LAYOUT" to Tr(ja = "あたらしい はいち", fr = "NOUVELLE DISPOSITION", de = "NEUES LAYOUT", it = "NUOVO LAYOUT", es = "NUEVA DISPOSICIÓN", br = "NOVO LAYOUT", pt = "NOVA DISPOSIÇÃO", ko = "새 배치"),

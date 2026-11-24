@@ -223,10 +223,16 @@ fun CompanionSettingsScreen(
                         .let { rows -> settings.shownRows?.let { onlyRows(rows, it) } ?: rows } + homeExtras
                     Page.TABS -> listOf(
                         // SHOW AS: the chips' names, or each tab's icon (RETRO's pixel tiles, MODERN's glyphs).
-                        SettingRow(tk("SHOW AS"), if (com.pokedaisy.app.companion.ui.theme.CustomLook.tabIcons) tk("ICONS") else tk("NAMES"),
-                            labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS), subtitle = "The tabs' names, or their icons") {
-                            com.pokedaisy.app.companion.ui.theme.CustomLook.let { it.changeTabIcons(!it.tabIcons) }
-                            tick++
+                        // SHOW AS: NAMES, ICONS (their own colours) or PLAIN ICONS (the tab's one colour) - a pick-list, three choices.
+                        com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->
+                            val now = if (!look.tabIcons) tk("NAMES") else if (look.tabIconsPlain) tk("PLAIN ICONS") else tk("ICONS")
+                            SettingRow(tk("SHOW AS"), now,
+                                labelBadge = NewFeatures.badge(NewFeatures.TAB_ICONS), subtitle = "The tabs' names, or their icons") {
+                                selector = Selector(tk("SHOW AS"), listOf(tk("NAMES"), tk("ICONS"), tk("PLAIN ICONS")), now) { pick ->
+                                    look.changeTabIcons(on = pick != tk("NAMES"), plain = pick == tk("PLAIN ICONS"))
+                                    tick++
+                                }
+                            }
                         },
                         // POSITION: a pick-list (four places); SIZE flips NORMAL / COMPACT.
                         com.pokedaisy.app.companion.ui.theme.CustomLook.let { look ->

@@ -560,12 +560,14 @@ fun companion(
     partyStorage: Boolean = false,
     /** TAB BAR > SHOW AS ICONS, POSITION, SIZE COMPACT. */
     tabIcons: Boolean = false,
+    /** SHOW AS PLAIN ICONS (with [tabIcons]). */
+    plainIcons: Boolean = false,
     tabPlace: com.pokedaisy.app.companion.ui.theme.TabBarPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.BOTTOM,
     tabCompact: Boolean = false,
     snap: () -> SnapshotView = ::snapshot,
 ): () -> (@Composable () -> Unit) = {
     previewCapture = com.pokedaisy.app.companion.KeyCapture()
-    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons)
+    com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabIcons(tabIcons, plainIcons)
     com.pokedaisy.app.companion.ui.theme.CustomLook.changeTabBar(tabPlace, tabCompact)
     DeviceBattery.status.value = battery
     val sv = snap()
@@ -1873,6 +1875,8 @@ fun main(args: Array<String>) {
         }),
         // TAB BAR > SHOW AS ICONS: the tabs as their icons (RETRO's pixel tiles; -Pview=MODERN for the glyphs).
         Shot("$g-party-tab-icons", bw, bh, bd, companion("PARTY", tabIcons = true)),
+        // SHOW AS PLAIN ICONS: the same drawings in the tab's one colour.
+        Shot("$g-party-tab-icons-plain", bw, bh, bd, companion("PARTY", tabIcons = true, plainIcons = true)),
         // TAB BAR > POSITION / SIZE: a rail down the left with icons, the top bar compact, a rail on the right with names.
         Shot("$g-party-tabs-left", bw, bh, bd, companion("PARTY", tabIcons = true, tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.LEFT)),
         Shot("$g-party-tabs-top-compact", bw, bh, bd, companion("PARTY", tabPlace = com.pokedaisy.app.companion.ui.theme.TabBarPlace.TOP, tabCompact = true)),

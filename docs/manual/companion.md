@@ -58,7 +58,7 @@ Up to five tabs fit next to the gear. To pick them, open SETTINGS and tap `TAB B
 
 Your choice is shared by every game. A tab the running game doesn't have shows `N/A` and keeps its setting for the games that do.
 
-At the top of that page, `POSITION` puts the bar along the `BOTTOM` (the default) or the `TOP`, or makes it a rail down the `LEFT` or `RIGHT` side, which leaves the tabs the screen's full height. `SIZE` `COMPACT` makes the tabs lower, with smaller words, for more room above them. `SHOW AS` picks how the tabs look: `NAMES` (the default) or `ICONS`, each tab its picture instead of its word: the same pictures as on `MORE` (in `VIEW` `MODERN`, its smooth ones), in the tab's colours. The gear and `MORE` are icons either way.
+At the top of that page, `POSITION` puts the bar along the `BOTTOM` (the default) or the `TOP`, or makes it a rail down the `LEFT` or `RIGHT` side, which leaves the tabs the screen's full height. `SIZE` `COMPACT` makes the tabs lower, with smaller words, for more room above them. `SHOW AS` picks how the tabs look: `NAMES` (the default), `ICONS` or `PLAIN ICONS`. `ICONS` gives each tab its picture instead of its word, the same coloured pictures as on `MORE` (in `VIEW` `MODERN`, its smooth app tiles). `PLAIN ICONS` draws the same pictures in the tab's one colour, like its word, for a calmer bar. The gear, `MORE` and `HOME` are plain icons either way.
 
 ![The TAB BAR page in the companion's SETTINGS, listing each tab as SHOWN or HIDDEN](shots/companion-settings-tabs.png "SETTINGS > TAB BAR")
 

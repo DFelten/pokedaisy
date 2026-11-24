@@ -1121,6 +1121,11 @@ class Prefs(
         get() = com.pokedaisy.app.companion.FlaggedFeatures.modernLook && p.getBoolean("tab_icons", false)
         set(v) = p.edit().putBoolean("tab_icons", v).apply()
 
+    /** SHOW AS PLAIN ICONS: with [tabIcons], the icons in the tab's one colour instead of their own. */
+    var tabIconsPlain: Boolean
+        get() = com.pokedaisy.app.companion.FlaggedFeatures.modernLook && p.getBoolean("tab_icons_plain", false)
+        set(v) = p.edit().putBoolean("tab_icons_plain", v).apply()
+
     /** The font RETRO wore before VIEW MODERN put on its own (AppViews.set gives it back). */
     var appFontRetro: Int
         get() = p.getInt("app_font_retro", 4)
