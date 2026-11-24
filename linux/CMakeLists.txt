@@ -109,6 +109,8 @@ if(BUILD_TESTING)
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
   add_test(NAME rom-zip COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_rom_zip.py $<TARGET_FILE:linux-rom-zip-test>)
   add_test(NAME package-smoke COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_package.py $<TARGET_FILE:pokedaisy-linux> ${ds_package_args})
+  # No SDL call past 2.0.10 (the old ArkOS's SDL): reads the ELF, so cross builds run it too.
+  add_test(NAME sdl-2010-symbols COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_sdl_symbols.py $<TARGET_FILE:pokedaisy-linux>)
   # The launcher starts the binary itself, which a cross build can't without its emulator's sysroot.
   if(NOT CMAKE_CROSSCOMPILING)
     add_test(NAME portmaster-launcher COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_portmaster.py $<TARGET_FILE:pokedaisy-linux>)

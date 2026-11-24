@@ -136,7 +136,8 @@ is left out: a stand-in renders in software, a device's GPU scales the picture. 
 display, rotated panels, the real buttons, sleep.
 
 The host needs nothing past SDL 2.0.10: a newer call is looked up at run time (`texture_nearest`), since 1.6.2 died on
-ArkOS's SDL at a game's start (`SDL_SetTextureScaleMode`, 2.0.12). Counted on 2026-11-24 (FireRed from a save, Route 20,
+ArkOS's SDL at a game's start (`SDL_SetTextureScaleMode`, 2.0.12). CTest's `sdl-2010-symbols` (`test_sdl_symbols.py`) fails a host that imports
+anything SDL 2.0.10 doesn't export (`handheld/sdl-2.0.10-symbols.txt`). Counted on 2026-11-24 (FireRed from a save, Route 20,
 EXPAND and the HUD at 640x480): armGBA 2.9 M instructions a frame (~7-8 ms on an R36S), FireRed on mGBA 10.3 M (~12 ms),
 Crystal on mGBA 3.4 M (~4 ms); the companion page pauses the game and costs ~0.4 M.
 
