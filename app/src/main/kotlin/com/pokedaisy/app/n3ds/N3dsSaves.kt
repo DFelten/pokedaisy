@@ -2,6 +2,7 @@ package com.pokedaisy.app.n3ds
 
 import android.content.Context
 import android.util.Log
+import com.pokedaisy.app.AppStorage
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -40,7 +41,7 @@ object N3dsSaves {
 
     /** Azahar's user folder: its SD card, NAND, config and shader caches. On the shared storage, so a save can be put
      * in or copied out over USB. */
-    fun root(context: Context): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "n3ds")
+    fun root(context: Context): File = File(AppStorage.root(context), "n3ds")
 
     fun saveFolder(context: Context, titleId: Long): File {
         val high = String.format(Locale.US, "%08x", (titleId ushr 32).toInt())

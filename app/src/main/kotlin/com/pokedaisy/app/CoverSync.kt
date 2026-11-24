@@ -62,7 +62,7 @@ class CoverSync {
         screenScraperError = null
         running = true
         Thread({
-            val coversDir = File(activity.getExternalFilesDir(null) ?: activity.filesDir, "covers").apply { mkdirs() }
+            val coversDir = File(AppStorage.root(activity), "covers").apply { mkdirs() }
             val roms = RomFolder.libraryRoms(activity, prefs)
             val ss = CoverArtSync.ScreenScraperPass.of(prefs)
             roms.forEachIndexed { i, rom ->

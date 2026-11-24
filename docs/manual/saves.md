@@ -41,6 +41,8 @@ Open Settings > `FOLDERS` > `GAME SAVES`. You'll see the current folder and the 
 
 Changing the folder doesn't move any saves. Copy them over yourself if you want them in the new place.
 
+On a few devices Android never makes PokeDaisy's own folder. PokeDaisy then keeps its saves, states and covers inside the app itself, where a file manager can't reach them. To have your saves where you can see them, pick a folder of your own with `CHANGE FOLDER`.
+
 ![The FOLDERS page: a row each for ROMS FOLDERS, GAME SAVES, ALSO LOOK IN, SAVE BACKUPS and SAVE STATES](shots/settings-folders.png "FOLDERS: a page for each kind of folder")
 
 ### Share saves with RetroArch

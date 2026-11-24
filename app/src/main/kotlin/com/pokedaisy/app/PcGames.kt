@@ -24,7 +24,7 @@ object PcGames {
 
     class Game(val ini: File, val title: String)
 
-    fun root(context: Context): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "pc")
+    fun root(context: Context): File = File(AppStorage.root(context), "pc")
     fun coresDir(context: Context) = File(root(context), "cores")
     fun gamesDir(context: Context) = File(root(context), "games")
     fun saveDir(context: Context) = File(root(context), "saves")

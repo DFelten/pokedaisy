@@ -74,5 +74,5 @@ object FeatureFlags {
     }
 
     private fun marker(context: Context, name: String): Boolean =
-        runCatching { File(File(context.getExternalFilesDir(null) ?: context.filesDir, "features"), name).isFile }.getOrDefault(false)
+        runCatching { File(File(AppStorage.root(context), "features"), name).isFile }.getOrDefault(false)
 }

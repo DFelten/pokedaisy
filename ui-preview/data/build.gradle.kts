@@ -22,7 +22,7 @@ val desktopTarget = System.getProperty("os.name").lowercase().let { os ->
 
 val app = rootDir.resolve("../app/src/main/kotlin/com/pokedaisy/app")
 val appSrc = fileTree(app) {
-    include("companion/coop/**", "FeatureFlags.kt", "MgbaCore.kt", "PrefsAndroid.kt", "GameVolume.kt")
+    include("companion/coop/**", "FeatureFlags.kt", "AppStorage.kt", "MgbaCore.kt", "PrefsAndroid.kt", "GameVolume.kt")
     exclude("**/*.java")   // compiled by javac below (companion/coop/x25519)
 }
 val sharedUi = rootDir.resolve("../shared-ui/src/commonMain/kotlin")

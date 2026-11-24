@@ -11,7 +11,7 @@ import okio.source
 internal class AndroidRomPatches(activity: ComponentActivity, onAdded: (File) -> Unit) {
     private val owner = activity
     private val prefs by lazy { Prefs(activity) }
-    private val importedDir by lazy { File(activity.getExternalFilesDir(null), "roms") }
+    private val importedDir by lazy { File(AppStorage.root(activity), "roms") }
     private val crcs by lazy { RomCrcs.cache(activity) }
     val flow = RomPatchFlow(
         find = { patch, patchName, progress ->
