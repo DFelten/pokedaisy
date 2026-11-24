@@ -690,7 +690,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     override val dex: DexSummary get() {
         val c = data.dexCounts
         return DexSummary(
-            if (f == Gen3SaveFormat.FIRERED_LEAFGREEN) "KANTO" else "HOENN", c.regionalSeen, c.regionalCaught, c.seen, c.caught, nationalDex,
+            if (f.kanto) "KANTO" else "HOENN", c.regionalSeen, c.regionalCaught, c.seen, c.caught, nationalDex,
         )
     }
     override fun setQuantity(kind: PocketKind, index: Int, quantity: Int) = setQuantity(bagPocket(kind), index, quantity)

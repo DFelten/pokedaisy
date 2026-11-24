@@ -67,4 +67,38 @@ class HackSaveTest {
             File(path).writeBytes(e2.build())
         }
     }
+
+    /**
+     * Every hack the editor opens, through the app's own path ([Gen3SaveReader]: the ROM recognised, its rules read
+     * from it): the save reads (no mismatch), and an edit saved and read back keeps the rest.
+     */
+    @Test fun everyHackSaveOpensThroughTheReader() {
+        val cases = listOf(
+            Triple("Pokemon Emerald Legacy (v1.1.4).gba", "Pokemon Emerald Legacy (v1.1.4).sav", Gen3SaveFormat.EMERALD_LEGACY),
+            Triple("Pokemon Glazed (v9.2.0).gba", "Pokemon Glazed (v9.2.0).sav", Gen3SaveFormat.GLAZED),
+            Triple("Pokemon Orange Islands.gba", "Pokemon Orange Islands.srm", Gen3SaveFormat.ORANGE_ISLANDS),
+            Triple("Pokemon Ultra Violet (v1.22).gba", "Pokemon Ultra Violet (v1.22).sav", Gen3SaveFormat.ULTRA_VIOLET),
+        )
+        var ran = 0
+        for ((romName, saveName, expected) in cases) {
+            val rom = File(roms, romName)
+            val save = File(saves, saveName)
+            if (!rom.isFile || !save.isFile) continue
+            ran++
+            val reader = com.pokedaisy.app.companion.data.RomIdentityReader.forPath(okio.Path.Companion.run { rom.absolutePath.toPath() })
+            val format = Gen3SaveReader.formatFor(reader) { rom.length() }
+            assertEquals(expected, format, romName)
+            val result = Gen3SaveReader.open(okio.Path.Companion.run { save.absolutePath.toPath() }, format!!)
+            assertTrue(result is Gen3SaveReader.Result.Ready, (result as? Gen3SaveReader.Result.Failed)?.message)
+            val data = Gen3SaveData(result.save)
+            println("${format.label}: ${data.trainerName} money ${data.money} party " +
+                data.party.joinToString { "${data.rules.speciesName(it.mon.species)} Lv${it.level} ${it.mon.moves.map { m -> data.rules.moveName(m) }}" })
+            val ed = Gen3SaveEditor(result.save)
+            ed.setMoney(4321)
+            val again = (Gen3SaveFile.parse(ed.build(), format) as Gen3SaveFile.Parsed.Ok).save
+            assertEquals(4321, Gen3SaveData(again).money)
+            assertEquals(data.party.map { it.mon.personality }, Gen3SaveData(again).party.map { it.mon.personality })
+        }
+        assumeTrue("no hack ROM and save here", ran > 0)
+    }
 }

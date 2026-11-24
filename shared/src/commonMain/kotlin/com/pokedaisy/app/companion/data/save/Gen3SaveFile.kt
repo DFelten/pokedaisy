@@ -92,7 +92,21 @@ enum class Gen3SaveFormat(
         linkRsFlag = -1, kanto = false, coinsOff = 0x494,
         pockets = pockets(0x560, items = 120, key = 30, balls = 16, tmhm = 64, berries = 46), stackMax = 99, retail = false,
     ),
+    // Hacks edited in place: their base game's layout, their own rules (species, moves, items, learnsets) from the ROM.
+    EMERALD_KAIZO("EMERALD KAIZO", EMERALD),
+    GLAZED("GLAZED", EMERALD),
+    ORANGE_ISLANDS("ORANGE ISLANDS", FIRERED_LEAFGREEN),
+    ULTRA_VIOLET("ULTRA VIOLET", FIRERED_LEAFGREEN),
+    ASH_GRAY("ASH GRAY", FIRERED_LEAFGREEN),
     ;
+
+    /** A hack edited in place in [like]'s layout: the same offsets, its own rules ([retail] false). */
+    constructor(label: String, like: Gen3SaveFormat) : this(
+        label, like.saveBlock2Size, like.saveBlock1Size, like.storageSize, like.partyCountOff, like.partyOff, like.moneyOff,
+        like.encryptionKeyOff, like.flagsOff, like.varsOff, like.seen1Off, like.seen2Off, like.nationalMagicOff, like.nationalMagic,
+        like.nationalVar, like.nationalVarValue, like.nationalFlag, like.linkRsFlag, like.kanto, like.coinsOff, like.pockets,
+        like.stackMax, retail = false,
+    )
 
     /** What this layout's saves may hold ([Gen3Rules.of]: retail's tables, or a hack's from its ROM). */
     val rules: Gen3Rules get() = Gen3Rules.of(this)

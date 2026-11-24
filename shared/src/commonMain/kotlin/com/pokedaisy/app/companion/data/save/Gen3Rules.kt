@@ -120,6 +120,10 @@ data class Gen3RomTables(
     val eggSpecies: Int,
     /** gItems, when known (else found in the ROM). */
     val items: Long = 0,
+    /** gSpeciesNames, gMoveNames, gBattleMoves, when known (else found in the ROM: [Gen3RomScan]). */
+    val speciesNames: Long = 0,
+    val moveNames: Long = 0,
+    val battleMoves: Long = 0,
 )
 
 /** A hack's [Gen3Rules], read once from its ROM [rom] at [t]'s tables. */
@@ -129,9 +133,9 @@ class RomGen3Rules(private val rom: ByteArray, private val t: Gen3RomTables) : G
     private fun u16a(addr: Long): Int = u16(rom, off(addr))
     private fun u32a(addr: Long): Long = u32(rom, off(addr))
 
-    private val speciesNames: Long = Gen3RomScan.speciesNames(rom) ?: error("no species names in the ROM")
-    private val moveNames: Long = Gen3RomScan.moveNames(rom) ?: error("no move names in the ROM")
-    private val battleMoves: Long = Gen3RomScan.battleMoves(rom) ?: error("no gBattleMoves in the ROM")
+    private val speciesNames: Long = t.speciesNames.takeIf { it != 0L } ?: Gen3RomScan.speciesNames(rom) ?: error("no species names in the ROM")
+    private val moveNames: Long = t.moveNames.takeIf { it != 0L } ?: Gen3RomScan.moveNames(rom) ?: error("no move names in the ROM")
+    private val battleMoves: Long = t.battleMoves.takeIf { it != 0L } ?: Gen3RomScan.battleMoves(rom) ?: error("no gBattleMoves in the ROM")
     private val items: Long = t.items.takeIf { it != 0L } ?: Gen3RomScan.items(rom) ?: error("no gItems in the ROM")
 
     override val eggSpecies: Int get() = t.eggSpecies
@@ -332,7 +336,7 @@ object Gen3RomScan {
  * its Pokédex and GUIDE tables name every table the editor's rules read; gItems is its item descriptions' table.
  * Null when the config lacks one.
  */
-fun gen3RomTables(cfg: com.pokedaisy.app.companion.data.NativeConfig, family: String): Gen3RomTables? {
+fun gen3RomTables(cfg: com.pokedaisy.app.companion.data.NativeConfig, family: String, inPlace: InPlaceBase? = null): Gen3RomTables? {
     val dex = cfg.pokedex ?: return null
     val guide = cfg.guideTables ?: return null
     if (dex.expansion != null || dex.tmhmLearnsets == 0L || dex.tmhmMoves == 0L || dex.evolutions == 0L) return null
@@ -340,6 +344,17 @@ fun gen3RomTables(cfg: com.pokedaisy.app.companion.data.NativeConfig, family: St
         family = family, speciesInfo = dex.speciesInfo, learnsets = guide.learnsets, tmhmLearnsets = dex.tmhmLearnsets,
         tmhmMoves = dex.tmhmMoves, evolutions = dex.evolutions, abilityNames = dex.abilityNames,
         speciesToNational = dex.speciesToNational, regionalOrder = dex.regionalOrder, regionalCount = dex.regionalCount,
-        eggSpecies = cfg.eggSpecies.takeIf { it > 0 } ?: dex.speciesCount, items = cfg.itemDescs?.base ?: 0,
+        eggSpecies = cfg.eggSpecies.takeIf { it > 0 } ?: dex.speciesCount, items = inPlace?.items ?: cfg.itemDescs?.base ?: 0,
+        speciesNames = inPlace?.speciesNames ?: 0, moveNames = inPlace?.moveNames ?: 0, battleMoves = inPlace?.battleMoves ?: 0,
     )
+}
+
+/**
+ * A retail cart's gSpeciesNames, gMoveNames, gBattleMoves and gItems: where a hack edited in place keeps its own (Glazed
+ * renamed and rebalanced in those very tables, so no first entry can find them).
+ */
+enum class InPlaceBase(val speciesNames: Long, val moveNames: Long, val battleMoves: Long, val items: Long) {
+    EMERALD(0x083185C8, 0x0831977C, 0x0831C898, 0x085839A0),
+    FIRERED_REV0(0x08245EE0, 0x08247094, 0x08250C04, 0x083DB028),
+    FIRERED_REV1(0x08245F50, 0x08247104, 0x08250C74, 0x083DB098),
 }
