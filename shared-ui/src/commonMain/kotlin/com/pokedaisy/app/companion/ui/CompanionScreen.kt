@@ -881,7 +881,7 @@ fun CompanionScreen(
                             val homeShortcuts = com.pokedaisy.app.companion.HomeTab.shortcuts(settings?.homeShortcuts ?: com.pokedaisy.app.companion.HomeTab.DEFAULT_SHORTCUTS, available)
                             val fromHome = { id: String -> openTab(id); homeReturn = id }
                             HomeScreen(
-                                snapshot, homeCards, homeShortcuts, card, statusBarShown = statusBar != null,
+                                snapshot, homeCards, homeShortcuts, card, statusBarShown = statusBar != null, gameName = settings?.gameName.orEmpty(),
                                 onOpenMon = { i -> fromHome("PARTY"); detailIndex = i },
                                 onOpenTab = fromHome,
                                 trainerTab = listOf("CARD", "DEX").firstOrNull { it in available },

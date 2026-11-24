@@ -9,6 +9,8 @@ Wireframes of every size below, drawn at one scale: `companion-home-mockups.html
 
 ## What HOME is
 
+Along its top, a **status bar** like the game screen's (`GameStatusBar`, the user's call 2026-11-24): the game's name, the place (when the MAP card isn't on), money, the clock and the battery; left out while STATUS BAR is on COMPANION. Money, clock and battery were cards before.
+
 A page of **cards** over the companion's usual backdrop, drawn in the SUMMARY MINT pieces (`OptionListWindow`, `PanelHeader`, `cell()`,
 MODERN's pills under `modernView`), never scrolling. Two cards are big (**PARTY**, **MAP**); the rest are small and take what room is
 left, in the order the player put them. Each card has a **BOX** form (a few lines) and a **LINE** form (one row); the layout uses the
@@ -23,8 +25,7 @@ NEXT BOSS; ...). Under the cards, a row of **SHORTCUTS**.
 |---|---|---|---|
 | PARTY (big) | the six: icon, level, HP bar, status / fainted, a held-item mark; names where there's room | the slot's summary (`detailIndex`) | always (empty slots before a party) |
 | MAP (big) | the region map round the player with their head, the place's name | MAP | the game has a region map (`activeRegionMap()`); else the name alone in a LINE |
-| TRAINER | money, play time, badges (the game's own badge row where RomArt has it, else dots), POKéDEX caught / seen | CARD (else DEX) | money or badges read |
-| DEVICE | the clock (12 / 24 h as the status bar), the battery, the game's own time of day where it keeps one (Emerald / DS / Crystal / Lazarus's night) | - | always; left out while STATUS BAR is on COMPANION (it already shows them) |
+| TRAINER | play time, badges (dots), POKéDEX caught / seen | CARD (else DEX) | the card or the Pokédex reads |
 | NEXT BOSS | name, badge, their top level (+ the LEVEL CAP when it's on) | GUIDE > NEXT BOSS | the game has a NEXT BOSS list (`GameGuide.bosses`) |
 | HERE | this map's wild Pokémon as icons, "N of M caught" | GUIDE > HERE | HERE has wild data (`rememberWildHere`) |
 | BAG | Poké Balls left, the keep-away spray's steps (the HUD's REPEL), favourite items | ITEMS | the bag reads |
@@ -82,7 +83,7 @@ Every screen the companion runs on, with the room its tab gets (GBA px, the tab 
 | AYN Thor bottom screen | 1240x1080 @2.75 | 413x360 | ~413x312 | STANDARD |
 | Retroid Pocket Classic window | ~1090x950 @2.0 | ~363x317 | ~363x270 | STANDARD |
 | RP6 window (1.4:1, text a step smaller) | ~1330x950 @2.3 | ~443x317 | ~443x270 | STANDARD |
-| One-screen side panel (half of 1920x1080) | 960x1080 @~1.9 | 480x540 | ~480x490 | TALL |
+| One-screen side panel (half of 1920x1080) | 960x1080 @~1.9 | 480x540 | ~480x460 under the status bar | STANDARD |
 | Side panel on a 4:3 screen | 640x960 | ~320x480 | ~320x430 | TALL (party 2 x 3) |
 | SWAP SCREENS: the Thor's top screen | 1920x1080 @2.0 | 640x360 | ~640x312 | WIDE |
 | Tablet window | 1920x1200 @1.5 | window inside | - | STANDARD or WIDE by the window |
@@ -133,7 +134,7 @@ in the tab list before the bar, the chip, its pane, `companionTabLabel`.
 ### Phase 1 (one change)
 
 1. `HomeLayout` + `HomeLayoutTest` over the size table.
-2. HOME chip, tab, opening on it, TAB BAR's HOME row; cards PARTY, MAP, TRAINER, DEVICE; shortcuts to tabs only.
+2. HOME chip, tab, opening on it, TAB BAR's HOME row; cards PARTY, MAP, TRAINER under a status bar (money, clock, battery); shortcuts to tabs only.
 3. SETTINGS > HOME page, prefs, NEW tag, eight translations of every new word (TrCompanion / TrSettings), keywords.
 4. Manual: the companion tabs page's HOME section + SETTINGS > HOME, a `Shot` in `DocsShots` (ui-preview `docsShots`), invented
    creatures only.

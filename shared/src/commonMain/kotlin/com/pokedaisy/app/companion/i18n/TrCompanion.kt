@@ -342,7 +342,6 @@ internal val trCompanion: Map<String, Tr> = mapOf(
     "Slot {0}" to Tr(ja = "スロット {0}", fr = "Emplacement {0}", de = "Slot {0}", it = "Slot {0}", es = "Ranura {0}", br = "Espaço {0}", pt = "Espaço {0}", ko = "슬롯 {0}"),
     "EMPTY" to Tr(ja = "から", fr = "VIDE", de = "LEER", it = "VUOTO", es = "VACÍO", br = "VAZIO", pt = "VAZIO", ko = "비어 있음"),
     "HOME" to Tr(ja = "ホーム", fr = "ACCUEIL", de = "START", it = "HOME", es = "INICIO", br = "INÍCIO", pt = "INÍCIO", ko = "홈"),
-    "CLOCK AND BATTERY" to Tr(ja = "とけいと バッテリー", fr = "HEURE ET BATTERIE", de = "UHR UND AKKU", it = "ORA E BATTERIA", es = "HORA Y BATERÍA", br = "RELÓGIO E BATERIA", pt = "RELÓGIO E BATERIA", ko = "시계와 배터리"),
     "CONFIRM DELETE?" to Tr(ja = "ほんとうに けす？", fr = "SUPPRIMER ?", de = "LÖSCHEN?", it = "ELIMINARE?", es = "¿BORRAR?", br = "EXCLUIR?", pt = "ELIMINAR?", ko = "삭제할까요?"),
 
     // CARD tab.

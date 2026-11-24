@@ -525,7 +525,7 @@ which Compose can't observe, so `CompanionScreen` is keyed on `SnapshotView.game
 
 **HOME tab** (2026-11-24, 1.7.0, `docs/plans/companion-home.md`; NEW tag `HOME_TAB`): the first tab for everyone, a house icon chip
 counted in the bar's five (`Prefs.companionTabs` puts it first on an older pick once, the last tab going under MORE; hideable in TAB BAR);
-the companion opens on the bar's first tab (`initialTab` ""). Cards (`HomeCard`: PARTY, MAP, TRAINER, DEVICE) and six shortcuts (tab ids)
+the companion opens on the bar's first tab (`initialTab` ""). A status bar along its top (`GameStatusBar`: the game, money, the clock, the battery; left out while STATUS BAR is on COMPANION), cards (`HomeCard`: PARTY, MAP, TRAINER) and six shortcuts (tab ids)
 from SETTINGS > HOME TAB (`Prefs.homeCards` / `homeShortcuts`, shared by every game). `HomeLayouts` (pure, `HomeLayoutTest` over every
 companion size) picks COMPACT / STANDARD / WIDE / TALL from the tab's room in GBA pixels and drops a card that doesn't fit rather than
 scroll; `HomeScreen` draws it from the menus' pieces, the map through the HUD's `MiniMapPicture`. BACK from a tab HOME opened returns to HOME.

@@ -12,10 +12,9 @@ enum class HomeCard(val id: String, val label: String) {
     PARTY("PARTY", tk("PARTY")),
     /** The region map round the player, the place's name. Opens MAP. */
     MAP("MAP", tk("MAP")),
-    /** Money, play time, badges, the POKéDEX's count. Opens CARD (else DEX). */
+    /** Play time, badges, the POKéDEX's count. Opens CARD (else DEX). Money, the clock and the battery are HOME's
+     * status bar, not a card (the user's call, 2026-11-24). */
     TRAINER("TRAINER", tk("TRAINER")),
-    /** The device's clock and battery. Left out while the status bar is over the companion (it shows them). */
-    DEVICE("DEVICE", tk("CLOCK AND BATTERY")),
     ;
 
     /** PARTY and MAP take the big places; the others share what's left. */

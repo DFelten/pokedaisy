@@ -91,10 +91,8 @@ object HomeLayouts {
     fun cardHeight(card: HomeCard, form: Form, t: Text): Float = when (if (card == HomeCard.MAP) Form.LINE else form) {
         Form.LINE -> 2 * FRAME + t.small
         Form.BOX -> 2 * FRAME + when (card) {
-            // Its heading, then money / time and the badges, and the dex.
-            HomeCard.TRAINER -> t.small + 3f + 3 * (t.small + 2f)
-            // The clock in big letters over the date's line.
-            HomeCard.DEVICE -> t.line + 2f + t.small
+            // Its heading and the play time, then the badges and the dex.
+            HomeCard.TRAINER -> t.small + 3f + 2 * (t.small + 2f)
             else -> 0f
         }
     }
@@ -170,14 +168,16 @@ object HomeLayouts {
 
     private fun compact(room: Box, party: Boolean, map: Boolean, smalls: List<HomeCard>, t: Text): HomeLayout {
         // The party a narrow column of six on the left; the rest of the width the map's, the small cards one line each under it.
-        val partyW = if (party) (room.w * 0.36f).coerceIn(72f, 128f) else 0f
+        // Too short for six rows (the smallest phone companion): two columns of three, wider.
+        val twoUp = (room.h - 2 * FRAME - 5 * SLOT_GAP) / 6 < MINI_SLOT_MIN_H
+        val partyW = if (!party) 0f else if (twoUp) (room.w * 0.5f).coerceIn(120f, 220f) else (room.w * 0.36f).coerceIn(72f, 128f)
         val partyBox = if (party) Box(room.x, room.y, partyW, room.h) else null
         val right = if (party) Box(room.x + partyW + GAP, room.y, room.w - partyW - GAP, room.h) else room
         val keep = if (map) MAP_MIN_H + GAP else 0f
         val (placed, used) = stack(right, smalls, t, keep, fromBottom = map, lineOnly = true)
         val mapBox = if (map) Box(right.x, right.y, right.w, right.h - used - (if (placed.isEmpty()) 0f else GAP)) else null
-        // Six slots one under the other, small ones if a named slot won't fit.
-        return result(partyBox, 1, true, mapBox, placed, smalls)
+        // Six small slots one under the other (or two-up).
+        return result(partyBox, if (twoUp) 2 else 1, true, mapBox, placed, smalls)
     }
 
     private fun columns(room: Box, party: Boolean, map: Boolean, smalls: List<HomeCard>, t: Text, wide: Boolean): HomeLayout {
