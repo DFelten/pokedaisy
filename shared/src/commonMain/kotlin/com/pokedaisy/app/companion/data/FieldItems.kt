@@ -932,7 +932,8 @@ private fun fieldItemsByKind(kind: GameKind?, gameCode: String, revision: Int): 
     GameKind.GS_CHRONICLES -> cfru(0x08F70000L)?.copy(flight = FLIGHT_GS_CHRONICLES)
     // The FireRed 1.0 hacks edited in place run as FIRERED: their own flight record by their config (else rev 0's,
     // which flightAllowed keeps to the retail ROM).
-    GameKind.FIRERED -> (if (gameCode == "PUVV") FIELD_ITEMS_PORTS["BPRE0"] else fieldItemsFor(gameCode, revision))
+    // Crystal Advance Redux repointed gItems and wasn't checked with rev 0's field calls: none there yet.
+    GameKind.FIRERED -> if (activeNativeConfig === NATIVE_CRYSTAL_ADVANCE_REDUX) null else (if (gameCode == "PUVV") FIELD_ITEMS_PORTS["BPRE0"] else fieldItemsFor(gameCode, revision))
         ?.let { t -> fireRedHackFlight(gameCode, activeNativeConfig)?.let { t.copy(flight = it) } ?: t }
     // Emerald Kaizo: retail's FLY code, but its map reload crashed when the game's ReturnToField came straight from the
     // field (headless, on retail's save: the first flight, or the fourth once the overworld's windows were freed first),

@@ -90,6 +90,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Let's Go Pikachu / Eevee | English, Translation Only (4 builds) | ✅ ²⁸ | ✅ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ | ✅ ²⁸ ³⁴ | — | ✅ ²⁸ | ◐ ²⁸ | ◐ ²⁸ | ✅ ²⁸ | — | — | — | ✅ | ✅ ³³ | ✅ | — |
 | Clover | 1.3.3 | ✅ ⁴¹ | ✅ | ✅ ⁴¹ | — | — ⁴¹ | — ⁴¹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — ⁴¹ | — | — | — | — | — | ✅ | — |
 | Elysium (Part A), Elysium (Part B) | 2.5.0 | ✅ ⁴² | ✅ | ✅ ⁴² | — | ◐ ⁹ | ◐ ⁹ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | — | — | — | ✅ | — |
+| Crystal Advance Redux | 22-11-25 build | ✅ ⁶⁸ | ✅ | ✅ ⁶⁸ | — | — | — | — | ✅ ⁶⁸ | — | — | — | — | — | — | — | — | — | — |
 | Glazed | 9.2.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁷ ³⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | ✅ | — |
 | GS Chronicles | 2.7.6 | ✅ | ✅ | ✅ | ✅ | ✅ | ◐ ⁹ ³⁴ | — | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | ◐ ⁹ | — | — | ✅ ¹⁹ | ✅ | ✅ ³³ | — ³⁶ | — |
 | Rhythm | 1.4.0, 1.6.0 | — | ✅ | ✅ ⁴⁴ | — | — | — | — | — | — | — | — | — | — | — | — | — | — ³⁶ | — |
@@ -1267,3 +1268,11 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     its reader with their own config (`diamondPearl`): party, bag, money and place, icons from the cart. The native side (field
     reads, EXPAND, the DS touch rules, battle buttons, FLY, PC, key items, the code patches) keys on the game code and knows
     `ADAE` / `APAE` nowhere yet, so every column here is off.
+
+
+68. Crystal Advance Redux (its 22-11-25 build, 2026-11-25): FireRed 1.0 edited in place, its species grown to 753 ids and its
+    tables repointed. The save of it on disk is another build's, so it was checked on a new game played headless (its party
+    and bag given by the game's own script commands, saved in game): EXPAND exact (`verify_wide.py`), a written move cell + A
+    used that move (its PP spent), the field read by retail's addresses. Field items, FLY, PC, the bike and wild encounters
+    weren't checked there, so they're left off; its Pokédex keeps 753 species past FireRed's flag bytes (no DEX yet), and its
+    region map isn't FireRed 1.0's code any more (the MAP tab names the place only).

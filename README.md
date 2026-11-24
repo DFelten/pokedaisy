@@ -261,6 +261,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Clover                         | 1.3.3                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Elysium (Part A)               | 2.5.0                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
 | Elysium (Part B)               | 2.5.0                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ◐   |
+| Crystal Advance Redux          | 22-11-25 build             |  ✅   | ✅  |   ◐    | ◐   |   —     |   —   |
 | Sword and Shield Ultimate Plus | 1.2.1.2 + its 3 patches    |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | GS Chronicles                  | 2.7.6                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Rhythm                         | 1.4.0, 1.6.0               |  ✅   | ✅  |   ◐    | ✅  |   —    |   —   |

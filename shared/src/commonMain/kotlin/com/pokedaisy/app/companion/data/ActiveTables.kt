@@ -262,6 +262,7 @@ fun fireRedHackFor(cfg: NativeConfig?): HackText? = when {
     cfg === NATIVE_CLOVER -> fireRedHackClover
     cfg === NATIVE_ELYSIUM_A -> fireRedHackElysiumA
     cfg === NATIVE_ELYSIUM_B -> fireRedHackElysiumB
+    cfg === NATIVE_CRYSTAL_ADVANCE_REDUX -> fireRedHackCrystalAdvanceRedux
     else -> null
 }
 

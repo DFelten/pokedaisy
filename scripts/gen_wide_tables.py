@@ -182,6 +182,10 @@ HACKS = [
       for v, sha, save in [("v1.0.1", "20dfaea1d5317cf95fe0b493208edce7d50b865f", "ghost_grey_v101"),
                            ("v1.0.2", "74337272566a74625d6dedefe47d2d153eb48ec1", "ghost_grey_v102"),
                            ("v1.0.4", "0dafc0116b74406a2df491e26ccb40dd362fb0b7", "ghost_grey")]],
+    # Pokémon Crystal Advance Redux (22-11-25): FireRed rev 0 edited in place, rev 0's map groups, its object graphics table
+    # repointed (the pool of rev 0's 0x0839FDB0); booted with its own new game's save.
+    dict(name="Crystal Advance Redux (22-11-25)", sha1="9e8256086f1e41ac137ccd895444e93ee3fc4132", family="FR", mapped=True,
+         save="crystal_advance_redux", a=dict(MAP_GROUPS=0x083526A8, OBJ_GFX_INFO=0x0853F200)),
     # Pokémon Let's Go Pikachu / Eevee (32 MB, each with a Translation Only build): FireRed rev 0 edited in place with rev
     # 0's map groups, its object graphics table repointed (0x0880B9D0, the pool of rev 0's 0x0839FDB0); booted with its own
     # new game's save (lets_go.txt: its long intro, CONTINUE).

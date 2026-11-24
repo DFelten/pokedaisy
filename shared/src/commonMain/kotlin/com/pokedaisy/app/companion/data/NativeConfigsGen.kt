@@ -5806,6 +5806,23 @@ val NATIVE_CLOVER = NATIVE_ULTRA_VIOLET.copy(
     guideTables = GUIDE_TABLES_CLOVER,
 )
 
+// ---- gamedata/gen3/hacks/crystal_advance_redux.toml ----
+
+// Pokémon Crystal Advance Redux (22-11-25 build; 32 MB, FireRed 1.0 rev 0 edited in place, sha1 9e825608…): Johto and Kanto on
+// FireRed's code and RAM, its tables repointed (CrystalAdvanceReduxGen.kt, gen_firered_hack_tables.py crystal_advance_redux:
+// species grown to 753 ids - Gen 1 to 5 picks, its trainer slots 252-260 among them - moves to 511, FAIRY at 23). Its own
+// icon tables (their literal-pool words). The save of it on disk is another build's ("The save file has been deleted"), so
+// its fixtures are a new game played headless (the party and bag given by the game's own script commands, saved in game).
+// No DEX or GUIDE yet: its Pokédex keeps 753 species past FireRed's flag bytes, not mapped.
+val NATIVE_CRYSTAL_ADVANCE_REDUX = NATIVE_ULTRA_VIOLET.copy(
+    monIconTable = 0x0948F6A0L,
+    monIconPaletteIndices = 0x08B204E8L,
+    itemIconTable = 0x09E31D00L,
+    monPalettes = 0x09486B60L,
+    pokedex = null,
+    guideTables = null,
+)
+
 // ---- gamedata/gen3/hacks/elysium.toml ----
 
 // Pokémon Elysium v2.5.0 (black_kaiser; 16 MB each, Hackdex's two BPS patches over FireRed 1.0 rev 0): FireRed rev 0 edited in

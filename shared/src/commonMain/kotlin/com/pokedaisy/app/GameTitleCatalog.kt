@@ -140,6 +140,7 @@ object GameTitleCatalog {
         "7eca3ef1580e21b96027b721ecd3ba1aa36a6ea2" to "Pokémon Clover",
         "d2440fd6bae5a12dfc3cecc129b9bbff22d74b2e" to "Pokémon Elysium (Part A)",
         "71bf40178a1f5c69dc1c22099623434ba1e74318" to "Pokémon Elysium (Part B)",
+        "9e8256086f1e41ac137ccd895444e93ee3fc4132" to "Pokémon Crystal Advance Redux",
         "b0d6b91356ee4d4c8f8c70020fe0352c391a12e2" to "Pokémon Rhythm",
         "6df2b5dcf6bcea936c643929146b336246c4a210" to "Pokémon Rhythm",
         "4234507f92101a322aa5c0518a6aa1f1fe807832" to "Pokémon Oops All Eevees!",

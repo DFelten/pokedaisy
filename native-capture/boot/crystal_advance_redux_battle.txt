@@ -1,0 +1,54 @@
+# Pokemon Crystal Advance Redux (22-11-25), a scripted wild battle: default.txt, then setwildbattle SENTRET (161) Lv3;
+# dowildbattle; end (B6 A100 03 0000 B7 02 at 0x0203F400) through rev 0's ScriptContext_SetupScript 0x08069AE5 (kept byte
+# for byte); A through its message: dumped at the action menu.
+wait 120
+press START
+wait 30
+press A
+wait 60
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 30
+press A
+wait 60
+wait 200
+poke32 0x0203F400 0x0300A1B6
+poke32 0x0203F404 0x02B70000
+call 0x08069AE5 0x0203F400
+wait 300
+press A
+wait 350
+wait 300
+wait 300
+wait 300

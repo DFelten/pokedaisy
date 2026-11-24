@@ -8,6 +8,7 @@ tables (ActiveTables' `fireRedHack`, a `HackText`).
     scripts/gen_firered_hack_tables.py ash_gray <Pokemon Ash Gray (v4.5.3).gba> <Pokemon Ash Gray Fork Bug Fix (v1.0).gba> <firered-rev0.gba>
     scripts/gen_firered_hack_tables.py ghost_grey <Pokemon Ghost Grey (v1.0.1).gba> <(v1.0.2).gba> <(v1.0.4).gba> <firered-rev0.gba>
     scripts/gen_firered_hack_tables.py odyssey <Pokemon Odyssey (v4.1.1).gba> <firered-rev0.gba>
+    scripts/gen_firered_hack_tables.py crystal_advance_redux <Pokemon Crystal Advance Redux (22-11-25).gba> <firered-rev0.gba>
     scripts/gen_firered_hack_tables.py lets_go <Pokemon Let's Go Pikachu.gba> <... (Translation Only).gba>
         <Pokemon Let's Go Eevee.gba> <... (Translation Only).gba> <firered-rev0.gba>
 
@@ -116,6 +117,11 @@ GAMES = {
                 ("LetsGoEevee", ["4a41d539cbf6108cfe3344db5ba997fc5660d77d", "5b6146adec1a30f88c565e8f555ab7a578825598"],
                  "Let's Go Eevee and its Translation Only build (the same tables).", True)],
         own_case=True, own_region_map=False, moves_count=511, species_count=987, type_names_app={23: "Fairy"},
+    ),
+    "crystal_advance_redux": dict(
+        label="Pokemon Crystal Advance Redux (22-11-25)", out="CrystalAdvanceReduxGen.kt", name="CrystalAdvanceRedux",
+        sha1s=["9e8256086f1e41ac137ccd895444e93ee3fc4132"], own_case=True, own_region_map=True, moves_count=512,
+        species_count=754, type_names_app={23: "Fairy"},
     ),
     "clover": dict(
         label="Pokemon Clover v1.3.3", out="CloverGen.kt", name="Clover",
@@ -327,6 +333,11 @@ def block(key, g, base, h, suffix, what):
     elif key == "elysium":
         assert sp[150] == "Mamoswine" and sp[411] == "Xerneas" and set(new_types) == {9}
         assert mv[451][0] == "Eerieimpulse" and 455 not in mv and ms[0x58 + 6] == "Astrantia City"
+    elif key == "crystal_advance_redux":
+        assert sp[152] == "Chikorita" and sp[155] == "Cyndaquil" and sp[251] == "Celebi" and sp[277] == "Treecko"
+        assert sp[440] == "Turtwig" and sp[753] == "DEERLING" and new_types == {23: "Fairy"} and ty[35] == (23, 23)
+        assert mv[1] == ("Pound", 0, 40) and mv[463][0] == "Play Rough" and mv[511][0] == "Foul Play"
+        assert it[13] == "Potion" and ms[0x58] == "Pallet Town"
     elif key == "clover":
         assert sp[1] == "Grasshole" and sp[25] == "Pikotton" and sp[151] == "Clovenix" and new_types == {23: "Fairy"}
         assert mv[1] == ("Pound", 0, 40) and mv[719][0] == "Elbow Drop" and 720 not in mv
