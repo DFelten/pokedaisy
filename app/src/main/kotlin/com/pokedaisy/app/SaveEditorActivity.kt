@@ -557,7 +557,7 @@ class SaveEditorActivity : ComponentActivity() {
         val format = SaveFileEdits.formatFor(rom)
             ?: return tr("The save editor reads FireRed, LeafGreen, Emerald, Ruby, Sapphire, Diamond, Pearl, HeartGold, SoulSilver and Platinum saves (and builds that keep their save layout). This game's isn't one yet.")
         val save = SavesLocation.saveFor(this, prefs, rom)
-        return when (val result = Gen3SaveReader.open(save.toOkioPath(), format)) {
+        return when (val result = Gen3SaveReader.open(save.toOkioPath(), format, SaveFileEdits.rulesFor(rom, format))) {
             is Gen3SaveReader.Result.Failed -> result.message
             is Gen3SaveReader.Result.Ready ->
                 Opened(rom, GameTitles.label(this, prefs, rom), RomIdentity.gameCode(rom).orEmpty(), result.bytes, result.save)

@@ -8,6 +8,9 @@ import com.pokedaisy.app.companion.data.gen3ExperienceTables
  * allows: the bag's items, the moves a Pokémon may learn. Retail's ([Gen3Rules.retail]) come from the decomps' generated
  * tables; a ROM hack's ([RomGen3Rules]) from its own ROM, so its editor offers only what that hack could hold.
  */
+/** [Gen3Rules.family] of the five retail games. */
+const val RETAIL = "retail"
+
 interface Gen3Rules : SaveGameData {
     /** The egg's species id: ids 1 until it are Pokémon. */
     val eggSpecies: Int
@@ -89,7 +92,7 @@ private class RetailGen3Rules(private val format: Gen3SaveFormat) : Gen3Rules {
 
     override val eggSpecies: Int get() = Gen3SaveData.MAX_SPECIES
     override val lastMove: Int get() = Gen3Legal.LAST_MOVE
-    override val family: String get() = "retail"
+    override val family: String get() = RETAIL
     override fun bagItems(pocket: BagPocket): List<Int> = Gen3Legal.bagItems(format, pocket)
     override fun pocketOf(item: Int): BagPocket? = Gen3Legal.pocketOf(format, item)
     override fun learnable(species: Int, level: Int): Set<Int> = Gen3Legal.learnable(format, species, level)

@@ -37,6 +37,10 @@ object SaveFileEdits {
     fun formatFor(rom: File) =
         Gen3SaveReader.formatFor(RomIdentity.reader(rom), "${rom.absolutePath}:${rom.length()}:${rom.lastModified()}") { RomArchive.romSize(rom) }
 
+    /** The rules [rom]'s save reads with in [format] (a hack's, or an edited-in-place cart's own ROM's): [Gen3SaveReader.rulesFor]. */
+    fun rulesFor(rom: File, format: com.pokedaisy.app.companion.data.save.Gen3SaveFormat) =
+        Gen3SaveReader.rulesFor(RomIdentity.reader(rom), format, "${rom.absolutePath}:${rom.length()}:${rom.lastModified()}")
+
     /** A DS cart whose save the editor reads ([com.pokedaisy.app.companion.data.save.Gen4SaveFile]) with tables from the
      * cart: HeartGold / SoulSilver in any language (IPK / IPG), Platinum USA rev 1 (CPUE, Renegade Platinum too), English
      * Diamond / Pearl (ADAE / APAE). Hacks that

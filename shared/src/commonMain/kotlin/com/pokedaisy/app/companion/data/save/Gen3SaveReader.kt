@@ -88,11 +88,40 @@ object Gen3SaveReader {
         )
     }
 
-    fun open(path: Path, format: Gen3SaveFormat): Result {
+    /**
+     * The rules [rom]'s saves read with: a known hack's ([HACKS]), else - a cart that isn't a retail dump, edited in place
+     * (a randomizer's output, a small hack) - its own ROM's at its base cart's addresses ([InPlaceBase]: never worse than
+     * retail's, the tables it didn't move still retail's), else retail's. [key] keeps them for the app's life.
+     */
+    fun rulesFor(rom: RomIdentityReader, format: Gen3SaveFormat, key: String? = null): Gen3Rules {
+        if (!format.retail) return format.rules
+        val base = when (rom.gameCode()) {
+            "BPEE" -> InPlaceBase.EMERALD
+            "BPRE" -> if (rom.revision() == 1) InPlaceBase.FIRERED_REV1 else InPlaceBase.FIRERED_REV0
+            else -> null
+        } ?: return format.rules
+        val cached = key?.let { synchronized(inPlace) { inPlace[it] } }
+        if (cached != null) return cached
+        val sha = if (key == null) rom.sha1() else synchronized(shaCache) { shaCache.getOrPut(key) { rom.sha1() } }
+        if (sha == null || com.pokedaisy.app.GameTitleCatalog.isRetail(sha)) return format.rules
+        val cfg = if (base == InPlaceBase.EMERALD) com.pokedaisy.app.companion.data.NATIVE_EMERALD_RETAIL
+            else if (base == InPlaceBase.FIRERED_REV1) com.pokedaisy.app.companion.data.NATIVE_FIRERED_REV1
+            else com.pokedaisy.app.companion.data.NATIVE_FIRERED_REV0_RETAIL
+        val rules = runCatching {
+            val tables = gen3RomTables(cfg, RETAIL, base) ?: return format.rules
+            RomGen3Rules(rom.readAll() ?: return format.rules, tables).also { it.lastMove }
+        }.getOrNull() ?: return format.rules
+        key?.let { synchronized(inPlace) { inPlace[it] = rules } }
+        return rules
+    }
+
+    private val inPlace = HashMap<String, Gen3Rules>()
+
+    fun open(path: Path, format: Gen3SaveFormat, rules: Gen3Rules = format.rules): Result {
         if (!path.isFile) return Result.Failed(tr("No save yet - save once in the game first."))
         val bytes = runCatching { path.readBytes() }.getOrNull()
             ?: return Result.Failed(tr("Can't read the save {0}", path.toString()))
-        return when (val parsed = Gen3SaveFile.parse(bytes, format)) {
+        return when (val parsed = Gen3SaveFile.parse(bytes, format, rules)) {
             is Gen3SaveFile.Parsed.Failed -> Result.Failed(parsed.reason)
             is Gen3SaveFile.Parsed.Ok -> {
                 val mismatch = Gen3SaveData(parsed.save).mismatch()

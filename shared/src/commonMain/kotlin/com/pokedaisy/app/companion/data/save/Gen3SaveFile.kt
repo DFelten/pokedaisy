@@ -112,8 +112,8 @@ enum class Gen3SaveFormat(
     val rules: Gen3Rules get() = Gen3Rules.of(this)
 
     /** How many of [item] one stack in [pocket] may hold: berries 999, an HM 1 (the game hands each out once). */
-    fun stackMax(pocket: BagPocket, item: Int): Int = when {
-        pocket == BagPocket.TMHM && rules.isHm(item) -> 1
+    fun stackMax(pocket: BagPocket, item: Int, isHm: (Int) -> Boolean = { rules.isHm(it) }): Int = when {
+        pocket == BagPocket.TMHM && isHm(item) -> 1
         pocket == BagPocket.BERRIES -> 999
         else -> stackMax
     }
@@ -179,6 +179,8 @@ class Gen3SaveFile private constructor(
     val saveBlock2: ByteArray,
     val saveBlock1: ByteArray,
     val storage: ByteArray,
+    /** What the save's game knows and allows: its layout's ([Gen3SaveFormat.rules]) or its own ROM's ([Gen3SaveReader]). */
+    val rules: Gen3Rules,
 ) {
     enum class SlotStatus { OK, EMPTY, CORRUPT }
 
@@ -223,7 +225,7 @@ class Gen3SaveFile private constructor(
     /** Why [written] isn't exactly this save with the given blocks saved over it, or null if it is. */
     fun verifyWritten(written: ByteArray, saveBlock2: ByteArray, saveBlock1: ByteArray, storage: ByteArray): String? {
         if (written.size != raw.size) return "size changed"
-        val again = (parse(written, format) as? Parsed.Ok)?.save ?: return "doesn't read back"
+        val again = (parse(written, format, rules) as? Parsed.Ok)?.save ?: return "doesn't read back"
         if (again.slot == slot) return "the game would still load the old slot"
         if (again.counter != ((counter + 1) and 0xFFFFFFFFL)) return "wrong save counter"
         if (again.otherSlot != SlotStatus.OK) return "the previous save didn't survive"
@@ -274,7 +276,7 @@ class Gen3SaveFile private constructor(
             return ((sum shr 16) + sum).toInt() and 0xFFFF
         }
 
-        fun parse(bytes: ByteArray, format: Gen3SaveFormat): Parsed {
+        fun parse(bytes: ByteArray, format: Gen3SaveFormat, rules: Gen3Rules = format.rules): Parsed {
             if (bytes.size < MIN_SIZE) return Parsed.Failed(tr("Too small for a Gen 3 save ({0} bytes)", bytes.size))
             val slots = (0..1).map { readSlot(bytes, it, format) }
             val ok = slots.indices.filter { slots[it].status == SlotStatus.OK }
@@ -301,7 +303,7 @@ class Gen3SaveFile private constructor(
                 }
             }
             val rotation = (s.sectorBase[0] / SECTOR) % SECTORS_PER_SLOT
-            return Parsed.Ok(Gen3SaveFile(format, bytes.copyOf(), pick, s.counter, rotation, other, sb2, sb1, storage))
+            return Parsed.Ok(Gen3SaveFile(format, bytes.copyOf(), pick, s.counter, rotation, other, sb2, sb1, storage, rules))
         }
 
         /** GetSaveValidStatus's pick between two good slots: the larger counter, with its 0xFFFFFFFF -> 0 wrap. */

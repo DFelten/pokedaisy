@@ -46,8 +46,8 @@ object MissingDex {
         is Gen3SaveEditor -> {
             val f = editor.file.format
             // A ROM hack's dex by its own species numbers (its rules from its ROM).
-            if (!f.retail) {
-                val r = f.rules
+            if (editor.file.rules.family != RETAIL) {
+                val r = editor.file.rules
                 return (1 until r.eggSpecies).mapNotNull { s ->
                     r.nationalDex(s)?.takeIf { it in 1..r.nationalCount && (editor.nationalDex || r.inRegionalDex(s)) }
                 }.distinct().sorted().map { it to it }
@@ -73,14 +73,14 @@ object MissingDex {
 
     /** [national]'s name in [editor]'s game (a GBA game's tables go by its own species ids). */
     fun speciesName(editor: MonSaveEditor, national: Int): String? = when (editor) {
-        is Gen3SaveEditor -> if (!editor.file.format.retail) hackInternal(editor, national)?.let { editor.file.format.rules.speciesName(it) }
+        is Gen3SaveEditor -> if (editor.file.rules.family != RETAIL) hackInternal(editor, national)?.let { editor.file.rules.speciesName(it) }
             else nationalToInternal.getOrNull(national)?.let { Gen3GameData.speciesName(it) }
         else -> editor.data.game.speciesName(national)
     }
 
     /** [national] is caught in [editor]'s Pokédex. */
     fun caught(editor: MonSaveEditor, national: Int): Boolean = when (editor) {
-        is Gen3SaveEditor -> (if (!editor.file.format.retail) hackInternal(editor, national) else nationalToInternal.getOrNull(national))
+        is Gen3SaveEditor -> (if (editor.file.rules.family != RETAIL) hackInternal(editor, national) else nationalToInternal.getOrNull(national))
             ?.let { editor.caught(it) } == true
         is Gen4SaveEditor -> editor.caughtInDex(national)
         is Gen5SaveEditor -> editor.caughtInDex(national)
@@ -164,7 +164,7 @@ object MissingDex {
 
     /** A National Dex number's species id in a ROM hack's own numbering. */
     private fun hackInternal(editor: Gen3SaveEditor, national: Int): Int? {
-        val r = editor.file.format.rules
+        val r = editor.file.rules
         return (1 until r.eggSpecies).firstOrNull { r.nationalDex(it) == national }
     }
 

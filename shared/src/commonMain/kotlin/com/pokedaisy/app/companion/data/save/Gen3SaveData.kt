@@ -28,8 +28,10 @@ class Gen3SaveData(
     private val saveBlock2: ByteArray,
     private val saveBlock1: ByteArray,
     private val storage: ByteArray,
+    /** The game's names, numbers and rules (retail's, or a hack's from its ROM). */
+    val rules: Gen3Rules = format.rules,
 ) : MonSave {
-    constructor(file: Gen3SaveFile) : this(file.format, file.saveBlock2, file.saveBlock1, file.storage)
+    constructor(file: Gen3SaveFile) : this(file.format, file.saveBlock2, file.saveBlock1, file.storage, file.rules)
 
     class Box(val name: String, val mons: List<Gen3BoxMon>)
 
@@ -38,8 +40,6 @@ class Gen3SaveData(
         val alive: Boolean get() = !mon.isEgg && !mon.isBadEgg && hp > 0
     }
 
-    /** The game's names, numbers and rules (retail's, or a hack's from its ROM). */
-    val rules: Gen3Rules get() = format.rules
     override val game: SaveGameData get() = rules
     override val trainerName: String get() = Gen3Text.decode(saveBlock2, 0, 7)
 
@@ -219,8 +219,8 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     private val saveBlock1 = file.saveBlock1.copyOf()
     private val storage = file.storage.copyOf()
 
-    override val data: Gen3SaveData get() = Gen3SaveData(file.format, saveBlock2, saveBlock1, storage)
-    private val rules: Gen3Rules get() = file.format.rules
+    override val data: Gen3SaveData get() = Gen3SaveData(file.format, saveBlock2, saveBlock1, storage, file.rules)
+    private val rules: Gen3Rules get() = file.rules
     override fun fresh(): MonSaveEditor = Gen3SaveEditor(file)
     override fun snapshot() = EditorSnapshot(listOf(saveBlock2.copyOf(), saveBlock1.copyOf(), storage.copyOf()))
     override fun restore(snapshot: EditorSnapshot) {
@@ -365,7 +365,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     private fun requireLegal(pocket: BagPocket, item: Int, quantity: Int) {
         require(pocket != BagPocket.KEY) { "key items aren't edited" }
         require(rules.pocketOf(item) == pocket) { "item $item doesn't go in $pocket in ${f.label}" }
-        require(quantity in 1..f.stackMax(pocket, item)) { "$quantity of item $item" }
+        require(quantity in 1..f.stackMax(pocket, item) { rules.isHm(it) }) { "$quantity of item $item" }
     }
 
     /** The pocket packed from its first slot, the rest zeroed (CompactItemsInBagPocket); TMs and berries by id, as the
@@ -551,7 +551,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
     /** The level the Pokémon at [at] had when the save was read: the editor never takes one below it. */
     override fun levelAsRead(at: MonRef): Int {
         val mon = monAt(at) ?: return 1
-        val read = Gen3SaveData(f, file.saveBlock2, file.saveBlock1, file.storage)
+        val read = Gen3SaveData(f, file.saveBlock2, file.saveBlock1, file.storage, file.rules)
         val was = read.party.firstOrNull { it.mon.personality == mon.personality && it.mon.otId == mon.otId }?.mon
             ?: read.boxes.asSequence().flatMap { it.mons }.firstOrNull { !it.isEmpty && it.personality == mon.personality && it.otId == mon.otId }
         return was?.level ?: mon.level
@@ -682,7 +682,7 @@ class Gen3SaveEditor(val file: Gen3SaveFile) : MonSaveEditor, TrainerBagEditor {
         val d = data
         return POCKETS.map { (kind, p) -> SavePocket(kind, f.pocket(p).slots, d.pocket(p)) }
     }
-    override fun stackMax(kind: PocketKind, item: Int): Int = f.stackMax(bagPocket(kind), item)
+    override fun stackMax(kind: PocketKind, item: Int): Int = f.stackMax(bagPocket(kind), item) { rules.isHm(it) }
     override fun fixedStack(kind: PocketKind, item: Int): Boolean =
         kind == PocketKind.KEY || (kind == PocketKind.TMHM && rules.isHm(item))
     override fun addable(kind: PocketKind): List<Int> = if (kind == PocketKind.KEY) emptyList() else rules.bagItems(bagPocket(kind))

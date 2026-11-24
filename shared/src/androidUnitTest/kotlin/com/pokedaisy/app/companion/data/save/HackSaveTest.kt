@@ -101,4 +101,19 @@ class HackSaveTest {
         }
         assumeTrue("no hack ROM and save here", ran > 0)
     }
+
+    /** A randomizer's output keeps retail's layout and species numbers, but its learnsets and abilities are its own: read
+     * from its ROM. A retail dump keeps retail's generated tables. */
+    @Test fun aRandomizedCartReadsItsOwnRulesAndRetailKeepsItsTables() {
+        val randomized = File(roms, "Pokemon Emerald Randomized (v4.6.1) (seed 13578136444066).gba")
+        val retail = File(roms, "Pokemon - Emerald Version (USA, Europe).gba")
+        assumeTrue("needs the randomized and retail Emerald ROMs", randomized.isFile && retail.isFile)
+        fun reader(f: File) = com.pokedaisy.app.companion.data.RomIdentityReader.forPath(okio.Path.Companion.run { f.absolutePath.toPath() })
+        val r = Gen3SaveReader.rulesFor(reader(randomized), Gen3SaveFormat.EMERALD, randomized.path)
+        assertTrue(r is RomGen3Rules, "a randomized cart reads its own ROM")
+        assertEquals(RETAIL, r.family)
+        val learnsDiffer = (1 until 387).count { r.learnable(it, 50) != Gen3SaveFormat.EMERALD.rules.learnable(it, 50) }
+        assertTrue(learnsDiffer > 100, "randomized learnsets: $learnsDiffer species differ")
+        assertTrue(Gen3SaveReader.rulesFor(reader(retail), Gen3SaveFormat.EMERALD, retail.path) !is RomGen3Rules, "retail keeps its tables")
+    }
 }
