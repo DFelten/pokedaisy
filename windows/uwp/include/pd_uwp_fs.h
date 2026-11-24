@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+#include <wchar.h>
 #include <unistd.h>
 
 #ifndef PATH_MAX
@@ -133,10 +134,26 @@ static inline int pd_uwp_rename(const char *from, const char *to) {
     return 0;
   if (MoveFileFromAppW(wideFrom, wideTo))
     return 0;
-  // MoveFileFromAppW won't put a file over one that is there on every file system: replace it by hand, as pd_rename did
-  // on desktop Windows. A crash between the two leaves no save, so the host writes a .tmp and renames only once it is whole.
-  if (DeleteFileFromAppW(wideTo) && MoveFileFromAppW(wideFrom, wideTo))
+  // Inside LocalState MoveFileEx can replace the file in one step.
+  if (MoveFileExW(wideFrom, wideTo, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     return 0;
+  // Elsewhere (a drive picked in SETTINGS > FOLDERS) MoveFileFromAppW won't put a file over one that is there: the old
+  // file steps aside first and goes only once the new one is in its place, so a crash between leaves the old save beside
+  // it as <name>.old, never no save at all; a failed move puts it back.
+  wchar_t wideOld[PATH_MAX * 2 + 8];
+  const size_t toLen = wcslen(wideTo);
+  if (toLen + 5 > sizeof wideOld / sizeof *wideOld)
+    return -1;
+  memcpy(wideOld, wideTo, toLen * sizeof *wideTo);
+  memcpy(wideOld + toLen, L".old", 5 * sizeof *wideOld);
+  DeleteFileFromAppW(wideOld); // a leftover from an earlier crash: the file at wideTo is newer
+  if (MoveFileFromAppW(wideTo, wideOld)) {
+    if (MoveFileFromAppW(wideFrom, wideTo)) {
+      DeleteFileFromAppW(wideOld);
+      return 0;
+    }
+    MoveFileFromAppW(wideOld, wideTo);
+  }
   errno = EACCES;
   return -1;
 }

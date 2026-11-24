@@ -6,6 +6,11 @@ order: 87
 keywords: [xbox, series x, series s, dev mode, uwp, sideload, appx, certificate, device portal, usb drive, external drive, rom folder, save folder]
 ---
 
+> DRAFT, not published. There is no official Xbox build yet (the UWP host in `windows/uwp/` is built by hand), so this
+> page lives in `docs/manual-drafts/` and the manual doesn't list it. When an Xbox build ships: move this file back into
+> `docs/manual/`, link it from `windows-install.md` ("On an Xbox in Dev Mode, see Install on Xbox") and README's
+> Windows line, and drop this note.
+
 PokeDaisy runs on an Xbox in Dev Mode. The game fills the TV and the companion sits beside it, as on Windows. The Xbox build is a preview: it is not in the Microsoft Store, and you install it yourself.
 
 > [!WARNING]
@@ -52,6 +57,8 @@ An Xbox fills its internal storage quickly, and a USB drive is the easy place fo
 The game list reads the ROM folder again as soon as you choose it. Save states go in a `states` folder beside the save folder, so they stay on the same drive. The two folders are separate: you can keep games on the drive and saves in the app's folder, or both on the drive.
 
 If the drive is not connected, the app cannot read the folder. Connect it and choose the folder again from **SETTINGS**. Changing a folder does not move or delete the games and saves already in the old one; copy them yourself if you want them on the new drive.
+
+Your companion settings are kept in a `pokedaisy` folder inside the save folder. When the new save folder has none yet, PokeDaisy copies the old one there, so your settings come along. A save folder that already has its own keeps it.
 
 ## Updating
 

@@ -30,7 +30,7 @@ static inline void *dlopen(const char *path, int mode) {
   for (p = path; *p; p++)
     if (*p == '/' || *p == '\\')
       name = p + 1;
-  if (MultiByteToWideChar(CP_ACP, 0, name, -1, wide, (int)(sizeof wide / sizeof wide[0])) <= 0)
+  if (MultiByteToWideChar(CP_UTF8, 0, name, -1, wide, (int)(sizeof wide / sizeof wide[0])) <= 0)
     return NULL;
   return (void *)LoadPackagedLibrary(wide, 0);
 }
@@ -43,7 +43,7 @@ static inline long pd_install_dir(char *buf, size_t size) {
   int n;
   if (GetCurrentPackagePath(&len, wide) != ERROR_SUCCESS)
     return -1;
-  n = WideCharToMultiByte(CP_ACP, 0, wide, -1, buf, (int)size, NULL, NULL);
+  n = WideCharToMultiByte(CP_UTF8, 0, wide, -1, buf, (int)size, NULL, NULL); // UTF-8, as every file call reads it
   return n > 0 ? (long)(n - 1) : -1;
 }
 #else

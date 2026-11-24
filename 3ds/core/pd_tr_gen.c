@@ -2,7 +2,7 @@
 // hand: change those and run `make -C 3ds tables`. The keys the 3DS / Linux code uses, in strcmp order (pd_tr.h).
 #include "pd_tr.h"
 
-const struct pd_tr_entry pd_tr_table[790] = {
+const struct pd_tr_entry pd_tr_table[800] = {
     { "  HACK", { "  HACK", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "  NONE", { "  NONE", "  AUCUN", "  KEINS", "  NESSUNO", "  NINGUNO", "  NENHUM", "  NENHUM" } },
     { "  SHINY", { "  SHINY", "  CHROMATIQUE", "  SCHILLERND", "  CROMATICO", "  VARIOCOLOR", "  BRILHANTE", "  BRILHANTE" } },
@@ -31,6 +31,7 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "%s Pokémon", { "%s Pokémon", "Pokémon %s", "%s-Pokémon", "Pokémon %s", "Pokémon %s", "Pokémon %s", "Pokémon %s" } },
     { "%s has one, Lv%d (%s): TRADE SAVES brings it.", { "%s has one, Lv%d (%s): TRADE SAVES brings it.", "%s en a un, N.%d (%s) : ÉCHANGER SAUVEGARDES l'amène.", "%s hat eines, Lv%d (%s): SPIELSTÄNDE TAUSCHEN holt es.", "%s ne ha uno, Lv%d (%s): SCAMBIA SALVATAGGI lo porta.", "%s tiene uno, Nv%d (%s): CAMBIAR PARTIDAS lo trae.", "%s tem um, Nv%d (%s): TROCAR SAVES traz.", "%s tem um, Nv%d (%s): TROCAR JOGOS traz." } },
     { "%s's %s Lv%d (%s) evolves into it as it arrives: TRADE SAVES.", { "%s's %s Lv%d (%s) evolves into it as it arrives: TRADE SAVES.", "%s : %s N.%d (%s) évolue en lui à l'arrivée : ÉCHANGER SAUVEGARDES.", "%s: %s Lv%d (%s) entwickelt sich bei Ankunft dazu: SPIELSTÄNDE TAUSCHEN.", "%s: %s Lv%d (%s) si evolve in lui all'arrivo: SCAMBIA SALVATAGGI.", "%s: %s Nv%d (%s) evoluciona a él al llegar: CAMBIAR PARTIDAS.", "%s: %s Nv%d (%s) evolui para ele ao chegar: TROCAR SAVES.", "%s: %s Nv%d (%s) evolui para ele ao chegar: TROCAR JOGOS." } },
+    { "(cannot open this folder)", { "(cannot open this folder)", "(impossible d'ouvrir ce dossier)", "(Ordner lässt sich nicht öffnen)", "(impossibile aprire la cartella)", "(no se puede abrir la carpeta)", "(não foi possível abrir a pasta)", "(não foi possível abrir a pasta)" } },
     { ". HOLDS %s", { ". HOLDS %s", ". TIENT %s", ". TRÄGT %s", ". TIENE %s", ". LLEVA %s", ". SEGURA %s", ". SEGURA %s" } },
     { "1ST", { "1ST", "1ER", "1.", "1°", "1.º", "1.", "1." } },
     { "2ND", { "2ND", "2E", "2.", "2°", "2.º", "2.", "2." } },
@@ -157,6 +158,7 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "DOCK", { "DOCK", "BARRE", "LEISTE", "BARRA", "BARRA", "BARRA", "BARRA" } },
     { "DON'T", { "DON'T", "NON", "NICHT", "NO", "NO", "NÃO", "NÃO" } },
     { "DONE", { "DONE", "TERMINÉ", "FERTIG", "FINE", "LISTO", "PRONTO", "CONCLUÍDO" } },
+    { "DRIVE", { "DRIVE", "LECTEUR", "LAUFWERK", "UNITÀ", "UNIDAD", "UNIDADE", "UNIDADE" } },
     { "DS", { "DS", NULL, NULL, NULL, NULL, NULL, NULL } },
     { "DUPES CLAUSE", { "DUPES CLAUSE", "CLAUSE DOUBLON", "DUPLIKAT-REGEL", "CLAUSOLA DOPPIONI", "CLÁUSULA REPETIDOS", "CLÁUSULA REPETIDOS", "CLÁUSULA REPETIDOS" } },
     { "DV", { "DV", NULL, NULL, NULL, NULL, NULL, NULL } },
@@ -207,6 +209,7 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "FLY needs a new BADGE first.", { "FLY needs a new BADGE first.", "VOL demande d'abord un nouveau BADGE.", "FLIEGEN braucht erst einen neuen ORDEN.", "VOLO richiede prima una nuova MEDAGLIA.", "VUELO necesita antes una nueva MEDALLA.", "VOAR precisa antes de uma nova INSÍGNIA.", "VOAR precisa antes de uma nova INSÍGNIA." } },
     { "FOE", { "FOE", "ENNEMI", "GEGNER", "NEMICO", "ENEMIGO", "OPONENTE", "OPONENTE" } },
     { "FOLDER", { "FOLDER", "DOSSIER", "ORDNER", "CARTELLA", "CARPETA", "PASTA", "PASTA" } },
+    { "FOLDERS", { "FOLDERS", "DOSSIERS", "ORDNER", "CARTELLE", "CARPETAS", "PASTAS", "PASTAS" } },
     { "FONT TYPE", { "FONT TYPE", "TYPE DE POLICE", "SCHRIFTART", "TIPO DI CARATTERE", "TIPO DE LETRA", "TIPO DE FONTE", "TIPO DE LETRA" } },
     { "FORGET IT", { "FORGET IT", "L'OUBLIER", "VERGESSEN", "DIMENTICALA", "OLVIDARLO", "ESQUECER", "ESQUECER" } },
     { "FPS / CPU", { "FPS / CPU", NULL, NULL, NULL, NULL, NULL, NULL } },
@@ -546,7 +549,10 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "RING", { "RING", "ANNEAU", NULL, "ANELLO", "ANILLO", "ANEL", "ANEL" } },
     { "ROCK", { "ROCK", "ROCHER", "FELS", "ROCCIA", "ROCA", "ROCHA", "ROCHA" } },
     { "ROCK SMASH", { "ROCK SMASH", "ÉCLATE-ROC", "ZERTRÜMMERER", "SPACCAROCCIA", "GOLPE ROCA", "QUEBRA-PEDRA", "QUEBRA-PEDRA" } },
+    { "ROM folder changed", { "ROM folder changed", "Dossier des ROM changé", "ROM-Ordner geändert", "Cartella ROM cambiata", "Carpeta de ROMs cambiada", "Pasta de ROMs alterada", "Pasta de ROMs alterada" } },
+    { "ROM folder set to default", { "ROM folder set to default", "Dossier des ROM par défaut", "ROM-Ordner auf Standard gesetzt", "Cartella ROM predefinita", "Carpeta de ROMs por defecto", "Pasta de ROMs no padrão", "Pasta de ROMs predefinida" } },
     { "ROM load failed", { "ROM load failed", "Échec du chargement de la ROM", "ROM konnte nicht geladen werden", "Caricamento della ROM non riuscito", "No se ha podido cargar la ROM", "Falha ao carregar a ROM", "Falha ao carregar a ROM" } },
+    { "ROMS FOLDER", { "ROMS FOLDER", "DOSSIER DES ROM", "ROM-ORDNER", "CARTELLA ROM", "CARPETA DE ROMS", "PASTA DE ROMS", "PASTA DE ROMS" } },
     { "ROUTES", { "ROUTES", NULL, "ROUTEN", "PERCORSI", "RUTAS", "ROTAS", "ROTAS" } },
     { "RULES", { "RULES", "RÈGLES", "REGELN", "REGOLE", "REGLAS", "REGRAS", "REGRAS" } },
     { "RUN", { "RUN", "FUITE", "FLUCHT", "FUGA", "HUIR", "FUGIR", "FUGIR" } },
@@ -563,6 +569,7 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "SAVE STATES", { "SAVE STATES", "ÉTATS SAUVEGARDÉS", "SAVESTATES", "STATI SALVATI", "ESTADOS GUARDADOS", "ESTADOS SALVOS", "ESTADOS GUARDADOS" } },
     { "SAVED", { "SAVED", "SAUVÉ", "GESICHERT", "SALVATO", "GUARDADO", "SALVO", "GUARDADO" } },
     { "SAVES", { "SAVES", "SAUVEGARDES", "SPIELSTÄNDE", "SALVATAGGI", "PARTIDAS GUARDADAS", NULL, "JOGOS GUARDADOS" } },
+    { "SAVES FOLDER", { "SAVES FOLDER", "DOSSIER DES SAUVEGARDES", "SPIELSTAND-ORDNER", "CARTELLA SALVATAGGI", "CARPETA DE PARTIDAS", "PASTA DE SAVES", "PASTA DE GUARDADOS" } },
     { "SCENIC", { "SCENIC", "PANORAMIQUE", "PANORAMA", "PANORAMICO", "PANORÁMICO", "PANORÂMICO", "PANORÂMICO" } },
     { "SCENIC flies over the map, CLASSIC is the game's.", { "SCENIC flies over the map, CLASSIC is the game's.", "PANORAMIQUE survole la carte, CLASSIQUE est celui du jeu.", "PANORAMA fliegt über die Karte, KLASSISCH ist der des Spiels.", "PANORAMICO sorvola la mappa, CLASSICO è quello del gioco.", "PANORÁMICO sobrevuela el mapa, CLÁSICO es el del juego.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo.", "PANORÂMICO voa sobre o mapa, CLÁSSICO é o do jogo." } },
     { "SCREEN", { "SCREEN", "ÉCRAN", "BILDSCHIRM", "SCHERMO", "PANTALLA", "TELA", "ECRÃ" } },
@@ -619,6 +626,8 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "SWITCH", { "SWITCH", "ÉCHANGER", "TAUSCHEN", "SCAMBIA", "CAMBIAR", "TROCAR", "TROCAR" } },
     { "Save a state of the game as it is now? It replaces the last one. The save file isn't touched.", { "Save a state of the game as it is now? It replaces the last one. The save file isn't touched.", "Sauvegarder l'état du jeu maintenant ? Il remplace le dernier. La sauvegarde ne change pas.", "Einen State des Spiels jetzt sichern? Er ersetzt den letzten. Der Spielstand bleibt unberührt.", "Salvare uno stato del gioco così com'è? Sostituisce l'ultimo. Il salvataggio resta intatto.", "¿Guardar un estado del juego tal cual? Reemplaza al último. La partida no se toca.", "Salvar um estado do jogo agora? Substitui o último. O save não muda.", "Guardar um estado do jogo agora? Substitui o último. O jogo guardado não muda." } },
     { "Save backup failed; game not opened", { "Save backup failed; game not opened", "Copie de la sauvegarde impossible, jeu non ouvert", "Sicherung des Spielstands fehlgeschlagen, Spiel nicht geöffnet", "Copia del salvataggio non riuscita, gioco non aperto", "No se ha podido copiar la partida, juego no abierto", "Falha ao copiar o save, jogo não aberto", "Falha ao copiar o jogo guardado, jogo não aberto" } },
+    { "Save folder changed", { "Save folder changed", "Dossier des sauvegardes changé", "Spielstand-Ordner geändert", "Cartella salvataggi cambiata", "Carpeta de partidas cambiada", "Pasta de saves alterada", "Pasta de guardados alterada" } },
+    { "Save folder set to default", { "Save folder set to default", "Dossier des sauvegardes par défaut", "Spielstand-Ordner auf Standard gesetzt", "Cartella salvataggi predefinita", "Carpeta de partidas por defecto", "Pasta de saves no padrão", "Pasta de guardados predefinida" } },
     { "Save once in the game first.", { "Save once in the game first.", "Sauvegardez d'abord dans le jeu.", "Speichere zuerst einmal im Spiel.", "Salva prima una volta nel gioco.", "Guarda antes una vez en el juego.", "Salve uma vez no jogo primeiro.", "Guarda primeiro uma vez no jogo." } },
     { "Save write failed", { "Save write failed", "Échec de l'écriture de la sauvegarde", "Spielstand konnte nicht geschrieben werden", "Scrittura del salvataggio non riuscita", "No se ha podido escribir la partida", "Falha ao gravar o save", "Falha ao gravar o jogo guardado" } },
     { "Shared save can't be used; game not opened", { "Shared save can't be used; game not opened", "Sauvegarde partagée inutilisable, jeu non ouvert", "Geteilter Spielstand nicht nutzbar, Spiel nicht geöffnet", "Salvataggio condiviso inutilizzabile, gioco non aperto", "No se puede usar la partida compartida, juego no abierto", "O save compartilhado não pode ser usado, jogo não aberto", "O jogo guardado partilhado não pode ser usado, jogo não aberto" } },
@@ -727,6 +736,7 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "UNSEEN", { "UNSEEN", "INCONNU", "UNBEKANNT", "IGNOTO", "OCULTO", "OCULTO", "OCULTO" } },
     { "UP DOWN: STEP   L R: PAGE   B: BACK", { "UP DOWN: STEP   L R: PAGE   B: BACK", "HAUT BAS : PAS   L R : PAGE   B : RETOUR", "HOCH RUNTER: SCHRITT   L R: SEITE   B: ZURÜCK", "SU GIÙ: PASSO   L R: PAGINA   B: INDIETRO", "ARRIBA ABAJO: PASO   L R: PÁGINA   B: ATRÁS", "CIMA BAIXO: PASSO   L R: PÁGINA   B: VOLTAR", "CIMA BAIXO: PASSO   L R: PÁGINA   B: VOLTAR" } },
     { "USE", { "USE", "UTILISER", "EINSETZEN", "USA", "USAR", "USAR", "USAR" } },
+    { "USE THIS FOLDER", { "USE THIS FOLDER", "UTILISER CE DOSSIER", "DIESEN ORDNER NEHMEN", "USA QUESTA CARTELLA", "USAR ESTA CARPETA", "USAR ESTA PASTA", "USAR ESTA PASTA" } },
     { "Unpacking the game...", { "Unpacking the game...", "Décompression du jeu...", "Spiel wird entpackt...", "Estrazione del gioco...", "Descomprimiendo el juego...", "Descompactando o jogo...", "A descompactar o jogo..." } },
     { "Use ", { "Use ", "Utiliser ", "Nutze ", "Usa ", "Usar ", "Usar ", "Usar " } },
     { "Use %s on which POKéMON?", { "Use %s on which POKéMON?", "Utiliser %s sur quel POKéMON ?", "%s bei welchem POKéMON einsetzen?", "Usare %s su quale POKéMON?", "¿Usar %s en qué POKéMON?", "Usar %s em qual POKéMON?", "Usar %s em qual POKéMON?" } },
@@ -794,4 +804,4 @@ const struct pd_tr_entry pd_tr_table[790] = {
     { "the game.", { "the game.", "dans le jeu.", "im Spiel ab.", "nel gioco.", "en el juego.", "no jogo.", "no jogo." } },
     { "x%d  (a stack holds %d)", { "x%d  (a stack holds %d)", "x%d  (une pile en contient %d)", "x%d  (ein Stapel fasst %d)", "x%d  (una pila ne tiene %d)", "x%d  (un montón lleva %d)", "x%d  (uma pilha tem %d)", "x%d  (uma pilha tem %d)" } },
 };
-const int pd_tr_table_count = 790;
+const int pd_tr_table_count = 800;

@@ -2,7 +2,9 @@
 setlocal EnableExtensions
 
 rem Builds the SDL host as a UWP app for Windows and Xbox Dev Mode.
-rem Run bash build/build-win.sh first, so build\PokeDaisy-windows-x64 has the cores.
+rem First build the Windows zip as .github/workflows/windows.yml does (MinGW-w64 in Fedora, then
+rem windows/package.sh build/win out; docs/RELEASING.md has the local recipe) and extract its folder to
+rem build\PokeDaisy-windows-x64, or set POKEDAISY_WIN_DIR to the extracted folder: it has the cores.
 rem Set SDL2_UWP_DIR to a folder holding SDL2-2.30.5 and bin\SDL2.dll, or build SDL2
 rem into the default build\uwp\sdl2 (see sdl2\README.md).
 rem Output: build\uwp\host\layout and build\uwp\PokeDaisyUwpHost.appx.
@@ -12,6 +14,7 @@ for %%I in ("%HOST%..\..") do set "ROOT=%%~fI"
 set "OBJ=%ROOT%\build\uwp\host\obj"
 set "LAYOUT=%ROOT%\build\uwp\host\layout"
 set "RUNTIME=%ROOT%\build\PokeDaisy-windows-x64"
+if defined POKEDAISY_WIN_DIR set "RUNTIME=%POKEDAISY_WIN_DIR%"
 if not defined SDL2_UWP_DIR set "SDL2_UWP_DIR=%ROOT%\build\uwp\sdl2"
 
 if not exist "%SDL2_UWP_DIR%\SDL2-2.30.5\include\SDL.h" (
@@ -26,7 +29,8 @@ if not exist "%SDL2_UWP_DIR%\bin\SDL2.dll" (
 )
 if not exist "%RUNTIME%\pokedaisy_gba_libretro.dll" (
   echo Cores not found at "%RUNTIME%".
-  echo Run bash build/build-win.sh first.
+  echo Build the Windows zip first (windows/package.sh, see .github/workflows/windows.yml) and extract it there,
+  echo or set POKEDAISY_WIN_DIR to the extracted folder.
   exit /b 2
 )
 

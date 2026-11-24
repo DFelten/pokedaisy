@@ -24,11 +24,12 @@ or a Windows PC for testing.
 
 ### Cores
 
-```
-bash build/build-win.sh
-```
-
-This fills `build/PokeDaisy-windows-x64` with the three cores.
+The cores are the Windows zip's: build it as `.github/workflows/windows.yml`
+does (the four MinGW-w64 builds in a Fedora 41 container, then
+`windows/package.sh build/win out`; `docs/RELEASING.md` has the local recipe),
+and extract its `PokeDaisy-<version>-windows-x86_64` folder to
+`build/PokeDaisy-windows-x64`, or set `POKEDAISY_WIN_DIR` to it. `build.bat`
+takes the three cores and the MinGW runtime DLLs from there.
 
 ### SDL2
 

@@ -619,6 +619,7 @@ static void script_mouse(void) {
         mscript[mscriptN].y = y;
         mscript[mscriptN].wheel = c == 'd' ? -1 : c == 'u' ? 1 : 0;
         mscript[mscriptN].click = c == 'c';
+        mscript[mscriptN].menu = c == 'r';
         mscriptN++;
       }
     }
@@ -755,9 +756,21 @@ static void path_normalize(char *p) {
   if (n == 2 && p[1] == ':')
     p[n++] = '/', p[n] = 0;
 }
-static void path_child(char *out, size_t size, const char *dir, const char *name) {
-  size_t n = strlen(dir);
-  snprintf(out, size, "%s%s%s", dir, n && dir[n - 1] == '/' ? "" : "/", name);
+// DIR/NAME into OUT; false (OUT cut short) when it doesn't fit.
+static bool path_child(char *out, size_t size, const char *dir, const char *name) {
+  // Lengths checked by hand, no snprintf: a caller's fixed folder names would be -Wformat-truncation's guesses.
+  const size_t n = strlen(dir), m = strlen(name), slash = n && dir[n - 1] == '/' ? 0 : 1;
+  if (!size)
+    return false;
+  if (n + slash + m >= size) {
+    out[0] = 0;
+    return false;
+  }
+  memmove(out, dir, n); // (dir may be out itself)
+  if (slash)
+    out[n] = '/';
+  memcpy(out + n + slash, name, m + 1);
+  return true;
 }
 /* A folder beside DIR: the cores put their states at the save folder's parent (pd_libretro's pdStateRoot), so a save
  * folder on another drive keeps its states on that drive too. */
@@ -2321,7 +2334,19 @@ static void run_game(const char *path, int maxFrames, const char *shot, bool fro
   const bool dsGame = !strcmp(coreName, "pokedaisy_ds_libretro" PD_CORE_EXT);
   int *hotkeys = dsGame ? hostSet.dsHotkey : hostSet.hotkey;
   // armGBA's states aren't mGBA's: each core its own file.
-  snprintf(ss, sizeof ss, "%s/%s%s.ss", statesDir, name, strstr(coreName, "_gba_") ? ".armgba" : "");
+  {
+    // The state's file name, then joined by path_child (lengths checked by hand): a states folder the player picks is
+    // as long as a path can be, which -Wformat-truncation counts against ss.
+    char file[PATH_MAX];
+    const char *suffix = strstr(coreName, "_gba_") ? ".armgba.ss" : ".ss";
+    const size_t n = strlen(name), m = strlen(suffix);
+    file[0] = 0;
+    if (n + m < sizeof file) {
+      memcpy(file, name, n);
+      memcpy(file + n, suffix, m + 1);
+    }
+    path_child(ss, sizeof ss, statesDir, file);
+  }
   if (strstr(coreName, "_gba_")) {
     // A GBA state from before armGBA is mGBA's: it can't load here, so say so instead of "No state saved yet".
     char old[PATH_MAX * 2 + 16];
@@ -2849,17 +2874,16 @@ static bool folderPage;       // the folder browser over the game list
 static int folderTarget;      // HR_ROMS_FOLDER or HR_SAVES_FOLDER
 static char folderCwd[PATH_MAX];
 static bool folderDrivesPage; // the list of drives, opened by .. at a drive's top
-#define FOLDER_ROWS 64
-static char folderRows[FOLDER_ROWS][PATH_MAX + 8];
+/* The folder browser's rows: USE THIS FOLDER, DEFAULT and .., the folders (a name is at most 255 bytes on every file
+ * system the host reads), then the drives. A folder with more subfolders than there are rows lists as many as fit. */
+#define FOLDER_ROWS 1024
+#define FOLDER_NAME 264
+static char folderRows[FOLDER_ROWS][FOLDER_NAME];
 static const char *folderPtrs[FOLDER_ROWS];
 static unsigned char folderKinds[FOLDER_ROWS]; // 0 USE, 1 up, 2 folder, 3 drive, 4 unreadable, 5 default
 static char folderDrives[FOLDER_ROWS];
 static struct pd_menu folderMenu;
 
-static void path_join(char *out, size_t size, const char *dir, const char *name) {
-  size_t n = strlen(dir);
-  snprintf(out, size, "%s%s%s", dir, n && dir[n - 1] == '/' ? "" : "/", name);
-}
 static bool path_parent(const char *path, char *out) {
   char tmp[PATH_MAX];
   snprintf(tmp, sizeof tmp, "%s", path);
@@ -2900,8 +2924,8 @@ static void folder_add_drives(int *count) {
   DWORD drives = GetLogicalDrives();
   for (int i = 0; i < 26; i++)
     if (drives & (1u << i)) {
-      char label[16];
-      snprintf(label, sizeof label, "DRIVE %c:", 'A' + i);
+      char label[32];
+      snprintf(label, sizeof label, "%.24s %c:", pd_tr("DRIVE"), 'A' + i); // a row pd_menu shows as it is
       folder_row(count, label, 3, (char)('A' + i));
     }
 #else
@@ -2921,25 +2945,23 @@ static void folder_page_list(void) {
   folder_row(&count, "USE THIS FOLDER", 0, 0);
   folder_row(&count, "DEFAULT", 5, 0);
   folder_row(&count, "..", 1, 0); // every folder, a drive's top included: it opens the drive list there
-  char names[FOLDER_ROWS][PATH_MAX];
-  int dirs = 0;
   DIR *d = opendir(folderCwd);
   if (d) {
+    // Every subfolder (as many as there are rows, keeping room for the drives), sorted by name once all are read.
+    const int first = count, last = FOLDER_ROWS - 26;
     struct dirent *e;
-    while ((e = readdir(d)) && dirs < FOLDER_ROWS - 29) { // room for the use / default / up rows and every drive
+    while ((e = readdir(d)) && count < last) {
       if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
         continue;
       char child[PATH_MAX];
       struct stat st;
-      path_join(child, sizeof child, folderCwd, e->d_name);
-      if (stat(child, &st) || !S_ISDIR(st.st_mode)) // d_type is missing in MinGW's dirent
-        continue;
-      snprintf(names[dirs++], sizeof names[0], "%s", e->d_name);
+      if (!path_child(child, sizeof child, folderCwd, e->d_name) || stat(child, &st) || !S_ISDIR(st.st_mode))
+        continue; // (d_type is missing in MinGW's dirent)
+      folder_row(&count, e->d_name, 2, 0);
     }
     closedir(d);
-    qsort(names, dirs, sizeof names[0], folder_name_cmp);
-    for (int i = 0; i < dirs; i++)
-      folder_row(&count, names[i], 2, 0);
+    // Only the names move: every row here is a folder, and each pointer still names its own row.
+    qsort(folderRows[first], (size_t)(count - first), sizeof folderRows[0], folder_name_cmp);
   } else {
     folder_row(&count, "(cannot open this folder)", 4, 0);
   }
@@ -2978,11 +3000,41 @@ static void folder_page_up(void) {
   snprintf(folderCwd, sizeof folderCwd, "%s", parent);
   folder_page_list();
 }
+/* The companion's settings (settings.ini, FLIGHT AREA's maps) live in <save folder>/pokedaisy, where the cores read
+ * them: a new save folder without one gets a copy of the old folder's, so a move doesn't start every setting over.
+ * A folder that has its own keeps it (the player kept saves there before). */
+static void carry_settings(const char *fromSaves, const char *toSaves) {
+  char from[PATH_MAX + 16], to[PATH_MAX + 16];
+  if (!path_child(from, sizeof from, fromSaves, "pokedaisy") || !path_child(to, sizeof to, toSaves, "pokedaisy") ||
+      !strcmp(from, to) || exists(to))
+    return;
+  DIR *d = opendir(from);
+  if (!d)
+    return;
+  pd_mkdir(to);
+  struct dirent *e;
+  int copied = 0;
+  while ((e = readdir(d))) {
+    char src[PATH_MAX + 16], dst[PATH_MAX + 16];
+    struct stat st;
+    if (e->d_name[0] == '.' || !path_child(src, sizeof src, from, e->d_name) ||
+        !path_child(dst, sizeof dst, to, e->d_name) || stat(src, &st) || !S_ISREG(st.st_mode))
+      continue;
+    size_t n;
+    unsigned char *data = read_file(src, &n, 16u << 20);
+    if (data && write_file(dst, data, n, true))
+      copied++;
+    free(data);
+  }
+  closedir(d);
+  fprintf(stderr, "Settings: %d file(s) copied from %s to %s\n", copied, from, to);
+}
 static void folder_page_choose(void) {
   if (folderTarget == HR_ROMS_FOLDER) {
     snprintf(romsDir, sizeof romsDir, "%s", folderCwd);
     snprintf(hostSet.romDir, sizeof hostSet.romDir, "%s", folderCwd);
   } else {
+    carry_settings(savesDir, folderCwd);
     snprintf(savesDir, sizeof savesDir, "%s", folderCwd);
     snprintf(hostSet.saveDir, sizeof hostSet.saveDir, "%s", folderCwd);
     path_beside(statesDir, sizeof statesDir, savesDir, "states");
@@ -3004,7 +3056,12 @@ static void folder_page_default(void) {
     pd_mkdir(romsDir);
   } else {
     hostSet.saveDir[0] = 0;
+    char old[PATH_MAX];
+    snprintf(old, sizeof old, "%s", savesDir);
     path_child(savesDir, sizeof savesDir, root, "saves");
+    path_normalize(savesDir);
+    pd_mkdir(savesDir);
+    carry_settings(old, savesDir);
     path_child(statesDir, sizeof statesDir, root, "states");
     path_normalize(savesDir);
     path_normalize(statesDir);
@@ -3028,7 +3085,8 @@ static void folder_page_enter(void) {
     folder_page_up();
   else if (folderKinds[row] == 2) {
     char next[PATH_MAX];
-    path_join(next, sizeof next, folderCwd, folderRows[row]);
+    if (!path_child(next, sizeof next, folderCwd, folderRows[row]))
+      return; // past PATH_MAX: not a folder the host could open
     path_normalize(next);
     snprintf(folderCwd, sizeof folderCwd, "%s", next);
     folderDrivesPage = false;
@@ -3366,6 +3424,8 @@ static void exe_dir(const char *argv0) {
     if (*c == '\\')
       *c = '/';
   snprintf(exeDir, sizeof exeDir, "%s", p);
+  (void)argv0;
+  return; // the folder itself: nothing to cut off
 #elif defined(_WIN32)
   long n = pd_exe_path(p, sizeof p); // GetModuleFileNameA: Windows has no /proc/self/exe
 #else

@@ -378,6 +378,15 @@
 
 // --- the desktop host (Linux, Windows): its own SETTINGS rows ---
 "FULLSCREEN" to Tr(fr = "PLEIN ÉCRAN", de = "VOLLBILD", it = "SCHERMO INTERO", es = "PANTALLA COMPLETA", br = "TELA CHEIA", pt = "ECRÃ INTEIRO"),
+// its folder rows and browser (Windows: SETTINGS > FOLDERS)
+"SAVES FOLDER" to Tr(fr = "DOSSIER DES SAUVEGARDES", de = "SPIELSTAND-ORDNER", it = "CARTELLA SALVATAGGI", es = "CARPETA DE PARTIDAS", br = "PASTA DE SAVES", pt = "PASTA DE GUARDADOS"),
+"USE THIS FOLDER" to Tr(fr = "UTILISER CE DOSSIER", de = "DIESEN ORDNER NEHMEN", it = "USA QUESTA CARTELLA", es = "USAR ESTA CARPETA", br = "USAR ESTA PASTA", pt = "USAR ESTA PASTA"),
+"DRIVE" to Tr(fr = "LECTEUR", de = "LAUFWERK", it = "UNITÀ", es = "UNIDAD", br = "UNIDADE", pt = "UNIDADE"),
+"(cannot open this folder)" to Tr(fr = "(impossible d'ouvrir ce dossier)", de = "(Ordner lässt sich nicht öffnen)", it = "(impossibile aprire la cartella)", es = "(no se puede abrir la carpeta)", br = "(não foi possível abrir a pasta)", pt = "(não foi possível abrir a pasta)"),
+"ROM folder changed" to Tr(fr = "Dossier des ROM changé", de = "ROM-Ordner geändert", it = "Cartella ROM cambiata", es = "Carpeta de ROMs cambiada", br = "Pasta de ROMs alterada", pt = "Pasta de ROMs alterada"),
+"Save folder changed" to Tr(fr = "Dossier des sauvegardes changé", de = "Spielstand-Ordner geändert", it = "Cartella salvataggi cambiata", es = "Carpeta de partidas cambiada", br = "Pasta de saves alterada", pt = "Pasta de guardados alterada"),
+"ROM folder set to default" to Tr(fr = "Dossier des ROM par défaut", de = "ROM-Ordner auf Standard gesetzt", it = "Cartella ROM predefinita", es = "Carpeta de ROMs por defecto", br = "Pasta de ROMs no padrão", pt = "Pasta de ROMs predefinida"),
+"Save folder set to default" to Tr(fr = "Dossier des sauvegardes par défaut", de = "Spielstand-Ordner auf Standard gesetzt", it = "Cartella salvataggi predefinita", es = "Carpeta de partidas por defecto", br = "Pasta de saves no padrão", pt = "Pasta de guardados predefinida"),
 // --- the desktop game list (linux/library.c) ---
 "No games in this view yet." to Tr(fr = "Aucun jeu dans cette vue pour l'instant.", de = "Noch keine Spiele in dieser Ansicht.", it = "Ancora nessun gioco in questa vista.", es = "Aún no hay juegos en esta vista.", br = "Ainda não há jogos nesta visão.", pt = "Ainda não há jogos nesta vista."),
 "No Pokemon games found. Put them in roms/ beside PokeDaisy." to Tr(fr = "Aucun jeu Pokémon trouvé. Mettez-les dans roms/ à côté de PokeDaisy.", de = "Keine Pokémon-Spiele gefunden. Leg sie in roms/ neben PokeDaisy.", it = "Nessun gioco Pokémon trovato. Mettili in roms/ accanto a PokeDaisy.", es = "No se han encontrado juegos de Pokémon. Ponlos en roms/ junto a PokeDaisy.", br = "Nenhum jogo de Pokémon encontrado. Coloque-os em roms/ ao lado do PokeDaisy.", pt = "Nenhum jogo Pokémon encontrado. Coloca-os em roms/ ao lado do PokeDaisy."),

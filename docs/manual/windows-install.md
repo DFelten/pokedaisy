@@ -14,8 +14,6 @@ first game.
 > The Windows version is new and in the betas only for now. Its menus are in English, and it has been tried on few
 > PCs yet. If something goes wrong, [tell us](https://pokedaisy.com/feedback/#bug) which file and which PC you used.
 
-On an Xbox in Dev Mode, see [Install on Xbox](xbox-install.md).
-
 ## What you need
 
 - **A 64-bit Windows PC.** Windows 10 or 11.
@@ -84,6 +82,10 @@ PokeDaisy's folder, or both on the drive.
 Changing a folder does not move or delete the games and saves already in the old one. Copy them yourself if you want
 them on the new drive. If the drive is not connected, the app cannot read the folder; connect it and choose the folder
 again from `SETTINGS`.
+
+Your companion settings (`THEME`, `LANGUAGE`, the HUD and the rest) are kept in a `pokedaisy` folder inside the save
+folder. When the new save folder has none yet, PokeDaisy copies the old one there, so your settings come along. A save
+folder that already has its own keeps it.
 
 ## Updating
 
