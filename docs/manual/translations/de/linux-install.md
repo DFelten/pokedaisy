@@ -94,7 +94,7 @@ Unter [plorpOS](https://github.com/thwonp/plorpos) und in den Nightly-Builds von
 
 ## Deine Speicherdateien mitbringen
 
-Im Programm PokeDaisy (die ersten drei Downloads) liegt die Speicherdatei eines Spiels im Ordner `saves` neben `roms`, benannt nach dem ganzen Dateinamen der ROM plus `.sav`: Für `FireRed.gba` ist das `saves/FireRed.gba.sav`. Eine Speicherdatei aus einem anderen Emulator funktioniert, wenn du sie unter diesem Namen dorthin kopierst, auch eine `.srm` von RetroArch. Bewahre vorher eine Kopie deiner alten Speicherdatei an einem anderen Ort auf.
+Im Programm PokeDaisy (die ersten drei Downloads) liegt die Speicherdatei eines Spiels im Ordner `saves` neben `roms`, benannt nach der ROM ohne ihre Endung plus `.sav`, so wie die Android-App und andere Emulatoren sie benennen: Für `FireRed.gba` ist das `saves/FireRed.sav`. Eine Speicherdatei aus einem anderen Emulator funktioniert, wenn du sie unter diesem Namen dorthin kopierst, auch eine `.srm` von RetroArch. Eine Speicherdatei, die eine ältere Version unter dem ganzen Dateinamen der ROM angelegt hat (`saves/FireRed.gba.sav`), wird weiter genutzt. Liegen beide dort, gewinnt die zuletzt geschriebene. Bewahre vorher eine Kopie deiner alten Speicherdatei an einem anderen Ort auf.
 
 Bevor sich ein Spiel öffnet, kopiert PokeDaisy seine Speicherdatei nach `saves/pokedaisy-backups` und behält die neuesten 10 Kopien, also liegt dort eine ältere, falls du sie brauchst. Spielstände aus einem anderen Emulator lassen sich nicht laden.
 

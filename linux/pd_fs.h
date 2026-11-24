@@ -3,9 +3,11 @@
 #define PD_FS_H
 
 #include <dirent.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
 
 #ifdef PD_UWP
 #include "pd_uwp_fs.h"
@@ -31,7 +33,6 @@ static inline int pd_rename(const char *from, const char *to) {
   return MoveFileExA(from, to, 0x1ul /* REPLACE_EXISTING */ | 0x8ul /* WRITE_THROUGH */) ? 0 : -1;
 }
 #else
-#include <sys/stat.h>
 static inline int pd_mkdir(const char *path) {
   return mkdir(path, 0755);
 }
@@ -81,31 +82,27 @@ static inline const char *pd_base_name(const char *path) {
   return slash ? slash + 1 : path;
 }
 
-/* The battery save in DIR for the ROM at romPath: DIR/<name>.sav (the ROM's whole file name), or, when that one isn't
- * there, a save named after the ROM without its extension (DIR/<base>.sav), the way other emulators leave them
- * (pokeblack2.nds -> pokeblack2.sav) - unless another ROM beside it has the same base name, whose save it could be.
- * [out] may name a file that doesn't exist yet: then it is <name>.sav, the name this host writes. romName: romPath's own,
- * or the name a zipped ROM's saves go by (rom_save_name in rom_zip.h). */
+/* The battery save in DIR for the ROM at romPath, named the way Android's PokeDaisy, the 3DS port and other emulators
+ * name it: DIR/<base>.sav, the ROM's name without its extension (FireRed.gba -> FireRed.sav), so one save syncs between
+ * them unrenamed. Up to 1.6.2 this host wrote DIR/<name>.sav (FireRed.gba.sav), which is still read: when only that one
+ * is there it stays the save, and when both are, the one written last is (a copy synced in from a phone is newer than
+ * the one the host wrote before). Another ROM beside it with the same base name (FireRed.gb, FireRed.gba) keeps the
+ * whole name: <base>.sav could be either's. [out] may name a file that doesn't exist yet: the name this host writes.
+ * romName: romPath's own, or the name a zipped ROM's saves go by (rom_save_name in rom_zip.h). */
 static inline void pd_save_path_named(const char *dir, const char *romPath, const char *romName, char *out, size_t size) {
   snprintf(out, size, "%s/%s.sav", dir, romName);
-  FILE *f = fopen(out, "rb");
-  if (f) {
-    fclose(f);
-    return;
-  }
   const char *dot = strrchr(romName, '.');
-  if (!dot || dot == romName)
+  if (!dot || dot == romName || pd_stem_shared_named(romPath, romName))
     return;
-  char alt[4096];
-  int n = snprintf(alt, sizeof alt, "%s/%.*s.sav", dir, (int)(dot - romName), romName);
-  if (n < 0 || (size_t)n >= sizeof alt || (size_t)n >= size)
+  char base[4096];
+  int n = snprintf(base, sizeof base, "%s/%.*s.sav", dir, (int)(dot - romName), romName);
+  if (n < 0 || (size_t)n >= sizeof base || (size_t)n >= size)
     return; // too long to name: keep <romName>.sav
-  f = fopen(alt, "rb");
-  if (f) {
-    fclose(f);
-    if (!pd_stem_shared_named(romPath, romName))
-      snprintf(out, size, "%s", alt);
-  }
+  struct stat whole, plain;
+  bool haveWhole = !stat(out, &whole), havePlain = !stat(base, &plain);
+  if (haveWhole && (!havePlain || whole.st_mtime > plain.st_mtime))
+    return; // only the old name, or it was written last
+  snprintf(out, size, "%s", base);
 }
 static inline void pd_save_path(const char *dir, const char *romPath, char *out, size_t size) {
   pd_save_path_named(dir, romPath, pd_base_name(romPath), out, size);

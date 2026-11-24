@@ -94,7 +94,7 @@ En [plorpOS](https://github.com/thwonp/plorpos) y en las versiones nightly de [s
 
 ## Trae tus partidas
 
-En el programa PokeDaisy (las tres primeras descargas), la partida de un juego está en la carpeta `saves` junto a `roms`, con el nombre completo del archivo ROM más `.sav`: para `FireRed.gba` es `saves/FireRed.gba.sav`. Una partida de otro emulador funciona si la copias ahí con ese nombre, también un `.srm` de RetroArch. Guarda antes una copia de tu partida antigua en otro sitio.
+En el programa PokeDaisy (las tres primeras descargas), la partida de un juego está en la carpeta `saves` junto a `roms`, con el nombre de la ROM sin su extensión más `.sav`, como la nombran la app de Android y otros emuladores: para `FireRed.gba` es `saves/FireRed.sav`. Una partida de otro emulador funciona si la copias ahí con ese nombre, también un `.srm` de RetroArch. Una partida que una versión anterior creó con el nombre completo del archivo ROM (`saves/FireRed.gba.sav`) se sigue usando, y si están las dos, gana la última que se escribió. Guarda antes una copia de tu partida antigua en otro sitio.
 
 Antes de abrir un juego, PokeDaisy copia su partida a `saves/pokedaisy-backups` y guarda las 10 copias más recientes, así que tienes una anterior ahí si la necesitas. Los estados guardados de otro emulador no se cargan.
 

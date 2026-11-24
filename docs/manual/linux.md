@@ -266,12 +266,13 @@ Delete a file in `covers` to have that game looked up again.
 
 ## Moving a save you already have
 
-The program keeps a game's save in its data folder's `saves` folder, named after the whole ROM file name plus
-`.sav`: for `FireRed.gba` that's `saves/FireRed.gba.sav`. A save named after the ROM without its extension works
-too, the way other emulators make them: `saves/FireRed.sav` is found and used for `FireRed.gba`, with no rename
-needed, unless another ROM beside it has the same name (`FireRed.gb` next to `FireRed.gba`), when it could be either
-game's. If both are there, the ROM's own name wins. It's the game's own battery save, so a save from another
-emulator works, a RetroArch `.srm` included once it ends in `.sav`. Keep a copy of your old save somewhere else first.
+The program keeps a game's save in its data folder's `saves` folder, named after the ROM without its extension plus
+`.sav`, the way the Android app and other emulators name it: for `FireRed.gba` that's `saves/FireRed.sav`, so one save
+file works on all of them with no rename. If another ROM beside it has the same name (`FireRed.gb` next to
+`FireRed.gba`), each keeps its whole file name instead, as in `saves/FireRed.gba.sav`, since a shared save could be
+either game's. A save an older version made under the whole file name (`saves/FireRed.gba.sav`) is still used; if both
+are there, the one written last wins. It's the game's own battery save, so a save from another emulator works, a
+RetroArch `.srm` included once it ends in `.sav`. Keep a copy of your old save somewhere else first.
 
 To play one save in both RetroArch and PokeDaisy on PortMaster, turn on `SHARED SAVES` in the game list's `SETTINGS`. A
 game in the firmware's folders then uses RetroArch's save, and a DS game the one beside it. Gold, Silver and Crystal share

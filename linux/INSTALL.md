@@ -98,7 +98,7 @@ On [plorpOS](https://github.com/thwonp/plorpos) and the nightly builds of [spruc
 
 ## Bring your saves
 
-In the PokeDaisy program (the first three downloads), a game's save is in the `saves` folder next to `roms`, named after the whole ROM file name plus `.sav`: for `FireRed.gba` that's `saves/FireRed.gba.sav`. A save from another emulator works when you copy it there under that name, a RetroArch `.srm` included. A save named after the ROM without its extension works too, the way other emulators make them: `saves/FireRed.sav` is used for `FireRed.gba` when `saves/FireRed.gba.sav` isn't there, so there's no need to rename it. Keep a copy of your old save somewhere else first.
+In the PokeDaisy program (the first three downloads), a game's save is in the `saves` folder next to `roms`, named after the ROM without its extension plus `.sav`, the way the Android app and other emulators name it: for `FireRed.gba` that's `saves/FireRed.sav`. A save from another emulator works when you copy it there under that name, a RetroArch `.srm` included. A save an older version made under the whole ROM file name (`saves/FireRed.gba.sav`) is still used, and if both are there, the one written last wins. Keep a copy of your old save somewhere else first.
 
 Before a game opens, PokeDaisy copies its save to `saves/pokedaisy-backups` and keeps the newest 10 copies, so an older one is there if you need it. Save states from another emulator don't load.
 
