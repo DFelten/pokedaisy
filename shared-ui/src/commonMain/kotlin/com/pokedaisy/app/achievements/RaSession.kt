@@ -109,6 +109,9 @@ class RaSession(
     @Volatile private var flightActive = false
     /** WILD PIN is on (WildPin.kt): the next wild Pokémon is the player's pick, so achievements idle the same way. */
     @Volatile private var wildPinActive = false
+    /** LEVEL UP ALL raised the party or PC (LevelUpAll.kt): a set's level goals could be reached that way, so paused the
+     * same way until another game opens. */
+    @Volatile private var levelUpActive = false
     /** A co-op battle is running on this device (CoopBattles): the link battle is not the player's own game,
      * so achievements idle as they do with cheats (no popup: the battle is short). Any thread. */
     @Volatile var coopBattle = false
@@ -325,7 +328,7 @@ class RaSession(
             resumeProgress?.let { native.raDeserializeProgress(it) }
             resumeProgress = null
         }
-        if (achievementsIdle(cheatsActive || flightActive || expShareActive, shinyOddsActive, coopBattle, wildPinActive)) native.raIdle() else native.raDoFrame()
+        if (achievementsIdle(cheatsActive || flightActive || expShareActive || levelUpActive, shinyOddsActive, coopBattle, wildPinActive)) native.raIdle() else native.raDoFrame()
         // Debug builds: what rc_client sees, every ~10 s of emulated time.
         if (debug && ++debugFrames >= 600) {
             debugFrames = 0
@@ -379,6 +382,19 @@ class RaSession(
     private fun flightPopup(active: Boolean) =
         if (active) AchievementPopup(AchievementPopup.Kind.NOTICE, tr("FLIGHT AREA") + ": " + tr("ANYWHERE"), tr("Achievements are paused while FLIGHT AREA is ANYWHERE."))
         else AchievementPopup(AchievementPopup.Kind.NOTICE, tr("FLIGHT AREA") + ": " + tr("VISITED"), tr("Achievements are back on."))
+
+    /** LEVEL UP ALL was used in this game (true), or another game opened (false): pauses / resumes, and says so when the
+     * game has a set. */
+    fun setLevelUpUsed(active: Boolean) {
+        if (active == levelUpActive) return
+        levelUpActive = active
+        _state.update { it.copy(levelUpPaused = active) }
+        if (!ready || !coreAttached || !active) return
+        if ((_state.value.game?.total ?: 0) > 0) emitPopup(levelUpPopup())
+    }
+
+    private fun levelUpPopup() =
+        AchievementPopup(AchievementPopup.Kind.NOTICE, tr("LEVEL UP ALL"), tr("Achievements are paused for the rest of this game."))
 
     /** WILD PIN went on or off (emu thread, EmulatorEngine): pauses / resumes, and says so when the game has a set. */
     fun setWildPinActive(active: Boolean) {
@@ -549,6 +565,7 @@ class RaSession(
                     if (shinyOddsActive) emitPopup(shinyOddsPopup(true))
                     if (flightActive) emitPopup(flightPopup(true))
                     if (wildPinActive) emitPopup(wildPinPopup(true))
+                    if (levelUpActive) emitPopup(levelUpPopup())
                 }
             }
             // An unknown hash: rc_client still keeps a placeholder game (id 0).

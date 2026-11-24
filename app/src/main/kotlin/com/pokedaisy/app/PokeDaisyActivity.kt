@@ -582,6 +582,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                 else com.pokedaisy.app.companion.data.applyLevelUps(planned, rules, cfg, flags, calls)
             }.getOrElse { Log.e("pokedaisy", "level up failed", it); com.pokedaisy.app.companion.data.LevelUpResult.FAILED }
             Log.i("pokedaisy", "level up all: $out, ${planned.size} Pokémon")
+            if (out == com.pokedaisy.app.companion.data.LevelUpResult.DONE) RetroAchievements.setLevelUpUsed(true)
             runOnUiThread { done(out) }
         }
     }
@@ -2292,6 +2293,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         FeatureFlags.applyBlocked(this)
         romBlocked = com.pokedaisy.app.companion.data.BlockedGames.forCrc(crc)
         RetroAchievements.setFlightAnywhere(false)
+        RetroAchievements.setLevelUpUsed(false)
         states = SaveStates.of(this, crc).also { it.noteGame(GameTitles.label(this, Prefs(this), romFile)) }
         val ffMusicCache = androidFfMusicCache(getExternalFilesDir(null) ?: filesDir, crc, gameBoy = RomIdentity.isGameBoy(r))
         // STEADY FF music: songs rendered on their own from this ROM, in the

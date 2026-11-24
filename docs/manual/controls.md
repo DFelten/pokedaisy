@@ -283,6 +283,8 @@ Pokémon that evolve by reaching a level evolve on the way up, without the anima
 
 The change is in your running game until you save, so save in the game to keep it. If you change your mind, restart the game before saving.
 
+Once you've used it, achievements pause until you open another game.
+
 ## SHINY ODDS
 
 `SHINY ODDS` sets how often a wild Pokémon is shiny. It's in the companion's `GAMEPLAY` > `QUALITY OF LIFE` and opens a list:

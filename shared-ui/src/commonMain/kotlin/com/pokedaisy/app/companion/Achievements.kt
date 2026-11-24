@@ -54,6 +54,8 @@ data class AchievementsState(
     val flightPaused: Boolean = false,
     /** A WILD PIN is on: paused the same way until it ends. */
     val wildPinPaused: Boolean = false,
+    /** LEVEL UP ALL raised the party or PC in this game: paused until another game opens. */
+    val levelUpPaused: Boolean = false,
 )
 
 data class Leaderboard(
