@@ -39,18 +39,38 @@ without them. `HACK_SAVE_OUT=<file>` writes the edited Legacy save to boot.
 
 ## Not yet, and why
 
-- **CFRU (Unbound, Radical Red, Amethyst, Sword and Shield, GS Chronicles, Odyssey / Gaia)**: the save isn't retail's.
-  Unbound signs its sectors 0x01121999, keeps SaveBlock1 in 0xFF0-byte chunks per sector (sector 1 off 0 = SB1
-  0x0202552C, sector 2 off 0 = SB1 + 0xFF0), and puts data no checksum covers in the sectors' tails; Radical Red checks
-  0xFF0 / 0xFF4 bytes. The PC is CFRU's 58-byte compressed records (RAM 0x02029314; boxes 20-25 at 0x0203CB44, +30 x 58,
-  +60 x 58, 0x02027434 (+30 x 58), 0x02024638), so where each RAM range lands in the file has to be mapped first. The
-  player's Unbound and Radical Red saves have empty PCs: a save with boxed Pokémon is needed to check the mapping. Next
-  step: deposit Pokémon headless (the game's SendMonToPC, like the `unbound_boxes` fixture) and save in game, then diff.
+- **CFRU (Unbound, Radical Red, Amethyst, Sword and Shield, GS Chronicles)**: a save model of its own. From CFRU's public
+  `src/save.c` / `include/new/pokemon_storage_system.h` (Skeli789/Complete-Fire-Red-Upgrade), matching what the player's
+  Unbound and Radical Red saves show:
+  - Chunks of 0xFF0 bytes (`SECTOR_DATA_SIZE`), the footer where retail's is (id 0xFF4, checksum 0xFF6, signature 0xFF8,
+    counter 0xFFC); the checksum sums the chunk's size only. Signature 0x08012025, or the hack's own (Unbound 0x01121999,
+    `CUSTOM_FILE_SIGNATURE`).
+  - `gSaveSectionOffsets`: id 0 SaveBlock2 0xF24; ids 1-4 SaveBlock1 at 0, 0xFF0, 0x1FE0, 0x2FD0 (0xFF0, 0xFF0, 0xFF0,
+    0xD98); ids 5-12 PokemonStorage 8 x 0xFF0, id 13 storage +0x7F80, 0x450.
+  - The "parasite" (RAM 0x0203B174, 0xEC4 bytes, not checksummed): 0xCC in sector id 0's tail (from 0xF24), 0x258 in id
+    4's (from 0xD98), 0xBA0 in id 13's (from 0x450), in that order.
+  - Sectors 30 and 31 (fixed, outside both slots, file 0x1E000 / 0x1F000): RAM 0x0203C038 on, 0xFF0 each.
+  - Expanded flags 0x900-0x18FF and vars 0x5000-0x51FF (`gExpandedFlags` / `gExpandedVars`; their RAM isn't in save.c).
+  - PC: boxes 1-19 in PokemonStorage (RAM 0x02029314: current box, then 58-byte records); boxes 20-25 at 0x0203CB44
+    (+30 x 58, +60 x 58: inside sector 30 / 31's RAM), 0x02027434 (+30 x 58) and 0x02024638 (both inside the static save
+    blocks' RAM in FireRed rev 0: SaveBlock1 0x0202552C, SaveBlock2 0x02024588) - checked with the game's SendMonToPC
+    (`unbound_boxes` fixture). The record is `struct CompressedPokemon`, packed, plaintext: personality 0x00, otId 0x04,
+    nickname 0x08, language 0x12, sanity 0x13, OT name 0x14, markings 0x1B, species 0x1C, item 0x1E, exp 0x20, PP bonuses
+    0x24, friendship 0x25, ball 0x26, four 10-bit moves 0x27 (5 bytes), EVs 0x2C, pokérus 0x32, met location 0x33, met
+    info 0x34, IVs word 0x36 (vanilla's bits; no PP: the game works it out from gBattleMoves). The companion already reads
+    it (`BoxRecordFormat.CFRU`, `decodeBoxMon`).
+  - Still to map: the bag (CFRU's own pockets and sizes), the Pokédex flags (999+ species), where TMs 51+ sit as items.
+  - Rules: CFRU's tables are configs with `EvoScheme.CFRU` (16 evolutions per species), its own learnset shape and move ids
+    past 511; `RomGen3Rules` needs those shapes.
+  The player's Unbound and Radical Red saves have nothing in the PC: deposit some headless (the game's SendMonToPC, as
+  `unbound_boxes`), save in game (START > SAVE), and check every box's place in the file before writing anything.
 - **pokeemerald-expansion hacks (Lazarus, Seaglass, SoulGold, Heart and Soul, Imperium, TMT2, Elite Redux, Wishes, ...)**:
   their party records differ per build (language + flags at +0x12, the Mint nature bits, 21-bit EXP in 1.10+), species
   ids past 1000 and their tables are expansion's (gSpeciesInfo, u32 TM lists). Each needs its record layout in
   `Gen3BoxMon` and a rules reader for gSpeciesInfo. Probably one per expansion version.
-- **Clover**: no species name table found by the scan (FireRed under an Emerald header; names elsewhere).
+- **Clover**: FireRed's code under an Emerald header; its tables follow fine (`InPlaceBase.FIRERED_REV0`), but its bag
+  moved (gBagPockets 0x0203988C -> 0x02026DC0: Items 190, Key 30, Balls 26, TMs 58, Berries 52; `native-capture/boot/clover.txt`)
+  and there's no save of its own to check the rest of SaveBlock1 against: play one headless and save in game first.
 - **Let's Go**: 987 species ids, its Pokédex flags out of the save blocks (EWRAM 0x0203C0C8 / 0x0203C133 in RAM): where they
   land in the file isn't mapped.
 - **Elysium (Parts A / B)**: its SaveBlock1 sector 1 is checksummed over 0xFE8+ bytes (data in the sector's tail, past the
