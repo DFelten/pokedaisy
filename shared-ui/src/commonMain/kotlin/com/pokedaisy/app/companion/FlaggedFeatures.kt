@@ -1,5 +1,7 @@
 package com.pokedaisy.app.companion
 
+import kotlin.concurrent.Volatile
+
 /**
  * Batches of features merged but not shown to players yet (the host's FeatureFlags sets these at start: a build
  * property or a marker file on the device). Off, their settings rows are left out ([com.pokedaisy.app.companion.ui.flaggedRows]) and their settings read
