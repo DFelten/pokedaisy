@@ -40,10 +40,17 @@ class Gen2BoxCalls(
     /** wSwitchMonTo / wSwitchMonFrom: the two slots it trades, 0-based. */
     val switchTo: Long = wramx(1, 0xD1EB),
     val switchFrom: Long = wramx(1, 0xD1EC),
+    /** SwapMonAndMail's cart offset and bytes: checked on its own ([switchMatches]), so a miss there leaves the PC's moves on. */
+    val switchSignature: Pair<Long, String>? = null,
 ) {
-    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
-        val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-        rom(off, want.size)?.contentEquals(want) == true
+    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { matches(rom, it) }
+
+    /** The party menu's SWITCH ([swapParty]) is where [switchSignature] says. */
+    fun switchMatches(rom: (Long, Int) -> ByteArray?): Boolean = switchSignature?.let { matches(rom, it) } == true
+
+    private fun matches(rom: (Long, Int) -> ByteArray?, sig: Pair<Long, String>): Boolean {
+        val want = sig.second.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        return rom(sig.first, want.size)?.contentEquals(want) == true
     }
 
     private companion object {
@@ -241,8 +248,8 @@ val GEN2_BOX_CALLS_CRYSTAL = Gen2BoxCalls(
         0x03 * 0x4000L + (0x5B3F - 0x4000) to "3e01cdcb2ffa0bd1a7",   // SendGetMonIntoFromBox: OpenSRAM, the parameter
         0x03 * 0x4000L + (0x6039 - 0x4000) to "21d7dcfa0bd1a72808",   // RemoveMonFromPartyOrBox: wPartyCount, the parameter
         0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521087e", // HandleMap
-        0x14 * 0x4000L + (0x4F62 - 0x4000) to CRYSTAL_SWITCH_CODE,       // SwapMonAndMail
     ) + SAVE_SIGNATURES,
+    switchSignature = 0x14 * 0x4000L + (0x4F62 - 0x4000) to CRYSTAL_SWITCH_CODE,  // SwapMonAndMail
 )
 
 /** German Kristall: Crystal's, RemoveMonFromPartyOrBox a byte earlier, SwapMonAndMail 0x16 bytes earlier. */
@@ -253,8 +260,8 @@ val GEN2_BOX_CALLS_CRYSTAL_DE = Gen2BoxCalls(
         0x03 * 0x4000L + (0x5B3F - 0x4000) to "3e01cdb52ffa0bd1a7",
         0x03 * 0x4000L + (0x6038 - 0x4000) to "21d7dcfa0bd1a72808",
         0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521097e",
-        0x14 * 0x4000L + (0x4F4C - 0x4000) to CRYSTAL_SWITCH_CODE,
     ) + SAVE_SIGNATURES,
+    switchSignature = 0x14 * 0x4000L + (0x4F4C - 0x4000) to CRYSTAL_SWITCH_CODE,
 )
 
 /**
@@ -274,8 +281,8 @@ private fun goldSilverBoxCalls(send: Int, remove: Int, sendCode: String, handleM
         0x05 * 0x4000L + (saveBox - 0x4000) to saveCode[0],           // SaveBox
         0x05 * 0x4000L + (loadBox - 0x4000) to saveCode[1],           // LoadBox
         0x05 * 0x4000L + (saveGame - 0x4000) to saveCode[2],          // SaveGameData
-        0x14 * 0x4000L + (switchMons - 0x4000) to GOLD_SILVER_SWITCH_CODE, // SwapMonAndMail
     ),
+    switchSignature = 0x14 * 0x4000L + (switchMons - 0x4000) to GOLD_SILVER_SWITCH_CODE, // SwapMonAndMail
     at = 0x2566B8,
     curPartySpecies = wramx(1, 0xD004),
     curPartyMon = wramx(1, 0xD005),

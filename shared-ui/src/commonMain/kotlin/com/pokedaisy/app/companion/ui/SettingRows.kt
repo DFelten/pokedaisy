@@ -242,7 +242,7 @@ val SETTING_KEYWORDS: Map<String, String> = mapOf(
     "FLY ON" to "fly on vehicle balloon hot air balloon helicopter zeppelin airship blimp plane airplane aeroplane propeller ride mount bird flight free flight take off",
     "FLIGHT AREA" to "flight area where you've been where you have been anywhere visited seen places limit restrict progress story skip sequence break free flight take off fly over map achievements",
     "FLY STYLE" to "fly style scenic classic flight animation flying over map travel town cutscene bird fly to",
-    "EXP SHARE" to "exp share experience all party team whole party level up faster grinding exp all split full bench",
+    "EXP SHARE" to "exp share experience all party team whole party level up faster grinding exp all split full bench modern",
     "AUTO REFILL" to "auto refill repel repels super max keep away spray wild encounters avoid use another run out wore off again automatic",
     "POKéMON PICTURES" to "pokemon pictures party pictures sprites front sprite icons party icons detailed pictures recognise recognize team images crystal gold silver red blue yellow",
     "ITEM POPUPS" to "item popup obtained got received pickup found item gain toast notice card notification bag new item",

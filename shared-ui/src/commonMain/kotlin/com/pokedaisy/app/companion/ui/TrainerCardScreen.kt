@@ -2,6 +2,7 @@ package com.pokedaisy.app.companion.ui
 
 import com.pokedaisy.app.companion.ui.theme.gbaFocusRing
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.pokedaisy.app.companion.i18n.tr
@@ -184,16 +185,17 @@ private fun FlippingCard(image: ImageBitmap, back: Boolean, modifier: Modifier, 
                     // flips (a disabled clickable drops the focus): a press mid-flip is ignored instead.
                     .focusStart(true)
                     .gbaFocusRing(focused, RectangleShape)
-                    .soundClickable(interactionSource = cardFocus, indication = null) {
-                        if (flipping || flip == null) return@soundClickable
+                    // A card with one side (Red / Blue / Yellow's) stays a focus stop but has nothing to tap: no click sound.
+                    .then(if (flip == null) Modifier.focusable(interactionSource = cardFocus) else Modifier.soundClickable(interactionSource = cardFocus, indication = null) {
+                        if (flipping) return@soundClickable
                         flipping = true
                         scope.launch {
                             squash.animateTo(0f, tween(FLIP_MS, easing = LinearEasing))
-                            flip?.invoke()
+                            flip.invoke()
                             squash.animateTo(1f, tween(FLIP_MS, easing = LinearEasing))
                             flipping = false
                         }
-                    },
+                    }),
             ) {
                 drawImage(image, dstSize = IntSize(image.width * scale, image.height * scale), dstOffset = IntOffset.Zero, filterQuality = FilterQuality.None)
             }

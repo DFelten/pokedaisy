@@ -22,6 +22,10 @@ class Gen2BoxSwapTest {
         // Each cart is checked on its own when it's here (a missing German cart once skipped the English check too).
         assumeTrue("no Crystal cart", en.isFile || de.isFile)
         fun Gen2BoxCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        // The party SWITCH's code is checked on its own (a miss there must leave the PC's moves on).
+        fun Gen2BoxCalls.switchOn(f: File) = f.readBytes().let { rom -> switchMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        if (en.isFile) assertTrue(GEN2_BOX_CALLS_CRYSTAL.switchOn(en))
+        if (de.isFile) assertTrue(GEN2_BOX_CALLS_CRYSTAL_DE.switchOn(de))
         if (en.isFile) {
             assertTrue(GEN2_BOX_CALLS_CRYSTAL.on(en))
             assertFalse(GEN2_BOX_CALLS_CRYSTAL_DE.on(en))
@@ -317,6 +321,7 @@ class Gen2BoxSwapTest {
                 val ok = calls.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) }
                 assertEquals("$name / ${calls.remove.toString(16)}", calls === own, ok)
             }
+            assertTrue(name, own.switchMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) })
         }
         assertTrue(GbField.Gold.boxCalls === GEN2_BOX_CALLS_GOLD && GbField.Silver.boxCalls === GEN2_BOX_CALLS_SILVER)
         assertTrue(GbField.GoldDe.boxCalls === GEN2_BOX_CALLS_GOLD_DE && GbField.SilverDe.boxCalls === GEN2_BOX_CALLS_SILVER_DE)

@@ -662,11 +662,20 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         return field.takeIf { ok }
     }
 
+    @Volatile private var gbSwapCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
+
     /** The Game Boy game's party SWITCH ([com.pokedaisy.app.companion.data.GbField.swapParty]): Red / Blue / Yellow's on the
-     * field's own checked code; Crystal / Gold / Silver's calls the game, its code checked with the PC moves' ([gbBoxField]). */
+     * field's own checked code; Crystal / Gold / Silver's calls the game: the PC moves' code ([gbBoxField]) and SwapMonAndMail's,
+     * checked on its own so a miss there leaves the PC's moves alone. */
     private fun gbPartySwapField(): com.pokedaisy.app.companion.data.GbField? {
         val field = gbField()?.takeIf { it.swapsParty } ?: return null
-        return if (field is com.pokedaisy.app.companion.data.GbField.CrystalEngine) gbBoxField()?.takeIf { it === field } else field
+        if (field !is com.pokedaisy.app.companion.data.GbField.CrystalEngine) return field
+        if (gbBoxField() !== field) return null
+        gbSwapCache?.let { (f, ok) -> if (f === field) return field.takeIf { ok } }
+        val ok = runCatching { field.partySwapMatches { off, len -> MgbaCore.pkRomRead(off, len) } }.getOrElse { return null }
+        Log.i("pokedaisy", "Game Boy party switch: ${if (ok) "code found" else "code not found"}")
+        gbSwapCache = field to ok
+        return field.takeIf { ok }
     }
 
     @Volatile private var gbItemCache: Pair<com.pokedaisy.app.companion.data.GbField, Boolean>? = null
@@ -909,9 +918,11 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             if (a == b || a !in party.party.indices || b !in party.party.indices) return done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED)
             val keyA = party.party[a].personality
             val keyB = party.party[b].personality
-            // Gen 2's mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up first.
+            // Gen 2's mail moves with its Pokemon in the battery RAM (sPartyMail), like the game's own SWITCH: the save is backed up
+            // first. Gen 1's switch never touches the battery RAM, so it needs none.
+            val gen2 = field is com.pokedaisy.app.companion.data.GbField.CrystalEngine
             Thread {
-                if (!gbBoxesBackedUp) {
+                if (gen2 && !gbBoxesBackedUp) {
                     gbBoxesBackedUp = backUpSaveNow(r)
                     if (!gbBoxesBackedUp) return@Thread runOnUiThread { done(com.pokedaisy.app.companion.data.PartySwapResult.FAILED) }
                 }
@@ -919,8 +930,9 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
                     val res = if (busy) com.pokedaisy.app.companion.data.PartySwapResult.NOT_NOW
                     else runCatching { field.swapParty(calls, a, keyA, b, keyB) }
                         .getOrElse { Log.e("pokedaisy", "Game Boy party switch failed", it); com.pokedaisy.app.companion.data.PartySwapResult.FAILED }
-                    // A rewind past it would put the party back in RAM but not the mail in SRAM.
-                    if (res == com.pokedaisy.app.companion.data.PartySwapResult.SWAPPED) MgbaCore.pkRewindDrop()
+                    // A rewind past it would put the party back in RAM but not the mail in SRAM, even after a switch that
+                    // ran and then didn't read back right.
+                    if (gen2 && !busy) MgbaCore.pkRewindDrop()
                     Log.i("pokedaisy", "Game Boy party switch: $res")
                     runOnUiThread { done(res) }
                 }
@@ -2431,6 +2443,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
         if (::engine.isInitialized) engine.shiny.observe(null)
         syncShinyAchievements()
         gbBoxCache = null
+        gbSwapCache = null
         gbItemCache = null
         gbBoxesBackedUp = false
         gbFollowerLead = null

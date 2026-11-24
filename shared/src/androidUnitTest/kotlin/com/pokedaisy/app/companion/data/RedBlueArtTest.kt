@@ -56,7 +56,7 @@ class RedBlueArtTest {
             Triple(GameKind.RED, listOf("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb",
                 "Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb"), POKEDEX_RED),
             Triple(GameKind.YELLOW, listOf("Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb",
-                "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (CGB+SGB Enhanced).gb"), POKEDEX_YELLOW),
+                "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb"), POKEDEX_YELLOW),
         )
         var setsChecked = 0
         try {
@@ -84,7 +84,7 @@ class RedBlueArtTest {
                         checked++
                     }
                 }
-                assertEquals("$game", if (game == GameKind.RED) 38 else 28, checked)
+                assertEquals("$game", if (game == GameKind.RED) 38 else 26, checked)
                 setsChecked++
             }
         } finally { Gen1Dex.rom = null }

@@ -25,7 +25,7 @@ Tap the card to flip it. It folds shut and opens on the other side, like the gam
 
 The back has the extra records the game keeps for you, like your Hall of Fame debut, link battles and trades. What's there depends on the game, the same as on the real card.
 
-Crystal's, Gold's and Silver's cards have no back. Its second page shows the gym leaders instead, with your badges turning on their faces as in the game, and a tap goes back to your status. Its Pokédex line shows once you have the Pokédex.
+Crystal's, Gold's and Silver's cards have no back. Their second page shows the gym leaders instead, with your badges turning on their faces as in the game, and a tap goes back to your status. Their Pokédex line shows once you have the Pokédex.
 
 Red's, Blue's and Yellow's card is one screen with nothing on the other side, so it doesn't flip. It shows your name, money and play time over the eight gym leaders, with a badge in place of each one you've beaten.
 

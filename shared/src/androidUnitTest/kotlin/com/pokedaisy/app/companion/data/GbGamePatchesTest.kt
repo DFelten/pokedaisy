@@ -81,7 +81,8 @@ class GbGamePatchesTest {
     fun `EXP SHARE MODERN on Red, Blue and Yellow - four hooks into GainExperience's bank, the line in the cart's language`() {
         val carts = listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb",
             "Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", "Pokemon - Blue Version (USA, Europe) (SGB Enhanced).gb",
-            "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb")
+            "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb",
+            "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb")
         var seen = 0
         fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
         for (name in carts) {

@@ -493,7 +493,7 @@ private val GEN1_RED_BLUE_GAPS: Map<Int, IntArray> = mapOf(
 )
 private val GEN1_YELLOW_GAPS: Map<Int, IntArray> = mapOf(
     19 to intArrayOf(35, 26), 26 to intArrayOf(44, 41), 48 to intArrayOf(32, 22, 27, 21), 71 to intArrayOf(41, 17), 72 to intArrayOf(22, 43), 84 to intArrayOf(31, 14, 30, 41), 85 to intArrayOf(21, 6, 30, 6), 87 to intArrayOf(22, 25),
-    99 to intArrayOf(25, 16, 30, 16, 42, 18), 126 to intArrayOf(16, 29),
+    99 to intArrayOf(42, 18), 126 to intArrayOf(16, 29),
     127 to intArrayOf(10, 26, 46, 23), 128 to intArrayOf(41, 12), 134 to intArrayOf(39, 23), 142 to intArrayOf(24, 43, 22, 44), 144 to intArrayOf(20, 36), 149 to intArrayOf(19, 5, 45, 9, 42, 19),
     150 to intArrayOf(35, 15), 151 to intArrayOf(15, 44, 34, 46),
 )

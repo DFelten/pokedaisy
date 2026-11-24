@@ -356,7 +356,7 @@ class Gen1ItemUseTest {
         g.party(30 to 50)
         g.bag(0x14 to 1, 0x4C to 1)
         val out = GEN1_ITEM_CALLS_RED_DE.use(g, 0x4C, null, 0)
-        assertEquals(ItemUseResult.IN_GAME, out.result)
+        assertEquals(ItemUseResult.USED, out.result)
         val (entry, code) = GEN1_ITEM_CALLS_RED_DE.game.routine(0x4C, 1, GEN1_ITEM_CALLS_RED_DE.whichPokemon, GEN1_ITEM_CALLS_RED_DE.bike.statusFlags6)
         assertEquals(listOf(entry), g.called)
         assertTrue(g.read(Gen1GameUse.ROUTINE.toLong(), code.size).contentEquals(code))
@@ -386,7 +386,7 @@ class Gen1ItemUseTest {
         assertFalse(calls.game.evolvesWith(g, 0x99, 0x0A, 50))
 
         assertEquals(ItemUseResult.NO_EFFECT, calls.use(g, 0x28, on(g, 1), 0).result)
-        assertEquals(ItemUseResult.TEACHING, calls.use(g, 0x28, on(g, 0), 0).result)
+        assertEquals(ItemUseResult.USING_IN_GAME, calls.use(g, 0x28, on(g, 0), 0).result)
         val (entry, code) = calls.game.routine(0x28, 1, calls.whichPokemon, calls.bike.statusFlags6, 0, 0x99)
         assertEquals(listOf(entry), g.called)
         assertTrue(g.read(Gen1GameUse.ROUTINE.toLong(), code.size).contentEquals(code))

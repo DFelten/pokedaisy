@@ -930,8 +930,10 @@ private const val SHINY_PICTURE = 1 shl 20
 internal fun pokemonPicture(
     t: com.pokedaisy.app.companion.data.PokedexTables, species: Int, cached: Boolean, topLeft: Boolean = false, shiny: Boolean = false,
 ): com.pokedaisy.app.companion.data.RomArt.Image? {
-    // Gold and Silver share their tables but not their pictures (nor their gaps); Gen 1's gaps go by game too.
-    val owner: Any = if (t.gen2 != null || t.gen1 != null) t to com.pokedaisy.app.companion.data.activeGame else t
+    // Gold and Silver share their tables but not their pictures (nor their gaps); Gen 1's gaps go by game too. One read of
+    // the game for both, so a game switch in between can't file one game's gaps under the other's key.
+    val game = com.pokedaisy.app.companion.data.activeGame
+    val owner: Any = if (t.gen2 != null || t.gen1 != null) t to game else t
     val key = Triple(owner, if (shiny) species or SHINY_PICTURE else species, topLeft)
     pokemonPictureCache[key]?.let { return it }
     // A game with no shiny pictures (only Gen 2 has them here) shows its usual one.
@@ -941,7 +943,6 @@ internal fun pokemonPicture(
         cached -> PokedexSource.cachedFrontSprite(t, species)
         else -> PokedexSource.frontSprite(t, species)
     } ?: return null
-    val game = com.pokedaisy.app.companion.data.activeGame
     val gaps = when {
         t.gen2 != null -> com.pokedaisy.app.companion.data.gen2PictureGaps(game, species)
         t.gen1 != null -> com.pokedaisy.app.companion.data.gen1PictureGaps(game, t.gen1!!, species)

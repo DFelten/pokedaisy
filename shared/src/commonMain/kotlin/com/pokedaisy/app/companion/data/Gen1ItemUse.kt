@@ -266,19 +266,21 @@ class Gen1ItemCalls(
 
     /**
      * USE of an [inGame] item: [Gen1GameUse.routine] written where the loop's call goes, once the call is set up. The rest
-     * is the game's (the party pick, the item spent, a bite or a warp), so this only says it opened.
+     * is the game's (its text, the item spent, a bite or a warp), so this says USED, as Crystal's items that only print text
+     * do: there's nothing to pick on the game's screen.
      */
     fun openInGame(g: GameCalls, itemId: Int): ItemUseOutcome {
         val slot = bagSlot(g, itemId).takeIf { it >= 0 } ?: return ItemUseOutcome(ItemUseResult.NONE_LEFT)
         val (entry, code) = game.routine(itemId, slot, whichPokemon, bike.statusFlags6)
         if (!g.gbCallAt(at, entry, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
         g.write(Gen1GameUse.ROUTINE.toLong(), code)
-        return ItemUseOutcome(ItemUseResult.IN_GAME)
+        return ItemUseOutcome(ItemUseResult.USED)
     }
 
     /**
      * RARE CANDY, a vitamin or a stone on [target]: [Gen1GameUse.routine] runs the game's own routine past its party menu.
-     * The rest is the game's (its text, the level-up, the evolution, the item spent), so this says it started: TEACHING.
+     * The rest is the game's (its text, the level-up, the evolution, the item spent), so this says it started:
+     * USING_IN_GAME, as Crystal's RARE CANDY and stones (the window closes for it).
      */
     fun playOn(g: GameCalls, itemId: Int, target: PartyTarget): ItemUseOutcome {
         if (itemId !in PICKED) return ItemUseOutcome(ItemUseResult.FAILED)
@@ -290,7 +292,7 @@ class Gen1ItemCalls(
         val (entry, code) = game.routine(itemId, bag, whichPokemon, bike.statusFlags6, slot, u8(p.mons, slot * MON_SIZE))
         if (!g.gbCallAt(at, entry, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
         g.write(Gen1GameUse.ROUTINE.toLong(), code)
-        return ItemUseOutcome(ItemUseResult.TEACHING)
+        return ItemUseOutcome(ItemUseResult.USING_IN_GAME)
     }
 
     /** USE of a Repel on the spot. */
