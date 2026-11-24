@@ -12,7 +12,7 @@ On an original Nintendo 3DS or 2DS, the game and companion share a small amount 
 
 When the app runs as the CIA, `GBA CORE: AUTO` already plays GBA games on `GPSP` here, an experimental core that is faster on these models than `ARMGBA`. To compare, select your game in the library, press **X** and pick another `GBA CORE`. Keep the same game, save and view when comparing two cores. A started `.3dsx` has room for a 16 MiB game only, so `AUTO` stays on `ARMGBA` there.
 
-For a separate display comparison, try `SCREEN: PIXEL 1x` without EXPAND. It avoids the extra scaling pass used by the sharper enlarged views. You can switch back if you prefer the larger picture.
+For a separate display comparison, try `VIEW: SHARP 1.5x` instead of an `EXPAND` view. It draws only the game's own picture, not the map past its edges. You can switch back if you prefer the wider view.
 
 For a 32 MiB game, start the CIA from the HOME Menu. The memory available to a Homebrew Launcher app depends on how you started the launcher. A failure to reserve enough memory is reported before the game starts.
 
