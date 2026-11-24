@@ -1176,9 +1176,15 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     move and its base PP; a TM is spent, an HM stays (checked on the field first); Yellow's starter gets PIKAHAPPY_USEDTMHM and THUNDERBOLT
     / THUNDER's mood. The BICYCLE (ItemUseBicycle): not surfing, not off where BIT_ALWAYS_ON_BIKE holds the player on it, on only where
     IsBikeRidingAllowed (ROUTE 23, INDIGO PLATEAU, BikeRidingTilesets read from the cart); wWalkBikeSurfState written, then PlayDefaultMusic
-    and LoadPlayerSpriteGraphics called from the loop; Yellow's Pikachu back on getting off. Left out: the vitamins, RARE CANDY, the stones,
-    the rods, the ESCAPE ROPE, GIVE / TAKE (Gen 1 has no held items). English Red is pokered's build (= the cart); Blue shares its code. The
+    and LoadPlayerSpriteGraphics called from the loop; Yellow's Pikachu back on getting off. The vitamins, RARE CANDY, the stones, the rods
+    and the ESCAPE ROPE (`Gen1GameUse`) run the game's own UseItem: a routine in the stack section's bottom (0xDF1A, past Yellow's CGB
+    palette buffer) calls DisplayTextIDInit, sets wPseudoItemID 0 / wCurItem / wWhichPokemon = the bag slot and jumps to UseItem with the
+    return pointed at the start menu's closing rebuilt inline (CloseTextDisplay's body: it ends in `pop af`); a bite (wCurOpponent) or a
+    warp (wStatusFlags6 FLY_WARP / DUNGEON_WARP) leaves the closing to the overworld loop. Its party menu, evolution, level-up, learned
+    moves and the bag are the game's. Left out: GIVE / TAKE (Gen 1 has no held items). English Red is pokered's build (= the cart); Blue shares its code. The
     removal was run headless on the German Red cart (three POTIONs out one by one, the emptied slot closed up, the game running on), and
-    the BICYCLE there (on in Vermilion City with the bike sprite and speed, then off); Yellow and English Red only by their code (no save
+    the BICYCLE there (on in Vermilion City with the bike sprite and speed, then off), and the game's own UseItem on German Red (a stone's
+    evolution, HP UP, B on its party menu, the OLD ROD's bite and battle, the ESCAPE ROPE's warp, RARE CANDY learning a move) and German
+    Yellow (the rope, a stone, RARE CANDY forgetting a move; the partner back behind the player); Yellow and English Red only by their code (no save
     here). `Gen1ItemUseTest`.
 

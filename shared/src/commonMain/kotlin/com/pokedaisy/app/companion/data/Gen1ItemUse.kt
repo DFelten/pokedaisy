@@ -34,8 +34,9 @@ package com.pokedaisy.app.companion.data
  *   BikeRidingTilesets), then PlayDefaultMusic and LoadPlayerSpriteGraphics (which the game's text box closing runs) from
  *   the loop; Yellow's Pikachu comes back on getting off (PIKACHU_SPAWN_DEFAULT).
  *
- * Left out: the vitamins, RARE CANDY and the stones (their stats / evolution are the game's own sums and screens), the
- * rods and the ESCAPE ROPE.
+ * - RARE CANDY, the stones, the vitamins, the rods and the ESCAPE ROPE ([inGame]): their stats, evolution, move learning,
+ *   bites and warps are the game's own sums and screens, so the game's own UseItem runs them from the start menu's way in
+ *   ([Gen1GameUse]); the companion window gets out of its way and the game takes it from there.
  */
 class Gen1ItemCalls(
     /** OverworldLoopLessDelay past its `call DelayFrame`: where a call is injected. */
@@ -53,18 +54,20 @@ class Gen1ItemCalls(
     val pikachu: Gen1PikachuItems? = null,
     val machines: Gen1Machines,
     val bike: Gen1Bike,
+    /** The start menu's way into UseItem, for the [inGame] items. */
+    val game: Gen1GameUse,
     val signatures: List<Pair<Long, String>>,
 ) : GbBagUse {
     override fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
         val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         rom(off, want.size)?.contentEquals(want) == true
-    }
+    } && game.codeMatches(rom)
 
-    override fun usable(itemId: Int) = itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
+    override fun usable(itemId: Int) = inGame(itemId) || itemId in HP_ITEMS || itemId in STATUS_ITEMS || itemId == FULL_RESTORE ||
         itemId in REVIVES || itemId in PP_ONE_MOVE || itemId in PP_ALL_MOVES || itemId == PP_UP || itemId in REPELS ||
         tmIndex(itemId) >= 0 || itemId == BICYCLE
-    override fun inGame(itemId: Int) = false
-    override fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && itemId != BICYCLE
+    override fun inGame(itemId: Int) = itemId in IN_GAME
+    override fun picksMon(itemId: Int) = usable(itemId) && itemId !in REPELS && itemId != BICYCLE && !inGame(itemId)
     override fun picksMove(itemId: Int) = itemId in PP_ONE_MOVE || itemId == PP_UP || tmIndex(itemId) >= 0
 
     private val partyMons get() = partyCount + 8
@@ -189,6 +192,7 @@ class Gen1ItemCalls(
     override fun use(g: GameCalls, itemId: Int, target: PartyTarget?, moveIndex: Int): ItemUseOutcome = when {
         target != null -> if (tmIndex(itemId) >= 0) teach(g, itemId, target, moveIndex) else useOn(g, itemId, target, moveIndex)
         itemId == BICYCLE -> useBike(g)
+        inGame(itemId) -> openInGame(g, itemId)
         else -> useRepel(g, itemId)
     }
 
@@ -239,6 +243,18 @@ class Gen1ItemCalls(
         if (!(0 until SETTLE_TRIES).any { g.gbCallAt(at, b.loadPlayerSpriteGraphics, 0, 0, 0) }) return ItemUseOutcome(ItemUseResult.FAILED)
         if (!settle(g)) return ItemUseOutcome(ItemUseResult.FAILED)
         return ItemUseOutcome(ItemUseResult.USED)
+    }
+
+    /**
+     * USE of an [inGame] item: [Gen1GameUse.routine] written where the loop's call goes, once the call is set up. The rest
+     * is the game's (the party pick, the item spent, a bite or a warp), so this only says it opened.
+     */
+    fun openInGame(g: GameCalls, itemId: Int): ItemUseOutcome {
+        val slot = bagSlot(g, itemId).takeIf { it >= 0 } ?: return ItemUseOutcome(ItemUseResult.NONE_LEFT)
+        val (entry, code) = game.routine(itemId, slot, whichPokemon, bike.statusFlags6)
+        if (!g.gbCallAt(at, entry, 0, 0, 0)) return ItemUseOutcome(ItemUseResult.FAILED)
+        g.write(Gen1GameUse.ROUTINE.toLong(), code)
+        return ItemUseOutcome(ItemUseResult.IN_GAME)
     }
 
     /** USE of a Repel on the spot. */
@@ -351,6 +367,11 @@ class Gen1ItemCalls(
             in HM01 until TM01 -> NUM_TMS + itemId - HM01
             else -> -1
         }
+        /**
+         * The items the game's own UseItem runs ([Gen1GameUse]): MOON STONE, ESCAPE ROPE, FIRE / THUNDER / WATER STONE, HP UP,
+         * PROTEIN, IRON, CARBOS, CALCIUM, RARE CANDY, LEAF STONE, OLD / GOOD / SUPER ROD.
+         */
+        val IN_GAME = setOf(0x0A, 0x1D, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x2F, 0x4C, 0x4D, 0x4E)
         /** REPEL, SUPER REPEL, MAX REPEL and their steps. */
         val REPELS = mapOf(0x1E to 100, 0x38 to 200, 0x39 to 250)
     }
@@ -444,6 +465,95 @@ class Gen1Machines(
     }
 }
 
+/**
+ * The start menu's way into an item's own routine (StartMenu_Item's USE): DisplayTextIDInit (bank 1, else the party menu
+ * draws over the map), then UseItem with wCurItem, wWhichPokemon = its place in the bag (RemoveUsedItem goes by it) and
+ * wPseudoItemID 0. UseItem opens the party menu itself and runs the stats, evolution, level-up and move screens. Back on
+ * the field the start menu's closing: GBPalWhiteOutWithDelay3, RestoreScreenTilesAndReloadTilePatterns (the sprites' tiles,
+ * the SGB / Color palettes), then CloseTextDisplay's body (it can't be called: it ends on DisplayTextID's `pop af`). A
+ * bite (wCurOpponent) returns at once and a warp (wStatusFlags6's FLY_WARP / DUNGEON_WARP: the ESCAPE ROPE) skips the
+ * list's closing and, as CloseTextDisplay does, the player's sprite: the overworld loop checks both right after the call
+ * and starts the battle or the warp itself.
+ *
+ * The routine is written at [ROUTINE], the stack's far end: checked headless on German Red and Yellow with the deepest of
+ * them, an evolution and a move to forget.
+ */
+class Gen1GameUse(
+    val bankswitch: Int,
+    /** DisplayTextIDInit, bank 1. */
+    val textIdInit: Int,
+    val useItem: Int,
+    val whiteOutWithDelay3: Int,
+    val restoreScreenTiles: Int,
+    val loadGbPal: Int,
+    /** InitMapSprites: in bank 5 on Red / Blue ([initMapSpritesBank]), a home homecall on Yellow (bank 0). */
+    val initMapSprites: Int,
+    val initMapSpritesBank: Int,
+    val loadPlayerSpriteGraphics: Int,
+    val loadCurrentMapView: Int,
+    val updateSprites: Int,
+    val curItem: Long,
+    val pseudoItemId: Long,
+    val curOpponent: Long,
+    val fontLoaded: Long,
+    val updateSpritesEnabled: Long,
+    val signatures: List<Pair<Long, String>>,
+) {
+    fun codeMatches(rom: (Long, Int) -> ByteArray?): Boolean = signatures.all { (off, hex) ->
+        val want = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        rom(off, want.size)?.contentEquals(want) == true
+    }
+
+    /**
+     * The routine for [itemId] at bag place [slot], written at [ROUTINE]: the closing first, then the way in, which pushes
+     * the closing's address and jumps to UseItem, so UseItem returns into the closing. Only the closing has to outlast
+     * UseItem, so it sits lowest, farthest from the stack. Returns (where the call goes, the bytes).
+     */
+    fun routine(itemId: Int, slot: Int, whichPokemon: Long, statusFlags6: Long): Pair<Int, ByteArray> {
+        val b = ArrayList<Int>()
+        fun le(x: Long) { b += (x and 0xFF).toInt(); b += ((x shr 8) and 0xFF).toInt() }
+        fun call(x: Int) { b += 0xCD; le(x.toLong()) }
+        fun far(bank: Int, x: Int) { if (bank == 0) call(x) else { b += 0x06; b += bank; b += 0x21; le(x.toLong()); call(bankswitch) } }
+        // The closing.
+        b += 0xFA; le(curOpponent); b += 0xA7; b += 0xC0                 // a bite: ret nz
+        b += 0xFA; le(statusFlags6); b += 0xE6; b += WARPS; b += 0x20; b += 0x06  // a warp: past the list's closing
+        call(whiteOutWithDelay3)
+        call(restoreScreenTiles)
+        b += 0x3E; b += 0x90; b += 0xE0; b += H_WY                       // the window off the screen
+        call(loadGbPal)
+        b += 0xAF; b += 0xE0; b += H_AUTO_BG_TRANSFER
+        far(initMapSpritesBank, initMapSprites)
+        b += 0x21; le(fontLoaded); b += 0xCB; b += 0x86                  // res BIT_FONT_LOADED, [hl]
+        b += 0xFA; le(statusFlags6); b += 0xCB; b += 0x5F                // bit BIT_FLY_WARP, a
+        b += 0xCC; le(loadPlayerSpriteGraphics.toLong())                 // call z, LoadPlayerSpriteGraphics
+        call(loadCurrentMapView)
+        b += 0x3E; b += 0x01; b += 0xEA; le(updateSpritesEnabled)
+        call(updateSprites)
+        b += 0xC9
+        // The way in.
+        val entry = ROUTINE + b.size
+        far(1, textIdInit)
+        b += 0xAF; b += 0xEA; le(pseudoItemId)                           // xor a; ld [wPseudoItemID], a
+        b += 0x3E; b += itemId; b += 0xEA; le(curItem)                   // ld a, item; ld [wCurItem], a
+        b += 0x3E; b += slot; b += 0xEA; le(whichPokemon)                // ld a, slot; ld [wWhichPokemon], a
+        b += 0x21; le(ROUTINE.toLong()); b += 0xE5                       // ld hl, the closing; push hl
+        b += 0xC3; le(useItem.toLong())                                  // jp UseItem
+        return entry to ByteArray(b.size) { b[it].toByte() }
+    }
+
+    companion object {
+        /**
+         * The stack's far end (it grows down from 0xDFFF): Yellow's colour palette buffer ends at 0xDF19 in German (0xDF14 in
+         * English), Red's box data before 0xDEE7. RARE CANDY with a move to forget, the deepest, reached 0xDF91 on German Yellow.
+         */
+        const val ROUTINE = 0xDF1A
+        private const val H_WY = 0xB0
+        private const val H_AUTO_BG_TRANSFER = 0xBA
+        /** wStatusFlags6's BIT_FLY_WARP and BIT_DUNGEON_WARP. */
+        private const val WARPS = 0x18
+    }
+}
+
 /** The BICYCLE: the home bank's PlayDefaultMusic / LoadPlayerSpriteGraphics / BikeRidingTilesets and their RAM. */
 class Gen1Bike(
     val playDefaultMusic: Int,
@@ -487,6 +597,22 @@ val GEN1_ITEM_CALLS_RED = Gen1ItemCalls(
         mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
     bike = Gen1Bike(playDefaultMusic = 0x2307, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
         curMap = 0xD35EL, curMapTileset = 0xD367L, walkBikeSurfState = 0xD700L, statusFlags6 = 0xD732L),
+    game = Gen1GameUse(bankswitch = 0x35D6, textIdInit = 0x7096, useItem = 0x30BC, whiteOutWithDelay3 = 0x3DD4,
+        restoreScreenTiles = 0x3DBE, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
+        curItem = 0xCF91L, pseudoItemId = 0xD152L, curOpponent = 0xD059L, fontLoaded = 0xCFC4L, updateSpritesEnabled = 0xCFCBL,
+        signatures = listOf(
+            0x35D6L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x7096 - 0x4000) to "afea94cffa0ccfcb",
+            0x30BCL to "060321c755c3d635",
+            0x3DD4L to "cde53d0e03c33937",
+            0x3DBEL to "cd82003e01eacbcf",
+            0x20BAL to "fa5dd3472116217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa2bd5e0b8",
+            0x2429L to "facbcf3dc0f0b8f5",
+        ),
+    ),
     signatures = listOf(
         0x2BBBL to "f0b8f53e03e0b8ea0020cd744ef1e0b8",           // RemoveItemFromInventory: homecall bank 3
         0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa92cfcb27856f30012423fa96cf",   // RemoveItemFromInventory_
@@ -510,6 +636,22 @@ val GEN1_ITEM_CALLS_RED_DE = Gen1ItemCalls(
         mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
     bike = Gen1Bike(playDefaultMusic = 0x2307, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
         curMap = 0xD363L, curMapTileset = 0xD36CL, walkBikeSurfState = 0xD705L, statusFlags6 = 0xD737L),
+    game = Gen1GameUse(bankswitch = 0x35F0, textIdInit = 0x70B6, useItem = 0x30D6, whiteOutWithDelay3 = 0x3DEE,
+        restoreScreenTiles = 0x3DD8, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
+        curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        signatures = listOf(
+            0x35F0L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x70B6 - 0x4000) to "afea99cffa11cfcb",
+            0x30D6L to "060321c755c3f035",
+            0x3DEEL to "cdff3d0e03c35337",
+            0x3DD8L to "cd82003e01ead0cf",
+            0x20BAL to "fa62d3472116217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa30d5e0b8",
+            0x2429L to "fad0cf3dc0f0b8f5",
+        ),
+    ),
     signatures = listOf(
         0x2BD5L to "f0b8f53e03e0b8ea0020cd744ef1e0b8",
         0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa97cfcb27856f30012423fa9bcf",
@@ -537,6 +679,22 @@ val GEN1_ITEM_CALLS_YELLOW = Gen1ItemCalls(
     machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x632D - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x50B1 - 0x4000)),
     bike = Gen1Bike(playDefaultMusic = 0x216B, loadPlayerSpriteGraphics = 0x07D7, bikeRidingTilesets = 0x0822,
         curMap = 0xD35DL, curMapTileset = 0xD366L, walkBikeSurfState = 0xD6FFL, statusFlags6 = 0xD731L),
+    game = Gen1GameUse(bankswitch = 0x3E84, textIdInit = 0x6F0E, useItem = 0x2FE4, whiteOutWithDelay3 = 0x3DD8,
+        restoreScreenTiles = 0x3DC2, loadGbPal = 0x1E6F, initMapSprites = 0x3DBA, initMapSpritesBank = 0,
+        loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x231C,
+        curItem = 0xCF90L, pseudoItemId = 0xD151L, curOpponent = 0xD058L, fontLoaded = 0xCFC3L, updateSpritesEnabled = 0xCFCAL,
+        signatures = listOf(
+            0x3E84L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x6F0E - 0x4000) to "afea93cffa0ccfcb",
+            0x2FE4L to "060321ed52c3843e",
+            0x3DD8L to "cdf23d0e03c32f37",
+            0x3DC2L to "cd82003e01eacacf",
+            0x1E6FL to "fa5cd34721e61e7d",
+            0x3DBAL to "211b400605c3843e",
+            0x0B06L to "f0b8f5fa2ad5cd7e",
+            0x231CL to "facacf3dc0f0b8f5",
+        ),
+    ),
     signatures = listOf(
         0x2ABDL to "f0b8f53e3dcd7e3ecde15bf1cd7e3ec9",           // RemoveItemFromInventory: homecall bank 0x3D
         0x3D * 0x4000L + (0x5BE1 - 0x4000) to "e523fa91cf87856f30012423fa95cf",     // RemoveItemFromInventory_
@@ -562,6 +720,22 @@ val GEN1_ITEM_CALLS_YELLOW_DE = Gen1ItemCalls(
     machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x632E - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x5023 - 0x4000)),
     bike = Gen1Bike(playDefaultMusic = 0x2170, loadPlayerSpriteGraphics = 0x07D7, bikeRidingTilesets = 0x0822,
         curMap = 0xD362L, curMapTileset = 0xD36BL, walkBikeSurfState = 0xD704L, statusFlags6 = 0xD736L),
+    game = Gen1GameUse(bankswitch = 0x3E89, textIdInit = 0x6F10, useItem = 0x2FE9, whiteOutWithDelay3 = 0x3DDD,
+        restoreScreenTiles = 0x3DC7, loadGbPal = 0x1E74, initMapSprites = 0x3DBF, initMapSpritesBank = 0,
+        loadPlayerSpriteGraphics = 0x07D7, loadCurrentMapView = 0x0B06, updateSprites = 0x2321,
+        curItem = 0xCF95L, pseudoItemId = 0xD156L, curOpponent = 0xD05DL, fontLoaded = 0xCFC8L, updateSpritesEnabled = 0xCFCFL,
+        signatures = listOf(
+            0x3E89L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x6F10 - 0x4000) to "afea98cffa11cfcb",
+            0x2FE9L to "060321ed52c3893e",
+            0x3DDDL to "cdf73d0e03c33437",
+            0x3DC7L to "cd82003e01eacfcf",
+            0x1E74L to "fa61d34721eb1e7d",
+            0x3DBFL to "211b400605c3893e",
+            0x0B06L to "f0b8f5fa2fd5cd83",
+            0x2321L to "facfcf3dc0f0b8f5",
+        ),
+    ),
     signatures = listOf(
         0x2AC2L to "f0b8f53e3dcd833ecdda5bf1cd833ec9",
         0x3D * 0x4000L + (0x5BDA - 0x4000) to "e523fa96cf87856f30012423fa9acf",
