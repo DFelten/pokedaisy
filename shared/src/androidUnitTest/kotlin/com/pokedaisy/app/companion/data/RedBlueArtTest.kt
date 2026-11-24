@@ -45,6 +45,52 @@ class RedBlueArtTest {
         other.deleteRecursively()
     }
 
+    /**
+     * Every [gen1PictureGaps] pixel sits in a closed see-through area of its cart's front picture (one the border can't
+     * reach): a moved picture or a typo would leave a belly or a face see-through instead. Each picture set is checked
+     * on whichever of its carts this machine has (the German ones share the English pictures).
+     */
+    @Test
+    fun `picture gaps are closed areas of each cart's picture`() {
+        val sets = listOf(
+            Triple(GameKind.RED, listOf("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb",
+                "Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb"), POKEDEX_RED),
+            Triple(GameKind.YELLOW, listOf("Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb",
+                "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (CGB+SGB Enhanced).gb"), POKEDEX_YELLOW),
+        )
+        var setsChecked = 0
+        try {
+            for ((game, names, dex) in sets) {
+                val f = names.map { File(gbc, it) }.firstOrNull { it.isFile } ?: continue
+                Gen1Dex.rom = f.readBytes()
+                var checked = 0
+                for (s in 1..151) {
+                    val gaps = gen1PictureGaps(game, s) ?: continue
+                    val px = Gen1Dex.frontPixels(dex.gen1!!, s)!!
+                    for (k in 0 until gaps.size / 2) {
+                        val start = gaps[2 * k + 1] * 56 + gaps[2 * k]
+                        assertEquals("$game $s: not see-through", 0, px[start] ushr 24)
+                        val seen = HashSet<Int>(); val stack = ArrayDeque(listOf(start)); var edge = false
+                        while (stack.isNotEmpty()) {
+                            val i = stack.removeLast()
+                            if (!seen.add(i)) continue
+                            val x = i % 56; val y = i / 56
+                            if (x == 0 || y == 0 || x == 55 || y == 55) edge = true
+                            for ((nx, ny) in listOf(x - 1 to y, x + 1 to y, x to y - 1, x to y + 1))
+                                if (nx in 0..55 && ny in 0..55 && px[ny * 56 + nx] ushr 24 == 0) stack.add(ny * 56 + nx)
+                        }
+                        assertTrue("$game $s: reaches the border", !edge)
+                        assertTrue("$game $s: ${seen.size} pixels", seen.size >= 3)
+                        checked++
+                    }
+                }
+                assertEquals("$game", if (game == GameKind.RED) 38 else 28, checked)
+                setsChecked++
+            }
+        } finally { Gen1Dex.rom = null }
+        assumeTrue("no Red, Blue or Yellow cart on this machine", setsChecked > 0)
+    }
+
     @Test
     fun `party icons and the town map in the game's colours`() {
         val icons = Gen1Art.icons(red(), Gen1Art.RED)
