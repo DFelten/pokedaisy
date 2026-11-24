@@ -15,7 +15,7 @@ object SavesLocation {
      * one (see Settings > Folders), else this app's own private files/saves/. */
     fun dir(context: Context, prefs: Prefs = Prefs(context)): File {
         val override = prefs.savesDirOverride
-        val dir = if (!override.isNullOrBlank()) File(override) else File(context.getExternalFilesDir(null), "saves")
+        val dir = if (!override.isNullOrBlank()) File(override) else File(AppStorage.root(context), "saves")
         dir.mkdirs()
         return dir
     }

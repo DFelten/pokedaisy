@@ -344,10 +344,10 @@ class LibraryActivity : ComponentActivity() {
         com.pokedaisy.app.companion.i18n.L10n.apply(prefs.appLanguage, null)
         // Signs the saved RetroAchievements account in (INFO shows its progress per game).
         com.pokedaisy.app.achievements.RetroAchievements.init(this)
-        romsDir = File(getExternalFilesDir(null), "roms").apply { mkdirs() }
-        coversDir = File(getExternalFilesDir(null), "covers").apply { mkdirs() }
+        romsDir = File(AppStorage.root(this), "roms").apply { mkdirs() }
+        coversDir = File(AppStorage.root(this), "covers").apply { mkdirs() }
         // Next to roms/ (same volume, so accepting an import is a rename).
-        importDir = File(getExternalFilesDir(null), "import").apply { mkdirs() }
+        importDir = File(AppStorage.root(this), "import").apply { mkdirs() }
 
         // If launched via VIEW (open a .gba with the app), import + play it.
         if (intent?.action == Intent.ACTION_VIEW) {

@@ -79,7 +79,7 @@ class SaveStates(statesRoot: File, romCrc: String) {
     companion object {
         /** The app's own states folder: `<external files>/states` (internal files where there's no external storage). */
         fun defaultRoot(context: android.content.Context): File =
-            File(context.getExternalFilesDir(null) ?: context.filesDir, "states")
+            File(AppStorage.root(context), "states")
 
         /** Where every game's states folder is: the player's SAVE STATES folder while it can be written to, else
          * [defaultRoot]. A folder that went away (an SD card out) never takes the states with it: the default is used meanwhile. */

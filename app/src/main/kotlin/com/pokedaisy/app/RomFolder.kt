@@ -91,7 +91,7 @@ object RomFolder {
     }
 
     private fun importedRoms(context: Context): List<File> =
-        File(context.getExternalFilesDir(null), "roms").listFiles { f ->
+        File(AppStorage.root(context), "roms").listFiles { f ->
             f.isFile && f.name.substringAfterLast('.', "").lowercase() in EXTENSIONS
         }?.toList().orEmpty()
 

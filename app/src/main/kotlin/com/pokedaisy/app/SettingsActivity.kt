@@ -232,7 +232,7 @@ class SettingsActivity : ComponentActivity() {
     /** The window's size (px), for TOUCH CONTROLS' stand-in of the game's screen. */
     private var rootSize by mutableStateOf(androidx.compose.ui.unit.IntSize(1920, 1080))
 
-    private val filesRoot get() = getExternalFilesDir(null) ?: filesDir
+    private val filesRoot get() = AppStorage.root(this)
 
     /** The game's screen's width / height: this one, or the second screen with SWAP SCREENS on. */
     private fun gameScreenAspect(): Float =

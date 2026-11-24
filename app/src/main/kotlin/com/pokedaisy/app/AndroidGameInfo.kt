@@ -117,7 +117,7 @@ object AndroidGameInfo {
     }
 
     private fun coverFile(context: Context, rom: File) =
-        File(File(context.getExternalFilesDir(null) ?: context.filesDir, "covers"), "${rom.name}.png")
+        File(File(AppStorage.root(context), "covers"), "${rom.name}.png")
 
     fun sizeLabel(bytes: Long): String = when {
         bytes >= 1 shl 20 -> "%.1f MB".format(bytes / 1048576.0)
