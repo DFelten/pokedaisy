@@ -13,9 +13,11 @@ enum class CardStyle(val hoenn: Boolean, val lang: Char = 'E') { KANTO(false), H
     /** Pokémon Crystal's (and German Kristall's): a Game Boy card of two pages, [Gen2TrainerCard]. */
     CRYSTAL(false),
     /** Gold / Silver's (English and German): Crystal's card with the boy alone, [Gen2TrainerCard]. */
-    GOLD_SILVER(false) }
+    GOLD_SILVER(false),
+    /** Red / Blue's and Yellow's (English and German): one Game Boy screen, [Gen1TrainerCard]. */
+    RED_BLUE(false), RED_BLUE_DE(false, 'D'), YELLOW(false), YELLOW_DE(false, 'D') }
 
-/** A card's art, loaded from rom-art: the GBA cards' [TrainerCardArt.Art] or the Game Boy cards' [Gen2TrainerCard.Art]. */
+/** A card's art, loaded from rom-art: the GBA cards' [TrainerCardArt.Art] or the Game Boy cards' [Gen2TrainerCard.Art] / [Gen1TrainerCard.Art]. */
 interface CardArt { val style: CardStyle }
 
 /**
