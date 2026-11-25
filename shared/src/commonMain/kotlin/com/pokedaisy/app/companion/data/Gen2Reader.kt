@@ -135,6 +135,11 @@ val GEN2_CRYSTAL_DE = GEN2_CRYSTAL.copy(
     switchMenuLeft = 0x0A,
 )
 
+/** French / Italian / Spanish Crystal: English Crystal's RAM; their own names ([CRYSTAL_FR_TEXT] ..), dex pages and battle menu columns. */
+val GEN2_CRYSTAL_FR = GEN2_CRYSTAL_DE.copy(pokedex = POKEDEX_CRYSTAL_FR, language = 'F', gameCode = "BYTF", battleMenuLeft = 0x07, switchMenuLeft = 0x0B)
+val GEN2_CRYSTAL_IT = GEN2_CRYSTAL_DE.copy(pokedex = POKEDEX_CRYSTAL_IT, language = 'I', gameCode = "BYTI", battleMenuLeft = 0x08, switchMenuLeft = 0x0C)
+val GEN2_CRYSTAL_ES = GEN2_CRYSTAL_DE.copy(pokedex = POKEDEX_CRYSTAL_ES, language = 'S', gameCode = "BYTS", battleMenuLeft = 0x07, switchMenuLeft = 0x0C)
+
 /**
  * Crystal Legacy v1.3.1 (cRz-Shadows/Pokemon_Crystal_Legacy, a pret/pokecrystal fork: `make pokecrystal.gbc` with rgbds 0.5.2 at
  * tag V1.3.1 is the patched cart byte for byte, from either retail revision's patch, so its pokecrystal.sym gives every
@@ -219,6 +224,21 @@ val GEN2_GOLD_DE = GEN2_GOLD.copy(
     switchMenuLeft = 0x0A,
 )
 val GEN2_SILVER_DE = GEN2_GOLD_DE.copy(pokedex = POKEDEX_SILVER_DE, gameCode = "AAXD")
+
+/** French / Italian / Spanish Gold and Silver: English Gold's RAM; their own names ([GOLD_SILVER_FR_TEXT] ..), dex pages and battle menu columns. */
+val GEN2_GOLD_FR = GEN2_GOLD_DE.copy(pokedex = POKEDEX_GOLD_FR, language = 'F', gameCode = "AAUF", battleMenuLeft = 0x07, switchMenuLeft = 0x0B)
+val GEN2_SILVER_FR = GEN2_GOLD_FR.copy(pokedex = POKEDEX_SILVER_FR, gameCode = "AAXF")
+val GEN2_GOLD_IT = GEN2_GOLD_DE.copy(pokedex = POKEDEX_GOLD_IT, language = 'I', gameCode = "AAUI", battleMenuLeft = 0x08, switchMenuLeft = 0x0C)
+val GEN2_SILVER_IT = GEN2_GOLD_IT.copy(pokedex = POKEDEX_SILVER_IT, gameCode = "AAXI")
+val GEN2_GOLD_ES = GEN2_GOLD_DE.copy(pokedex = POKEDEX_GOLD_ES, language = 'S', gameCode = "AAUS", battleMenuLeft = 0x07, switchMenuLeft = 0x0C)
+val GEN2_SILVER_ES = GEN2_GOLD_ES.copy(pokedex = POKEDEX_SILVER_ES, gameCode = "AAXS")
+
+/** Every European Crystal (German, French, Italian, Spanish). */
+val GEN2_CRYSTAL_EU: Set<Gen2Config> by lazy { setOf(GEN2_CRYSTAL_DE, GEN2_CRYSTAL_FR, GEN2_CRYSTAL_IT, GEN2_CRYSTAL_ES) }
+/** Every European Gold / Silver. */
+val GEN2_GOLD_SILVER_EU: Set<Gen2Config> by lazy {
+    setOf(GEN2_GOLD_DE, GEN2_SILVER_DE, GEN2_GOLD_FR, GEN2_SILVER_FR, GEN2_GOLD_IT, GEN2_SILVER_IT, GEN2_GOLD_ES, GEN2_SILVER_ES)
+}
 
 /**
  * Pokémon Crystal Clear (ShockSlayer's open-world hack of Crystal): v2.6.0 and v2.5.11, each in a Standard Colors and a
@@ -706,7 +726,7 @@ fun readGen2Telemetry(r: MemoryReader, cfg: Gen2Config): Telemetry {
         // The GUIDE's flags, badges and clock (Polished Crystal's: GuidePolishedCrystal.kt; Crystal's: GuideCrystal.kt).
         progress = when {
             cfg.polished -> runCatching { readPolishedProgress(r) }.getOrNull()
-            cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE -> runCatching { readCrystalProgress(r) }.getOrNull()
+            cfg === GEN2_CRYSTAL || cfg in GEN2_CRYSTAL_EU -> runCatching { readCrystalProgress(r) }.getOrNull()
             cfg === GEN2_CRYSTAL_LEGACY -> runCatching { readCrystalProgress(r, CRYSTAL_LEGACY_GUIDE_RAM) }.getOrNull()
             else -> null
         },

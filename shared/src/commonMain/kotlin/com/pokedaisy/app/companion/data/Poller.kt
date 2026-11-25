@@ -895,6 +895,11 @@ class TelemetrySampler {
             GAME_BOY_SUPPORT && hash == SILVER_SHA1 -> { kind = GameKind.SILVER; gen2Cfg = GEN2_SILVER }
             GAME_BOY_SUPPORT && hash == GOLD_DE_SHA1 -> { kind = GameKind.GOLD; gen2Cfg = GEN2_GOLD_DE }
             GAME_BOY_SUPPORT && hash == SILVER_DE_SHA1 -> { kind = GameKind.SILVER; gen2Cfg = GEN2_SILVER_DE }
+            GAME_BOY_SUPPORT && gen2EuropeConfigFor(hash) != null -> {
+                val cfg = gen2EuropeConfigFor(hash)!!
+                kind = when (cfg.gameCode?.take(3)) { "BYT" -> GameKind.CRYSTAL; "AAU" -> GameKind.GOLD; else -> GameKind.SILVER }
+                gen2Cfg = cfg
+            }
             GAME_BOY_SUPPORT && crystalClearConfigFor(hash) != null -> { kind = GameKind.CRYSTAL_CLEAR; gen2Cfg = crystalClearConfigFor(hash) }
             GAME_BOY_SUPPORT && hash == PRISM_V0_95_254_SHA1 -> { kind = GameKind.PRISM; gen2Cfg = GEN2_PRISM }
             GAME_BOY_SUPPORT && hash in POLISHED_CRYSTAL_SHA1S ->
@@ -951,8 +956,8 @@ class TelemetrySampler {
      * picked (the German ones keep English's RAM; the hacks keep RAM of their own). */
     private val gbShinyTarget: ShinyOdds.GbTarget?
         get() = when (gen2Cfg) {
-            GEN2_CRYSTAL, GEN2_CRYSTAL_DE -> ShinyOdds.GB_CRYSTAL
-            GEN2_GOLD, GEN2_SILVER, GEN2_GOLD_DE, GEN2_SILVER_DE -> ShinyOdds.GB_GOLD_SILVER
+            GEN2_CRYSTAL, in GEN2_CRYSTAL_EU -> ShinyOdds.GB_CRYSTAL
+            GEN2_GOLD, GEN2_SILVER, in GEN2_GOLD_SILVER_EU -> ShinyOdds.GB_GOLD_SILVER
             else -> null
         }
 
@@ -1381,6 +1386,31 @@ class TelemetrySampler {
         // Pokémon Goldene / Silberne Edition (Germany): English Gold / Silver's code translated (GEN2_GOLD_DE / GEN2_SILVER_DE).
         const val GOLD_DE_SHA1 = "9254195d461ea942eaaa08cc4b83de3cf82aea0d"
         const val SILVER_DE_SHA1 = "8ecc58d621faaedf2a934bd2583d527220df7bb9"
+        // French / Italian / Spanish Crystal, Gold and Silver: English's code translated, English's RAM, their own ROM tables.
+        const val CRYSTAL_FR_SHA1 = "c055992b16b7399c687647725cdd1f4f13a2f75c"
+        const val CRYSTAL_IT_SHA1 = "6cee05e5b95beeae74b8365ad18ec4a07a8c4af8"
+        const val CRYSTAL_ES_SHA1 = "889a06fc0bb863666865aa69def0adf97945ac2a"
+        const val GOLD_FR_SHA1 = "c147c0d8c2b71b7628a7233436f5c052b5b17081"
+        const val SILVER_FR_SHA1 = "a4a7e8079b7a53e4d9ef43382bbb1090b9d45d1a"
+        const val GOLD_IT_SHA1 = "032608fe8947b627584a4a0eccc7bf9ad3588426"
+        const val SILVER_IT_SHA1 = "c9eca9d0a837beb9137bb7d779e469c54e9f8d77"
+        const val GOLD_ES_SHA1 = "162ea54c6a3cff374642e6dd842f9bffac847e7b"
+        const val SILVER_ES_SHA1 = "05bd978ab2cb104b0aff3f696896e30885203a18"
+        val GOLD_SILVER_EU_SHA1S = setOf(GOLD_FR_SHA1, SILVER_FR_SHA1, GOLD_IT_SHA1, SILVER_IT_SHA1, GOLD_ES_SHA1, SILVER_ES_SHA1)
+        val GEN2_EUROPE_SHA1S = setOf(CRYSTAL_FR_SHA1, CRYSTAL_IT_SHA1, CRYSTAL_ES_SHA1) + GOLD_SILVER_EU_SHA1S
+        /** A French / Italian / Spanish Crystal, Gold or Silver by its SHA-1. */
+        fun gen2EuropeConfigFor(sha1: String?): Gen2Config? = when (sha1) {
+            CRYSTAL_FR_SHA1 -> GEN2_CRYSTAL_FR
+            CRYSTAL_IT_SHA1 -> GEN2_CRYSTAL_IT
+            CRYSTAL_ES_SHA1 -> GEN2_CRYSTAL_ES
+            GOLD_FR_SHA1 -> GEN2_GOLD_FR
+            SILVER_FR_SHA1 -> GEN2_SILVER_FR
+            GOLD_IT_SHA1 -> GEN2_GOLD_IT
+            SILVER_IT_SHA1 -> GEN2_SILVER_IT
+            GOLD_ES_SHA1 -> GEN2_GOLD_ES
+            SILVER_ES_SHA1 -> GEN2_SILVER_ES
+            else -> null
+        }
 
         // Pokémon Crystal Clear (ShockSlayer's open-world Crystal hack): v2.5.11 and v2.6.0, each a Standard Colors
         // build and a Color Filter one (the same code and tables, other palettes): one RAM, a version's ROM tables.
@@ -1434,7 +1464,7 @@ class TelemetrySampler {
         /** The Game Boy / Color carts the companion reads ([CompanionSupport] checks imports against it). */
         val SUPPORTED_GB_SHA1S = setOf(YELLOW_SHA1, YELLOW_GEN2_GRAPHICS_V1_1_SHA1, YELLOW_DE_SHA1, YELLOW_FR_SHA1, YELLOW_IT_SHA1, YELLOW_ES_SHA1, RED_SHA1, RED_GEN2_GRAPHICS_V2_0_SHA1, BLUE_SHA1,
             RED_DE_SHA1, BLUE_DE_SHA1) +
-            CRYSTAL_SHA1S + CRYSTAL_DE_SHA1 + CRYSTAL_CLEAR_SHA1S + PRISM_V0_95_254_SHA1 + GOLD_SHA1 + SILVER_SHA1 + GOLD_DE_SHA1 + SILVER_DE_SHA1 + POLISHED_CRYSTAL_SHA1S +
+            CRYSTAL_SHA1S + CRYSTAL_DE_SHA1 + CRYSTAL_CLEAR_SHA1S + PRISM_V0_95_254_SHA1 + GOLD_SHA1 + SILVER_SHA1 + GOLD_DE_SHA1 + SILVER_DE_SHA1 + GEN2_EUROPE_SHA1S + POLISHED_CRYSTAL_SHA1S +
             PURE_RED_V2_7_6_SHA1 + PURE_BLUE_V2_7_6_SHA1 + YELLOW_LEGACY_V1_0_10_SHA1 + CRYSTAL_LEGACY_V1_3_1_SHA1 +
             BROWN_V6_1_2_SHA1 + BROWN_V6_0_1_SHA1
 

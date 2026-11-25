@@ -99,6 +99,17 @@ static const struct GbGame { uint32_t crc; int gen; uint32_t a[GB_CONFIG]; } GB_
     { 0x4889DFAAu, 2, GB_GOLD_SILVER_DE },   // Goldene Edition
     { 0x96C9DB95u, 2, GB_GOLD_SILVER_DE },   // Silberne Edition
 #undef GB_GOLD_SILVER_DE
+    // French, Italian and Spanish Gold / Silver: English Gold's RAM, SpriteMovementData where each cart has it (found by its bytes).
+#define GB_GOLD_SILVER_EU(movement) { 0, 0, 0xC700, 0xD07D, 0xDA02, 0xD07F, 0xD082, 0xD087, 0xD091, 0xD0C5, 0xD086, 0xD116, 0xD182, 0, 0, \
+                            GB_LINEAR(0x25, 0x40ED), 0, 0xCEBF, 0xD7B7, 0xD0CF, 0x02, 0xD1FD, 0xD445, 0xD545, 0xD05D, 0xD555, \
+                            GB_LINEAR(0x05, 0x43C1), GB_LINEAR(0x01, movement), 0xFF9E, 0xFFCF, 0xD157, 0xFF94 }
+    { 0x37A70702u, 2, GB_GOLD_SILVER_EU(0x4274) },   // Version Or
+    { 0xE0C216EAu, 2, GB_GOLD_SILVER_EU(0x4274) },   // Version Argent
+    { 0x4C184CE3u, 2, GB_GOLD_SILVER_EU(0x4273) },   // Versione Oro
+    { 0xCBA6D2D4u, 2, GB_GOLD_SILVER_EU(0x4273) },   // Versione Argento
+    { 0x3434A92Bu, 2, GB_GOLD_SILVER_EU(0x4272) },   // Edicion Oro
+    { 0x1D9FAAC5u, 2, GB_GOLD_SILVER_EU(0x4272) },   // Edicion Plata
+#undef GB_GOLD_SILVER_EU
     // Pokémon Crystal rev 1, rev 0, Australia: pret/pokecrystal's symbols, the same in all three builds.
 #define GB_CRYSTAL { 0, 0, 0xC800, 0xD194, 0xDCB7, 0xD196, 0xD199, 0xD19E, 0xD1A8, 0xD1DC, 0xD19D, 0xD22D, 0xD0ED, 0, 0, \
                      GB_LINEAR(0x25, 0x4000), 0, 0xCF74, 0xDA72, 0xD1E6, 0x13, 0xD4D6, 0xD71E, 0xD81E, 0xD154, 0xD82E, \
@@ -111,6 +122,14 @@ static const struct GbGame { uint32_t crc; int gen; uint32_t a[GB_CONFIG]; } GB_
     { 0x616D85DEu, 2, { 0, 0, 0xC800, 0xD194, 0xDCB7, 0xD196, 0xD199, 0xD19E, 0xD1A8, 0xD1DC, 0xD19D, 0xD22D, 0xD0ED, 0, 0,
                         GB_LINEAR(0x25, 0x4000), 0, 0xCF74, 0xDA72, 0xD1E6, 0x13, 0xD4D6, 0xD71E, 0xD81E, 0xD154, 0xD82E,
                         GB_LINEAR(0x05, 0x4736), GB_LINEAR(0x01, 0x4276), 0xFF9E, 0xFFCF, 0xD269, 0xFF94 } },
+    // French, Italian and Spanish Crystal: Crystal's, SpriteMovementData where each cart has it (found by its bytes).
+#define GB_CRYSTAL_EU(movement) { 0, 0, 0xC800, 0xD194, 0xDCB7, 0xD196, 0xD199, 0xD19E, 0xD1A8, 0xD1DC, 0xD19D, 0xD22D, 0xD0ED, 0, 0, \
+                        GB_LINEAR(0x25, 0x4000), 0, 0xCF74, 0xDA72, 0xD1E6, 0x13, 0xD4D6, 0xD71E, 0xD81E, 0xD154, 0xD82E, \
+                        GB_LINEAR(0x05, 0x4736), GB_LINEAR(0x01, movement), 0xFF9E, 0xFFCF, 0xD269, 0xFF94 }
+    { 0x878B2AA7u, 2, GB_CRYSTAL_EU(0x4273) },   // Version Cristal
+    { 0xD45AC039u, 2, GB_CRYSTAL_EU(0x4272) },   // Versione Cristallo
+    { 0xFF0A6F8Au, 2, GB_CRYSTAL_EU(0x4272) },   // Edicion Cristal
+#undef GB_CRYSTAL_EU
     // Pokémon Crystal Legacy v1.3.1: its pokecrystal.sym (its build is the patched cart byte for byte).
     { 0x12E97FB4u, 2, { 0, 0, 0xC800, 0xD19F, 0xDCC2, 0xD1A1, 0xD1A4, 0xD1A9, 0xD1B3, 0xD1E7, 0xD1A8, 0xD238, 0xD0F8, 0, 0,
                         GB_LINEAR(0x25, 0x4000), 0, 0xCF74, 0xDA7D, 0xD1F1, 0x13, 0xD4E1, 0xD729, 0xD829, 0xD15F, 0xD839,

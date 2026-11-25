@@ -22,7 +22,11 @@ private val GAME_TYPE_NAMES: Map<String, Map<String, String>> by lazy {
     mapOf(
         "BYTD" to typeNamesCrystal.mapNotNull { (id, en) -> typeNamesCrystalDe[id]?.let { en.uppercase() to it } }.toMap(),
         "AAUD" to goldSilverDe, "AAXD" to goldSilverDe,
-    )
+    ) + listOf('F' to (typeNamesCrystalFr to typeNamesGoldSilverFr), 'I' to (typeNamesCrystalIt to typeNamesGoldSilverIt),
+        'S' to (typeNamesCrystalEs to typeNamesGoldSilverEs)).flatMap { (l, names) ->
+        val gs = typeNamesCrystal.mapNotNull { (id, en) -> names.second[id]?.let { en.uppercase() to it } }.toMap()
+        listOf("BYT$l" to typeNamesCrystal.mapNotNull { (id, en) -> names.first[id]?.let { en.uppercase() to it } }.toMap(), "AAU$l" to gs, "AAX$l" to gs)
+    }
 }
 
 private val LOCAL_TYPE_NAMES: Map<Char, Map<String, String>> = mapOf(

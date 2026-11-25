@@ -30,7 +30,7 @@
 #define GBF_PY 60
 
 // Each cart's RAM (pret/pokecrystal, pret/pokegold, pret/pokered; D000+ is WRAM bank 1 on the Color). Crystal's is the
-// same in rev 0, rev 1, Australia and the German cart, Gold / Silver's in English and German. Red and Blue keep no
+// same in rev 0, rev 1, Australia and the German cart, Gold / Silver's in English and German; the French, Italian and Spanish carts too. Red and Blue keep no
 // object struct: their tile is wXCoord / wYCoord, their grass the player's sprite state (wSpritePlayerStateData2's
 // GRASSPRIORITY), and German Red / Blue are English's + 5 from wOnSGB (CF1B) up, like Gen1Reader's GEN1_RED_DE.
 struct gbf_ram_map {
@@ -58,8 +58,11 @@ static const struct gbf_ram_map gbfRedBlueDe = {
 
 static const struct { uint32_t crc; const struct gbf_ram_map* ram; } gbfCarts[] = {
     { 0x3358E30Au, &gbfCrystal }, { 0xEE6F5188u, &gbfCrystal }, { 0xBB6DD80Cu, &gbfCrystal }, { 0x616D85DEu, &gbfCrystal },
+    { 0x878B2AA7u, &gbfCrystal }, { 0xD45AC039u, &gbfCrystal }, { 0xFF0A6F8Au, &gbfCrystal },   // French, Italian, Spanish
     // Gold, Silver (USA, Europe), Goldene Edition, Silberne Edition
     { 0x6BDE3C3Eu, &gbfGoldSilver }, { 0x8AD48636u, &gbfGoldSilver }, { 0x4889DFAAu, &gbfGoldSilver }, { 0x96C9DB95u, &gbfGoldSilver },
+    { 0x37A70702u, &gbfGoldSilver }, { 0xE0C216EAu, &gbfGoldSilver }, { 0x4C184CE3u, &gbfGoldSilver },
+    { 0xCBA6D2D4u, &gbfGoldSilver }, { 0x3434A92Bu, &gbfGoldSilver }, { 0x1D9FAAC5u, &gbfGoldSilver },
     // Red, Blue (USA, Europe), Rote Edition, Blaue Edition
     { 0x9F7FDD53u, &gbfRedBlue }, { 0xD6DA8A1Au, &gbfRedBlue }, { 0x89197825u, &gbfRedBlueDe }, { 0x9C336307u, &gbfRedBlueDe },
 };

@@ -242,7 +242,7 @@ object GbGamePatches {
      *  - .done's `jp ResetBattleParticipants` goes by T2: after the first pass, with anyone marked who didn't fight, it shows
      *    the line and runs GiveExperiencePoints' loop again as the rest's pass; after that one it puts the byte back to 0.
      * All in GiveExperiencePoints' bank (Gen 2's battle bank), clear of the other trampolines, in the cart's padding; the
-     * line in the cart's language (English, German; others get the English).
+     * line in the cart's language (English, German, French, Italian, Spanish).
      */
     private fun expModern(rom: ByteArray, divide: Int, notFainted: Int): List<InstantText.Write>? {
         fun u8(i: Int) = rom[i].toInt() and 0xFF
@@ -270,7 +270,9 @@ object GbGamePatches {
         val resetFn = u16(done + EXP_DONE.size - 2)
         if (u16(text + 16) != buffer2 + 1 || listOf(curMon, buffer2, including, pass).any { it !in 0xC000..0xDFFF }) return null
         if (cpu(reset) != resetFn) return null
-        val line = when (u8(0x142).toChar()) { 'D' -> EXP_LINE_DE; else -> EXP_LINE_EN }
+        val line = when (u8(0x142).toChar()) {
+            'D' -> EXP_LINE_DE; 'F' -> EXP_LINE_FR; 'I' -> EXP_LINE_IT; 'S' -> EXP_LINE_ES; else -> EXP_LINE_EN
+        }
         val size = T0_SIZE + T1_SIZE + T2_SIZE + line.size
         val end = (bank + 1) * 0x4000
         // Clear of NO HMS NEEDED's and RUNNING SHOES' trampolines, should one be in this bank (they take its last ~100 bytes).
@@ -450,4 +452,7 @@ object GbGamePatches {
     private const val T2_SIZE = 42
     private val EXP_LINE_EN = gen2Text("The others gained", "EXP. Points!")
     private val EXP_LINE_DE = gen2Text("Die anderen", "erhalten auch EP!")
+    private val EXP_LINE_FR = gen2Text("Les autres gagnent", "des Points EXP!")
+    private val EXP_LINE_IT = gen2Text("Gli altri ricevono", "Punti ESP.")
+    private val EXP_LINE_ES = gen2Text("Los otros ganan", "Puntos EXP.")
 }

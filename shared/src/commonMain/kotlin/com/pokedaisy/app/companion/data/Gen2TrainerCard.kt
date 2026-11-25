@@ -61,6 +61,17 @@ object Gen2TrainerCard {
         nameMoney = 0x09 to 0x52F8, nameX = 2, dexPlayTime = 0x09 to 0x5352, badgesText = 0x09 to 0x5362,
     )
 
+    /** French / Italian / Spanish Crystal: Kristall's layout (no NAME/ label) at each cart's own addresses. */
+    private fun crystalEu(status: Int, chris: Int, kris: Int, nameMoney: Int, dexPlayTime: Int, badgesText: Int) = Tables(
+        status = 0x09 to status, leaders = 0x09 to status + 0x60, badges = 0x09 to status + 0xB20, corner = 0x09 to status + 0x10A0,
+        chris = 0x22 to chris, kris = 0x22 to kris, frame = 0x22 to chris + 0x460,
+        trainerPals = 0x02 to 0x70CE, badgePal = 0x02 to 0x5F16,
+        nameMoney = 0x09 to nameMoney, nameX = 2, dexPlayTime = 0x09 to dexPlayTime, badgesText = 0x09 to badgesText,
+    )
+    val CRYSTAL_FR_TABLES = crystalEu(0x5524, 0x4366, 0x4596, 0x52F3, 0x534D, 0x535D)
+    val CRYSTAL_IT_TABLES = crystalEu(0x551A, 0x436A, 0x459A, 0x52EB, 0x5346, 0x5353)
+    val CRYSTAL_ES_TABLES = crystalEu(0x5523, 0x4373, 0x45A3, 0x52F2, 0x534C, 0x535C)
+
     /** Gold and Silver (pokegold.sym: the two are the same here). */
     val GOLD_SILVER_TABLES = Tables(
         status = 0x09 to 0x570F, leaders = 0x09 to 0x576F, badges = 0x09 to 0x622F, corner = 0x09 to 0x54BF,
@@ -78,6 +89,19 @@ object Gen2TrainerCard {
         nameMoney = 0x09 to 0x5253, nameX = 2, dexPlayTime = 0x09 to 0x52AD, badgesText = 0x09 to 0x52BD, badgesX = 10,
         rowMajor = true, style = CardStyle.GOLD_SILVER,
     )
+
+    /** French / Italian / Spanish Gold and Silver: the German ones' layout, bank 9's data at each language's own shift. */
+    private fun goldSilverEu(shift: Int, nameMoney: Int, dexPlayTime: Int, badgesText: Int) = GOLD_SILVER_DE_TABLES.let {
+        fun s(p: Pair<Int, Int>) = p.first to p.second + shift
+        Tables(
+            status = s(it.status), leaders = s(it.leaders), badges = s(it.badges), corner = s(it.corner), chris = s(it.chris), kris = s(it.kris),
+            frame = s(it.frame), trainerPals = it.trainerPals, badgePal = it.badgePal, nameMoney = 0x09 to nameMoney, nameX = 2,
+            dexPlayTime = 0x09 to dexPlayTime, badgesText = 0x09 to badgesText, badgesX = 10, rowMajor = true, style = CardStyle.GOLD_SILVER,
+        )
+    }
+    val GOLD_SILVER_FR_TABLES = goldSilverEu(-0x5, 0x524E, 0x52A8, 0x52B8)
+    val GOLD_SILVER_IT_TABLES = goldSilverEu(-0x12, 0x5243, 0x529E, 0x52AB)
+    val GOLD_SILVER_ES_TABLES = goldSilverEu(-0x7, 0x524C, 0x52A6, 0x52B6)
 
     // _CGB_TrainerCard's BG palettes, by trainer class: CHRIS (0), FALKNER (KRIS's), BUGSY, WHITNEY, MORTY, CHUCK, JASMINE, PRYCE.
     private val PAL_CLASSES = intArrayOf(0, 1, 3, 2, 4, 7, 6, 5)
@@ -188,8 +212,8 @@ object Gen2TrainerCard {
 
     /** The card's RAM for [cfg], or null for a game without a mapped card. */
     fun ramFor(cfg: Gen2Config): Ram? = when {
-        cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE -> CRYSTAL_RAM
-        cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg === GEN2_GOLD_DE || cfg === GEN2_SILVER_DE -> GOLD_SILVER_RAM
+        cfg === GEN2_CRYSTAL || cfg in GEN2_CRYSTAL_EU -> CRYSTAL_RAM
+        cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg in GEN2_GOLD_SILVER_EU -> GOLD_SILVER_RAM
         else -> null
     }
 

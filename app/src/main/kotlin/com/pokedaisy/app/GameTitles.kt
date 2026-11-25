@@ -98,7 +98,7 @@ object GameTitles {
     /** Color games with a dual-mode header (0x80) that the companion knows. Yellow says the same but is a GB game. */
     private val COLOR_DUAL: Set<String>
         get() = TelemetrySampler.POLISHED_CRYSTAL_SHA1S + TelemetrySampler.GOLD_SHA1 + TelemetrySampler.SILVER_SHA1 +
-            TelemetrySampler.GOLD_DE_SHA1 + TelemetrySampler.SILVER_DE_SHA1
+            TelemetrySampler.GOLD_DE_SHA1 + TelemetrySampler.SILVER_DE_SHA1 + TelemetrySampler.GOLD_SILVER_EU_SHA1S
 
     /** [rom]'s [RomCategory] (reads its header; [sha1] when [identify] hashed it). A Pokémon cart hashed but known as
      * neither retail nor a hack is a hack too (an unsupported one); a cart nobody hashes is its platform's. */

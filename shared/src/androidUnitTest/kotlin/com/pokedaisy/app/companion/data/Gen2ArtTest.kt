@@ -98,17 +98,26 @@ class Gen2ArtTest {
         // HEAVY / MOON / any other grey, LEVEL brown.
         assertEquals(6, balls.values.map { it.argb.toList() }.toSet().size)
         assertTrue(balls.getValue(0x02).argb.toList() != balls.getValue(0x04).argb.toList())
-        val de = File(dir, "Pokemon - Kristall-Edition (Germany).gbc")
-        assumeTrue("Kristall ROM not on this machine", de.isFile)
-        val german = Gen2Art.balls(de.readBytes(), Gen2Art.CRYSTAL_DE)
-        assertEquals(balls.keys, german.keys)
-        for ((id, img) in balls) assertTrue("ball $id", img.argb.contentEquals(german.getValue(id).argb))
+        var others = 0
+        for ((name, t) in listOf(
+            "Pokemon - Kristall-Edition (Germany).gbc" to Gen2Art.CRYSTAL_DE,
+            "Pokemon - Version Cristal (France).gbc" to Gen2Art.CRYSTAL_FR,
+            "Pokemon - Versione Cristallo (Italy).gbc" to Gen2Art.CRYSTAL_IT,
+            "Pokemon - Edicion Cristal (Spain).gbc" to Gen2Art.CRYSTAL_ES,
+        )) {
+            val f = File(dir, name).takeIf { it.isFile } ?: continue
+            val local = Gen2Art.balls(f.readBytes(), t)
+            assertEquals(name, balls.keys, local.keys)
+            for ((id, img) in balls) assertTrue("$name ball $id", img.argb.contentEquals(local.getValue(id).argb))
+            others++
+        }
+        assumeTrue("no other Crystal ROM on this machine", others > 0)
         val out = File("build/gen2-art/balls").also { it.mkdirs() }
         for ((id, img) in balls) File(out, "ball-$id.png").writeBytes(img.png())
     }
 
     @Test
-    fun `Gold and Silver throw Crystal's balls, English and German alike`() {
+    fun `Gold and Silver throw Crystal's balls, in every language`() {
         val crystal = Gen2Art.balls(rom(), Gen2Art.CRYSTAL)
         var checked = 0
         for ((name, t) in listOf(
@@ -116,6 +125,12 @@ class Gen2ArtTest {
             "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to Gen2Art.SILVER,
             "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to Gen2Art.GOLD_DE,
             "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to Gen2Art.SILVER_DE,
+            "Pokemon - Version Or (France) (SGB Enhanced).gbc" to Gen2Art.GOLD_FR,
+            "Pokemon - Version Argent (France) (SGB Enhanced).gbc" to Gen2Art.SILVER_FR,
+            "Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc" to Gen2Art.GOLD_IT,
+            "Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc" to Gen2Art.SILVER_IT,
+            "Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc" to Gen2Art.GOLD_ES,
+            "Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc" to Gen2Art.SILVER_ES,
         )) {
             val f = File(dir, name).takeIf { it.isFile } ?: continue
             val balls = Gen2Art.balls(f.readBytes(), t)

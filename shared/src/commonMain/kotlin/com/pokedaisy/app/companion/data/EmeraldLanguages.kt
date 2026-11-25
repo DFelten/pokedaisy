@@ -133,6 +133,12 @@ fun gameText(code: String): GameText? = when (code) {
     "APSS" -> YELLOW_ES_TEXT
     "BYTD" -> CRYSTAL_DE_TEXT
     "AAUD", "AAXD" -> GOLD_SILVER_DE_TEXT
+    "BYTF" -> CRYSTAL_FR_TEXT
+    "BYTI" -> CRYSTAL_IT_TEXT
+    "BYTS" -> CRYSTAL_ES_TEXT
+    "AAUF", "AAXF" -> GOLD_SILVER_FR_TEXT
+    "AAUI", "AAXI" -> GOLD_SILVER_IT_TEXT
+    "AAUS", "AAXS" -> GOLD_SILVER_ES_TEXT
     LEGACY_TEXT -> EMERALD_LEGACY
     else -> RETAIL_PORT_TEXTS[code]?.let { make -> portTexts.getOrPut(code, make) }
 }

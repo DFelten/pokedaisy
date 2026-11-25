@@ -305,3 +305,44 @@ val GEN2_BOX_CALLS_GOLD = goldSilverBoxCalls(0x5B45, 0x603F, "3e01cde130fa08d0a7
 val GEN2_BOX_CALLS_SILVER = goldSilverBoxCalls(0x5B43, 0x603D, "3e01cde130fa08d0a7", "cdf566cd06673e2521397c", 0x4DF6, 0x5065, 0x4C23, GOLD_SILVER_SAVE_CODE, 0x566B)
 val GEN2_BOX_CALLS_GOLD_DE = goldSilverBoxCalls(0x5B45, 0x603E, "3e01cd0e31fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5660)
 val GEN2_BOX_CALLS_SILVER_DE = goldSilverBoxCalls(0x5B43, 0x603C, "3e01cd0e31fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5660)
+
+/** French, Italian and Spanish Crystal / Gold / Silver: German's code and English's RAM at each cart's own addresses (each found by its code, checked headless). */
+val GEN2_BOX_CALLS_CRYSTAL_FR = Gen2BoxCalls(
+    send = 0x5B0E,
+    remove = 0x6009,
+    switchMons = 0x4F55,
+    signatures = listOf(
+        0x03 * 0x4000L + (0x5B0E - 0x4000) to "3e01cdb82ffa0bd1a7",
+        0x03 * 0x4000L + (0x6009 - 0x4000) to "21d7dcfa0bd1a72808",
+        0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521097e",
+    ) + SAVE_SIGNATURES,
+    switchSignature = 0x14 * 0x4000L + (0x4F55 - 0x4000) to CRYSTAL_SWITCH_CODE,
+)
+val GEN2_BOX_CALLS_CRYSTAL_IT = Gen2BoxCalls(
+    send = 0x5B40,
+    remove = 0x603B,
+    switchMons = 0x4F71,
+    signatures = listOf(
+        0x03 * 0x4000L + (0x5B40 - 0x4000) to "3e01cdb92ffa0bd1a7",
+        0x03 * 0x4000L + (0x603B - 0x4000) to "21d7dcfa0bd1a72808",
+        0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521077e",
+    ) + SAVE_SIGNATURES,
+    switchSignature = 0x14 * 0x4000L + (0x4F71 - 0x4000) to CRYSTAL_SWITCH_CODE,
+)
+val GEN2_BOX_CALLS_CRYSTAL_ES = Gen2BoxCalls(
+    send = 0x5B0D,
+    remove = 0x6009,
+    switchMons = 0x4F6B,
+    signatures = listOf(
+        0x03 * 0x4000L + (0x5B0D - 0x4000) to "3e01cdb52ffa0bd1a7",
+        0x03 * 0x4000L + (0x6009 - 0x4000) to "21d7dcfa0bd1a72808",
+        0x25 * 0x4000L + (0x6773 - 0x4000) to "cdb067cdc1673e2521017e",
+    ) + SAVE_SIGNATURES,
+    switchSignature = 0x14 * 0x4000L + (0x4F6B - 0x4000) to CRYSTAL_SWITCH_CODE,
+)
+val GEN2_BOX_CALLS_GOLD_FR = goldSilverBoxCalls(0x5B45, 0x6040, "3e01cdf330fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5670)
+val GEN2_BOX_CALLS_SILVER_FR = goldSilverBoxCalls(0x5B43, 0x603E, "3e01cdf330fa08d0a7", "cdf566cd06673e2521587c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5670)
+val GEN2_BOX_CALLS_GOLD_IT = goldSilverBoxCalls(0x5B46, 0x6041, "3e01cd0631fa08d0a7", "cdf566cd06673e2521567c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5679)
+val GEN2_BOX_CALLS_SILVER_IT = goldSilverBoxCalls(0x5B42, 0x603D, "3e01cd0631fa08d0a7", "cdf566cd06673e2521567c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5679)
+val GEN2_BOX_CALLS_GOLD_ES = goldSilverBoxCalls(0x5B44, 0x6040, "3e01cd0531fa08d0a7", "cdf566cd06673e2521507c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5679)
+val GEN2_BOX_CALLS_SILVER_ES = goldSilverBoxCalls(0x5B42, 0x603E, "3e01cd0531fa08d0a7", "cdf566cd06673e2521507c", 0x4E05, 0x507A, 0x4C20, GOLD_SILVER_DE_SAVE_CODE, 0x5679)

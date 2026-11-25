@@ -14,7 +14,7 @@ import kotlinx.atomicfu.locks.synchronized
  * ([Gen2DexTables]); the seen / caught flags are WRAM bit arrays by species ([readGen2PokedexState]). Crystal's
  * species ids are its Dex numbers; Prism's aren't ([Gen2DexTables.dexOrder]), so every table here is by species.
  */
-class Gen2DexTables(
+data class Gen2DexTables(
     val baseData: Pair<Int, Int>,           // BaseData: [baseDataSize] bytes per species
     val dexEntryPointers: Pair<Int, Int>,   // PokedexDataPointerTable: a word per species ...
     val dexEntryBanks: Pair<Int, Int>,      // ... in the bank GetDexEntryPointer.PokedexEntryBanks names per 64
@@ -193,6 +193,17 @@ val POKEDEX_CRYSTAL_DE = POKEDEX_CRYSTAL.copy(
     gen2 = GEN2_DEX_CRYSTAL_DE, categorySuffix = "", metric = true, decimalPoint = '.', unitSpace = false,
 )
 
+/** French / Italian / Spanish Crystal: Kristall's kind of pages (metric) at each cart's own addresses. */
+private fun crystalEuDex(baseData: Int, picsBanks: Int, itemDescriptions: Int, tmHmMoves: Int, moveDescriptions: Int) = POKEDEX_CRYSTAL_DE.copy(
+    gen2 = GEN2_DEX_CRYSTAL_DE.copy(
+        baseData = 0x14 to baseData, picsBanks = 0x14 to picsBanks, itemDescriptions = 0x72 to itemDescriptions,
+        tmHmMoves = 0x04 to tmHmMoves, moveDescriptions = 0x0B to moveDescriptions,
+    ),
+)
+val POKEDEX_CRYSTAL_FR = crystalEuDex(0x5417, 0x51C7, 0x49CC, 0x5679, 0x4B60)
+val POKEDEX_CRYSTAL_IT = crystalEuDex(0x5433, 0x51E3, 0x49CC, 0x5679, 0x4B66)
+val POKEDEX_CRYSTAL_ES = crystalEuDex(0x542D, 0x51DD, 0x49C3, 0x568D, 0x4B5B)
+
 /** Gold's and Silver's: the same tables over each version's own pages (two objects, so a dex cache never crosses them). */
 val POKEDEX_GOLD = POKEDEX_CRYSTAL.copy(gen2 = GEN2_DEX_GOLD_SILVER)
 val POKEDEX_SILVER = POKEDEX_CRYSTAL.copy(gen2 = GEN2_DEX_GOLD_SILVER)
@@ -217,6 +228,20 @@ val GEN2_DEX_GOLD_SILVER_DE = Gen2DexTables(
 )
 val POKEDEX_GOLD_DE = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_DE)
 val POKEDEX_SILVER_DE = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_DE)
+
+/** French / Italian / Spanish Gold and Silver: the German ones' kind of pages at each language's own addresses (both versions share them). */
+private fun goldSilverEuDex(baseData: Int, picBankFixes: Int, tmHmMoves: Int) = GEN2_DEX_GOLD_SILVER_DE.copy(
+    baseData = 0x14 to baseData, picsBanks = 0x14 to picBankFixes, picBankFixes = 0x14 to picBankFixes, tmHmMoves = 0x04 to tmHmMoves,
+)
+private val GEN2_DEX_GOLD_SILVER_FR = goldSilverEuDex(0x5B10, 0x587D, 0x5A65)
+private val GEN2_DEX_GOLD_SILVER_IT = goldSilverEuDex(0x5B19, 0x5886, 0x5A65)
+private val GEN2_DEX_GOLD_SILVER_ES = goldSilverEuDex(0x5B19, 0x5886, 0x5A79)
+val POKEDEX_GOLD_FR = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_FR)
+val POKEDEX_SILVER_FR = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_FR)
+val POKEDEX_GOLD_IT = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_IT)
+val POKEDEX_SILVER_IT = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_IT)
+val POKEDEX_GOLD_ES = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_ES)
+val POKEDEX_SILVER_ES = POKEDEX_CRYSTAL_DE.copy(gen2 = GEN2_DEX_GOLD_SILVER_ES)
 
 /**
  * Crystal Clear v2.6.0 (both builds): Crystal's tables moved (found by their contents and the code that reads them,
@@ -384,6 +409,17 @@ object Gen2Dex {
         ))
     }
 
+    /** The French / Italian / Spanish carts' text: [CHARS] with Gen 1's European accents and ligatures at 0xBA-0xE5. */
+    private fun europeChars(set: Gen1Charset): Map<Int, String> =
+        CHARS.filterKeys { it !in 0xBA..0xDF } + set.chars.filterKeys { it in 0xBA..0xE5 }
+    private val CHARS_DF: Map<Int, String> by lazy { europeChars(Gen1Charset.DF) }
+    private val CHARS_IS: Map<Int, String> by lazy { europeChars(Gen1Charset.IS) }
+    private fun dexChars(): Map<Int, String> = when (romLanguage) {
+        'F' -> CHARS_DF
+        'I', 'S' -> CHARS_IS
+        else -> CHARS
+    }
+
     /**
      * The game's lines as one paragraph, as the companion shows it: spaces collapsed, and a word the game broke over two
      * lines with a hyphen joined back - a hyphen after a letter, then a lowercase letter: "anger-" / "ed" and "Poké-" /
@@ -431,7 +467,7 @@ object Gen2Dex {
                 continue
             }
             val word = words[c]
-            if (word != null && depth < 4) raw(rom, word, 1, words, sb, depth + 1) else sb.append(CHARS[c] ?: "")
+            if (word != null && depth < 4) raw(rom, word, 1, words, sb, depth + 1) else sb.append(dexChars()[c] ?: "")
         }
     }
 
@@ -464,7 +500,7 @@ object Gen2Dex {
             if (h + 5 >= 0x4000 || u8(rom, h) != 0xD5 || u8(rom, h + 1) != 0x11 || u8(rom, h + 4) != 0xC3) continue
             val s = u16(rom, h + 2)
             if (s >= 0x4000) continue
-            out[c] = buildString { var i = s; while (i < s + 16 && u8(rom, i) != 0x50) append(CHARS[u8(rom, i++)] ?: "") }
+            out[c] = buildString { var i = s; while (i < s + 16 && u8(rom, i) != 0x50) append(dexChars()[u8(rom, i++)] ?: "") }
         }
         packedWordsFor = rom to out
         return out
@@ -580,7 +616,7 @@ object Gen2Dex {
         val run = PackedRun(rom, p).also { it.run(bank, addr) }
         val words = packedWords(rom, p)
         val s = buildString {
-            for (c in run.codes) append(words[c] ?: if (c == 0x5F) BREAK else CHARS[c] ?: "")
+            for (c in run.codes) append(words[c] ?: if (c == 0x5F) BREAK else dexChars()[c] ?: "")
         }
         return s to run.next
     }

@@ -97,6 +97,144 @@ GAMES = {
                     landmarks={1: "NEUBORKIA", 2: "ROUTE 29"},
                     maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
     ),
+    "crystal_fr": dict(
+        suffix="CrystalFr",
+        label="Pokemon - Version Cristal (France)",
+        decomp="pokecrystal",
+        sha1s={"c055992b16b7399c687647725cdd1f4f13a2f75c": "France"},
+        # English Crystal translated, in the German / French letters: only its names are written (--base).
+        names_over="crystal", charset="df",
+        tm_names=('CT01', 'CT50', 'CS01'),
+        species_names=(0x14, 0x7377), name_len=10, species_count=251,
+        base_data=(0x14, 0x5417), base_size=32,
+        moves=(0x10, 0x5B06), move_size=7, move_count=251, move_names=(0x72, 0x5F96),
+        item_names=(0x72, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x4971), type_count=28,
+        type_matchups=(0x0D, 0x4BB1),
+        landmarks=(0x72, 0x697F), landmark_count=0x60, kanto_landmark=0x2F, fast_ship=0x5F,
+        map_groups=(0x25, 0x4000), map_header_size=9,
+        checks=dict(species={1: 'BULBIZARRE', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ("ECRAS'FACE", 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'CT01', 0xF3: 'CS01'},
+                    landmarks={1: 'BOURG GEON', 2: 'ROUTE 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
+    "gold_silver_fr": dict(
+        suffix="GoldSilverFr",
+        label="Pokemon - Version Or / Argent (France)",
+        decomp="pokegold",
+        sha1s={"c147c0d8c2b71b7628a7233436f5c052b5b17081": "Gold", "a4a7e8079b7a53e4d9ef43382bbb1090b9d45d1a": "Silver"},
+        # English Gold / Silver translated, in the German / French letters: only its names are written (--base).
+        names_over="gold_silver", charset="df",
+        tm_names=('CT01', 'CT50', 'CS01'),
+        species_names=(0x6C, 0x4BC5), name_len=10, species_count=251,
+        base_data=(0x14, 0x5B10), base_size=32,
+        moves=(0x10, 0x5B09), move_size=7, move_count=251, move_names=(0x6C, 0x55C5),
+        item_names=(0x6C, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x49A5), type_count=28,
+        type_matchups=(0x0D, 0x4D01),
+        landmarks=(0x27, 0x402D), landmark_count=0x5F, kanto_landmark=0x2E, fast_ship=0x5E,
+        map_groups=(0x25, 0x40ED), map_header_size=9,
+        checks=dict(species={1: 'BULBIZARRE', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ("ECRAS'FACE", 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'CT01', 0xF3: 'CS01'},
+                    landmarks={1: 'BOURG GEON', 2: 'ROUTE 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
+    "crystal_it": dict(
+        suffix="CrystalIt",
+        label="Pokemon - Versione Cristallo (Italy)",
+        decomp="pokecrystal",
+        sha1s={"6cee05e5b95beeae74b8365ad18ec4a07a8c4af8": "Italy"},
+        # English Crystal translated, in the Italian / Spanish letters: only its names are written (--base).
+        names_over="crystal", charset="is",
+        tm_names=('MT01', 'MT50', 'MN01'),
+        species_names=(0x14, 0x7393), name_len=10, species_count=251,
+        base_data=(0x14, 0x5433), base_size=32,
+        moves=(0x10, 0x5AFA), move_size=7, move_count=251, move_names=(0x72, 0x5E86),
+        item_names=(0x72, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x4982), type_count=28,
+        type_matchups=(0x0D, 0x4BB1),
+        landmarks=(0x72, 0x68B4), landmark_count=0x60, kanto_landmark=0x2F, fast_ship=0x5F,
+        map_groups=(0x25, 0x4000), map_header_size=9,
+        checks=dict(species={1: 'BULBASAUR', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ('LIBBRA', 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'MT01', 0xF3: 'MN01'},
+                    landmarks={1: 'BORGO FOGLIANOVA', 2: 'PERCORSO 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
+    "gold_silver_it": dict(
+        suffix="GoldSilverIt",
+        label="Pokemon - Versione Oro / Argento (Italy)",
+        decomp="pokegold",
+        sha1s={"032608fe8947b627584a4a0eccc7bf9ad3588426": "Gold", "c9eca9d0a837beb9137bb7d779e469c54e9f8d77": "Silver"},
+        # English Gold / Silver translated, in the Italian / Spanish letters: only its names are written (--base).
+        names_over="gold_silver", charset="is",
+        tm_names=('MT01', 'MT50', 'MN01'),
+        species_names=(0x6C, 0x4BD2), name_len=10, species_count=251,
+        base_data=(0x14, 0x5B19), base_size=32,
+        moves=(0x10, 0x5AFD), move_size=7, move_count=251, move_names=(0x6C, 0x55D2),
+        item_names=(0x6C, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x49B5), type_count=28,
+        type_matchups=(0x0D, 0x4D01),
+        landmarks=(0x27, 0x402D), landmark_count=0x5F, kanto_landmark=0x2E, fast_ship=0x5E,
+        map_groups=(0x25, 0x40ED), map_header_size=9,
+        checks=dict(species={1: 'BULBASAUR', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ('LIBBRA', 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'MT01', 0xF3: 'MN01'},
+                    landmarks={1: 'BORGO FOGLIANOVA', 2: 'PERCORSO 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
+    "crystal_es": dict(
+        suffix="CrystalEs",
+        label="Pokemon - Edicion Cristal (Spain)",
+        decomp="pokecrystal",
+        sha1s={"889a06fc0bb863666865aa69def0adf97945ac2a": "Spain"},
+        # English Crystal translated, in the Italian / Spanish letters: only its names are written (--base).
+        names_over="crystal", charset="is",
+        tm_names=('MT01', 'MT50', 'MO01'),
+        species_names=(0x14, 0x738D), name_len=10, species_count=251,
+        base_data=(0x14, 0x542D), base_size=32,
+        moves=(0x10, 0x5B0E), move_size=7, move_count=251, move_names=(0x72, 0x6045),
+        item_names=(0x72, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x497B), type_count=28,
+        type_matchups=(0x0D, 0x4BB1),
+        landmarks=(0x72, 0x6AB4), landmark_count=0x60, kanto_landmark=0x2F, fast_ship=0x5F,
+        map_groups=(0x25, 0x4000), map_header_size=9,
+        checks=dict(species={1: 'BULBASAUR', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ('DESTRUCTOR', 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'MT01', 0xF3: 'MO01'},
+                    landmarks={1: 'PUEBLO PRIMAVERA', 2: 'RUTA 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
+    "gold_silver_es": dict(
+        suffix="GoldSilverEs",
+        label="Pokemon - Edicion Oro / Plata (Spain)",
+        decomp="pokegold",
+        sha1s={"162ea54c6a3cff374642e6dd842f9bffac847e7b": "Gold", "05bd978ab2cb104b0aff3f696896e30885203a18": "Silver"},
+        # English Gold / Silver translated, in the Italian / Spanish letters: only its names are written (--base).
+        names_over="gold_silver", charset="is",
+        tm_names=('MT01', 'MT50', 'MO01'),
+        species_names=(0x6C, 0x4BB8), name_len=10, species_count=251,
+        base_data=(0x14, 0x5B19), base_size=32,
+        moves=(0x10, 0x5B0F), move_size=7, move_count=251, move_names=(0x6C, 0x55B8),
+        item_names=(0x6C, 0x4000), item_count=0xFF,
+        type_names=(0x14, 0x49AE), type_count=28,
+        type_matchups=(0x0D, 0x4D01),
+        landmarks=(0x27, 0x402D), landmark_count=0x5F, kanto_landmark=0x2E, fast_ship=0x5E,
+        map_groups=(0x25, 0x40ED), map_header_size=9,
+        checks=dict(species={1: 'BULBASAUR', 25: 'PIKACHU', 249: 'LUGIA', 251: 'CELEBI'},
+                    types={1: (22, 3), 25: (23, 23), 152: (22, 22), 16: (0, 2), 208: (9, 4)},
+                    moves={1: ('DESTRUCTOR', 0, 40)},
+                    items={1: 'MASTER BALL', 5: 'POKé BALL', 0xBF: 'MT01', 0xF3: 'MO01'},
+                    landmarks={1: 'PUEBLO PRIMAVERA', 2: 'RUTA 29'},
+                    maps={(24, 3): 2, (24, 4): 1, (24, 5): 1, (24, 7): 1}),
+    ),
     "crystal_legacy": dict(
         suffix="CrystalLegacy",
         label="Pokemon Crystal Legacy v1.3.1",
@@ -256,12 +394,30 @@ CHARS.update({0xA0 + i: chr(97 + i) for i in range(26)})
 CHARS.update({0xF6 + i: str(i) for i in range(10)})
 
 
+# The French / Italian / Spanish carts' letters (Gen 1's European fonts, kept in Gen 2: scripts/gen_gen1_tables.py,
+# Gen1Charset.kt): German / French put accented letters from 0xBA and c' d' j' ... at 0xD4, Italian / Spanish
+# theirs from 0xBA, ¿ ¡ at 0xE4 / 0xE5 and 'd 'l ... at 0xD8. A game's "charset" picks one.
+def _charset(accents, extra):
+    c = {k: v for k, v in CHARS.items() if not 0xC0 <= k <= 0xC5 and not 0xD0 <= k <= 0xD6}
+    c.update({0xBA + i: ch for i, ch in enumerate(accents)})
+    c.update(extra)
+    return c
+
+
+CHARSETS = {
+    "df": _charset("àèéùßçÄÖÜäöüëïâôûêî", {0xE4: "+", **{0xD4 + i: v for i, v in enumerate(
+        ["c'", "d'", "j'", "l'", "m'", "n'", "p'", "s'", "'s", "t'", "u'", "y'"])}}),
+    "is": _charset("àèéùÀÁÄÖÜäöüÈÉÌÍÑÒÓÙÚáìíñòóúº&", {0xE4: "¿", 0xE5: "¡", **{0xD8 + i: v for i, v in enumerate(
+        ["'d", "'l", "'m", "'r", "'s", "'t", "'v"])}}),
+}
+
 DICT_FIRST, DICT_LAST = 0x16, 0x5F
 
 
 class Rom:
-    def __init__(self, data, text_dict=None):
+    def __init__(self, data, text_dict=None, chars=None):
         self.d = data
+        self.chars = chars or CHARS
         # Crystal Clear packs its text with a dictionary: PlaceNextChar looks a byte 0x16-0x5F up in a table
         # of 3-byte entries (0 + a bank-0 string - "with", "#MON" - or 1 + a routine: line breaks, names).
         self.words = {}
@@ -288,9 +444,9 @@ class Rom:
             if b in self.words:
                 out.append(self.text(0, self.words[b]))
                 continue
-            if b not in CHARS:
+            if b not in self.chars:
                 raise ValueError(f"unknown char {b:02X} at {bank:02X}:{addr:04X}")
-            out.append(CHARS[b])
+            out.append(self.chars[b])
         raise ValueError(f"unterminated text at {bank:02X}:{addr:04X}")
 
     def text_list(self, bank, addr, count):
@@ -428,8 +584,9 @@ def read_game(g, roms):
         for name, other in roms[1:]:
             assert other[td:td + 3 * (DICT_LAST - DICT_FIRST + 1)] == data[td:td + 3 * (DICT_LAST - DICT_FIRST + 1)], \
                 f"text dictionary differs in {name}"
-    rom = Rom(data, g.get("text_dict"))
-    others = [(name, Rom(other, g.get("text_dict"))) for name, other in roms[1:]]
+    chars = CHARSETS[g["charset"]] if "charset" in g else CHARS
+    rom = Rom(data, g.get("text_dict"), chars)
+    others = [(name, Rom(other, g.get("text_dict"), chars)) for name, other in roms[1:]]
     c = g["checks"]
 
     def same(bank, addr, size, what):
@@ -444,7 +601,7 @@ def read_game(g, roms):
     names = {}
     for s in range(1, count + 1):
         raw = data[rom.off(nb, na + (s - 1) * g["name_len"]):][:g["name_len"]]
-        names[s] = "".join(CHARS[b] for b in raw.split(b"\x50")[0])
+        names[s] = "".join(chars[b] for b in raw.split(b"\x50")[0])
     bb, ba = g["base_data"]
     same(bb, ba, count * g["base_size"], "base data")
     types, genders, growth = {}, [255], [0]
@@ -488,9 +645,10 @@ def read_game(g, roms):
     def type_name(r, t):
         return r.text(tb, struct.unpack_from("<H", r.d, r.off(tb, ta + 2 * t))[0])
     type_names = {}
+    normal = type_name(rom, 0)   # NORMAL, NORMALE: the unused ids point at it
     for t in range(g["type_count"]):
         n = type_name(rom, t)
-        if (n == "NORMAL" and t != 0) or n in ("BIRD", ""):
+        if (n == normal and t != 0) or n in ("BIRD", ""):
             continue
         type_names[t] = n
     for name, r in others:

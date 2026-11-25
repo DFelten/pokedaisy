@@ -90,12 +90,23 @@ object GameTitleCatalog {
         "a0fc810f1d4e124434f7be2c989ab5b5892ddf36" to "Pokémon Crystal",
         // Germany.
         "accb584293ba056152f1fd908439b019017ff2fe" to "Pokémon Kristall",
+        // France, Italy, Spain.
+        "c055992b16b7399c687647725cdd1f4f13a2f75c" to "Pokémon Version Cristal",
+        "6cee05e5b95beeae74b8365ad18ec4a07a8c4af8" to "Pokémon Versione Cristallo",
+        "889a06fc0bb863666865aa69def0adf97945ac2a" to "Pokémon Edición Cristal",
         // pret/pokegold's roms.sha1.
         "d8b8a3600a465308c9953dfa04f0081c05bdcb94" to "Pokémon Gold",
         "49b163f7e57702bc939d642a18f591de55d92dae" to "Pokémon Silver",
         // Germany.
         "9254195d461ea942eaaa08cc4b83de3cf82aea0d" to "Pokémon Goldene Edition",
         "8ecc58d621faaedf2a934bd2583d527220df7bb9" to "Pokémon Silberne Edition",
+        // France, Italy, Spain.
+        "c147c0d8c2b71b7628a7233436f5c052b5b17081" to "Pokémon Version Or",
+        "a4a7e8079b7a53e4d9ef43382bbb1090b9d45d1a" to "Pokémon Version Argent",
+        "032608fe8947b627584a4a0eccc7bf9ad3588426" to "Pokémon Versione Oro",
+        "c9eca9d0a837beb9137bb7d779e469c54e9f8d77" to "Pokémon Versione Argento",
+        "162ea54c6a3cff374642e6dd842f9bffac847e7b" to "Pokémon Edición Oro",
+        "05bd978ab2cb104b0aff3f696896e30885203a18" to "Pokémon Edición Plata",
     )
 
     /** Hacks (and the Game Boy ones): the library's HACK tag. */

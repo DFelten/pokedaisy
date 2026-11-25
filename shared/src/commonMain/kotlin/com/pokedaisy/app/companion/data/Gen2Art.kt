@@ -66,6 +66,24 @@ object Gen2Art {
     /** Bump when what [extractTo] writes changes, so a cached ROM's art is rebuilt once. */
     private const val VERSION = 9
 
+    /** The game's text characters for its font tiles 0x80-0xFF (constants/charmap.asm) the companion prints. */
+    private val CHARS: Map<Int, Char> = buildMap {
+        for (i in 0 until 26) { put(0x80 + i, 'A' + i); put(0xA0 + i, 'a' + i) }
+        for (i in 0 until 10) put(0xF6 + i, '0' + i)
+        putAll(mapOf(
+            0x9A to '(', 0x9B to ')', 0x9C to ':', 0x9D to ';', 0x9E to '[', 0x9F to ']', 0xC0 to 'Ä', 0xC1 to 'Ö',
+            0xC2 to 'Ü', 0xC3 to 'ä', 0xC4 to 'ö', 0xC5 to 'ü', 0xE0 to '\'', 0xE3 to '-', 0xE6 to '?', 0xE7 to '!',
+            0xE8 to '.', 0xE9 to '&', 0xEA to 'é', 0xEB to '→', 0xEC to '▷', 0xED to '▶', 0xEE to '▼', 0xEF to '♂',
+            0xF0 to '¥', 0xF1 to '×', 0xF3 to '/', 0xF4 to ',', 0xF5 to '♀',
+        ))
+    }
+
+    /** The French / Italian / Spanish carts' characters: [CHARS] with Gen 1's European accents (and their 0xE4 / 0xE5) at 0xBA-0xE5. */
+    private fun europeChars(set: Gen1Charset): Map<Int, Char> =
+        CHARS.filterKeys { it !in 0xBA..0xDF } + set.glyphs.filterKeys { it in 0xBA..0xE5 }
+    internal val CHARS_DF: Map<Int, Char> by lazy { europeChars(Gen1Charset.DF) }
+    internal val CHARS_IS: Map<Int, Char> by lazy { europeChars(Gen1Charset.IS) }
+
     /** Where a Gen 2 game's own art sits in its ROM (bank, address). */
     class Gen2ArtTables(
         val name: String,                     // the art's family: [extractTo] keeps which build it holds
@@ -136,6 +154,7 @@ object Gen2Art {
     private fun crystalArt(
         sha1s: Set<String>, townMaps: List<Pair<Int, Int>>, townMapPalMap: Pair<Int, Int>,
         ballGfx: Pair<Int, Int>? = null, ballColors: Pair<Int, Int>? = null, card: Gen2TrainerCard.Tables? = null,
+        chars: Map<Int, Char>? = null,
     ) = Gen2ArtTables(
         name = "crystal",
         sha1s = sha1s,
@@ -161,6 +180,7 @@ object Gen2Art {
         battleObjectPals = if (ballGfx != null) 0x02 to 0x579C else null,
         ballsDir = if (ballGfx != null) CRYSTAL_BALLS else null,
         card = card,
+        chars = chars,
     )
 
     val CRYSTAL = crystalArt(
@@ -174,6 +194,23 @@ object Gen2Art {
         setOf(TelemetrySampler.CRYSTAL_DE_SHA1),
         townMaps = listOf(0x24 to 0x601E, 0x24 to 0x6187), townMapPalMap = 0x24 to 0x5F6A,
         ballGfx = 0x21 to 0x515D, ballColors = 0x33 to 0x526E, card = Gen2TrainerCard.CRYSTAL_DE_TABLES,
+    )
+
+    /** French / Italian / Spanish Crystal: English Crystal's art, the town maps and the thrown ball at each cart's own place, their accents in the font. */
+    val CRYSTAL_FR = crystalArt(
+        setOf(TelemetrySampler.CRYSTAL_FR_SHA1),
+        townMaps = listOf(0x24 to 0x6016, 0x24 to 0x617F), townMapPalMap = 0x24 to 0x5F62,
+        ballGfx = 0x21 to 0x515D, ballColors = 0x33 to 0x526B, card = Gen2TrainerCard.CRYSTAL_FR_TABLES, chars = CHARS_DF,
+    )
+    val CRYSTAL_IT = crystalArt(
+        setOf(TelemetrySampler.CRYSTAL_IT_SHA1),
+        townMaps = listOf(0x24 to 0x6012, 0x24 to 0x617B), townMapPalMap = 0x24 to 0x5F5E,
+        ballGfx = 0x21 to 0x515D, ballColors = 0x33 to 0x526F, card = Gen2TrainerCard.CRYSTAL_IT_TABLES, chars = CHARS_IS,
+    )
+    val CRYSTAL_ES = crystalArt(
+        setOf(TelemetrySampler.CRYSTAL_ES_SHA1),
+        townMaps = listOf(0x24 to 0x6028, 0x24 to 0x6191), townMapPalMap = 0x24 to 0x5F74,
+        ballGfx = 0x21 to 0x515D, ballColors = 0x33 to 0x526C, card = Gen2TrainerCard.CRYSTAL_ES_TABLES, chars = CHARS_IS,
     )
 
     /** Crystal Legacy v1.3.1 (its pokecrystal.sym): its own font, party icons in eight palettes, redrawn POKéGEAR maps; Crystal's players. */
@@ -268,6 +305,36 @@ object Gen2Art {
             card = it.card,
         )
     }
+
+    /**
+     * French / Italian / Spanish Gold and Silver: the German ones' art at each cart's own place (Italian / Spanish icon
+     * tables 4 bytes back), their accents in the font.
+     */
+    private fun goldSilverEu(
+        sha1: String, icons: Int, monMenuIcons: Int, heldItemIcons: Int, townMap0: Int, townMap1: Int, townMapPalMap: Int,
+        ballColors: Int, card: Gen2TrainerCard.Tables, chars: Map<Int, Char>,
+    ) = GOLD_DE.let {
+        Gen2ArtTables(
+            it.name, setOf(sha1), it.font, it.fontPath, 0x23 to icons, 0x23 to monMenuIcons, it.eggIcon,
+            0x23 to heldItemIcons, it.partyMenuObPals, it.iconsDir, it.holdIconsPath, it.townMapGfx,
+            listOf(0x24 to townMap0, 0x24 to townMap1), 0x24 to townMapPalMap, it.pokegearPals, it.townMapPaths, it.playerSprites,
+            it.objectPals, it.playerPaths,
+            ballGfx = it.ballGfx, ballColors = 0x33 to ballColors, battleObjectPals = it.battleObjectPals, ballsDir = it.ballsDir,
+            card = card, chars = chars,
+        )
+    }
+    val GOLD_FR = goldSilverEu(TelemetrySampler.GOLD_FR_SHA1, 0x6A72, 0x6977, 0x68DD, 0x5F79, 0x60E2, 0x5ED3, 0x51AF,
+        Gen2TrainerCard.GOLD_SILVER_FR_TABLES, CHARS_DF)
+    val SILVER_FR = goldSilverEu(TelemetrySampler.SILVER_FR_SHA1, 0x6A58, 0x695D, 0x68C3, 0x5F79, 0x60E2, 0x5ED3, 0x51AF,
+        Gen2TrainerCard.GOLD_SILVER_FR_TABLES, CHARS_DF)
+    val GOLD_IT = goldSilverEu(TelemetrySampler.GOLD_IT_SHA1, 0x6A6E, 0x6973, 0x68D9, 0x5F6C, 0x60D5, 0x5EC6, 0x51B3,
+        Gen2TrainerCard.GOLD_SILVER_IT_TABLES, CHARS_IS)
+    val SILVER_IT = goldSilverEu(TelemetrySampler.SILVER_IT_SHA1, 0x6A54, 0x6959, 0x68BF, 0x5F6C, 0x60D5, 0x5EC6, 0x51B3,
+        Gen2TrainerCard.GOLD_SILVER_IT_TABLES, CHARS_IS)
+    val GOLD_ES = goldSilverEu(TelemetrySampler.GOLD_ES_SHA1, 0x6A6E, 0x6973, 0x68D9, 0x5F89, 0x60F2, 0x5EE3, 0x51B0,
+        Gen2TrainerCard.GOLD_SILVER_ES_TABLES, CHARS_IS)
+    val SILVER_ES = goldSilverEu(TelemetrySampler.SILVER_ES_SHA1, 0x6A54, 0x6959, 0x68BF, 0x5F89, 0x60F2, 0x5EE3, 0x51B0,
+        Gen2TrainerCard.GOLD_SILVER_ES_TABLES, CHARS_IS)
 
     /**
      * Crystal Clear v2.6.0, both builds: Crystal's art moved (the town maps' and font's bytes where Crystal has them,
@@ -389,22 +456,16 @@ object Gen2Art {
         )
     }
 
-    private val GAMES = listOf(CRYSTAL, CRYSTAL_DE, GOLD, SILVER, GOLD_DE, SILVER_DE, CRYSTAL_CLEAR_V2_6_0, CRYSTAL_CLEAR_V2_5_11, PRISM, CRYSTAL_LEGACY) + POLISHED_CRYSTAL
+    private val GAMES = listOf(CRYSTAL, CRYSTAL_DE, CRYSTAL_FR, CRYSTAL_IT, CRYSTAL_ES, GOLD, SILVER, GOLD_DE, SILVER_DE,
+        GOLD_FR, SILVER_FR, GOLD_IT, SILVER_IT, GOLD_ES, SILVER_ES, CRYSTAL_CLEAR_V2_6_0, CRYSTAL_CLEAR_V2_5_11, PRISM, CRYSTAL_LEGACY) + POLISHED_CRYSTAL
 
-    /** The game's text characters for its font tiles 0x80-0xFF (constants/charmap.asm) the companion prints. */
-    private val CHARS: Map<Int, Char> = buildMap {
-        for (i in 0 until 26) { put(0x80 + i, 'A' + i); put(0xA0 + i, 'a' + i) }
-        for (i in 0 until 10) put(0xF6 + i, '0' + i)
-        putAll(mapOf(
-            0x9A to '(', 0x9B to ')', 0x9C to ':', 0x9D to ';', 0x9E to '[', 0x9F to ']', 0xC0 to 'Ä', 0xC1 to 'Ö',
-            0xC2 to 'Ü', 0xC3 to 'ä', 0xC4 to 'ö', 0xC5 to 'ü', 0xE0 to '\'', 0xE3 to '-', 0xE6 to '?', 0xE7 to '!',
-            0xE8 to '.', 0xE9 to '&', 0xEA to 'é', 0xEB to '→', 0xEC to '▷', 0xED to '▶', 0xEE to '▼', 0xEF to '♂',
-            0xF0 to '¥', 0xF1 to '×', 0xF3 to '/', 0xF4 to ',', 0xF5 to '♀',
-        ))
+    /** [CHARS] or [POLISHED_CHARS] (a French / Italian / Spanish cart's by [romLanguage]): the game's text characters for its font tiles 0x80-0xFF. */
+    internal fun chars(polished: Boolean): Map<Int, Char> = when {
+        polished -> POLISHED_CHARS
+        romLanguage == 'F' -> CHARS_DF
+        romLanguage == 'I' || romLanguage == 'S' -> CHARS_IS
+        else -> CHARS
     }
-
-    /** [CHARS] or [POLISHED_CHARS]: the game's text characters for its font tiles 0x80-0xFF. */
-    internal fun chars(polished: Boolean): Map<Int, Char> = if (polished) POLISHED_CHARS else CHARS
 
     private fun off(bank: Int, addr: Int) = if (bank == 0) addr else bank * 0x4000 + (addr - 0x4000)
     private fun u8(b: ByteArray, o: Int) = b[o].toInt() and 0xFF

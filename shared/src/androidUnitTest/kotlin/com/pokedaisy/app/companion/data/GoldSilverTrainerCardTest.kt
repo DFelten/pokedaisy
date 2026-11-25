@@ -27,6 +27,12 @@ class GoldSilverTrainerCardTest {
             art("Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc", Gen2TrainerCard.GOLD_SILVER_TABLES)?.let { "en-silver" to it },
             art("Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc", Gen2TrainerCard.GOLD_SILVER_DE_TABLES)?.let { "de" to it },
             art("Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc", Gen2TrainerCard.GOLD_SILVER_DE_TABLES)?.let { "de-silver" to it },
+            art("Pokemon - Version Or (France) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_FR_TABLES)?.let { "fr" to it },
+            art("Pokemon - Version Argent (France) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_FR_TABLES)?.let { "fr-silver" to it },
+            art("Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_IT_TABLES)?.let { "it" to it },
+            art("Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_IT_TABLES)?.let { "it-silver" to it },
+            art("Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_ES_TABLES)?.let { "es" to it },
+            art("Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc", Gen2TrainerCard.GOLD_SILVER_ES_TABLES)?.let { "es-silver" to it },
         )
     }
 
@@ -39,7 +45,8 @@ class GoldSilverTrainerCardTest {
 
     @Test
     fun `the save's side - the gold fixtures, English and German`() {
-        for ((fixture, cfg) in listOf("gold" to GEN2_GOLD, "gold_de_boxes" to GEN2_GOLD_DE)) {
+        for ((fixture, cfg) in listOf("gold" to GEN2_GOLD, "gold_de_boxes" to GEN2_GOLD_DE,
+            "gold_fr" to GEN2_GOLD_FR, "gold_it" to GEN2_GOLD_IT, "gold_es" to GEN2_GOLD_ES)) {
             val c = Gen2TrainerCard.read(FixtureMemoryReader.load(fixture), cfg) ?: error("$fixture: no card")
             assertEquals(fixture, CardStyle.GOLD_SILVER, c.style)
             assertEquals(fixture, gold, c.name)
@@ -51,7 +58,7 @@ class GoldSilverTrainerCardTest {
     @Test
     fun `both pages, every frame - the game's own, pixel for pixel`() {
         assumeTrue("no Gold / Silver cart on this machine", carts.isNotEmpty())
-        val pins = mapOf("en" to 0xDAF26538L, "de" to 0xC140AE64L)
+        val pins = mapOf("en" to 0xDAF26538L, "de" to 0xC140AE64L, "fr" to 0x86D4B6D7L, "it" to 0x70BAB6B7L, "es" to 0xE0669F41L)
         val out = File("build/gold-card").also { it.mkdirs() }
         val crcs = HashMap<String, Long>()
         for ((lang, art) in carts) {
@@ -66,7 +73,7 @@ class GoldSilverTrainerCardTest {
         }
         // Silver's card is Gold's
         crcs["en-silver"]?.let { assertEquals(crcs["en"], it) }
-        crcs["de-silver"]?.let { assertEquals(crcs["de"], it) }
+        for (l in listOf("de", "fr", "it", "es")) crcs["$l-silver"]?.let { assertEquals(l, crcs[l], it) }
         for ((lang, pinned) in pins) crcs[lang]?.let { assertEquals(lang, pinned, it) }
         val shots = System.getenv("GOLD_CARD_SHOTS")?.let(::File) ?: return
         val bad = ArrayList<String>()

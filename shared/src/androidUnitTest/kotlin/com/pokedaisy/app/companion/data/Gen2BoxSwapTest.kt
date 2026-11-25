@@ -37,6 +37,26 @@ class Gen2BoxSwapTest {
         assertTrue(GbField.Crystal.boxCalls === GEN2_BOX_CALLS_CRYSTAL && GbField.CrystalDe.boxCalls === GEN2_BOX_CALLS_CRYSTAL_DE)
     }
 
+    @Test
+    fun `French, Italian and Spanish Crystal's calls - each cart's code, only its own`() {
+        val carts = listOf(
+            "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc" to GEN2_BOX_CALLS_CRYSTAL,
+            "Pokemon - Kristall-Edition (Germany).gbc" to GEN2_BOX_CALLS_CRYSTAL_DE,
+            "Pokemon - Version Cristal (France).gbc" to GEN2_BOX_CALLS_CRYSTAL_FR,
+            "Pokemon - Versione Cristallo (Italy).gbc" to GEN2_BOX_CALLS_CRYSTAL_IT,
+            "Pokemon - Edicion Cristal (Spain).gbc" to GEN2_BOX_CALLS_CRYSTAL_ES,
+        )
+        val here = carts.filter { File(dir, it.first).isFile }
+        assumeTrue("no French / Italian / Spanish Crystal cart", here.any { it.second !== GEN2_BOX_CALLS_CRYSTAL && it.second !== GEN2_BOX_CALLS_CRYSTAL_DE })
+        for ((name, own) in here) {
+            val rom = File(dir, name).readBytes()
+            for ((_, calls) in carts) assertEquals(name, calls === own, calls.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) })
+            assertTrue(name, own.switchMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) })
+        }
+        assertTrue(GbField.CrystalFr.boxCalls === GEN2_BOX_CALLS_CRYSTAL_FR && GbField.CrystalIt.boxCalls === GEN2_BOX_CALLS_CRYSTAL_IT &&
+            GbField.CrystalEs.boxCalls === GEN2_BOX_CALLS_CRYSTAL_ES)
+    }
+
     private val cfg = GEN2_CRYSTAL
     private val calls = GEN2_BOX_CALLS_CRYSTAL
 
@@ -309,6 +329,12 @@ class Gen2BoxSwapTest {
         "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_SILVER,
         "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_GOLD_DE,
         "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_BOX_CALLS_SILVER_DE,
+        "Pokemon - Version Or (France) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_GOLD_FR,
+        "Pokemon - Version Argent (France) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_SILVER_FR,
+        "Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_GOLD_IT,
+        "Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_SILVER_IT,
+        "Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_GOLD_ES,
+        "Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc" to GEN2_BOX_CALLS_SILVER_ES,
     )
 
     @Test

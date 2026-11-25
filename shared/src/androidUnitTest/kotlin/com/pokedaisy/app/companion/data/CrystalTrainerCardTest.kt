@@ -24,7 +24,14 @@ class CrystalTrainerCardTest {
     }
     private fun english() = art("Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc", Gen2TrainerCard.CRYSTAL_TABLES)
     private fun german() = art("Pokemon - Kristall-Edition (Germany).gbc", Gen2TrainerCard.CRYSTAL_DE_TABLES)
-    private val carts by lazy { listOfNotNull(english()?.let { "en" to it }, german()?.let { "de" to it }) }
+    private val carts by lazy {
+        listOfNotNull(
+            english()?.let { "en" to it }, german()?.let { "de" to it },
+            art("Pokemon - Version Cristal (France).gbc", Gen2TrainerCard.CRYSTAL_FR_TABLES)?.let { "fr" to it },
+            art("Pokemon - Versione Cristallo (Italy).gbc", Gen2TrainerCard.CRYSTAL_IT_TABLES)?.let { "it" to it },
+            art("Pokemon - Edicion Cristal (Spain).gbc", Gen2TrainerCard.CRYSTAL_ES_TABLES)?.let { "es" to it },
+        )
+    }
 
     private val chris = listOf(0x82, 0x87, 0x91, 0x88, 0x92)
     private fun card(full: Boolean) = TrainerCardInfo(
@@ -35,7 +42,8 @@ class CrystalTrainerCardTest {
 
     @Test
     fun `the save's side - the crystal fixtures, English and German`() {
-        for ((fixture, cfg) in listOf("crystal" to GEN2_CRYSTAL, "crystal_de" to GEN2_CRYSTAL_DE)) {
+        for ((fixture, cfg) in listOf("crystal" to GEN2_CRYSTAL, "crystal_de" to GEN2_CRYSTAL_DE,
+            "crystal_fr" to GEN2_CRYSTAL_FR, "crystal_it" to GEN2_CRYSTAL_IT, "crystal_es" to GEN2_CRYSTAL_ES)) {
             val c = Gen2TrainerCard.read(FixtureMemoryReader.load(fixture), cfg) ?: error("$fixture: no card")
             assertEquals(fixture, CardStyle.CRYSTAL, c.style)
             assertEquals(fixture, chris, c.name)
@@ -50,10 +58,9 @@ class CrystalTrainerCardTest {
     @Test
     fun `both pages, every frame - the game's own, pixel for pixel`() {
         assumeTrue("neither Crystal cart on this machine", carts.isNotEmpty())
-        val pins = mapOf("en" to 0x498BFDDEL, "de" to 0x457395C3L)
+        val pins = mapOf("en" to 0x498BFDDEL, "de" to 0x457395C3L, "fr" to 0x02E78D70L, "it" to 0xF4898D10L, "es" to 0x6455A4E6L)
         val out = File("build/crystal-card").also { it.mkdirs() }
         for ((lang, art) in carts) {
-            val pinned = pins.getValue(lang)
             val crc = CRC32()
             for (full in listOf(true, false)) for (page2 in listOf(false, true)) for (phase in 0 until 8) {
                 val img = Gen2TrainerCard.render(art, card(full), page2, phase)
@@ -61,7 +68,7 @@ class CrystalTrainerCardTest {
                 if (phase == 0 || phase == 4) File(out, "$lang-${if (full) "full" else "plain"}-p${if (page2) 2 else 1}-$phase.png").writeBytes(img.png())
             }
             println("$lang 0x%08XL".format(crc.value))
-            assertEquals(lang, pinned, crc.value)
+            pins[lang]?.let { assertEquals(lang, it, crc.value) }
         }
         val shots = System.getenv("CRYSTAL_CARD_SHOTS")?.let(::File) ?: return
         for ((lang, art) in carts) {

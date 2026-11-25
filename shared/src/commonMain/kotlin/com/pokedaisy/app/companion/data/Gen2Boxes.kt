@@ -47,8 +47,8 @@ val GEN2_GOLD_SILVER_BOXES = Gen2BoxLayout(
 
 /** The box layout of [cfg]'s game, or null: retail English / German Crystal, Gold and Silver. */
 fun gen2BoxLayoutFor(cfg: Gen2Config): Gen2BoxLayout? = when {
-    cfg === GEN2_CRYSTAL || cfg === GEN2_CRYSTAL_DE -> GEN2_CRYSTAL_BOXES
-    cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg === GEN2_GOLD_DE || cfg === GEN2_SILVER_DE -> GEN2_GOLD_SILVER_BOXES
+    cfg === GEN2_CRYSTAL || cfg in GEN2_CRYSTAL_EU -> GEN2_CRYSTAL_BOXES
+    cfg === GEN2_GOLD || cfg === GEN2_SILVER || cfg in GEN2_GOLD_SILVER_EU -> GEN2_GOLD_SILVER_BOXES
     else -> null
 }
 

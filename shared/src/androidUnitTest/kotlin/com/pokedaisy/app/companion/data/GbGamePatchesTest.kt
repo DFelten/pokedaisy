@@ -52,7 +52,11 @@ class GbGamePatchesTest {
             "Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc",
             "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc",
             "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc",
-            "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc")
+            "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc",
+            "Pokemon - Version Cristal (France).gbc", "Pokemon - Versione Cristallo (Italy).gbc", "Pokemon - Edicion Cristal (Spain).gbc",
+            "Pokemon - Version Or (France) (SGB Enhanced).gbc", "Pokemon - Version Argent (France) (SGB Enhanced).gbc",
+            "Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc", "Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc",
+            "Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc", "Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc")
         var seen = 0
         fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
         for (name in carts) {

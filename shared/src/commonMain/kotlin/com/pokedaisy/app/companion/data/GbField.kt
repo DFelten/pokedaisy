@@ -123,6 +123,15 @@ sealed class GbField {
             game == GameKind.SILVER && activeGen2 === GEN2_SILVER -> Silver
             game == GameKind.GOLD && activeGen2 === GEN2_GOLD_DE -> GoldDe
             game == GameKind.SILVER && activeGen2 === GEN2_SILVER_DE -> SilverDe
+            game == GameKind.CRYSTAL && activeGen2 === GEN2_CRYSTAL_FR -> CrystalFr
+            game == GameKind.CRYSTAL && activeGen2 === GEN2_CRYSTAL_IT -> CrystalIt
+            game == GameKind.CRYSTAL && activeGen2 === GEN2_CRYSTAL_ES -> CrystalEs
+            game == GameKind.GOLD && activeGen2 === GEN2_GOLD_FR -> GoldFr
+            game == GameKind.SILVER && activeGen2 === GEN2_SILVER_FR -> SilverFr
+            game == GameKind.GOLD && activeGen2 === GEN2_GOLD_IT -> GoldIt
+            game == GameKind.SILVER && activeGen2 === GEN2_SILVER_IT -> SilverIt
+            game == GameKind.GOLD && activeGen2 === GEN2_GOLD_ES -> GoldEs
+            game == GameKind.SILVER && activeGen2 === GEN2_SILVER_ES -> SilverEs
             else -> null
         }
     }
@@ -549,6 +558,72 @@ sealed class GbField {
         boxCalls = GEN2_BOX_CALLS_GOLD_DE, itemCalls = GEN2_ITEM_CALLS_GOLD_DE)
     object SilverDe : GoldSilver(GEN2_SILVER_DE, 0x4AC0, runMemScript = 0x7A80, flypoints = 0x5BFD, runMemScriptCall = "75", flyText = "37",
         boxCalls = GEN2_BOX_CALLS_SILVER_DE, itemCalls = GEN2_ITEM_CALLS_SILVER_DE)
+
+    /** French, Italian and Spanish Crystal / Gold / Silver: English's RAM and scripts (German's code), RunMemScript, the Fly
+     * script and Flypoints at each cart's own place. */
+    object CrystalFr : CrystalEngine(
+        cfg = GEN2_CRYSTAL_FR,
+        QUEUE = wramx(1, 0xD45C), PC_SCRIPT = 0x41A9, FLY_SCRIPT = 0x4A72, SCRIPT_RUNNING = wramx(1, 0xD438),
+        MAP_EVENT_STATUS = wramx(1, 0xD433), VISITED_SPAWNS = wramx(1, 0xDCA5), JOHTO_BADGES = wramx(1, 0xD857),
+        ENVIRONMENT = wramx(1, 0xD19A), PARTY_MON1_MOVES = wramx(1, 0xDCE1), COOLDOWN = wramx(1, 0xD452),
+        FLYPOINTS = 0x24 * 0x4000L + (0x5C75 - 0x4000),
+        signatures = listOf(
+            0x25 * 0x4000L + (0x7C31 - 0x4000) to "fa5cd4a7c8215ed42a666ffa5dd4cd00", // RunMemScript
+            0x2F * 0x4000L + (0x41A9 - 0x4000) to "470f1c00499185",                  // opentext, special, closetext, end
+            0x03 * 0x4000L + (0x4A72 - 0x4000) to "7c0e0003300f3500",                // the Fly script's first commands
+            0x25 * 0x4000L + (0x68C7 - 0x4000) to "2152d47ea7c835c837c9",           // CheckWildEncounterCooldown
+            0x24 * 0x4000L + (0x5C75 - 0x4000) to "010e030f",                         // Flypoints: the first two towns
+        ),
+        boxCalls = GEN2_BOX_CALLS_CRYSTAL_FR,
+        itemCalls = GEN2_ITEM_CALLS_CRYSTAL_FR,
+        STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
+    )
+    object CrystalIt : CrystalEngine(
+        cfg = GEN2_CRYSTAL_IT,
+        QUEUE = wramx(1, 0xD45C), PC_SCRIPT = 0x41A9, FLY_SCRIPT = 0x4AA4, SCRIPT_RUNNING = wramx(1, 0xD438),
+        MAP_EVENT_STATUS = wramx(1, 0xD433), VISITED_SPAWNS = wramx(1, 0xDCA5), JOHTO_BADGES = wramx(1, 0xD857),
+        ENVIRONMENT = wramx(1, 0xD19A), PARTY_MON1_MOVES = wramx(1, 0xDCE1), COOLDOWN = wramx(1, 0xD452),
+        FLYPOINTS = 0x24 * 0x4000L + (0x5C70 - 0x4000),
+        signatures = listOf(
+            0x25 * 0x4000L + (0x7C2F - 0x4000) to "fa5cd4a7c8215ed42a666ffa5dd4cd01", // RunMemScript
+            0x2F * 0x4000L + (0x41A9 - 0x4000) to "470f1c00499185",                  // opentext, special, closetext, end
+            0x03 * 0x4000L + (0x4AA4 - 0x4000) to "7c0e0004300f3500",                // the Fly script's first commands
+            0x25 * 0x4000L + (0x68C7 - 0x4000) to "2152d47ea7c835c837c9",           // CheckWildEncounterCooldown
+            0x24 * 0x4000L + (0x5C70 - 0x4000) to "010e030f",                         // Flypoints: the first two towns
+        ),
+        boxCalls = GEN2_BOX_CALLS_CRYSTAL_IT,
+        itemCalls = GEN2_ITEM_CALLS_CRYSTAL_IT,
+        STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
+    )
+    object CrystalEs : CrystalEngine(
+        cfg = GEN2_CRYSTAL_ES,
+        QUEUE = wramx(1, 0xD45C), PC_SCRIPT = 0x41A9, FLY_SCRIPT = 0x4A71, SCRIPT_RUNNING = wramx(1, 0xD438),
+        MAP_EVENT_STATUS = wramx(1, 0xD433), VISITED_SPAWNS = wramx(1, 0xDCA5), JOHTO_BADGES = wramx(1, 0xD857),
+        ENVIRONMENT = wramx(1, 0xD19A), PARTY_MON1_MOVES = wramx(1, 0xDCE1), COOLDOWN = wramx(1, 0xD452),
+        FLYPOINTS = 0x24 * 0x4000L + (0x5C86 - 0x4000),
+        signatures = listOf(
+            0x25 * 0x4000L + (0x7C29 - 0x4000) to "fa5cd4a7c8215ed42a666ffa5dd4cdfd", // RunMemScript
+            0x2F * 0x4000L + (0x41A9 - 0x4000) to "470f1c00499185",                  // opentext, special, closetext, end
+            0x03 * 0x4000L + (0x4A71 - 0x4000) to "7c0e0000300f3500",                // the Fly script's first commands
+            0x25 * 0x4000L + (0x68C7 - 0x4000) to "2152d47ea7c835c837c9",           // CheckWildEncounterCooldown
+            0x24 * 0x4000L + (0x5C86 - 0x4000) to "010e030f",                         // Flypoints: the first two towns
+        ),
+        boxCalls = GEN2_BOX_CALLS_CRYSTAL_ES,
+        itemCalls = GEN2_ITEM_CALLS_CRYSTAL_ES,
+        STATUS_FLAGS2 = wramx(1, 0xD84D), LINK_MODE = 0xC2DCL,
+    )
+    object GoldFr : GoldSilver(GEN2_GOLD_FR, 0x4AC2, runMemScript = 0x7A80, flypoints = 0x5BF3, runMemScriptCall = "5a", flyText = "1c",
+        boxCalls = GEN2_BOX_CALLS_GOLD_FR, itemCalls = GEN2_ITEM_CALLS_GOLD_FR)
+    object SilverFr : GoldSilver(GEN2_SILVER_FR, 0x4AC0, runMemScript = 0x7A80, flypoints = 0x5BF3, runMemScriptCall = "5a", flyText = "1c",
+        boxCalls = GEN2_BOX_CALLS_SILVER_FR, itemCalls = GEN2_ITEM_CALLS_SILVER_FR)
+    object GoldIt : GoldSilver(GEN2_GOLD_IT, 0x4AC3, runMemScript = 0x7A7E, flypoints = 0x5BE5, runMemScriptCall = "6d", flyText = "2f",
+        boxCalls = GEN2_BOX_CALLS_GOLD_IT, itemCalls = GEN2_ITEM_CALLS_GOLD_IT)
+    object SilverIt : GoldSilver(GEN2_SILVER_IT, 0x4ABF, runMemScript = 0x7A7E, flypoints = 0x5BE5, runMemScriptCall = "6d", flyText = "2f",
+        boxCalls = GEN2_BOX_CALLS_SILVER_IT, itemCalls = GEN2_ITEM_CALLS_SILVER_IT)
+    object GoldEs : GoldSilver(GEN2_GOLD_ES, 0x4AC1, runMemScript = 0x7A78, flypoints = 0x5C02, runMemScriptCall = "6c", flyText = "2e",
+        boxCalls = GEN2_BOX_CALLS_GOLD_ES, itemCalls = GEN2_ITEM_CALLS_GOLD_ES)
+    object SilverEs : GoldSilver(GEN2_SILVER_ES, 0x4ABF, runMemScript = 0x7A78, flypoints = 0x5C02, runMemScriptCall = "6c", flyText = "2e",
+        boxCalls = GEN2_BOX_CALLS_SILVER_ES, itemCalls = GEN2_ITEM_CALLS_SILVER_ES)
 
     /** Crystal Legacy v1.3.1 (its pokecrystal.sym): Crystal's scripts and rules at its own addresses. */
     object CrystalLegacy : CrystalEngine(

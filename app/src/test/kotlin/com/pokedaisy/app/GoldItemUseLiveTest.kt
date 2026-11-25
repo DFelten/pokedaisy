@@ -5,6 +5,12 @@ import com.pokedaisy.app.companion.data.GbField
 import com.pokedaisy.app.companion.data.Gen2Config
 import com.pokedaisy.app.companion.data.GEN2_GOLD
 import com.pokedaisy.app.companion.data.GEN2_GOLD_DE
+import com.pokedaisy.app.companion.data.GEN2_GOLD_FR
+import com.pokedaisy.app.companion.data.GEN2_SILVER_FR
+import com.pokedaisy.app.companion.data.GEN2_GOLD_IT
+import com.pokedaisy.app.companion.data.GEN2_SILVER_IT
+import com.pokedaisy.app.companion.data.GEN2_GOLD_ES
+import com.pokedaisy.app.companion.data.GEN2_SILVER_ES
 import com.pokedaisy.app.companion.data.GEN2_SILVER
 import com.pokedaisy.app.companion.data.GEN2_SILVER_DE
 import com.pokedaisy.app.companion.data.ItemUseResult
@@ -65,6 +71,24 @@ class GoldItemUseLiveTest {
 
     @Test fun silverDe() = run(GbField.SilverDe, GEN2_SILVER_DE, "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc",
         File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).sav"))
+
+    @Test fun goldFr() = run(GbField.GoldFr, GEN2_GOLD_FR, "Pokemon - Version Or (France) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Version Or (France) (SGB Enhanced).sav"))
+
+    @Test fun silverFr() = run(GbField.SilverFr, GEN2_SILVER_FR, "Pokemon - Version Argent (France) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Version Argent (France) (SGB Enhanced).sav"))
+
+    @Test fun goldIt() = run(GbField.GoldIt, GEN2_GOLD_IT, "Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Versione Oro (Italy) (SGB Enhanced).sav"))
+
+    @Test fun silverIt() = run(GbField.SilverIt, GEN2_SILVER_IT, "Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Versione Argento (Italy) (SGB Enhanced).sav"))
+
+    @Test fun goldEs() = run(GbField.GoldEs, GEN2_GOLD_ES, "Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Edicion Oro (Spain) (SGB Enhanced).sav"))
+
+    @Test fun silverEs() = run(GbField.SilverEs, GEN2_SILVER_ES, "Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc",
+        File(System.getProperty("user.home"), "Documents/RetroArch/saves/mGBA/Pokemon - Edicion Plata (Spain) (SGB Enhanced).sav"))
 
     private fun run(field: GbField.CrystalEngine, cfg: Gen2Config, romName: String, save: File?) {
         assumeTrue("POKEDAISY_GB_LIVE not set", System.getenv("POKEDAISY_GB_LIVE") != null)
@@ -155,7 +179,7 @@ class GoldItemUseLiveTest {
             // RARE CANDY: a level up.
             val lvBefore = u8(c, mon0 + 0x1F)
             assertEquals(ItemUseResult.USING_IN_GAME, field.useItem(c, 0x20, field.itemTargets(c, 0x20).targets[0], 0).result)
-            g.run("wait 90"); shot("candy-menu"); press(6, 60); g.run("wait 200")
+            g.run("wait 90"); shot("candy-menu"); press(9, 60); g.run("wait 200")
             assertEquals("a level", lvBefore + 1, u8(c, mon0 + 0x1F))
             assertEquals("a RARE CANDY spent", 2, qty(0x20))
             shot("candy")
@@ -167,7 +191,7 @@ class GoldItemUseLiveTest {
             println("MOON STONE targets: ${st.targets.map { it.verdict }}")
             assertEquals(SlotVerdict.OK, st.targets[1].verdict)
             assertEquals(ItemUseResult.USING_IN_GAME, field.useItem(c, 0x08, st.targets[1], 0).result)
-            g.run("wait 90"); shot("stone-menu"); g.run("wait 600"); shot("stone-evolving"); press(8, 80); g.run("wait 300")
+            g.run("wait 90"); shot("stone-menu"); g.run("wait 600"); shot("stone-evolving"); press(12, 80); g.run("wait 400")
             assertEquals("CLEFABLE", 0x24, u8(c, mon0 + MON))
             assertEquals("a MOON STONE spent", 1, qty(0x08))
             shot("stone")

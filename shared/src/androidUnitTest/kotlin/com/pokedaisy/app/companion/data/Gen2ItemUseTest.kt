@@ -33,13 +33,35 @@ class Gen2ItemUseTest {
     }
 
     @Test
-    fun `Gold and Silver's code and tables are in their four carts, each only its own`() {
+    fun `French, Italian and Spanish Crystal's code and tables - each cart only its own`() {
+        fun Gen2ItemCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
+        val carts = listOf(
+            "Pokemon - Crystal Version (USA, Europe) (Rev 1).gbc" to GEN2_ITEM_CALLS_CRYSTAL,
+            "Pokemon - Kristall-Edition (Germany).gbc" to GEN2_ITEM_CALLS_CRYSTAL_DE,
+            "Pokemon - Version Cristal (France).gbc" to GEN2_ITEM_CALLS_CRYSTAL_FR,
+            "Pokemon - Versione Cristallo (Italy).gbc" to GEN2_ITEM_CALLS_CRYSTAL_IT,
+            "Pokemon - Edicion Cristal (Spain).gbc" to GEN2_ITEM_CALLS_CRYSTAL_ES,
+        ).map { (name, calls) -> File(dir, name) to calls }
+        assumeTrue("no Crystal cart", carts.drop(2).any { it.first.isFile })
+        for ((f, calls) in carts) if (f.isFile) for ((_, other) in carts) assertEquals(f.name, other === calls, other.on(f))
+        assertTrue(GbField.CrystalFr.itemCalls === GEN2_ITEM_CALLS_CRYSTAL_FR && GbField.CrystalIt.itemCalls === GEN2_ITEM_CALLS_CRYSTAL_IT &&
+            GbField.CrystalEs.itemCalls === GEN2_ITEM_CALLS_CRYSTAL_ES)
+    }
+
+    @Test
+    fun `Gold and Silver's code and tables are in their ten carts, each only its own`() {
         fun Gen2ItemCalls.on(f: File) = f.readBytes().let { rom -> codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) } }
         val carts = listOf(
             "Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_GOLD,
             "Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_SILVER,
             "Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_GOLD_DE,
             "Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible).gbc" to GEN2_ITEM_CALLS_SILVER_DE,
+            "Pokemon - Version Or (France) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_GOLD_FR,
+            "Pokemon - Version Argent (France) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_SILVER_FR,
+            "Pokemon - Versione Oro (Italy) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_GOLD_IT,
+            "Pokemon - Versione Argento (Italy) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_SILVER_IT,
+            "Pokemon - Edicion Oro (Spain) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_GOLD_ES,
+            "Pokemon - Edicion Plata (Spain) (SGB Enhanced).gbc" to GEN2_ITEM_CALLS_SILVER_ES,
         ).map { (name, calls) -> File(dir, name) to calls }
         assumeTrue("no Gold / Silver cart", carts.any { it.first.isFile })
         val all = carts.map { it.second } + GEN2_ITEM_CALLS_CRYSTAL + GEN2_ITEM_CALLS_CRYSTAL_DE

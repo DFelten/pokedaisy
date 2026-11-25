@@ -20,8 +20,10 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Gold / Silver (GBC) | FR / IT / ES (Version Or / Version Argent, Versione Oro / Versione Argento, Edición Oro / Edición Plata) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | USA, USA/Europe rev 1, AU | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal (GBC) | DE (Kristall) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
+| Crystal (GBC) | FR / IT / ES (Version Cristal, Versione Cristallo, Edición Cristal) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶² | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Crystal Legacy (GBC) | 1.3.1 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
 | Crystal Clear (GBC) | 2.5.11, 2.6.0 (4 builds) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ⁴⁸ | n/a | — | — | — | — ³⁶ | — |
 | Prism (GBC) | 0.95 build 254 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | n/a | n/a | ✅ ¹⁶ | n/a | — | — | — | — ³⁶ | — |
@@ -146,6 +148,9 @@ change to any of the places listed under "Where it's decided" updates its rows h
    Gold / Silver have Crystal's battle menus (their own addresses, `GEN2_GOLD`): reads checked on the `gold_battle*` /
    `silver_battle` fixtures, the controls' timing not run on them. German Gold / Silver (Goldene / Silberne Edition) have
    them at Kristall's columns (`GEN2_GOLD_DE`): reads checked on the `gold_de_battle*` / `silver_de_battle` fixtures.
+   French, Italian and Spanish Crystal / Gold / Silver (2026-11-25) have them at their own columns (French 7 / 11, Italian 8 / 12,
+   Spanish 7 / 12, the same in Crystal and Gold / Silver of a language): reads checked on each cart's `<cart>_battle` /
+   `<cart>_battle_menu` fixtures.
    Red / Blue have Yellow's battle menus and menu variables (at Yellow's addresses, the cursor columns 9 / 15): their
    reads are checked on the `red_battle*` fixtures, the controls' timing wasn't run on them. German Red / Blue have German
    Yellow's columns (KMPF / ITEM 7, PkMn / FLUCHT 12): reads checked on `red_de_battle*` / `blue_de_battle`.
@@ -229,7 +234,10 @@ change to any of the places listed under "Where it's decided" updates its rows h
     (`GB_GOLD_SILVER_DE`, found by its bytes; every other table and the RAM where English's are): Route 29 from the gold
     fixture's save, the START menu, east and back west through the grass, every map frame exact (Silberne 2836, Goldene 2065
     up to a wild battle) but those the game wrote VRAM or a palette in mid-frame.
-    The other languages' (not German) Red / Blue, Gold / Silver, Prism and the other Polished Crystal builds aren't mapped yet (—).
+    French, Italian and Spanish Crystal / Gold / Silver (2026-11-25) are English's rows with SpriteMovementData where each cart
+    has it (bank 1, 0x4272 to 0x4274, found by its bytes): Route 29 from each fixture's save, every map frame exact on all nine
+    but those written mid-frame (the unchecked ones were a wild battle's).
+    The other languages' (not German) Red / Blue, Prism and the other Polished Crystal builds aren't mapped yet (—).
 13. FLY, WILD ENCOUNTERS and PC anywhere on Red / Blue (English and German), Yellow (all five languages) and Crystal (rev 0, rev 1, Australia)
     are `GbField.kt`, each the game's own way in (pret/pokered's, pokeyellow's and pokecrystal's sources; the European
     Yellows' addresses mapped by scripts/port_gen1.py; each cart's code checked in it first: `GbFieldTest` finds every Gen 1
@@ -254,7 +262,11 @@ change to any of the places listed under "Where it's decided" updates its rows h
     nothing (one without). German Gold / Silver (`GbField.GoldDe` / `.SilverDe`, 2026-11-20): English's RAM, PCScript, Fly scripts and
     cooldown check, RunMemScript 0x1F later (0x7A80) and the Flypoints table 0x31 later (0x5BFD); headless on the German Gold / Silver
     save in Route 29: the PC opened ("GOLD schaltet den PC ein."), FLY (the badge, the move and Cherrygrove's spawn poked in) landed
-    at Rosalia City's Pokémon Center, 100 steps in the grass with the cooldown held met nothing (one within ~30 without). The Crystal
+    at Rosalia City's Pokémon Center, 100 steps in the grass with the cooldown held met nothing (one within ~30 without). French,
+    Italian and Spanish Crystal / Gold / Silver (`GbField.CrystalFr` ... `.SilverEs`, 2026-11-25): English's RAM, PCScript and cooldown
+    check, RunMemScript, the Fly script and the Flypoints table at each cart's place; headless on each cart's save in Route 29 the PC
+    opened in its language ("GOLD allume le PC.", "CHRIS accende il PC.", "GOLD encendió el PC.") and FLY landed at Cherrygrove's
+    Pokémon Center, all nine. The Crystal
     hacks: not yet (their ROM / RAM moved).
     PureRed / PureBlue (`GB_FIELD_PURE_RGB`, pureRGB's own source; both carts the same code): Red's ways in at its places -
     the PC routine in bank 0x33, called from 0x03D7 (its loop waits at OverworldLoop's `rst DelayFrame`), the wild data in
@@ -762,8 +774,10 @@ change to any of the places listed under "Where it's decided" updates its rows h
     halved, no gained box, their level ups and moves kept. The pass is wGivingExperienceToExpShareHolders = 2 (nothing reads that
     byte; the win code writes 0, then 1 for a held Exp. Share's pass), put back to 0 before ResetBattleParticipants. Played headless on
     Crystal rev 1 and Kristall: the fighter's box and level up, the line, then the other's level up (+16 / +8); with the Exp. Share
-    held the game's own two passes as with FULL. Found in every retail Gold / Silver / Crystal in English and German
-    (`GbGamePatchesTest`); other languages get the English line. Falls back to FULL where not found.
+    held the game's own two passes as with FULL. Found in every retail Gold / Silver / Crystal in English, German, French,
+    Italian and Spanish (`GbGamePatchesTest`), each with the line in its language (French "Les autres gagnent des Points EXP!",
+    Italian "Gli altri ricevono Punti ESP.", Spanish "Los otros ganan Puntos EXP."), played headless on all nine European carts
+    (2026-11-25: the second Pokémon half the fighter's EXP). Falls back to FULL where not found.
     MODERN on Red / Blue / Yellow (2026-11-24, `GbGamePatches.expModernGen1`): the same two passes in GainExperience's bank (0x15 in
     Red / Blue, the end of its padding), four hooks. The loop's flag check pays on the first pass the marked ones that fought
     (wPartyFoughtCurrentEnemyFlags, set with the gain bit as a Pokémon goes out), on the rest's pass the marked ones that didn't;
@@ -848,7 +862,8 @@ change to any of the places listed under "Where it's decided" updates its rows h
     equal to the formula's, the rewrite still in place after the battle started, the foe sliding in shiny with the game's own
     sparkle beside the same battle left plain (`GbShinyOddsTest`). The German carts (Goldene / Silberne Edition, Kristall, 2026-11-20)
     keep English's RAM: battle mode / type, wEnemyMon, wEnemyStats, wBaseDexNo and wBaseGender read the same on their
-    `gold_de_battle` / `silver_de_battle` / `crystal_de_battle` fixtures as on English's, so they share its target.
+    `gold_de_battle` / `silver_de_battle` / `crystal_de_battle` fixtures as on English's, so they share its target. So do the
+    French, Italian and Spanish carts (2026-11-25, read the same on their `<cart>_battle` fixtures).
 
 ## What each column is
 
@@ -1111,6 +1126,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     addresses come from its own code (`scripts/find_crystal_card.py`); Kristall's are English's shifted, its top line without
     NAME/. Every frame of both pages matched the games' own card headless, English and German, on the save as it is and with
     everything poked in (`CrystalTrainerCardTest`). Not on Crystal's hacks (Clear, Legacy, Prism, Polished).
+    French, Italian and Spanish Crystal / Gold / Silver (2026-11-25): Kristall's layout (no NAME/ label) at each cart's addresses,
+    found by their bytes; rendered in each cart's words and pinned (`CrystalTrainerCardTest`, `GoldSilverTrainerCardTest`), not yet
+    compared with the games' own card frame by frame.
     Gold / Silver (2026-11-24, `CardStyle.GOLD_SILVER`, English and German, `gen2/gold_silver/trainer_card.bin`): the same code
     in pokegold, but the picture and frame are one blob drawn row by row (`Tables.rowMajor`), the border's corner is the
     picture's tile $04, BADGES sits two tiles right in English, and the RAM is pokegold's (`Gen2TrainerCard.Ram`). Silver's
@@ -1124,7 +1142,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Yellow, German Yellow, English Blue and German Red each matched the game's card headless pixel for pixel, with every badge,
     none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. Not yet: French, Italian
     and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
-59. FOLLOWER on Crystal, Gold, Silver, Red and Blue (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+59. FOLLOWER on Crystal, Gold, Silver, Red and Blue (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU, the German, French, Italian and Spanish carts by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
     player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's
@@ -1205,7 +1223,9 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Each function and table found by its bytes in both carts. Left out: NORMAL BOX / GORGEOUS BOX and GIVE. Checked headless on the German
     cart (a TM taught into a free slot and into a forgotten one, a vitamin's stats: max HP 110 -> 112 as the formula says, RARE CANDY
     picked here on a level 35 QUILAVA: level 36, the stats box, the evolution, one candy spent, back on the map; a THUNDERSTONE on a
-    PIKACHU: RAICHU, the stone spent; ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor.
+    PIKACHU: RAICHU, the stone spent; ESCAPE ROPE refused in town, ITEMFINDER), the rest on the Thor. French, Italian and Spanish
+    Crystal (2026-11-25, `GEN2_ITEM_CALLS_CRYSTAL_FR` / `_IT` / `_ES`): the same set, each function and table found by its bytes
+    (`Gen2ItemUseTest`), not played.
     `Gen2ItemUseTest`.
 63. WILD PIN (`WildPin.kt`): while a pin is on, the pinned method's slots on the map ({u8 min, u8 max, u16 species},
     the WildPokemonInfo's slot array, `GuideRomSource.pinSlots`: `WildPin.Method` LAND 12, WATER 5, ROCK_SMASH 5,
@@ -1225,7 +1245,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Silver have no BLUE CARD. Checked headless on all four carts (`GoldItemUseLiveTest`, opt-in `POKEDAISY_GB_LIVE=1`, with the German
     saves: no English one exists here): a Repel, a Potion, a vitamin, PP UP, HM01 taught, RARE CANDY, a MOON STONE evolution, the bike on
     and off, a rod and ESCAPE ROPE refused in town; the COIN CASE's text on the German carts only (a German save in an English cart
-    leaves the game's own SELECT COIN CASE broken too).
+    leaves the game's own SELECT COIN CASE broken too). French, Italian and Spanish Gold / Silver (2026-11-25, each by its code):
+    the same run on all six with the German save under each cart's name, the COIN CASE's text too.
 65. Bag USE on Red / Blue (English and German) and Yellow (English and German) (2026-11-24, `Gen1ItemCalls` in `Gen1ItemUse.kt`,
     `GbField.Gen1.bagUse`, each cart by its code): healing items, FULL RESTORE, status cures, REVIVE / MAX REVIVE, ETHER / ELIXER kinds,
     PP UP and the three Repels, on the field only. The item leaves the bag through the game's own RemoveItemFromInventory (home, called
