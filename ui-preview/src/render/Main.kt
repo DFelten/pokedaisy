@@ -1976,6 +1976,13 @@ fun main(args: Array<String>) {
         Shot("$g-party-held", bw, bh, bd, companion("PARTY") {
             snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> m.copy(heldItemId = listOf(13, 183).getOrElse(i) { 0 }) }) }
         }),
+        // The second Pokémon shiny: the gold sparkle (on the Game Boy beside its level), and in its summary.
+        Shot("$g-party-shiny", bw, bh, bd, companion("PARTY") {
+            snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> if (i == 1) m.copy(shiny = true) else m }) }
+        }),
+        Shot("$g-party-detail-shiny", bw, bh, bd, companion("PARTY", mon = 1) {
+            snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> if (i == 1) m.copy(shiny = true) else m }) }
+        }),
         // The second Pokémon nicknamed (GitHub #228): the slot shows the nickname, the summary adds the species.
         Shot("$g-party-nickname", bw, bh, bd, companion("PARTY") {
             snapshot().let { s -> s.copy(party = s.party.mapIndexed { i, m -> if (i == 1) m.copy(nickname = "Skyler") else m }) }

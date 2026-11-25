@@ -284,6 +284,8 @@ fun decodeGen1PartyMon(raw: ByteArray, off: Int, cfg: Gen1Config): Mon? {
         exp = exp,
         personality = gen1MonKey(raw, off),   // no personality in Gen 1: the switch's key (GbPartySwitch)
         stats = gen1Stats(raw, off + 27, statExp = List(5) { be16(raw, off + 17 + 2 * it) }, hpStats = off + 34),
+        // Gen 1 has no shinies, but its DVs carry over: one that Gen 2 (Time Capsule) or Stadium would show shiny.
+        shiny = gen2Shiny(u8(raw, off + 27), u8(raw, off + 28)),
     )
 }
 
@@ -314,6 +316,7 @@ fun gen1WildFoe(raw: ByteArray, unmodified: ByteArray, cfg: Gen1Config): Mon? {
         species = b.species, level = b.level, hp = b.hp, maxHp = b.maxHp, status = b.status1, moves = b.moves, pp = b.pp,
         genderSymbol = GENDER_SYMBOL_NONE,
         stats = stats,
+        shiny = b.shiny,
     )
 }
 
@@ -331,6 +334,7 @@ fun decodeGen1BattleMon(raw: ByteArray, cfg: Gen1Config): BattleMon? {
         status1 = u8(raw, 4).toLong(),
         moves = IntArray(4) { u8(raw, 8 + it) },
         pp = IntArray(4) { u8(raw, 25 + it) and 0x3F },
+        shiny = gen2Shiny(u8(raw, 12), u8(raw, 13)),   // the DVs, as the party's (decodeGen1PartyMon)
     )
 }
 

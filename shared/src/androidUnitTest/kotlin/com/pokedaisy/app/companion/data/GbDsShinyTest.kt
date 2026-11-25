@@ -31,4 +31,22 @@ class GbDsShinyTest {
         activeGame = GameKind.GOLD
         assertTrue(readGen2Telemetry(FixtureMemoryReader.load("gold"), GEN2_GOLD).party.none { it.shiny })
     }
+
+    @Test
+    fun `Gen 1 - shiny by the DVs Gen 2 would read, in the party and in battle`() {
+        val cfg = GEN1_YELLOW
+        val pikachu = cfg.internalToDex.indexOf(25)
+        fun partyMon(dv0: Int, dv1: Int) = ByteArray(GEN1_PARTY_MON_SIZE).also {
+            it[0] = pikachu.toByte(); it[33] = 5; it[27] = dv0.toByte(); it[28] = dv1.toByte()
+        }
+        assertTrue(decodeGen1PartyMon(partyMon(0x2A, 0xAA), 0, cfg)!!.shiny)
+        assertFalse(decodeGen1PartyMon(partyMon(0x1A, 0xAA), 0, cfg)!!.shiny)   // Attack 1
+        fun battleMon(dv0: Int, dv1: Int) = ByteArray(GEN1_BATTLE_MON_SIZE).also {
+            it[0] = pikachu.toByte(); it[14] = 5; it[12] = dv0.toByte(); it[13] = dv1.toByte()
+        }
+        assertTrue(decodeGen1BattleMon(battleMon(0xFA, 0xAA), cfg)!!.shiny)
+        assertFalse(decodeGen1BattleMon(battleMon(0xFA, 0xAB), cfg)!!.shiny)   // Special 11
+        activeGame = GameKind.YELLOW
+        assertTrue(readGen1Telemetry(FixtureMemoryReader.load("yellow"), cfg).party.none { it.shiny })
+    }
 }
