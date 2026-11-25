@@ -224,6 +224,7 @@ object GameTitleCatalog {
         "2e94d09c1e16a57eb079404c030f26fdeeac949d" to "Pokémon PureRed",
         // Pokémon Brown 6.1.2 / 6.0.1 (Koolboyman's Rijon, a Red hack: GEN1_BROWN).
         "24eeda80ee78fa214a6f4a85164a2492d2b017ad" to "Pokémon Brown",
+        "a2fcbaeaeac0ca6ef13776147aeedba301775028" to "Pokémon Green (Translated)",
         "2d6d1f1a6010f578d67045802611a288ebd8748b" to "Pokémon Brown",
         "d419fe244fa17196f7df46ddab47c840e7573652" to "Pokémon PureBlue",
         // Pokémon Red (Gen II Graphics V2.0)

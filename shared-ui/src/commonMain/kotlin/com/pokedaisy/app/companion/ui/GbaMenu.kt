@@ -136,10 +136,10 @@ object OptionColors {
     private val G1_INK get() = if (dark) Color(0xFFE8E8E8) else gbInk(activeGame)
     private val G1_PAPER get() = if (dark) Color(0xFF181818) else gbPaper(activeGame)
 
-    /** A Game Boy game's own black and white in light mode: Yellow's and Gen 2's GBC ones, Red / Blue's SGB ones,
+    /** A Game Boy game's own black and white in light mode: Yellow's and Gen 2's GBC ones, Red / Blue's (and Japanese Green's) SGB ones,
      * PureRed / PureBlue's and Brown's pure black (their Color / SGB palettes, sampled headless). */
-    fun gbInk(game: GameKind?): Color = if (game.isRedBlue) Color(0xFF181010) else if (game.isPureRgb || game == GameKind.BROWN) Color.Black else Color(0xFF181818)
-    fun gbPaper(game: GameKind?): Color = if (game.isRedBlue) Color(0xFFFFEFFF) else Color(0xFFFFFFFF)
+    fun gbInk(game: GameKind?): Color = if (game.isRedBlue || game == GameKind.GREEN_JP) Color(0xFF181010) else if (game.isPureRgb || game == GameKind.BROWN) Color.Black else Color(0xFF181818)
+    fun gbPaper(game: GameKind?): Color = if (game.isRedBlue || game == GameKind.GREEN_JP) Color(0xFFFFEFFF) else Color(0xFFFFFFFF)
     // Brown's text boxes are its own: black, cream, green, black (its party screen's colours, sampled headless; over the
     // field they take the map's two middle colours), here a pixel each.
     private val G1_FRAME get() = if (activeGame == GameKind.BROWN) listOf(G1_PAPER to 1, G1_INK to 1, BROWN_CREAM to 1,
@@ -222,7 +222,7 @@ object OptionColors {
     /** Every other row of a long list (pick-lists, COLLECTION): the style's band, else a touch of the label's colour. */
     val rowStripe get() = style?.stripe?.let { tint(it) } ?: androidx.compose.ui.graphics.lerp(listFill, label, if (dark) 0.06f else 0.04f)
     /** The cursor row (Gen 1 marks it with its ▶; here a light grey band, a lighter slate in dark). */
-    val rowSelected get() = sk?.rowSelected ?: (if (gen1) (if (activeGame.isRedBlue) c(0xFFE6D6E6, 0xFF3A3A3A) else c(0xFFDCDCDC, 0xFF3A3A3A))
+    val rowSelected get() = sk?.rowSelected ?: (if (gen1) (if (activeGame.isRedBlue || activeGame == GameKind.GREEN_JP) c(0xFFE6D6E6, 0xFF3A3A3A) else c(0xFFDCDCDC, 0xFF3A3A3A))
         else style?.let { tint(it.selected) } ?: w(0xFFFFFFFF, 0xFF353C49))
     val label get() = sk?.label ?: (if (gen1) G1_INK else themeText ?: style?.let { tint(it.label) } ?: w(0xFF575656, 0xFFCDD1D9))
     val labelShadow get() = sk?.labelShadow ?: (if (gen1) Color.Transparent else themeText?.let { t ->

@@ -194,7 +194,7 @@ fun itemDescription(id: Int): String = when (activeGame) {
     // Gen 1 items have no descriptions of their own: ours, and what each TM / HM teaches.
     // ... in English: the German / French / Italian / Spanish carts get none rather than English under their names.
     // Red and Blue have Yellow's items (gen_gen1_tables.py checks it): its text fits them.
-    GameKind.YELLOW, GameKind.RED, GameKind.BLUE -> if (romLanguage != 'E') "" else itemDescriptionsYellow[id] ?: tmDescriptionsYellow[id] ?: ""
+    GameKind.YELLOW, GameKind.RED, GameKind.BLUE, GameKind.GREEN_JP -> if (romLanguage != 'E') "" else itemDescriptionsYellow[id] ?: tmDescriptionsYellow[id] ?: ""
     // PureRGB renamed, replaced and added items: Yellow's text only where the item is still Yellow's (same id, same name);
     // its own TMs teach other moves (tmDescriptionsPureRgb).
     GameKind.PURE_RED, GameKind.PURE_BLUE -> tmDescriptionsPureRgb[id]

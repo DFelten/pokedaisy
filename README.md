@@ -208,6 +208,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | Red Gen II Graphics (GB)       | 2.0                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ✅   |
 | Yellow Gen II Graphics (GB)    | 1.1                        |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   ✅   |
 | Brown (GB)                     | 6.0.1, 6.1.2               |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   —   |
+| Green (Translated) (GB)        | JP v1.0, LandaR            |  ✅   | ✅  |   ◐    | ✅  |    —    |   —   |
 | Gold / Silver (GBC)            | USA/Europe                 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   —   |
 | Gold / Silver (GBC)            | DE (Goldene Edition, Silberne Edition) |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   —   |
 | Crystal (GBC)                  | USA, USA/Europe rev 1, AU  |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |

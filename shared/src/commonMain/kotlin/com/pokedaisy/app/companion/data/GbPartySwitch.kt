@@ -36,6 +36,10 @@ interface GbPartySwitch {
     /** The battle menu waiting for a press and its cursor, as the battle-input poll reads it ([readGen1BattleInput] /
      * [readGen2BattleInput]): the controls' FIGHT / BAG / RUN / move picks steer on it, read fresh every frame. */
     fun battleMenu(r: MemoryReader): Pair<Int, Int>
+
+    /** [battleMenu]'s cell for an action in Gen 3's numbering (0 FIGHT, 1 BAG, 2 POKéMON, 3 RUN): FIGHT and PkMn on top,
+     * ITEM and RUN below; the Japanese carts' menu has ITEM top right and POKéMON bottom left. */
+    fun actionCell(action: Int): Int = when (action) { 0 -> 0; 1 -> 2; 2 -> 1; else -> 3 }
 }
 
 /**
@@ -86,6 +90,8 @@ class Gen1PartySwitch(private val cfg: Gen1Config) : GbPartySwitch {
     override fun menu(r: MemoryReader): GbPartyMenu? = readGen1PartyMenu(r, cfg)
 
     override fun battleMenu(r: MemoryReader): Pair<Int, Int> = readGen1BattleInput(r, cfg)
+
+    override fun actionCell(action: Int): Int = if (cfg.itemTopRight) action.coerceIn(0, 3) else super.actionCell(action)
 
     override fun party(r: MemoryReader): List<GbPartyMon> {
         val n = u8(r.readCoreMemory(cfg.partyCount, 1), 0).coerceAtMost(PARTY_SIZE)

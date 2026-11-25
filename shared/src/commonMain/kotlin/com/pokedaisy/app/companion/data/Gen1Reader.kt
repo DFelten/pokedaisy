@@ -57,6 +57,16 @@ data class Gen1Config(
     /** wEnemyMonUnmodifiedMaxHP and the four stats after it: the foe's stats before any stat stage (wEnemyMon's carry
      * them: a LEER halves its Defense there). The same in every Gen 1 cart read (the `*_battle` fixtures). */
     val enemyUnmodified: Long = 0xCD24L,
+    /** NAME_LENGTH: a nickname's bytes in wPartyMonOT / wPartyMonNicks (11; the Japanese carts' 6). */
+    val nameLength: Int = 11,
+    /** The nicknames' character set when it isn't the language's own ([gen1Charset]): a translation of a Japanese cart. */
+    val charset: Gen1Charset? = null,
+    /** MoveSelectionMenu's list: wTopMenuItemY / X and the rows between two moves (English 12 / 5 / 1; Japanese 8 / 1 / 2). */
+    val moveMenuTop: Int = 0x0C,
+    val moveMenuX: Int = 0x05,
+    val moveMenuRowStep: Int = 1,
+    /** The Japanese battle menu: ITEM top right and POKéMON bottom left (English: PkMn top right, ITEM bottom left). */
+    val itemTopRight: Boolean = false,
 )
 
 /** Pokémon Yellow (USA, Europe). Red / Blue's own addresses are one byte later ([GEN1_RED]). */
@@ -182,6 +192,47 @@ val GEN1_RED_DE = GEN1_RED.copy(
 val GEN1_BLUE_DE = GEN1_RED_DE.copy(gameCode = "APED", pokedex = POKEDEX_BLUE_DE)
 
 /**
+ * Pocket Monsters Green (Japan) v1.0 in LandaR's English translation: the Japanese cart patched in place (text, font and
+ * name tables only), so its RAM is pret/pokered's `pokegreen` build's (its .sym, built byte for byte: every address
+ * below). Japanese RAM: NAME_LENGTH 6, so the OT names and nicknames are shorter; the party / battle structs are
+ * English's. The species, move and item ids are the English carts', so the names come from English's tables; the
+ * nicknames use the translation's own font ([Gen1Charset.GREEN_EN]). Its battle menu is the Japanese one ([itemTopRight],
+ * a two-row move list). Checked on headless captures of a save played in it (the `green_landar*` fixtures).
+ */
+val GEN1_GREEN_LANDAR = GEN1_RED.copy(
+    partyCount = 0xD123L,
+    partyMons = 0xD12BL,
+    bagCount = 0xD2A1L,
+    money = 0xD2CBL,
+    badges = 0xD2D5L,
+    curMap = 0xD2DDL,
+    yCoord = 0xD2E0L,
+    xCoord = 0xD2E1L,
+    isInBattle = 0xD034L,
+    battleMon = 0xCFFBL,
+    enemyMon = 0xCFCCL,
+    enemyMonPartyPos = 0xCFCFL,
+    enemyPartyCount = 0xD81BL,
+    enemyMons = 0xD823L,
+    topMenuItemY = 0xCC24L,
+    moveMenuType = 0xCCDBL,
+    tileMap = 0xC3A0L,
+    pokedex = null,
+    playTime = 0xD97DL,
+    partyMenuType = 0xD05AL,
+    playerMonNumber = 0xCC2FL,
+    enemyUnmodified = 0xCD24L,
+    battleMenuLeftX = 0x0A,
+    battleMenuRightX = 0x0F,
+    nameLength = 6,
+    charset = Gen1Charset.GREEN_EN,
+    moveMenuTop = 0x08,
+    moveMenuX = 0x01,
+    moveMenuRowStep = 2,
+    itemTopRight = true,
+)
+
+/**
  * PureRed and PureBlue v2.7.6 (Vortyne/pureRGB, a pret/pokered fork: its `make red blue` with rgbds 1.0.3 is both releases
  * byte for byte, so its pokered.sym gives every address; pokeblue.sym's RAM is the same). A Color cart (rgbfix -c) that
  * keeps its game state in WRAM bank 1 and switches D000 to bank 2 for its palette buffers (wGBCFullPalBuffer), so
@@ -244,9 +295,9 @@ val GEN1_YELLOW_LEGACY = GEN1_YELLOW.copy(
 val GEN1_BROWN = GEN1_RED.copy(internalToDex = gen1InternalToDexBrown, pokedex = POKEDEX_BROWN)
 val GEN1_BROWN_V601 = GEN1_BROWN.copy(pokedex = POKEDEX_BROWN_V601)
 
-/** Pokémon Yellow, Red or Blue (every language), PureRed or PureBlue, Yellow Legacy, Brown: Gen 1's reader ([readGen1Telemetry]), tables and look. */
+/** Pokémon Yellow, Red or Blue (every language), PureRed or PureBlue, Yellow Legacy, Brown, Japanese Green (translated): Gen 1's reader ([readGen1Telemetry]), tables and look. */
 val GameKind?.isGen1: Boolean get() = this == GameKind.YELLOW || isRedBlue || isPureRgb || this == GameKind.YELLOW_LEGACY ||
-    this == GameKind.BROWN
+    this == GameKind.BROWN || this == GameKind.GREEN_JP
 
 /** Pokémon Red or Blue: Yellow's tables, their own art, dex pages and RAM ([GEN1_RED]). */
 val GameKind?.isRedBlue: Boolean get() = this == GameKind.RED || this == GameKind.BLUE
@@ -256,9 +307,8 @@ val GameKind?.isPureRgb: Boolean get() = this == GameKind.PURE_RED || this == Ga
 
 const val GEN1_PARTY_MON_SIZE = 44
 const val GEN1_BATTLE_MON_SIZE = 29
-/** wPartyMonNicks' 11-byte names, right after wPartyMonOT (6 x 11): see [readGen1Telemetry]. */
+/** wPartyMonNicks' 11-byte names (the Japanese carts' 6: [Gen1Config.nameLength]), right after wPartyMonOT. */
 private const val GEN1_NAME_LEN = 11
-private const val GEN1_NICKNAMES_AFTER_MONS = PARTY_SIZE * GEN1_PARTY_MON_SIZE + PARTY_SIZE * GEN1_NAME_LEN
 
 private fun be16(b: ByteArray, o: Int) = ((b[o].toInt() and 0xFF) shl 8) or (b[o + 1].toInt() and 0xFF)
 private fun u8(b: ByteArray, o: Int) = b[o].toInt() and 0xFF
@@ -335,11 +385,11 @@ fun decodeGen1BattleMon(raw: ByteArray, cfg: Gen1Config): BattleMon? {
 }
 
 /** [raw]'s nickname at [off] (11 bytes, 0x50-terminated) in the cart's own charset. */
-internal fun gen1Nickname(raw: ByteArray, off: Int, charset: Gen1Charset): String? {
-    if (off + GEN1_NAME_LEN > raw.size) return null
+internal fun gen1Nickname(raw: ByteArray, off: Int, charset: Gen1Charset, length: Int = GEN1_NAME_LEN): String? {
+    if (off + length > raw.size) return null
     val chars = charset.chars
     return buildString {
-        for (i in 0 until GEN1_NAME_LEN) {
+        for (i in 0 until length) {
             val c = raw[off + i].toInt() and 0xFF
             if (c == 0x00 || c == 0x50) break
             chars[c]?.let { append(it) }
@@ -368,8 +418,6 @@ fun gen1BattleMenuWords(language: Char): List<String> = when (language) {
 
 private const val TILE_CURSOR = 0xED          // ▶, the waiting menu's cursor
 private const val BATTLE_MENU_TOP = 0x0E         // DisplayBattleMenu: rows 14 / 16, X per Gen1Config (FIGHT / ITEM, PkMn / RUN)
-private const val MOVE_MENU_TOP = 0x0C           // MoveSelectionMenu: moves on rows 13-16 (items 1-4), X 5
-private const val MOVE_MENU_X = 0x05
 
 /**
  * Which battle menu waits for the player, and its cursor: BATTLE_INPUT_ACTION_SELECT with
@@ -395,8 +443,8 @@ fun readGen1BattleInput(r: MemoryReader, cfg: Gen1Config): Pair<Int, Int> {
     ) {
         return BATTLE_INPUT_ACTION_SELECT to ((if (x == cfg.battleMenuRightX) 1 else 0) + 2 * item)
     }
-    if (top == MOVE_MENU_TOP && x == MOVE_MENU_X && item in 1..4 &&
-        u8(r.readCoreMemory(cfg.moveMenuType, 1), 0) == 0 && cursorShown(top + item)
+    if (top == cfg.moveMenuTop && x == cfg.moveMenuX && item in 1..4 &&
+        u8(r.readCoreMemory(cfg.moveMenuType, 1), 0) == 0 && cursorShown(top + cfg.moveMenuRowStep * item)
     ) {
         return BATTLE_INPUT_MOVE_SELECT to item - 1
     }
@@ -411,12 +459,13 @@ private val EMPTY_BATTLE_MON = BattleMon(0, 0, 0, 0, 0, 0, 0, IntArray(4), IntAr
 fun readGen1Telemetry(r: MemoryReader, cfg: Gen1Config): Telemetry {
     val count = u8(r.readCoreMemory(cfg.partyCount, 1), 0).coerceAtMost(PARTY_SIZE)
     val partyRaw = r.readCoreMemory(cfg.partyMons, PARTY_SIZE * GEN1_PARTY_MON_SIZE)
-    // wPartyMonNicks: 6 x 11 bytes, after wPartyMons and wPartyMonOT.
-    val nicknames = r.readCoreMemory(cfg.partyMons + GEN1_NICKNAMES_AFTER_MONS, PARTY_SIZE * GEN1_NAME_LEN)
-    val charset = gen1Charset(cfg.language)
+    // wPartyMonNicks: 6 names of NAME_LENGTH bytes, after wPartyMons and wPartyMonOT.
+    val nameLen = cfg.nameLength
+    val nicknames = r.readCoreMemory(cfg.partyMons + PARTY_SIZE * (GEN1_PARTY_MON_SIZE + nameLen), PARTY_SIZE * nameLen)
+    val charset = cfg.charset ?: gen1Charset(cfg.language)
     val party = (0 until count).mapIndexedNotNull { i, _ ->
         decodeGen1PartyMon(partyRaw, i * GEN1_PARTY_MON_SIZE, cfg)?.copy(
-            nickname = gen1Nickname(nicknames, i * GEN1_NAME_LEN, charset),
+            nickname = gen1Nickname(nicknames, i * nameLen, charset, nameLen),
         )
     }
 

@@ -18,6 +18,14 @@ enum class Gen1Charset(val chars: Map<Int, String>) {
         "the", "you", "opponent", "user", "POKéMON", "TRAINER TIPS", "TEAM ").withIndex().associate { 0x33 + it.index to it.value } +
         mapOf(0x48 to " ", 0x4D to "is", 0x56 to "...", 0x5B to "PC", 0x5C to "TM", 0x5D to "TRAINER", 0x5E to "ROCKET",
             0x74 to "·", 0x9E to "“", 0x9F to "”", 0xE9 to "→", 0xEA to "+", 0xEB to "%")),
+    /** LandaR's English translation of Japanese Green: its own font over the Japanese codes (FontGraphics, 04:4B19, read
+     * tile by tile): capitals from 0x80 as English's, small letters from 0xB1, digits from 0xF6; the other tiles are
+     * two-letter pieces of its fixed text, left out. */
+    GREEN_EN(buildMap {
+        for (i in 0 until 26) { put(0x80 + i, ('A' + i).toString()); put(0xB1 + i, ('a' + i).toString()) }
+        for (i in 0 until 10) put(0xF6 + i, ('0' + i).toString())
+        putAll(mapOf(0x7F to " ", 0xE3 to "-", 0xED to "▶", 0xEF to "♂", 0xF5 to "♀"))
+    }),
     ;
 
     /** The single characters a font tile stands for (the companion's font: ligatures left out, and 0xF2's

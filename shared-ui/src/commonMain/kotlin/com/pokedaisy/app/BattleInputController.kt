@@ -958,11 +958,12 @@ class BattleInputController(
 
     /**
      * Gen 1's battle menu: [actionIndex] in Gen 3's numbering (0 FIGHT, 1 BAG, 2 POKEMON,
-     * 3 RUN) onto its cells - FIGHT and PkMn on top, ITEM and RUN below. RIGHT / LEFT
+     * 3 RUN) onto its cells - FIGHT and PkMn on top, ITEM and RUN below (the Japanese carts' as
+     * [GbPartySwitch.actionCell] says). RIGHT / LEFT
      * switches column on the same row, UP / DOWN the row; then A.
      */
     private fun queueGen1ActionLocked(actionIndex: Int) {
-        val target = when (actionIndex) { 0 -> 0; 1 -> 2; 2 -> 1; else -> 3 }
+        val target = switchAddrs?.gb?.actionCell(actionIndex) ?: when (actionIndex) { 0 -> 0; 1 -> 2; 2 -> 1; else -> 3 }
         if (gbPickLocked(BATTLE_INPUT_ACTION_SELECT, target)) return
         val from = gen1Cursor.takeIf { it in 0..3 } ?: 0
         if ((from and 1) != (target and 1)) pressAndSettleLocked(if (target and 1 == 1) CoreKey.RIGHT else CoreKey.LEFT)

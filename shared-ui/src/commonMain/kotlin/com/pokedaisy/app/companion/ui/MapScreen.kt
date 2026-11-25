@@ -370,6 +370,7 @@ internal enum class MapLabelStyle(val width: Int, val height: Int) {
                 else com.pokedaisy.app.companion.data.Gen1Art.YELLOW_GEN2_GRAPHICS_PLAYER_NAME
             else if (game == GameKind.RED || game == GameKind.BLUE) "player_red_blue"
             else if (game == GameKind.BROWN) "player_brown"
+            else if (game == GameKind.GREEN_JP) com.pokedaisy.app.companion.data.Gen1Art.GREEN_PLAYER_NAME
             else if (game == GameKind.PURE_RED || game == GameKind.PURE_BLUE) "player_${com.pokedaisy.app.companion.data.Gen1Art.pureTownMapName(game)}"
             else if (game != GameKind.CRYSTAL && game != GameKind.CRYSTAL_LEGACY) "player_yellow"
             else if (gender == 1) com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_PLAYER_F

@@ -51,6 +51,11 @@ object Gen1Art {
     /** The HUD's ball counts in Red, Blue and Yellow: `ball-<item id>.png` ([balls], [ballAsset]). */
     const val BALLS = "gen1/balls"
     const val BROWN_ICONS = "gen1/brown/pokemon"
+    /** Japanese Green in LandaR's English translation: its own Latin font, icons, town map and player ("green"). */
+    const val GREEN_FONT = "gen1/green-font.ttf"
+    const val GREEN_ICONS = "gen1/green/pokemon"
+    const val GREEN_TOWN_MAP_NAME = "green"
+    const val GREEN_PLAYER_NAME = "player_green"
     const val BROWN_TOWN_MAP_NAME = "brown"
     /** Bump when what [extractTo] writes changes, so a cached ROM's art is rebuilt once. */
     private const val VERSION = 5
@@ -270,8 +275,33 @@ object Gen1Art {
     val BROWN = brown(TelemetrySampler.BROWN_V6_1_2_SHA1)
     val BROWN_V601 = brown(TelemetrySampler.BROWN_V6_0_1_SHA1)
 
+    /**
+     * Japanese Green v1.0 in LandaR's English translation: the Japanese cart's art at its own places (pret's `pokegreen`
+     * build's .sym, the cart byte for byte but the translation's text and font), Red / Blue's Super Game Boy colours.
+     * Its font is the translation's Latin one over the Japanese codes ([Gen1Charset.GREEN_EN]).
+     */
+    val GREEN = Gen1ArtTables(
+        sha1 = TelemetrySampler.GREEN_LANDAR_V1_0_SHA1,
+        font = 0x04 to 0x4B19,                 // FontGraphics
+        fontPath = GREEN_FONT,
+        iconPointers = 0x1C to 0x5C84,         // MonPartySpritePointers
+        iconPointerCount = 28,
+        monPartyData = 0x1C to 0x5DD1,
+        dexCount = 151,
+        iconsDir = GREEN_ICONS,
+        iconColors = RED.iconColors,
+        townMap = 0x1C to 0x567C,              // CompressedMap
+        townMapTiles = 0x04 to 0x5611,         // WorldMapTileGraphics
+        townMapPath = "regionmap/$GREEN_TOWN_MAP_NAME.png",
+        townMapColors = RED.townMapColors,
+        playerSprite = 0x05 to 0x4180,         // RedSprite
+        playerPath = "regionmap/$GREEN_PLAYER_NAME.png",
+        playerColors = RED.playerColors,
+        charset = Gen1Charset.GREEN_EN,
+    )
+
     private val GAMES = listOf(YELLOW, YELLOW_GEN2_GRAPHICS, YELLOW_DE, YELLOW_FR, YELLOW_IT, YELLOW_ES, RED, RED_GEN2_GRAPHICS, BLUE, RED_DE, BLUE_DE, PURE_RED, PURE_BLUE, YELLOW_LEGACY,
-        BROWN, BROWN_V601)
+        BROWN, BROWN_V601, GREEN)
 
     private fun off(bank: Int, addr: Int) = if (bank == 0) addr else bank * 0x4000 + (addr - 0x4000)
 

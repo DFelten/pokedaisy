@@ -17,6 +17,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
+| Green (Translated) (GB) | JP v1.0, LandaR | — | ✅ ⁷⁰ | ✅ ⁷⁰ | ✅ ⁷⁰ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
@@ -1282,3 +1283,8 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     compiled unlike the 1.15.2 reference (no battle handler matched by bytes) and no battle could be scripted headless (its
     script command table isn't where the other expansion builds keep it), so nothing in battle is read, and the field
     features (EXPAND, field items, FLY, wild encounters, the code patches) aren't mapped yet.
+70. Green (Japan) in LandaR's English translation (v1.0, `GEN1_GREEN_LANDAR`, 2026-11-25): the Japanese cart's RAM (pret's
+    `pokegreen.sym`), English's species, move and item ids. Its battle menu is the Japanese one: ITEM top right, POKéMON bottom
+    left (`Gen1Config.itemTopRight`, `GbPartySwitch.actionCell`), the moves a row apart from row 8. Battle buttons, one-press
+    picks and the POKéMON switch read their menus on the `green_landar_battle*` fixtures (a new game played headless); the
+    controls' timing wasn't run against the running game. DEX, GUIDE, EXPAND, the field features and STEADY music aren't mapped.

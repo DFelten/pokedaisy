@@ -29,7 +29,7 @@ import kotlin.concurrent.Volatile
 // ROM-extracted tables (*Hns.kt / *Lazarus.kt, scripts/gen_expansion_tables.py).
 enum class GameKind { FIRERED, EMERALD, UNBOUND, GAIA, RADICAL_RED, ODYSSEY, HEART_AND_SOUL, LAZARUS, ROWE, EMERALD_ROGUE, AMETHYST, EMERALD_SEAGLASS, CELIA, TMT2, SOULGOLD, YELLOW, GLAZED, IMPERIUM, QUETZAL, ORANGE_ISLANDS, RECHARGED_YELLOW, MARIOMON, SWORD_SHIELD, GS_CHRONICLES, CRYSTAL, CRYSTAL_CLEAR, PRISM,
     GOLD, SILVER, RED, BLUE, ELITE_REDUX, POLISHED_CRYSTAL, PLATINUM, HEARTGOLD, SOULSILVER, TEAM_ROCKET, BLACK, WHITE, BLACK2, WHITE2,
-    WISHES, PURE_RED, PURE_BLUE, DREAMSTONE, MONOMYTH, YELLOW_LEGACY, CRYSTAL_LEGACY, BROWN, RHYTHM, OOPS_ALL_EEVEES, CERULEUM, RECORDKEEPERS, GEN3_EVOLVED, HNS_LEGENDS,
+    WISHES, PURE_RED, PURE_BLUE, DREAMSTONE, MONOMYTH, YELLOW_LEGACY, CRYSTAL_LEGACY, BROWN, GREEN_JP, RHYTHM, OOPS_ALL_EEVEES, CERULEUM, RECORDKEEPERS, GEN3_EVOLVED, HNS_LEGENDS,
     /** A 3DS game (docs/3DS_GAMES_PLAN.md): its companion reads Azahar's memory, PARTY and BAG so far. Y is X's code
      * with its own version's Pokemon ([isXy]: everything else the same). Omega Ruby / Alpha Sapphire run X's engine
      * at their own addresses ([isOras]); Sun / Moon are Gen 7's ([isSm]). */
@@ -114,6 +114,8 @@ private inline val pureRgb get() = activeGame.isPureRgb
 // Pokémon Brown (Koolboyman's Rijon on Red's engine): Gen 1's reader, its own tables to Dex No. 252 (gen_gen1_tables.py
 // brown; 6.0.1's three that differ, [brownV601]). Checked before [yellow], which it also is.
 private inline val brown get() = activeGame == GameKind.BROWN
+// Japanese Green in LandaR's translation: Red's tables (checked before [yellow], which it also is), its own art (Gen1Art.GREEN).
+private inline val greenJp get() = activeGame == GameKind.GREEN_JP
 /** Brown 6.0.1 is running (its item, move and place names that 6.1.2 changed). Set with [activeGame] by the Poller. */
 @Volatile
 var brownV601 = false
@@ -809,6 +811,7 @@ private val regionMapImagesRechargedEmerald = arrayOf("recharged_emerald")
 val activeRegionMapImages: Array<String> get() = when {
     redBlue && gen1Gen2Graphics -> arrayOf(Gen1Art.RED_GEN2_GRAPHICS_TOWN_MAP_NAME)
     redBlue -> arrayOf(Gen1Art.RED_BLUE_TOWN_MAP_NAME)   // Red's / Blue's town map, in their own colours (Gen1Art)
+    greenJp -> arrayOf(Gen1Art.GREEN_TOWN_MAP_NAME)   // Green's own, from its ROM (Gen1Art)
     brown -> arrayOf(Gen1Art.BROWN_TOWN_MAP_NAME)   // Rijon's, from its ROM (Gen1Art)
     pureRgb -> arrayOf(Gen1Art.pureTownMapName(activeGame))   // PureRed's / PureBlue's, in each one's colours (Gen1Art)
     gen4 -> emptyArray()   // Sinnoh's map comes from RegionMapModel's own; Johto / Kanto's aren't read yet
@@ -867,6 +870,7 @@ val activeMonSpriteDir: String get() = when {
     redBlue -> Gen1Art.RED_BLUE_ICONS
     pureRgb -> Gen1Art.pureIcons(activeGame)
     brown -> Gen1Art.BROWN_ICONS
+    greenJp -> Gen1Art.GREEN_ICONS
     yellowLegacy -> Gen1Art.YELLOW_LEGACY_ICONS
     yellow && gen1Gen2Graphics -> Gen1Art.YELLOW_GEN2_GRAPHICS_ICONS
     yellow -> Gen1Art.YELLOW_ICONS   // its own party icons, rebuilt from the ROM
@@ -957,6 +961,7 @@ fun GameKind.displayName(): String = when (this) {
     GameKind.BLACK2 -> "Pokémon Black 2"
     GameKind.WHITE2 -> "Pokémon White 2"
     GameKind.BROWN -> "Pokémon Brown"
+    GameKind.GREEN_JP -> "Pokémon Green"
     GameKind.PURE_RED -> "Pokémon PureRed"
     GameKind.PURE_BLUE -> "Pokémon PureBlue"
     GameKind.YELLOW_LEGACY -> "Pokémon Yellow Legacy"

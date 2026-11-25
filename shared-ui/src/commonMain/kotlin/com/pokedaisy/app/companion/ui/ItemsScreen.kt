@@ -883,7 +883,7 @@ private fun lightBagFor(game: GameKind, hgssPocket: Int = 0): BagPalette = when 
     GameKind.ROWE -> RoweBag
     GameKind.SOULGOLD -> SoulGoldBag
     GameKind.YELLOW, GameKind.YELLOW_LEGACY -> YellowBag
-    GameKind.RED, GameKind.BLUE -> RedBlueBag
+    GameKind.RED, GameKind.BLUE, GameKind.GREEN_JP -> RedBlueBag
     GameKind.BROWN -> BrownBag
     GameKind.PURE_RED, GameKind.PURE_BLUE -> PureRgbBag
     // Gold's and Silver's PACK is Crystal's, pixel for pixel (sampled headless in both).

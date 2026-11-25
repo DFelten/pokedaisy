@@ -1,0 +1,9 @@
+# Pocket Monsters Green (Japan), LandaR's English translation, from its save: the intro and the title screen (no START
+# before ~1600 frames), START, CONTINUE (A), the save's summary, A: on the field (fixtures green_landar*).
+wait 1600
+press START
+wait 200
+press A
+wait 120
+press A
+wait 300

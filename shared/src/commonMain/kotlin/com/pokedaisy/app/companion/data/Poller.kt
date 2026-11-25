@@ -406,7 +406,7 @@ class TelemetrySampler {
                 // English Unbound leaves nativeCfg null (see detect()); its French translation sets its own.
                 GameKind.UNBOUND -> readNativeTelemetry(reader, nativeCfg ?: unboundCfg, moveWatch)
                 GameKind.YELLOW, GameKind.RED, GameKind.BLUE, GameKind.PURE_RED, GameKind.PURE_BLUE, GameKind.YELLOW_LEGACY,
-                GameKind.BROWN ->
+                GameKind.BROWN, GameKind.GREEN_JP ->
                     readGen1Telemetry(reader, gen1Cfg ?: GEN1_YELLOW)
                 GameKind.CRYSTAL, GameKind.CRYSTAL_CLEAR, GameKind.PRISM, GameKind.GOLD, GameKind.SILVER, GameKind.POLISHED_CRYSTAL,
                 GameKind.CRYSTAL_LEGACY ->
@@ -881,6 +881,8 @@ class TelemetrySampler {
             GAME_BOY_SUPPORT && hash == BLUE_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE }
             GAME_BOY_SUPPORT && hash == RED_DE_SHA1 -> { kind = GameKind.RED; gen1Cfg = GEN1_RED_DE }
             GAME_BOY_SUPPORT && hash == BLUE_DE_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE_DE }
+            // Japanese Green in LandaR's English translation: the Japanese cart's RAM (GEN1_GREEN_LANDAR), Red's tables.
+            GAME_BOY_SUPPORT && hash == GREEN_LANDAR_V1_0_SHA1 -> { kind = GameKind.GREEN_JP; gen1Cfg = GEN1_GREEN_LANDAR }
             GAME_BOY_SUPPORT && hash == PURE_RED_V2_7_6_SHA1 -> { kind = GameKind.PURE_RED; gen1Cfg = GEN1_PURE_RED }
             GAME_BOY_SUPPORT && hash == PURE_BLUE_V2_7_6_SHA1 -> { kind = GameKind.PURE_BLUE; gen1Cfg = GEN1_PURE_BLUE }
             GAME_BOY_SUPPORT && hash == YELLOW_LEGACY_V1_0_10_SHA1 -> { kind = GameKind.YELLOW_LEGACY; gen1Cfg = GEN1_YELLOW_LEGACY }
@@ -1350,6 +1352,8 @@ class TelemetrySampler {
         // Pokémon Brown (Koolboyman's; 2 MB Game Boy carts, a hack of Red): GEN1_BROWN.
         const val BROWN_V6_1_2_SHA1 = "24eeda80ee78fa214a6f4a85164a2492d2b017ad"
         const val BROWN_V6_0_1_SHA1 = "2d6d1f1a6010f578d67045802611a288ebd8748b"
+        // Pocket Monsters Green (Japan) v1.0 in LandaR's English translation v1.0 (GEN1_GREEN_LANDAR). A plain `shasum`.
+        const val GREEN_LANDAR_V1_0_SHA1 = "a2fcbaeaeac0ca6ef13776147aeedba301775028"
         // Yellow Legacy v1.0.10 and Crystal Legacy v1.3.1: the release BPS patches over retail (Crystal Legacy's two patches, one
         // for each retail revision, make the same ROM) = `make` at their tags (rgbds 0.6.1 / 0.5.2).
         const val YELLOW_LEGACY_V1_0_10_SHA1 = "2ac87de42afc70ef6016805acb3b206644417f97"
@@ -1436,7 +1440,7 @@ class TelemetrySampler {
             RED_DE_SHA1, BLUE_DE_SHA1) +
             CRYSTAL_SHA1S + CRYSTAL_DE_SHA1 + CRYSTAL_CLEAR_SHA1S + PRISM_V0_95_254_SHA1 + GOLD_SHA1 + SILVER_SHA1 + GOLD_DE_SHA1 + SILVER_DE_SHA1 + POLISHED_CRYSTAL_SHA1S +
             PURE_RED_V2_7_6_SHA1 + PURE_BLUE_V2_7_6_SHA1 + YELLOW_LEGACY_V1_0_10_SHA1 + CRYSTAL_LEGACY_V1_3_1_SHA1 +
-            BROWN_V6_1_2_SHA1 + BROWN_V6_0_1_SHA1
+            BROWN_V6_1_2_SHA1 + BROWN_V6_0_1_SHA1 + GREEN_LANDAR_V1_0_SHA1
 
         /**
          * Game Boy / Color (Pokémon Yellow): the library, folder scan, frontend launch and

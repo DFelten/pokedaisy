@@ -715,7 +715,7 @@ fun partyPaletteFor(game: GameKind): PartyPalette = when (game) {
     GameKind.ROWE -> RowePartyPalette
     GameKind.SOULGOLD -> SoulGoldPartyPalette
     GameKind.YELLOW, GameKind.YELLOW_LEGACY -> YellowPartyPalette
-    GameKind.RED, GameKind.BLUE -> RedBluePartyPalette
+    GameKind.RED, GameKind.BLUE, GameKind.GREEN_JP -> RedBluePartyPalette
     GameKind.BROWN -> BrownPartyPalette
     GameKind.PURE_RED -> PureRedPartyPalette
     GameKind.PURE_BLUE -> PureBluePartyPalette

@@ -431,6 +431,8 @@ fun rememberGameFont(game: GameKind?): FontFamily? {
             GameKind.RED, GameKind.BLUE -> com.pokedaisy.app.companion.data.Gen1Art.redBlueFont(com.pokedaisy.app.companion.data.romLanguage)
             // Brown kept Red's font, byte for byte (Gen1Art.BROWN builds it into Red's file).
             GameKind.BROWN -> com.pokedaisy.app.companion.data.Gen1Art.redBlueFont('E')
+            // Japanese Green in LandaR's translation: its own Latin font (Gen1Art.GREEN).
+            GameKind.GREEN_JP -> com.pokedaisy.app.companion.data.Gen1Art.GREEN_FONT
             GameKind.PURE_RED, GameKind.PURE_BLUE -> com.pokedaisy.app.companion.data.Gen1Art.PURE_FONT
             GameKind.YELLOW_LEGACY -> com.pokedaisy.app.companion.data.Gen1Art.YELLOW_LEGACY_FONT
             GameKind.CRYSTAL_LEGACY -> com.pokedaisy.app.companion.data.Gen2Art.CRYSTAL_LEGACY_FONT
