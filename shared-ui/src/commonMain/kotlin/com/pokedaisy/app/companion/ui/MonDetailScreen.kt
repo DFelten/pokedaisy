@@ -1100,19 +1100,58 @@ private fun MoveRow(
                 GbaText(mv.name, optionLook.label, optionLook.labelShadow, m, Modifier.weight(1f, fill = false))
                 if (forget) { Spacer(Modifier.width(u * 4)); ForgetTag() }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TypeBadge(mv.type)
-                MoveKindIcon(mv, m)
-                Spacer(Modifier.weight(1f))
-                Stat(tr("PWR"), powerLabel(mv.power), small)
-                Spacer(Modifier.width(u * 6))
-                Stat(tr("PP"), "${mv.pp}", small)
-            }
+            MoveStatsLine(mv, m, small)
             // In battle: how the move fares against each foe.
             if (mv.vs.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     mv.vs.forEach { MultiplierChip(it.label, it.pct) }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * A move's second line in the summary: its type tag and category icon left, power and PP right. Where they don't fit
+ * (a game font set larger, German's STÄRKE / AP, a long type like ELECTRIC, FONT SIZE up), the gaps close up first, then
+ * power and PP move to a line of their own under the tag at the same size (the cell has the room), and only where that
+ * doesn't fit either do they step down to the denser text - never PP cut off at the edge (it once read "AP ." on the Thor).
+ */
+@Composable
+private fun MoveStatsLine(mv: MoveView, m: GbaTextMetrics, small: GbaTextMetrics) {
+    val u = m.u
+    val dense = rememberGbaTextMetrics(1f, gameScaled = false)
+    @Composable fun stats(mm: GbaTextMetrics, between: Dp) = Row(verticalAlignment = Alignment.CenterVertically) {
+        Stat(tr("PWR"), powerLabel(mv.power), mm)
+        Spacer(Modifier.width(between))
+        Stat(tr("PP"), "${mv.pp}", mm)
+    }
+    androidx.compose.ui.layout.Layout(
+        content = {
+            Row(verticalAlignment = Alignment.CenterVertically) { TypeBadge(mv.type); MoveKindIcon(mv, m) }
+            stats(small, u * 6)
+            stats(small, u * 3)
+            stats(dense, u * 3)
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val (left, wide, tight, narrow) = measurables.map { it.measure(loose) }
+        val room = constraints.maxWidth
+        fun beside(r: androidx.compose.ui.layout.Placeable, gap: Int) = left.width + gap + r.width <= room
+        val (right, below) = when {
+            beside(wide, (u * 4).roundToPx()) -> wide to false
+            beside(tight, (u * 2).roundToPx()) -> tight to false
+            wide.width <= room && left.height + wide.height <= constraints.maxHeight -> wide to true
+            else -> narrow to false
+        }
+        val height = if (below) left.height + right.height else maxOf(left.height, right.height)
+        layout(room, height) {
+            if (below) {
+                left.place(0, 0)
+                right.place(room - right.width, left.height)
+            } else {
+                left.place(0, (height - left.height) / 2)
+                right.place(room - right.width, (height - right.height) / 2)
             }
         }
     }
