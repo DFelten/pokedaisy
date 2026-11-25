@@ -6,6 +6,7 @@ straight from the ROM the user owns (nothing is downloaded):
     scripts/gen_gen1_tables.py yellow_de|yellow_fr|yellow_it|yellow_es <rom.gb>
     scripts/gen_gen1_tables.py red|blue <rom.gb> <english yellow.gb>
     scripts/gen_gen1_tables.py red_de|blue_de <rom.gb> <english red|blue.gb>
+    scripts/gen_gen1_tables.py red_fr|blue_fr|red_it|blue_it|red_es|blue_es <rom.gb> <english red|blue.gb>
     scripts/gen_gen1_tables.py purered <PureRed v2.7.6.gb>
     scripts/gen_gen1_tables.py pureblue <PureBlue v2.7.6.gb> <PureRed v2.7.6.gb>
     scripts/gen_gen1_tables.py yellow_legacy <Yellow Legacy v1.0.10.gb> <english yellow.gb>
@@ -213,6 +214,35 @@ GAMES = {
                     items={1: "MEISTERBALL", 4: "POKéBALL", 20: "TRANK"}, maps={0: "ALABASTIA", 0x0C: "ROUTE 1"}))
        for v, title, sha1 in (("red", "Rote", "87d523fe1a0c548db7c5477b451ddec1eb083c06"),
                               ("blue", "Blaue", "20e72dc6f41493eee1fdd0cef54214e6c3389688"))},
+    # French / Italian / Spanish Red / Blue: as the German ones, their language's Yellow names (checked against its
+    # YellowText<Lang>Gen.kt, nothing written). Addresses from scripts/port_gen1.py.
+    **{f"{v}_{lang}": dict(
+        suffix=f"Yellow{lang.title()}", label=label, sha1=sha1, names_only=True, english=v,
+        text_as=f"YellowText{lang.title()}Gen.kt", map_renames=renames, charset=cs, machine_prefixes=pre,
+        monster_names=(0x07, 0x421E), name_len=10, internal_count=190,
+        pokedex_order=(0x10, order), base_stats=(0x0E, 0x43DE), base_stats_size=28, dex_count=150,
+        moves=(0x0E, 0x4000), move_count=165, move_names=(0x2C, 0x4000),
+        item_names=(0x01, items), item_count=0x61,
+        type_effects=(0x0F, effects),
+        external_maps=(0x1C, ext), internal_maps=(0x1C, ext + 0x6F), first_indoor_map=0x25, map_count=0xF8,
+        checks=checks)
+       for lang, cs, pre, order, effects, ext, renames, checks, carts in [
+        ("fr", "DF", ("CT", "CS"), 0x4FAA, 0x6489, 0x5317, {},
+         dict(species={1: "BULBIZARRE", 25: "PIKACHU", 151: "MEW"}, moves={85: "TONNERRE"},
+              items={1: "MASTER BALL", 4: "POKé BALL", 20: "POTION"}, maps={0: "BOURG PALETTE", 0x0C: "ROUTE 1"}),
+         [("red", "Pokemon - Version Rouge (France)", "47a7622fa30e6402a3891fe65b3a930bf9bd7aec", 0x472D),
+          ("blue", "Pokemon - Version Bleue (France)", "47faa910d0e073c600665bf9c83b6bd17babdf8a", 0x472D)]),
+        ("it", "IS", ("MT", "MN"), 0x4FB6, 0x6477, 0x5313, {},
+         dict(species={1: "BULBASAUR", 25: "PIKACHU", 151: "MEW"}, moves={85: "FULMINE"},
+              items={1: "MASTER BALL", 4: "POKé BALL", 20: "POZIONE"}, maps={0: "BIANCAVILLA", 0x0C: "PERCORSO 1"}),
+         [("red", "Pokemon - Versione Rossa (Italy)", "65b97cf8f2f1cff711a6d08c6c894c8ce65ce522", 0x472D),
+          ("blue", "Pokemon - Versione Blu (Italy)", "f69ed1a1332f04c24c7db899a09019bb045fa8b3", 0x472C)]),
+        ("es", "IS", ("MT", "MO"), 0x4FB4, 0x6483, 0x5316, {},
+         dict(species={1: "BULBASAUR", 25: "PIKACHU", 151: "MEW"}, moves={85: "RAYO"},
+              items={1: "MASTER BALL", 4: "POKé BALL", 20: "POCIÓN"}, maps={0: "PUEBLO PALETA", 0x0C: "RUTA 1"}),
+         [("red", "Pokemon - Edicion Roja (Spain)", "fc17c5b904d551b1b908054ccd1c493f755f832a", 0x472B),
+          ("blue", "Pokemon - Edicion Azul (Spain)", "7715e7b133e8634df48918b9138374110212a108", 0x472B)]),
+    ] for v, label, sha1, items in carts},
 }
 
 CHARS = {0x7F: " ", 0xBA: "é", 0xE0: "'", 0xE3: "-", 0xE6: "?", 0xE7: "!", 0xE8: ".", 0xEF: "♂", 0xF5: "♀",

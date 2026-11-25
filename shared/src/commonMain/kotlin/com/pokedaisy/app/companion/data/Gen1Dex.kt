@@ -155,6 +155,11 @@ private val GEN1_DEX_YELLOW_ES = GEN1_DEX_YELLOW_IT.copy(monsterPalettes = 0x1C 
 /** German Red / Blue: Red's tables, their pages' text and palettes moved (port_gen1.py), German Yellow's letters, metric. */
 private val GEN1_DEX_RED_DE = GEN1_DEX_RED.copy(evosMoves = null, tmMoves = null, dexEntryPointers = 0x10 to 0x447A, monsterPalettes = 0x1C to 0x65A2,
     cgbPalettes = 0x1C to 0x663A, owned = 0xD2FCL, seen = 0xD30FL, metric = true, charset = Gen1Charset.DF)
+/** French, Italian and Spanish Red / Blue: German Red's, their pages' text and palettes moved (port_gen1.py, checked by contents). */
+private val GEN1_DEX_RED_FR = GEN1_DEX_RED_DE.copy(dexEntryPointers = 0x10 to 0x447C, monsterPalettes = 0x1C to 0x6599, cgbPalettes = 0x1C to 0x6631)
+private val GEN1_DEX_RED_IT = GEN1_DEX_RED_DE.copy(dexEntryPointers = 0x10 to 0x4480, monsterPalettes = 0x1C to 0x6608, cgbPalettes = 0x1C to 0x66A0,
+    charset = Gen1Charset.IS)
+private val GEN1_DEX_RED_ES = GEN1_DEX_RED_IT.copy(monsterPalettes = 0x1C to 0x65B8, cgbPalettes = 0x1C to 0x6650)
 
 /**
  * Pokémon Brown 6.1.2 / 6.0.1 (its pages read headless against the game's own POKéDEX; addresses mapped from pokered.sym by
@@ -206,6 +211,12 @@ val POKEDEX_RED_GEN2_GRAPHICS = POKEDEX_RED.copy(gen1 = GEN1_DEX_RED_GEN2_GRAPHI
 val POKEDEX_YELLOW_GEN2_GRAPHICS = POKEDEX_YELLOW.copy(gen1 = GEN1_DEX_YELLOW_GEN2_GRAPHICS)
 val POKEDEX_RED_DE = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_DE)
 val POKEDEX_BLUE_DE = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_DE.copy())
+val POKEDEX_RED_FR = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_FR)
+val POKEDEX_BLUE_FR = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_FR.copy())
+val POKEDEX_RED_IT = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_IT)
+val POKEDEX_BLUE_IT = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_IT.copy())
+val POKEDEX_RED_ES = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_ES)
+val POKEDEX_BLUE_ES = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_ES.copy())
 /** Yellow Legacy's. */
 val POKEDEX_YELLOW_LEGACY = POKEDEX_YELLOW.copy(gen1 = GEN1_DEX_YELLOW_LEGACY)
 /** Brown's one dex of 252 (the numbers it uses: 1-230 and PHANCERO, No.252), one object per version. */

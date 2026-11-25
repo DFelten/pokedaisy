@@ -345,8 +345,8 @@ object GbGamePatches {
      *  - `ld hl, GainedText; call PrintText` calls T1: no box on the rest's pass.
      *  - .done's `ld hl, wPartyGainExpFlags` jumps to T2: after the first pass, with anyone marked who didn't fight, the line and
      *    the loop again as the rest's pass; after that one the byte back to 0; then .done as the game.
-     * All in GainExperience's bank, clear of the other trampolines, in the cart's padding; the line in the cart's language (German
-     * where the gained box says "erhält", else English).
+     * All in GainExperience's bank, clear of the other trampolines, in the cart's padding; the line in the cart's language (German,
+     * French, Italian or Spanish by the gained box's words, else English).
      */
     private fun expModernGen1(rom: ByteArray, divide: Int, gain: Int): List<InstantText.Write>? {
         fun u8(i: Int) = rom[i].toInt() and 0xFF
@@ -372,8 +372,15 @@ object GbGamePatches {
         if (q2 != q3 - 1 || listOf(curMon, pass, fought).any { it !in 0xC000..0xDFFF }) return null
         // The gained box's own words: _GainedText is `text_ram wNameBuffer` (01 nn nn), then `text " ..."`.
         val far = u8(gained + 3) * 0x4000 + (u16(gained + 1) - 0x4000)
-        val german = far in 0 until rom.size - 8 && (4..7).map { u8(far + it) } == listOf(0x7F, 0xA4, 0xB1, 0xA7)
-        val line = if (german) EXP_LINE_DE else EXP_LINE_EN
+        // German " erh(ält)", French " gag(ne)", Italian " ric(eve)" after the name; Spanish opens with "¡" and the name, then " gan(ó)".
+        fun at(i: Int, vararg b: Int) = far + i + b.size <= rom.size && b.indices.all { u8(far + i + it) == b[it] }
+        val line = when {
+            at(4, 0x7F, 0xA4, 0xB1, 0xA7) -> EXP_LINE_DE
+            at(4, 0x7F, 0xA6, 0xA0, 0xA6) -> EXP_LINE_FR
+            at(4, 0x7F, 0xB1, 0xA8, 0xA2) -> EXP_LINE_IT
+            at(1, 0xE5, 0x50) && at(7, 0x7F, 0xA6, 0xA0, 0xAD) -> EXP_LINE_ES
+            else -> EXP_LINE_EN
+        }
         val size = T0_SIZE + G1_TH_SIZE + G1_T1_SIZE + G1_T2_SIZE + line.size
         val end = (bank + 1) * 0x4000
         val at = end - 160 - size
@@ -436,9 +443,11 @@ object GbGamePatches {
         out += 0x00
         lines.forEachIndexed { i, l ->
             if (i == 1) out += 0x4F else if (i > 1) out += 0x55
-            for (c in l) out += when (c) {
+            // "d'" is one tile in the French carts (0xD5); é (0xBC) and ¡ (0xE5) are the Spanish carts' (their charset's).
+            for (c in l.replace("d'", "\u0001")) out += when (c) {
                 in 'A'..'Z' -> 0x80 + (c - 'A'); in 'a'..'z' -> 0xA0 + (c - 'a')
                 ' ' -> 0x7F; '!' -> 0xE7; '.' -> 0xE8; 'ä' -> 0xC3; 'ö' -> 0xC4; 'ü' -> 0xC5
+                '\u0001' -> 0xD5; 'é' -> 0xBC; '¡' -> 0xE5
                 else -> error("no Gen 2 glyph for $c")
             }
         }
@@ -450,4 +459,8 @@ object GbGamePatches {
     private const val T2_SIZE = 42
     private val EXP_LINE_EN = gen2Text("The others gained", "EXP. Points!")
     private val EXP_LINE_DE = gen2Text("Die anderen", "erhalten auch EP!")
+    // The second line ends a tile short of the box: its last column is the ▼.
+    private val EXP_LINE_FR = gen2Text("Les autres gagnent", "des points d'EXP!")
+    private val EXP_LINE_IT = gen2Text("Gli altri ricevono", "anche Punti ESP.!")
+    private val EXP_LINE_ES = gen2Text("¡Los otros también", "ganan Puntos EXP!")
 }

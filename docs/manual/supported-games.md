@@ -19,7 +19,7 @@ Any GBA, Game Boy or DS game plays in PokeDaisy. "Supported" is about the compan
 
 **Game Boy and Game Boy Color:**
 
-- Pokémon Red and Blue: the USA / Europe releases and the German ones (Rote Edition and Blaue Edition), drawn in the game's own look: the colours they show on a Super Game Boy. A German copy shows its own names and Pokédex text.
+- Pokémon Red and Blue: the USA / Europe releases and the German, French, Italian and Spanish ones (Rote Edition and Blaue Edition, Version Rouge and Version Bleue, Versione Rossa and Versione Blu, Edición Roja and Edición Azul), drawn in the game's own look: the colours they show on a Super Game Boy. A German, French, Italian or Spanish copy shows its own names and Pokédex text.
 - PureRed and PureBlue, the PureRGB hack of Red and Blue: version 2.7.6, drawn in the game's own look (the colours of its default OG setting), with its own types, moves, items, places and Pokédex. A save from the original Red or Blue works too, once the game itself has updated it: pick CONTINUE and answer its questions.
 - Pokémon Yellow: the USA / Europe release and the German, French, Italian and Spanish ones, drawn in the game's own look. A German, French, Italian or Spanish copy shows its own names and Pokédex text. Item descriptions are only shown in the English one, as these games have none of their own.
 - Pokémon Brown, Koolboyman's hack of Red set in Rijon: versions 6.0.1 and 6.1.2, with its own Pokémon (252 in its Pokédex), types, moves, items, places, town map and Pokédex pages, drawn in the colours it shows on a Super Game Boy. It has no guide yet.

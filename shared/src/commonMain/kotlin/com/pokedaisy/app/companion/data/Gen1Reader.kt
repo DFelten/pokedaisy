@@ -180,6 +180,18 @@ val GEN1_RED_DE = GEN1_RED.copy(
     battleMenuRightX = 12,
 )
 val GEN1_BLUE_DE = GEN1_RED_DE.copy(gameCode = "APED", pokedex = POKEDEX_BLUE_DE)
+/**
+ * French, Italian and Spanish Red and Blue (Version Rouge / Bleue, Versione Rossa / Blu, Edicion Roja / Azul): English Red's
+ * code with the European Yellows' text (their names are those Yellows' tables: scripts/gen_gen1_tables.py), German Red's RAM
+ * (scripts/port_gen1.py on pokered.sym; checked on headless captures of the `red_de` save booted in each: the `red_fr*` ...
+ * fixtures). The battle menu's columns are each language's Yellow's. The product codes are ours (APAF / APEF ...), keying the names.
+ */
+val GEN1_RED_FR = GEN1_RED_DE.copy(language = 'F', gameCode = "APAF", pokedex = POKEDEX_RED_FR, battleMenuLeftX = 7, battleMenuRightX = 13)
+val GEN1_BLUE_FR = GEN1_RED_FR.copy(gameCode = "APEF", pokedex = POKEDEX_BLUE_FR)
+val GEN1_RED_IT = GEN1_RED_DE.copy(language = 'I', gameCode = "APAI", pokedex = POKEDEX_RED_IT, battleMenuLeftX = 7, battleMenuRightX = 14)
+val GEN1_BLUE_IT = GEN1_RED_IT.copy(gameCode = "APEI", pokedex = POKEDEX_BLUE_IT)
+val GEN1_RED_ES = GEN1_RED_DE.copy(language = 'S', gameCode = "APAS", pokedex = POKEDEX_RED_ES, battleMenuLeftX = 0x09, battleMenuRightX = 0x0F)
+val GEN1_BLUE_ES = GEN1_RED_ES.copy(gameCode = "APES", pokedex = POKEDEX_BLUE_ES)
 
 /**
  * PureRed and PureBlue v2.7.6 (Vortyne/pureRGB, a pret/pokered fork: its `make red blue` with rgbds 1.0.3 is both releases

@@ -111,6 +111,9 @@ sealed class GbField {
             game == GameKind.RED || game == GameKind.BLUE -> when (romLanguage) {
                 'E' -> GB_FIELD_RED_BLUE
                 'D' -> GB_FIELD_RED_BLUE_DE
+                'F' -> GB_FIELD_RED_BLUE_FR
+                'I' -> GB_FIELD_RED_BLUE_IT
+                'S' -> GB_FIELD_RED_BLUE_ES
                 else -> null
             }
             game == GameKind.PURE_RED || game == GameKind.PURE_BLUE -> GB_FIELD_PURE_RGB
@@ -756,6 +759,53 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
     ),
 )
 
+/** French, Italian and Spanish Red / Blue (each language's two carts the same code at the same places): German Red's RAM and ways in,
+ * their bank 0 moved (Bankswitch), found by the German signatures' bytes with their calls masked. No PC moves or item calls yet. */
+private fun redBlueEurope(bankswitch: Int, signatures: List<Pair<Long, String>>) = GbField.Gen1(
+    loopAfterWait = 0x0405, bankswitch = bankswitch, pcRoutine = 0x651C,
+    walkCounter = 0xCFCAL, flags5 = 0xD735L, inBattle = 0xD05CL, badges = 0xD35BL,
+    tileset = 0xD36CL, townsVisited = 0xD710L, destination = 0xD71FL, flags6 = 0xD737L, pikachuFlags = -1L, pikachuImage = -1L,
+    partyCount = 0xD168L, partyMoves = 0xD178L, curMap = 0xD363L, grassRate = 0xD88CL,
+    waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
+    partySwap = true,
+    signatures = signatures,
+)
+val GB_FIELD_RED_BLUE_FR = redBlueEurope(
+    bankswitch = 0x35F3,
+    signatures = listOf(
+        0x402L to "cdab20cdb620fa3bd7cb77c49e03facacfa7c2b5",
+        0x35F3L to "f0b8f578e0b8ea0020010136",
+        0x3F12L to "e08c213f3fcd2c3f2116cfcb",
+        0x62516L to "fa09c1fe04c0cd593c3e01ea11cf3e1fc3123ff9",
+        0x7102EL to "7eea1fd72137d7cbde23cbfe",
+        0x71073L to "213dcd36ff23fa10d75ffa11d75701",
+        0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
+    ),
+)
+val GB_FIELD_RED_BLUE_IT = redBlueEurope(
+    bankswitch = 0x35EE,
+    signatures = listOf(
+        0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
+        0x35EEL to "f0b8f578e0b8ea002001fc35",
+        0x3F0DL to "e08c213a3fcd273f2116cfcb",
+        0x62516L to "fa09c1fe04c0cd543c3e01ea11cf3e1fc30d3ff9",
+        0x7102CL to "7eea1fd72137d7cbde23cbfe",
+        0x71071L to "213dcd36ff23fa10d75ffa11d75701",
+        0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
+    ),
+)
+val GB_FIELD_RED_BLUE_ES = redBlueEurope(
+    bankswitch = 0x35F5,
+    signatures = listOf(
+        0x402L to "cdae20cdb920fa3bd7cb77c49e03facacfa7c2b5",
+        0x35F5L to "f0b8f578e0b8ea0020010336",
+        0x3F14L to "e08c21413fcd2e3f2116cfcb",
+        0x62516L to "fa09c1fe04c0cd5b3c3e01ea11cf3e1fc3143ff9",
+        0x7102FL to "7eea1fd72137d7cbde23cbfe",
+        0x71074L to "213dcd36ff23fa10d75ffa11d75701",
+        0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
+    ),
+)
 /**
  * PureRed / PureBlue v2.7.6 (pureRGB's pokered.sym; both carts the same code at the same places): Red's ways in at its own
  * addresses. Its overworld loop waits for the frame at OverworldLoop's `rst DelayFrame` and goes on into

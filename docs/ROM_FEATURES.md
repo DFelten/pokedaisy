@@ -14,6 +14,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
 | Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | FR / IT / ES (Version Rouge / Version Bleue, Versione Rossa / Versione Blu, Edición Roja / Edición Azul) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
@@ -148,7 +149,9 @@ change to any of the places listed under "Where it's decided" updates its rows h
    them at Kristall's columns (`GEN2_GOLD_DE`): reads checked on the `gold_de_battle*` / `silver_de_battle` fixtures.
    Red / Blue have Yellow's battle menus and menu variables (at Yellow's addresses, the cursor columns 9 / 15): their
    reads are checked on the `red_battle*` fixtures, the controls' timing wasn't run on them. German Red / Blue have German
-   Yellow's columns (KMPF / ITEM 7, PkMn / FLUCHT 12): reads checked on `red_de_battle*` / `blue_de_battle`.
+   Yellow's columns (KMPF / ITEM 7, PkMn / FLUCHT 12): reads checked on `red_de_battle*` / `blue_de_battle`. French / Italian /
+   Spanish Red / Blue have their own (7 / 13, 7 / 14, 9 / 15, read off each cart's menu headless): reads checked on
+   `<cart>_battle` / `<cart>_battle_menu` for all six.
    PureRed / PureBlue keep Red's battle menus at Red's places (FIGHT / ITEM column 9, PkMn / RUN 15, the move list at
    (5, 12)): reads checked on the `purered_battle*` / `pureblue_battle` fixtures, the controls' timing not run on them.
 2. (No longer used: Spanish FireRed's cursors were checked headless with the other ports, 2026-11-18.)
@@ -224,13 +227,15 @@ change to any of the places listed under "Where it's decided" updates its rows h
     German Crystal (Kristall) is English's rebuild but for one ROM address (SpriteMovementData, 0x4276 in bank 1): a walk on
     Route 29 and its grass, 777 map frames, every one exact. German Red / Blue (Rote / Blaue Edition, 2026-11-20) are English
     Red's rebuild with the RAM 5 bytes on from wOnSGB up (`GB_RED_BLUE_DE`): the same walk as English Red's on both carts, 1404
-    of 1408 map frames exact, the other four the door's fade English Red also shows.
+    of 1408 map frames exact, the other four the door's fade English Red also shows. French, Italian and Spanish Red / Blue
+    (2026-11-25) share German Red's row (their RAM and EXPAND's tables at German Red's places): the same walk on all six carts, 834
+    of 838 map frames exact, the same four as German Red's on the same save.
     German Gold / Silver (Goldene / Silberne Edition, 2026-11-20) are English Gold's row with SpriteMovementData a byte later
     (`GB_GOLD_SILVER_DE`, found by its bytes; every other table and the RAM where English's are): Route 29 from the gold
     fixture's save, the START menu, east and back west through the grass, every map frame exact (Silberne 2836, Goldene 2065
     up to a wild battle) but those the game wrote VRAM or a palette in mid-frame.
-    The other languages' (not German) Red / Blue, Gold / Silver, Prism and the other Polished Crystal builds aren't mapped yet (—).
-13. FLY, WILD ENCOUNTERS and PC anywhere on Red / Blue (English and German), Yellow (all five languages) and Crystal (rev 0, rev 1, Australia)
+    The other languages' (not German) Gold / Silver, Prism and the other Polished Crystal builds aren't mapped yet (—).
+13. FLY, WILD ENCOUNTERS and PC anywhere on Red / Blue (English, German, French, Italian, Spanish), Yellow (all five languages) and Crystal (rev 0, rev 1, Australia)
     are `GbField.kt`, each the game's own way in (pret/pokered's, pokeyellow's and pokecrystal's sources; the European
     Yellows' addresses mapped by scripts/port_gen1.py; each cart's code checked in it first: `GbFieldTest` finds every Gen 1
     cart's own config and no other's). Crystal queues a map script the overworld runs once the player stands free
@@ -239,7 +244,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
     overworld loop through Bankswitch (`pk_gb_field.c`, `MgbaCore.pkGbCallAt`); FLY sets what the town map's A leaves
     (destination, BIT_FLY_WARP / BIT_USED_FLY, Yellow's Pikachu hidden); encounters are the map's wGrassRate / wWaterRate
     held at 0 and put back from its wild data. Checked headless with mgba_dump (`gbpoke`, `gbcallat`): every cart's PC (in
-    its own language) opened over the field and backed out of; flights to Pewter (every Gen 1 config, German Red / Blue too; Blue on pret's
+    its own language) opened over the field and backed out of; flights to Pewter (every Gen 1 config, German, French, Italian and Spanish Red / Blue too; Blue on pret's
     pokeblue.gbc) and Cherrygrove landing at their Pokémon Centers; Crystal's Route 29 grass with no battle in 100 steps
     (one within ~15 without), Yellow's Route 1 at a forced rate of 255 meeting one at once; then on the Thor: Crystal's PC
     from PACK, Yellow's FLY to Vermilion from MAP. The European Yellows and Red / Blue have no EXPAND scene, so their PC /
@@ -770,10 +775,14 @@ change to any of the places listed under "Where it's decided" updates its rows h
     `call nz, BoostExp` goes by a trampoline that, on the rest's pass, halves hQuotient's EXP after the boosts (stat EXP stays whole);
     `ld hl, GainedText; call PrintText` shows no box on that pass; .done's `ld hl, wPartyGainExpFlags` jumps to the line and the second
     pass. The pass is wBoostExpByExpAll = 2 (FaintEnemyPokemon writes 0 before the first pass and 1 before the EXP.ALL item's; only
-    the gained box reads it), back to 0 after. German carts (their box says "erhält") get the German line. Played headless: Rote
+    the gained box reads it), back to 0 after. German carts (their box says "erhält") get the German line, French / Italian /
+    Spanish ones theirs ("Les autres gagnent des points d'EXP!", "Gli altri ricevono anche Punti ESP.!", "¡Los otros también ganan
+    Puntos EXP!"), told apart by the gained box's words. Played headless: Rote
     Edition and English Red (the German save), English Yellow (a new game with Red's party poked in): the fighter's box and level up,
     the line, the others' level ups (+23 / +11 each; FULL +23 each); with EXP.ALL in the bag MODERN's passes, then the item's own
-    as the game. Found in Red / Blue / Yellow (USA, Europe), Rote / Blaue Edition (pret's builds of the English carts byte for byte);
+    as the game. Found in Red / Blue / Yellow (USA, Europe), Rote / Blaue Edition (pret's builds of the English carts byte for byte)
+    and French / Italian / Spanish Red / Blue (2026-11-25: Version Rouge, Versione Blu and Edición Roja played the same way on the
+    German save, each line in its box);
     the hacks on that code aren't checked.
 
 49. The European FireRed / LeafGreen / Emerald carts' TRAINER CARD (2026-11-18, `CardStyle.KANTO_DE` ... `HOENN_ES`): English's save
@@ -1124,7 +1133,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Yellow, German Yellow, English Blue and German Red each matched the game's card headless pixel for pixel, with every badge,
     none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. Not yet: French, Italian
     and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
-59. FOLLOWER on Crystal, Gold, Silver, Red and Blue (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU and the German cart by CRC32): the lead's party icon
+59. FOLLOWER on Crystal, Gold, Silver, Red and Blue (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU, the German, French, Italian and Spanish Red / Blue by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
     player's sprite gone, and until the first step after a warp (the map or the player's tile jumped with the screen standing; walking over a map's

@@ -97,6 +97,13 @@ val GEN1_MUSIC_BLUE = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_SHA1)
 /** German Red / Blue: Red's PlayMusic, park, songs and audio RAM, all at the same places (port_gen1.py). */
 val GEN1_MUSIC_RED_DE = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.RED_DE_SHA1)
 val GEN1_MUSIC_BLUE_DE = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_DE_SHA1)
+/** French, Italian and Spanish Red / Blue: Red's park, songs and audio RAM; French and Spanish bank 0 moved PlayMusic (its bytes found in each). */
+val GEN1_MUSIC_RED_FR = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.RED_FR_SHA1, playMusic = 0x239D)
+val GEN1_MUSIC_BLUE_FR = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_FR_SHA1, playMusic = 0x239D)
+val GEN1_MUSIC_RED_IT = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.RED_IT_SHA1)
+val GEN1_MUSIC_BLUE_IT = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_IT_SHA1)
+val GEN1_MUSIC_RED_ES = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.RED_ES_SHA1, playMusic = 0x23A0)
+val GEN1_MUSIC_BLUE_ES = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_ES_SHA1, playMusic = 0x23A0)
 
 /**
  * PureRed / PureBlue v2.7.6 (pureRGB's pokered.sym, the same in both): Red's sound engine and audio RAM, its own PlayMusic
@@ -230,7 +237,8 @@ private val GEN2_MUSIC_POLISHED_CRYSTAL = with(TelemetrySampler) {
 
 object Gen1Music {
     private val GAMES = listOf(GEN1_MUSIC_YELLOW, GEN1_MUSIC_YELLOW_GEN2_GRAPHICS, GEN1_MUSIC_YELLOW_DE, GEN1_MUSIC_YELLOW_FR, GEN1_MUSIC_YELLOW_IT, GEN1_MUSIC_YELLOW_ES,
-        GEN1_MUSIC_RED, GEN1_MUSIC_RED_GEN2_GRAPHICS, GEN1_MUSIC_BLUE, GEN1_MUSIC_RED_DE, GEN1_MUSIC_BLUE_DE, GEN1_MUSIC_PURE_RED, GEN1_MUSIC_PURE_BLUE, GEN1_MUSIC_YELLOW_LEGACY, GEN2_MUSIC_CRYSTAL, GEN2_MUSIC_CRYSTAL_REV1,
+        GEN1_MUSIC_RED, GEN1_MUSIC_RED_GEN2_GRAPHICS, GEN1_MUSIC_BLUE, GEN1_MUSIC_RED_DE, GEN1_MUSIC_BLUE_DE, GEN1_MUSIC_RED_FR, GEN1_MUSIC_BLUE_FR,
+        GEN1_MUSIC_RED_IT, GEN1_MUSIC_BLUE_IT, GEN1_MUSIC_RED_ES, GEN1_MUSIC_BLUE_ES, GEN1_MUSIC_PURE_RED, GEN1_MUSIC_PURE_BLUE, GEN1_MUSIC_YELLOW_LEGACY, GEN2_MUSIC_CRYSTAL, GEN2_MUSIC_CRYSTAL_REV1,
         GEN2_MUSIC_CRYSTAL_AU, GEN2_MUSIC_CRYSTAL_DE, GEN2_MUSIC_CRYSTAL_LEGACY) +
         GEN2_MUSIC_CRYSTAL_CLEAR + GEN2_MUSIC_GOLD_SILVER + GEN2_MUSIC_GOLD_SILVER_DE + GEN2_MUSIC_POLISHED_CRYSTAL
 

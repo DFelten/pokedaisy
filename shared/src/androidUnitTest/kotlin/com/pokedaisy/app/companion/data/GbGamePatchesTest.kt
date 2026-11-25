@@ -82,7 +82,10 @@ class GbGamePatchesTest {
         val carts = listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb",
             "Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", "Pokemon - Blue Version (USA, Europe) (SGB Enhanced).gb",
             "Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb",
-            "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb")
+            "Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb",
+            "Pokemon - Version Rouge (France) (SGB Enhanced).gb", "Pokemon - Version Bleue (France) (SGB Enhanced).gb",
+            "Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb", "Pokemon - Versione Blu (Italy) (SGB Enhanced).gb",
+            "Pokemon - Edicion Roja (Spain) (SGB Enhanced).gb", "Pokemon - Edicion Azul (Spain) (SGB Enhanced).gb")
         var seen = 0
         fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
         for (name in carts) {
@@ -98,6 +101,10 @@ class GbGamePatchesTest {
             // "erhalten auch EP!" in German: its "EP!" bytes (84 8F E7) in the trampolines' writes.
             val all = m.filter { p -> p.expect.none { it != 0.toByte() } }.flatMap { it.value.toList() }.toByteArray()
             assertEquals(name, "Germany" in name, hex(all).contains("848fe7"))
+            // The French / Italian / Spanish line: "gagnent", "ricevono", "también" in the cart's letters.
+            assertEquals(name, "France" in name, hex(all).contains("a6a0a6ada4adb3"))
+            assertEquals(name, "Italy" in name, hex(all).contains("b1a8a2a4b5aeadae"))
+            assertEquals(name, "Spain" in name, hex(all).contains("b3a0aca1a8bcad"))
             File("build/exp-modern").apply { mkdirs() }.resolve(name.substringBefore(" (") + ".txt")
                 .writeText(m.joinToString("") { "rompatch %x %s %x %s\n".format(it.addr, hex(it.expect), it.addr, hex(it.value)) })
         }

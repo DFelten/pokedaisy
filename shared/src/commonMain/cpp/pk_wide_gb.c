@@ -84,6 +84,13 @@ static const struct GbGame { uint32_t crc; int gen; uint32_t a[GB_CONFIG]; } GB_
                          0xCFC9, 0xD5AB, 0xD5D3, 0x01AEu, GB_LINEAR(0x03, 0x423D), 0xCC2D, 0xD74C }
     { 0x89197825u, 1, GB_RED_BLUE_DE },   // Rote Edition
     { 0x9C336307u, 1, GB_RED_BLUE_DE },   // Blaue Edition
+    // French, Italian and Spanish Red / Blue: German Red's RAM, the map header tables where English's are (the same bytes).
+    { 0x337FCE11u, 1, GB_RED_BLUE_DE },   // Version Rouge
+    { 0x50E2FC1Du, 1, GB_RED_BLUE_DE },   // Version Bleue
+    { 0x2945ACEBu, 1, GB_RED_BLUE_DE },   // Versione Rossa
+    { 0x4D0984A9u, 1, GB_RED_BLUE_DE },   // Versione Blu
+    { 0xD8507D8Au, 1, GB_RED_BLUE_DE },   // Edicion Roja
+    { 0xD95416F9u, 1, GB_RED_BLUE_DE },   // Edicion Azul
 #undef GB_RED_BLUE_DE
     // Pokémon Gold / Silver (USA, Europe): pret/pokegold's symbols, the same in both builds (widecheck: every field frame exact).
 #define GB_GOLD_SILVER { 0, 0, 0xC700, 0xD07D, 0xDA02, 0xD07F, 0xD082, 0xD087, 0xD091, 0xD0C5, 0xD086, 0xD116, 0xD182, 0, 0, \

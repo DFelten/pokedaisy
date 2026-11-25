@@ -128,9 +128,9 @@ fun gameText(code: String): GameText? = when (code) {
     KAIZO_TEXT -> EMERALD_KAIZO
     "APSD" -> YELLOW_DE_TEXT
     "APAD", "APED" -> RED_BLUE_DE_TEXT
-    "APSF" -> YELLOW_FR_TEXT
-    "APSI" -> YELLOW_IT_TEXT
-    "APSS" -> YELLOW_ES_TEXT
+    "APSF", "APAF", "APEF" -> YELLOW_FR_TEXT
+    "APSI", "APAI", "APEI" -> YELLOW_IT_TEXT
+    "APSS", "APAS", "APES" -> YELLOW_ES_TEXT
     "BYTD" -> CRYSTAL_DE_TEXT
     "AAUD", "AAXD" -> GOLD_SILVER_DE_TEXT
     LEGACY_TEXT -> EMERALD_LEGACY

@@ -881,6 +881,12 @@ class TelemetrySampler {
             GAME_BOY_SUPPORT && hash == BLUE_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE }
             GAME_BOY_SUPPORT && hash == RED_DE_SHA1 -> { kind = GameKind.RED; gen1Cfg = GEN1_RED_DE }
             GAME_BOY_SUPPORT && hash == BLUE_DE_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE_DE }
+            GAME_BOY_SUPPORT && hash == RED_FR_SHA1 -> { kind = GameKind.RED; gen1Cfg = GEN1_RED_FR }
+            GAME_BOY_SUPPORT && hash == BLUE_FR_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE_FR }
+            GAME_BOY_SUPPORT && hash == RED_IT_SHA1 -> { kind = GameKind.RED; gen1Cfg = GEN1_RED_IT }
+            GAME_BOY_SUPPORT && hash == BLUE_IT_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE_IT }
+            GAME_BOY_SUPPORT && hash == RED_ES_SHA1 -> { kind = GameKind.RED; gen1Cfg = GEN1_RED_ES }
+            GAME_BOY_SUPPORT && hash == BLUE_ES_SHA1 -> { kind = GameKind.BLUE; gen1Cfg = GEN1_BLUE_ES }
             GAME_BOY_SUPPORT && hash == PURE_RED_V2_7_6_SHA1 -> { kind = GameKind.PURE_RED; gen1Cfg = GEN1_PURE_RED }
             GAME_BOY_SUPPORT && hash == PURE_BLUE_V2_7_6_SHA1 -> { kind = GameKind.PURE_BLUE; gen1Cfg = GEN1_PURE_BLUE }
             GAME_BOY_SUPPORT && hash == YELLOW_LEGACY_V1_0_10_SHA1 -> { kind = GameKind.YELLOW_LEGACY; gen1Cfg = GEN1_YELLOW_LEGACY }
@@ -1344,6 +1350,14 @@ class TelemetrySampler {
         // Pokémon Rote / Blaue Edition (Germany) (SGB Enhanced): English Red's code translated (GEN1_RED_DE). Plain `shasum`s.
         const val RED_DE_SHA1 = "87d523fe1a0c548db7c5477b451ddec1eb083c06"
         const val BLUE_DE_SHA1 = "20e72dc6f41493eee1fdd0cef54214e6c3389688"
+        // Version Rouge / Bleue (France), Versione Rossa / Blu (Italy), Edicion Roja / Azul (Spain) (SGB Enhanced): English Red's
+        // code with the European Yellows' text, German Red's RAM (GEN1_RED_FR ...). Plain `shasum`s.
+        const val RED_FR_SHA1 = "47a7622fa30e6402a3891fe65b3a930bf9bd7aec"
+        const val BLUE_FR_SHA1 = "47faa910d0e073c600665bf9c83b6bd17babdf8a"
+        const val RED_IT_SHA1 = "65b97cf8f2f1cff711a6d08c6c894c8ce65ce522"
+        const val BLUE_IT_SHA1 = "f69ed1a1332f04c24c7db899a09019bb045fa8b3"
+        const val RED_ES_SHA1 = "fc17c5b904d551b1b908054ccd1c493f755f832a"
+        const val BLUE_ES_SHA1 = "7715e7b133e8634df48918b9138374110212a108"
 
         // PureRed / PureBlue v2.7.6 (Vortyne/pureRGB): its source at tag v2.7.6 builds both byte for byte.
         const val PURE_RED_V2_7_6_SHA1 = "2e94d09c1e16a57eb079404c030f26fdeeac949d"
@@ -1433,7 +1447,7 @@ class TelemetrySampler {
 
         /** The Game Boy / Color carts the companion reads ([CompanionSupport] checks imports against it). */
         val SUPPORTED_GB_SHA1S = setOf(YELLOW_SHA1, YELLOW_GEN2_GRAPHICS_V1_1_SHA1, YELLOW_DE_SHA1, YELLOW_FR_SHA1, YELLOW_IT_SHA1, YELLOW_ES_SHA1, RED_SHA1, RED_GEN2_GRAPHICS_V2_0_SHA1, BLUE_SHA1,
-            RED_DE_SHA1, BLUE_DE_SHA1) +
+            RED_DE_SHA1, BLUE_DE_SHA1, RED_FR_SHA1, BLUE_FR_SHA1, RED_IT_SHA1, BLUE_IT_SHA1, RED_ES_SHA1, BLUE_ES_SHA1) +
             CRYSTAL_SHA1S + CRYSTAL_DE_SHA1 + CRYSTAL_CLEAR_SHA1S + PRISM_V0_95_254_SHA1 + GOLD_SHA1 + SILVER_SHA1 + GOLD_DE_SHA1 + SILVER_DE_SHA1 + POLISHED_CRYSTAL_SHA1S +
             PURE_RED_V2_7_6_SHA1 + PURE_BLUE_V2_7_6_SHA1 + YELLOW_LEGACY_V1_0_10_SHA1 + CRYSTAL_LEGACY_V1_3_1_SHA1 +
             BROWN_V6_1_2_SHA1 + BROWN_V6_0_1_SHA1

@@ -190,6 +190,13 @@ object Gen1Art {
      * English's pixel for pixel - RedBlueGermanDecodeTest - so they share its files), their own font (German Yellow's letters). */
     val RED_DE = redBlue(TelemetrySampler.RED_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
     val BLUE_DE = redBlue(TelemetrySampler.BLUE_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
+    /** French, Italian and Spanish Red / Blue: German Red's art, moved again (port_gen1.py; English's pixels), their own font. No card yet. */
+    val RED_FR = redBlue(TelemetrySampler.RED_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF)
+    val BLUE_FR = redBlue(TelemetrySampler.BLUE_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF)
+    val RED_IT = redBlue(TelemetrySampler.RED_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS)
+    val BLUE_IT = redBlue(TelemetrySampler.BLUE_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS)
+    val RED_ES = redBlue(TelemetrySampler.RED_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS)
+    val BLUE_ES = redBlue(TelemetrySampler.BLUE_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS)
 
     /**
      * PureRed and PureBlue v2.7.6 (pureRGB's pokered.sym: the same addresses in both). A Color cart, its default COLORS
@@ -270,7 +277,7 @@ object Gen1Art {
     val BROWN = brown(TelemetrySampler.BROWN_V6_1_2_SHA1)
     val BROWN_V601 = brown(TelemetrySampler.BROWN_V6_0_1_SHA1)
 
-    private val GAMES = listOf(YELLOW, YELLOW_GEN2_GRAPHICS, YELLOW_DE, YELLOW_FR, YELLOW_IT, YELLOW_ES, RED, RED_GEN2_GRAPHICS, BLUE, RED_DE, BLUE_DE, PURE_RED, PURE_BLUE, YELLOW_LEGACY,
+    private val GAMES = listOf(YELLOW, YELLOW_GEN2_GRAPHICS, YELLOW_DE, YELLOW_FR, YELLOW_IT, YELLOW_ES, RED, RED_GEN2_GRAPHICS, BLUE, RED_DE, BLUE_DE, RED_FR, BLUE_FR, RED_IT, BLUE_IT, RED_ES, BLUE_ES, PURE_RED, PURE_BLUE, YELLOW_LEGACY,
         BROWN, BROWN_V601)
 
     private fun off(bank: Int, addr: Int) = if (bank == 0) addr else bank * 0x4000 + (addr - 0x4000)

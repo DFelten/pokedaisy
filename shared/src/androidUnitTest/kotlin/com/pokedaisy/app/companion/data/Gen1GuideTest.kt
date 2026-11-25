@@ -45,6 +45,9 @@ class Gen1GuideTest {
             Triple("yellow_fr", GEN1_YELLOW_FR, GameKind.YELLOW), Triple("yellow_it", GEN1_YELLOW_IT, GameKind.YELLOW),
             Triple("yellow_es", GEN1_YELLOW_ES, GameKind.YELLOW), Triple("red", GEN1_RED, GameKind.RED), Triple("blue", GEN1_BLUE, GameKind.BLUE),
             Triple("red_de", GEN1_RED_DE, GameKind.RED), Triple("blue_de", GEN1_BLUE_DE, GameKind.BLUE),
+            Triple("red_fr", GEN1_RED_FR, GameKind.RED), Triple("blue_fr", GEN1_BLUE_FR, GameKind.BLUE),
+            Triple("red_it", GEN1_RED_IT, GameKind.RED), Triple("blue_it", GEN1_BLUE_IT, GameKind.BLUE),
+            Triple("red_es", GEN1_RED_ES, GameKind.RED), Triple("blue_es", GEN1_BLUE_ES, GameKind.BLUE),
         )
         for ((fixture, cfg, game) in saves) {
             val p = read(fixture, cfg, game, cfg.language).progress
@@ -52,8 +55,8 @@ class Gen1GuideTest {
             assertTrue(fixture, (0 until 8).all { p!!.flag(G1_BADGE_FLAG + it) })
             // The European Yellows read the same save at their own addresses: the same flags.
             if (game == GameKind.YELLOW) assertEquals(fixture, read("yellow", GEN1_YELLOW, game).progress, p)
-            // German Red / Blue: the red fixture's game written out as their save, read at their own addresses.
-            if (cfg.language == 'D' && game != GameKind.YELLOW) assertEquals(fixture, read("red", GEN1_RED, GameKind.RED).progress, p)
+            // German, French, Italian and Spanish Red / Blue: the red fixture's game written out as their save, read at their own addresses.
+            if (cfg.language != 'E' && game != GameKind.YELLOW) assertEquals(fixture, read("red", GEN1_RED, GameKind.RED).progress, p)
         }
     }
 

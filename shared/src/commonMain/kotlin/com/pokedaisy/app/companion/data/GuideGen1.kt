@@ -67,8 +67,10 @@ fun gen1GuideRam(cfg: Gen1Config): Gen1GuideRam? = when {
         YELLOW_GUIDE_RAM.shifted((cfg.badges - GEN1_YELLOW.badges).toInt())
     cfg === GEN1_RED || cfg === GEN1_RED_GEN2_GRAPHICS -> RED_GUIDE_RAM
     cfg === GEN1_BLUE -> BLUE_GUIDE_RAM
-    cfg === GEN1_RED_DE -> RED_GUIDE_RAM.shifted((cfg.badges - GEN1_RED.badges).toInt())
-    cfg === GEN1_BLUE_DE -> BLUE_GUIDE_RAM.shifted((cfg.badges - GEN1_BLUE.badges).toInt())
+    cfg === GEN1_RED_DE || cfg === GEN1_RED_FR || cfg === GEN1_RED_IT || cfg === GEN1_RED_ES ->
+        RED_GUIDE_RAM.shifted((cfg.badges - GEN1_RED.badges).toInt())
+    cfg === GEN1_BLUE_DE || cfg === GEN1_BLUE_FR || cfg === GEN1_BLUE_IT || cfg === GEN1_BLUE_ES ->
+        BLUE_GUIDE_RAM.shifted((cfg.badges - GEN1_BLUE.badges).toInt())
     else -> null
 }
 

@@ -84,6 +84,12 @@ object GameTitleCatalog {
         "d7037c83e1ae5b39bde3c30787637ba1d4c48ce2" to "Pokémon Blue",
         "87d523fe1a0c548db7c5477b451ddec1eb083c06" to "Pokémon Rote Edition",
         "20e72dc6f41493eee1fdd0cef54214e6c3389688" to "Pokémon Blaue Edition",
+        "47a7622fa30e6402a3891fe65b3a930bf9bd7aec" to "Pokémon Version Rouge",
+        "47faa910d0e073c600665bf9c83b6bd17babdf8a" to "Pokémon Version Bleue",
+        "65b97cf8f2f1cff711a6d08c6c894c8ce65ce522" to "Pokémon Versione Rossa",
+        "f69ed1a1332f04c24c7db899a09019bb045fa8b3" to "Pokémon Versione Blu",
+        "fc17c5b904d551b1b908054ccd1c493f755f832a" to "Pokémon Edición Roja",
+        "7715e7b133e8634df48918b9138374110212a108" to "Pokémon Edición Azul",
         // Game Boy Color (pret/pokecrystal's roms.sha1): rev 0, rev 1, Australia.
         "f4cd194bdee0d04ca4eac29e09b8e4e9d818c133" to "Pokémon Crystal",
         "f2f52230b536214ef7c9924f483392993e226cfb" to "Pokémon Crystal",

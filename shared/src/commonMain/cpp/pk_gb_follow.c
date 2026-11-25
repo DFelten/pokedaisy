@@ -62,6 +62,9 @@ static const struct { uint32_t crc; const struct gbf_ram_map* ram; } gbfCarts[] 
     { 0x6BDE3C3Eu, &gbfGoldSilver }, { 0x8AD48636u, &gbfGoldSilver }, { 0x4889DFAAu, &gbfGoldSilver }, { 0x96C9DB95u, &gbfGoldSilver },
     // Red, Blue (USA, Europe), Rote Edition, Blaue Edition
     { 0x9F7FDD53u, &gbfRedBlue }, { 0xD6DA8A1Au, &gbfRedBlue }, { 0x89197825u, &gbfRedBlueDe }, { 0x9C336307u, &gbfRedBlueDe },
+    // Version Rouge / Bleue, Versione Rossa / Blu, Edicion Roja / Azul: German Red's RAM
+    { 0x337FCE11u, &gbfRedBlueDe }, { 0x50E2FC1Du, &gbfRedBlueDe }, { 0x2945ACEBu, &gbfRedBlueDe }, { 0x4D0984A9u, &gbfRedBlueDe },
+    { 0xD8507D8Au, &gbfRedBlueDe }, { 0xD95416F9u, &gbfRedBlueDe },
 };
 static const struct gbf_ram_map* gbfRam = &gbfCrystal;
 

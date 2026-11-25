@@ -201,6 +201,7 @@ ROM hacks, **in the exact version listed** (another version shows a "not support
 | ------------------------------ | -------------------------- | :---: | :-: | :----: | :-: | :-----: | :---: |
 | Red / Blue (GB)                | USA/Europe                 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Red / Blue (GB)                | DE (Rote Edition / Blaue Edition) |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
+| Red / Blue (GB)                | FR / IT / ES (Version Rouge / Version Bleue, Versione Rossa / Versione Blu, Edición Roja / Edición Azul) |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | PureRed / PureBlue (GB)        | 2.7.6                      |  ✅   | ✅  |   ◐    | ✅  |   ✅    |   —   |
 | Yellow (GB)                    | USA/Europe                 |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
 | Yellow (GB)                    | DE / FR / IT / ES          |  ✅   | ✅  |   ◐    | ✅  |   ✅    |  ✅   |
