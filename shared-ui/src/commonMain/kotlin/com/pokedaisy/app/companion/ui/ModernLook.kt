@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_FEMALE
 import com.pokedaisy.app.companion.data.GENDER_SYMBOL_MALE
 import com.pokedaisy.app.companion.data.MonView
+import com.pokedaisy.app.companion.data.isGameBoyGame
 import com.pokedaisy.app.companion.i18n.tr
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -292,7 +293,11 @@ fun ModernPartyStage(mon: MonView?, modifier: Modifier = Modifier) {
             rememberRomBitmap(dex, species, com.pokedaisy.app.companion.data.PokedexSource::cachedFrontSprite, com.pokedaisy.app.companion.data.PokedexSource::frontSprite)
         } else null
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            if (sprite != null) TrimmedSprite(sprite, Modifier.fillMaxSize(0.82f))
+            // A Game Boy picture leaves its paper clear: on the dark stage its inside went dark too (Pikachu's yellow
+            // body). The clear pixels the outline closes in get the cart's paper back, as in BOXES' well.
+            val game = com.pokedaisy.app.companion.data.activeGame
+            val paper = if (game.isGameBoyGame) OptionColors.gbPaper(game) else null
+            if (sprite != null) TrimmedSprite(sprite, Modifier.fillMaxSize(0.82f), paper)
             else BoxWithConstraints(Modifier.fillMaxSize(0.82f), contentAlignment = Alignment.Center) {
                 val room = with(density) { minOf(maxWidth, maxHeight).toPx() }
                 SpeciesIcon(mon.iconAsset, with(density) { (32f * kotlin.math.floor(room / 32f).coerceAtLeast(1f)).toDp() })
