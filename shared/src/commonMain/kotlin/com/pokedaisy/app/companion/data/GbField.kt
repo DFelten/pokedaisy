@@ -115,6 +115,7 @@ sealed class GbField {
             }
             game == GameKind.PURE_RED || game == GameKind.PURE_BLUE -> GB_FIELD_PURE_RGB
             game == GameKind.BROWN -> GB_FIELD_BROWN
+            game == GameKind.GREEN_JP -> GB_FIELD_GREEN_LANDAR
             game == GameKind.YELLOW_LEGACY -> GB_FIELD_YELLOW_LEGACY
             game == GameKind.CRYSTAL && activeGen2 === GEN2_CRYSTAL -> Crystal
             game == GameKind.CRYSTAL && activeGen2 === GEN2_CRYSTAL_DE -> CrystalDe
@@ -181,6 +182,10 @@ sealed class GbField {
         private val partySwap: Boolean = false,
         /** USE on the ITEMS tab (Gen1ItemUse.kt), where it's mapped. */
         private val itemCalls: Gen1ItemCalls? = null,
+        /** wJoyIgnore: CD6B in every Western cart, the Japanese RAM's CD66. */
+        private val joyIgnore: Long = 0xCD6BL,
+        /** NAME_LENGTH: an OT name's / nickname's bytes in the party lists (11; the Japanese RAM's 6). */
+        private val nameLength: Int = NAME_LENGTH,
     ) : GbField() {
         private val flags7 = flags6 + 1
 
@@ -189,7 +194,7 @@ sealed class GbField {
         /**
          * The party menu's SWITCH: what SwitchPartyMon_InitVarOrSwapData does (engine/menus/start_sub_menus.asm, the same
          * in Red / Blue and Yellow), written straight into the party's lists: the species entries, the 44-byte records,
-         * the OT names and the nicknames (11 bytes each) of both slots. Gen 1 has no mail or anything else per slot. Only
+         * the OT names and the nicknames (11 bytes each; Japanese Green's 6) of both slots. Gen 1 has no mail or anything else per slot. Only
          * where the bag's PC could open, refused if the party isn't what the companion showed; read back. The party
          * reaches the save at the next in-game save.
          */
@@ -201,7 +206,7 @@ sealed class GbField {
             if (a == b || a !in 0 until n || b !in 0 until n) return PartySwapResult.FAILED
             val mons = partyCount + 8
             val ots = mons + PARTY_MAX * PARTY_MON_SIZE
-            val nicks = ots + PARTY_MAX * NAME_LENGTH
+            val nicks = ots + PARTY_MAX * nameLength
             fun key(i: Int) = gen1MonKey(g.read(mons + i * PARTY_MON_SIZE, PARTY_MON_SIZE), 0)
             if (key(a) != keyA || key(b) != keyB) return PartySwapResult.FAILED
             fun trade(base: Long, size: Int) {
@@ -212,8 +217,8 @@ sealed class GbField {
             }
             trade(partyCount + 1, 1)
             trade(mons, PARTY_MON_SIZE)
-            trade(ots, NAME_LENGTH)
-            trade(nicks, NAME_LENGTH)
+            trade(ots, nameLength)
+            trade(nicks, nameLength)
             return if (key(a) == keyB && key(b) == keyA) PartySwapResult.SWAPPED else PartySwapResult.FAILED
         }
 
@@ -223,7 +228,7 @@ sealed class GbField {
 
         // wFontLoaded (right before wWalkCounter in every cart) bit 0: a text box is up. The games without an EXPAND
         // scene (the European Yellows, Red / Blue) have only these to go by.
-        private fun free(g: GameCalls) = u8(g, walkCounter) == 0 && u8(g, walkCounter - 1) and 1 == 0 && u8(g, JOY_IGNORE) == 0 &&
+        private fun free(g: GameCalls) = u8(g, walkCounter) == 0 && u8(g, walkCounter - 1) and 1 == 0 && u8(g, joyIgnore) == 0 &&
             u8(g, flags5) and 0xA0 == 0 && u8(g, inBattle) == 0 && u8(g, flags6) and 0x1C == 0
 
         override fun openPc(g: GameCalls): ItemUseResult {
@@ -303,7 +308,6 @@ sealed class GbField {
         }
 
         private companion object {
-            const val JOY_IGNORE = 0xCD6BL     // the same in every Gen 1 cart
             const val PARTY_MON_SIZE = 44
             const val PARTY_MAX = 6
             const val NAME_LENGTH = 11
@@ -733,6 +737,32 @@ val GB_FIELD_BROWN = GbField.Gen1(
     flyWarpMap = mapOf(0xD5 to 0x21),
     flyMaps = setOf(0x64, 0x7E, 0x83),
     noFlyMaps = setOf(0xB2),
+)
+
+/**
+ * Japanese Green in LandaR's English translation (v1.0): pret/pokegreen's symbols (its build is the Japanese cart, and the
+ * translation keeps every routine below at the same place, byte for byte), the Japanese RAM. Red's ways in: the PC routine
+ * in bank 0x18, Red's town map list and FLY pick, Red's wild data.
+ */
+val GB_FIELD_GREEN_LANDAR = GbField.Gen1(
+    loopAfterWait = 0x1E22, bankswitch = 0x3620, pcRoutine = 0x7FC2,
+    walkCounter = 0xCFACL, flags5 = 0xD6AFL, inBattle = 0xD034L, badges = 0xD2D5L,
+    tileset = 0xD2E6L, townsVisited = 0xD68AL, destination = 0xD699L, flags6 = 0xD6B1L, pikachuFlags = -1L, pikachuImage = -1L,
+    partyCount = 0xD123L, partyMoves = 0xD133L, curMap = 0xD2DDL, grassRate = 0xD806L,
+    waterRate = 0xD823L, wildDataPointers = 0x4F61,
+    joyIgnore = 0xCD66L,
+    boxCalls = GEN1_BOX_CALLS_GREEN_LANDAR,
+    partySwap = true,
+    nameLength = 6,
+    signatures = listOf(
+        0x1E1FL to "cd310bcd3c0bfab5d6cb77c4bb1dfaaccfa7c2cc",           // OverworldLoopLessDelay
+        0x3620L to "f0b8f578e0b8ea0020012e36",                           // Bankswitch
+        0x3F25L to "e08c21523fcd3f3f210ccfcb",                           // PrintPredefTextID
+        0x63FBCL to "fa09c1fe04c0cd6c3c3e01ea07cf3e1fc3253ff9",           // OpenPokemonCenterPC
+        0x715A0L to "7eea99d621b1d6cbde23cbfe",                           // the town map's FLY pick
+        0x715ECL to "213dcd36ff23fa8ad65ffa8bd65701",                     // BuildFlyLocationsList
+        0xCF2EL to "21614ffaddd24f060009092a666f2aea06d8",               // LoadWildData
+    ),
 )
 
 /** German Red / Blue (the same code at the same places in both carts): Red's ways in, mapped by scripts/port_gen1.py. */

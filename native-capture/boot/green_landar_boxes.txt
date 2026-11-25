@@ -1,0 +1,79 @@
+# green_landar_boxes: the green_landar save booted as native-capture/boot/green_landar.txt does, then the PC's moves by
+# the game's own functions (gbcallat, see the fixture's README): slot 1 deposited twice into BOX 1, the first box change to
+# BOX 8 (BOX 1 into SRAM bank 2), slot 1 deposited there.
+wait 1600
+press START
+wait 200
+press A
+wait 120
+press A
+wait 300
+gbpeek 1 d123 8
+gbpeek 1 d51f 1
+gbpeek 1 d9b2 8
+gbcallat 1e22 3ab2 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 b0
+gbpoke 1 cf7c 01
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3969 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 b0
+gbpoke 1 cf7c 00
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3ab2 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 b1
+gbpoke 1 cf7c 01
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3969 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 b1
+gbpoke 1 cf7c 00
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbpeek 1 d123 8
+gbpeek 1 d51f 1
+gbpeek 1 d9b2 8
+gbcallat 1e22 3620 0 1c 7e9c
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3f3f 0 0 40cf
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3620 0 1c 7d3d
+gbpoke 0 cc26 07
+wait 200
+gbcallat 1e22 3635 0 0 0
+wait 20
+gbpoke 1 d2eb cf 40
+gbpeek 1 d123 8
+gbpeek 1 d51f 1
+gbpeek 1 d9b2 8
+gbcallat 1e22 3ab2 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 54
+gbpoke 1 cf7c 01
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbcallat 1e22 3969 0 0 0
+gbpoke 1 cf79 1
+gbpoke 1 cf78 54
+gbpoke 1 cf7c 00
+wait 4
+gbcallat 1e22 3635 0 0 0
+wait 4
+gbpeek 1 d123 8
+gbpeek 1 d51f 1
+gbpeek 1 d9b2 8
+gbpeek 1 d2eb 2

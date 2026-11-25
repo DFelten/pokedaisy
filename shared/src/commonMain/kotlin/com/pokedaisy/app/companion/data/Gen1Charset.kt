@@ -24,7 +24,7 @@ enum class Gen1Charset(val chars: Map<Int, String>) {
     GREEN_EN(buildMap {
         for (i in 0 until 26) { put(0x80 + i, ('A' + i).toString()); put(0xB1 + i, ('a' + i).toString()) }
         for (i in 0 until 10) put(0xF6 + i, ('0' + i).toString())
-        putAll(mapOf(0x7F to " ", 0xE3 to "-", 0xED to "▶", 0xEF to "♂", 0xF5 to "♀"))
+        putAll(mapOf(0x7F to " ", 0xE3 to "-", 0xED to "▶", 0xEF to "♂", 0xF5 to "♀", 0x4E to " ", 0x4F to " ", 0xE4 to ".", 0xE5 to ",", 0xE6 to "?", 0xE7 to "!"))
     }),
     ;
 

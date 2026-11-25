@@ -85,6 +85,10 @@ static const struct GbGame { uint32_t crc; int gen; uint32_t a[GB_CONFIG]; } GB_
     { 0x89197825u, 1, GB_RED_BLUE_DE },   // Rote Edition
     { 0x9C336307u, 1, GB_RED_BLUE_DE },   // Blaue Edition
 #undef GB_RED_BLUE_DE
+    // Pocket Monsters Green (Japan) in LandaR's English translation v1.0: pret/pokegreen's symbols (the translation leaves code and
+    // data in place), Japanese RAM; MapHeaderPointers in Bank 0 (0x1BCB), MapHeaderBanks in Bank 3 (0x4883).
+    { 0x5B4CDEBBu, 1, { 0xC100, 0xC200, 0xC6E8, 0xD2DE, 0xD2E0, 0xD2E2, 0xD2E6, 0xD2E7, 0xD2EF, 0xD4AA, 0xD32C, 0xD034,
+                        0xCFAB, 0xD525, 0xD54D, 0x1BCBu, GB_LINEAR(0x03, 0x4883), 0xCC2D, 0xD6C6 } },
     // Pokémon Gold / Silver (USA, Europe): pret/pokegold's symbols, the same in both builds (widecheck: every field frame exact).
 #define GB_GOLD_SILVER { 0, 0, 0xC700, 0xD07D, 0xDA02, 0xD07F, 0xD082, 0xD087, 0xD091, 0xD0C5, 0xD086, 0xD116, 0xD182, 0, 0, \
                          GB_LINEAR(0x25, 0x40ED), 0, 0xCEBF, 0xD7B7, 0xD0CF, 0x02, 0xD1FD, 0xD445, 0xD545, 0xD05D, 0xD555, \

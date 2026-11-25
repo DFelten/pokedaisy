@@ -1475,6 +1475,7 @@ class PokeDaisyActivity : Activity(), GameSettingsScope {
             com.pokedaisy.app.companion.data.Gen2Art.GOLD_SILVER_ICONS
         com.pokedaisy.app.companion.data.GameKind.RED, com.pokedaisy.app.companion.data.GameKind.BLUE ->
             com.pokedaisy.app.companion.data.Gen1Art.RED_BLUE_ICONS
+        com.pokedaisy.app.companion.data.GameKind.GREEN_JP -> com.pokedaisy.app.companion.data.Gen1Art.GREEN_ICONS
         else -> null
     }
 

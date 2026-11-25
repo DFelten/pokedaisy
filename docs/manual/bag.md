@@ -8,7 +8,7 @@ keywords: [items, inventory, cube, pockets, tm, hm, reusable tm, infinite tm, te
 
 The bag tab shows everything you're carrying, pocket by pocket, as the game has it right now. It's handy for a quick count before a long cave, or for reading what an item does without digging through the game's menus.
 
-The tab's name follows the game: `BAG` in most games, `ITEM` in Red, Blue, Yellow, Yellow Legacy, PureRed, PureBlue and Brown, `PACK` in Gold, Silver, Crystal, Crystal Legacy, Crystal Clear and Prism, `CUBE` in Unbound, `INVENTORY` in R.O.W.E. and `POCKETS` in Super Mariomon. The HUD's bag uses the same name. The screen itself is drawn like that game's bag.
+The tab's name follows the game: `BAG` in most games, `ITEM` in Red, Blue, Yellow, Yellow Legacy, PureRed, PureBlue, Brown and Green (Translated), `PACK` in Gold, Silver, Crystal, Crystal Legacy, Crystal Clear and Prism, `CUBE` in Unbound, `INVENTORY` in R.O.W.E. and `POCKETS` in Super Mariomon. The HUD's bag uses the same name. The screen itself is drawn like that game's bag.
 
 ## Pockets and sorting
 
@@ -74,7 +74,7 @@ Normally a TM is gone once it teaches a move, so you think twice before using a 
 Everything else about TMs works as the game has it: which Pokémon can learn one, forgetting a move to make room, selling one at a shop. The change applies at once, no restart needed, and turning it off makes TMs single use again.
 
 > [!NOTE]
-> `REUSABLE TMS` works in FireRed, LeafGreen, Emerald, Ruby and Sapphire (every language and release PokeDaisy supports), and in Emerald Kaizo, Emerald Legacy, Orange Islands, FireRed Rocket Edition, Ultra Violet and Celia's Stupid Romhack. On the Game Boy it works in Red, Blue, Yellow, Gold, Silver and Crystal, Brown, Yellow Legacy, Crystal Clear and Crystal Legacy. On the DS it works in HeartGold, SoulSilver and Platinum in every language, with the `MELONDS` DS core; Black, White and their sequels and Origin HeartGold already keep their TMs, so there it shows `ON`, greyed out. In Radical Red, Unbound and SoulGold a TM already stays after use, so the setting shows `ON`, greyed out. Prism and Polished Crystal keep their TMs too, and Elite Redux keeps no counts at all. In other games it shows `N/A`.
+> `REUSABLE TMS` works in FireRed, LeafGreen, Emerald, Ruby and Sapphire (every language and release PokeDaisy supports), and in Emerald Kaizo, Emerald Legacy, Orange Islands, FireRed Rocket Edition, Ultra Violet and Celia's Stupid Romhack. On the Game Boy it works in Red, Blue, Yellow, Gold, Silver and Crystal, Brown, Yellow Legacy, Crystal Clear, Crystal Legacy and Green (Translated). On the DS it works in HeartGold, SoulSilver and Platinum in every language, with the `MELONDS` DS core; Black, White and their sequels and Origin HeartGold already keep their TMs, so there it shows `ON`, greyed out. In Radical Red, Unbound and SoulGold a TM already stays after use, so the setting shows `ON`, greyed out. Prism and Polished Crystal keep their TMs too, and Elite Redux keeps no counts at all. In other games it shows `N/A`.
 
 ## AUTO REFILL
 

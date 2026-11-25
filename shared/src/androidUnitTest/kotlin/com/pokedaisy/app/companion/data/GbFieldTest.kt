@@ -73,6 +73,7 @@ class GbFieldTest {
             "Pokemon PureRed (v2.7.6).gb" to GB_FIELD_PURE_RGB,
             "Pokemon Brown (v6.1.2).gb" to GB_FIELD_BROWN,
             "Pokemon Brown (v6.0.1).gb" to GB_FIELD_BROWN,
+            "Pocket Monsters - Green Version (Japan) (En) (v1.0) (LandaR).gb" to GB_FIELD_GREEN_LANDAR,
         )
         // The carts on this machine: one that's missing (German Red / Blue here) mustn't skip the others' checks.
         var checked = 0
@@ -92,7 +93,7 @@ class GbFieldTest {
         val red = romOf("Pokemon Red Gen II Graphics (v2.0).gb")
         val yellow = romOf("Pokemon Yellow Gen II Graphics (v1.1).gb")
         val all = listOf(GB_FIELD_YELLOW, GB_FIELD_YELLOW_DE, GB_FIELD_YELLOW_FR, GB_FIELD_YELLOW_IT, GB_FIELD_YELLOW_ES,
-            GB_FIELD_RED_BLUE, GB_FIELD_RED_BLUE_DE, GB_FIELD_PURE_RGB, GB_FIELD_BROWN)
+            GB_FIELD_RED_BLUE, GB_FIELD_RED_BLUE_DE, GB_FIELD_PURE_RGB, GB_FIELD_BROWN, GB_FIELD_GREEN_LANDAR)
         assertEquals(listOf(GB_FIELD_RED_BLUE), all.filter { it.matches(red) })
         assertEquals(emptyList<GbField>(), all.filter { it.matches(yellow) })
     }
@@ -193,6 +194,35 @@ class GbFieldTest {
         assertEquals(FlyResult.CANT_FLY_HERE, GB_FIELD_BROWN.flyTargets(m).result)
     }
 
+    /** Green (LandaR): the Japanese RAM, wJoyIgnore at CD66. Headless on the green_landar save: the PC from Red's room,
+     * FLY to Pallet Town, Route 1's rate (25) held at 0 for 100 steps with every tile counted as grass. */
+    @Test
+    fun `Green (translated) - the PC, FLY and wild rates at the Japanese RAM`() {
+        val m = Memory()
+        assertEquals(ItemUseResult.USED, GB_FIELD_GREEN_LANDAR.openPc(m))
+        assertEquals(listOf(0x1E22, 0x3620, 0, 0x18, 0x7FC2), m.calledAt)
+        m[0xCD66] = 0xFF                                   // a script holds the buttons
+        assertEquals(ItemUseResult.NOT_NOW, GB_FIELD_GREEN_LANDAR.openPc(m))
+        m[0xCD66] = 0
+        m[0xD2D5] = 0x04
+        m[0xD123] = 1
+        m[0xD133] = 19
+        m[0xD68A] = 0b11
+        val t = GB_FIELD_GREEN_LANDAR.flyTargets(m)
+        assertEquals(FlyTargets(FlyResult.OK, listOf(0, 1), 0), t)
+        assertEquals(FlyResult.OK, GB_FIELD_GREEN_LANDAR.fly(0, t, m))
+        assertEquals(listOf(0, 0x08, 0x80), listOf(m[0xD699], m[0xD6B1], m[0xD6B2]))
+        val rom = File(dir, "Pocket Monsters - Green Version (Japan) (En) (v1.0) (LandaR).gb").takeIf { it.isFile }?.readBytes()
+            ?: return
+        val w = Memory(rom)
+        w[0xD2DD] = 0x0C                                   // Route 1
+        w[0xD806] = 25
+        GB_FIELD_GREEN_LANDAR.holdWild(w)
+        assertEquals(0 to 0, w[0xD806] to w[0xD823])
+        assertTrue(GB_FIELD_GREEN_LANDAR.releaseWild(w))
+        assertEquals(25 to 0, w[0xD806] to w[0xD823])
+    }
+
     @Test
     fun `Yellow - encounter rates held at 0, put back from the map's wild data`() {
         val rom = ByteArray(0x200000)
@@ -237,27 +267,29 @@ class GbFieldTest {
     }
 
     @Test
-    fun `Red, Blue and Yellow - the party SWITCH trades the species, records, OT names and nicknames of two slots`() {
-        for ((field, count, battle, walk) in listOf(
-            listOf(GB_FIELD_YELLOW, 0xD162L, 0xD056L, 0xCFC4L), listOf(GB_FIELD_RED_BLUE, 0xD163L, 0xD057L, 0xCFC5L))) {
-            field as GbField; count as Long; battle as Long; walk as Long
+    fun `Red, Blue, Yellow and Japanese Green - the party SWITCH trades the species, records, OT names and nicknames of two slots`() {
+        // Green's Japanese RAM: 6-byte names.
+        for ((field, count, battle, walk, n) in listOf(
+            listOf(GB_FIELD_YELLOW, 0xD162L, 0xD056L, 0xCFC4L, 11), listOf(GB_FIELD_RED_BLUE, 0xD163L, 0xD057L, 0xCFC5L, 11),
+            listOf(GB_FIELD_GREEN_LANDAR, 0xD123L, 0xD034L, 0xCFACL, 6))) {
+            field as GbField; count as Long; battle as Long; walk as Long; n as Int
             assertTrue(field.swapsParty)
             val m = Memory()
             m[count] = 3
             val mons = count + 8
             val ots = mons + 6 * 44
-            val nicks = ots + 6 * 11
+            val nicks = ots + 6 * n
             for (i in 0 until 3) {
                 m[count + 1 + i] = 0x10 + i
                 for (k in 0 until 44) m[mons + i * 44 + k] = (i * 50 + k) and 0xFF
                 m[mons + i * 44] = 0x10 + i
-                for (k in 0 until 11) { m[ots + i * 11 + k] = 0x80 + i; m[nicks + i * 11 + k] = 0x90 + i }
+                for (k in 0 until n) { m[ots + i * n + k] = 0x80 + i; m[nicks + i * n + k] = 0x90 + i }
             }
             m[count + 4] = 0xFF
             fun key(i: Int) = gen1MonKey(m.read(mons + i * 44, 44), 0)
             val k0 = key(0)
             val k2 = key(2)
-            val before = m.read(count, 6 * 44 + 6 * 22 + 8)
+            val before = m.read(count, 6 * 44 + 6 * 2 * n + 8)
             assertEquals(PartySwapResult.FAILED, field.swapParty(m, 0, k2, 2, k0))   // not the party the companion showed
             assertEquals(PartySwapResult.FAILED, field.swapParty(m, 0, k0, 3, k2))   // no slot 3
             m[battle] = 1
@@ -271,8 +303,8 @@ class GbFieldTest {
             assertEquals(listOf(0x12, 0x11, 0x10, 0xFF), (1..4).map { m[count + it] })
             assertEquals(k2, key(0))
             assertEquals(k0, key(2))
-            assertEquals(listOf(0x82, 0x81, 0x80), (0 until 3).map { m[ots + it * 11 + 10] })
-            assertEquals(listOf(0x92, 0x91, 0x90), (0 until 3).map { m[nicks + it * 11] })
+            assertEquals(listOf(0x82, 0x81, 0x80), (0 until 3).map { m[ots + it * n + n - 1] })
+            assertEquals(listOf(0x92, 0x91, 0x90), (0 until 3).map { m[nicks + it * n] })
             assertEquals(3, m[count])
         }
         assertFalse(GB_FIELD_YELLOW_LEGACY.swapsParty)

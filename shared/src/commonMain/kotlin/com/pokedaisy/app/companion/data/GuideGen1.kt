@@ -54,12 +54,17 @@ private val BLUE_GUIDE_RAM = Gen1GuideRam(
     G1B_TRADE_FLAGS, G1B_TRADE_FLAG_BYTES, G1B_BADGES, G1B_TEAM_VAR,
 )
 
+private val GREEN_GUIDE_RAM = Gen1GuideRam(
+    G1G_EVENT_FLAGS, G1G_EVENT_FLAG_BYTES, G1G_MISSABLE_FLAGS, G1G_MISSABLE_FLAG_BYTES, G1G_HIDDEN_ITEM_FLAGS, G1G_HIDDEN_ITEM_FLAG_BYTES,
+    G1G_TRADE_FLAGS, G1G_TRADE_FLAG_BYTES, G1G_BADGES, G1G_TEAM_VAR,
+)
+
 private val YELLOW_LEGACY_GUIDE_RAM = Gen1GuideRam(
     G1L_EVENT_FLAGS, G1L_EVENT_FLAG_BYTES, G1L_MISSABLE_FLAGS, G1L_MISSABLE_FLAG_BYTES, G1L_HIDDEN_ITEM_FLAGS, G1L_HIDDEN_ITEM_FLAG_BYTES,
     G1L_TRADE_FLAGS, G1L_TRADE_FLAG_BYTES, G1L_BADGES, G1L_TEAM_VAR,
 )
 
-/** [cfg]'s guide RAM: Yellow in all five languages, Red, Blue, Yellow Legacy; null for PureRGB (it moved things). */
+/** [cfg]'s guide RAM: Yellow in all five languages, Red, Blue, Yellow Legacy, Green (translated); null for PureRGB (it moved things). */
 fun gen1GuideRam(cfg: Gen1Config): Gen1GuideRam? = when {
     cfg === GEN1_YELLOW || cfg === GEN1_YELLOW_GEN2_GRAPHICS -> YELLOW_GUIDE_RAM
     cfg === GEN1_YELLOW_LEGACY -> YELLOW_LEGACY_GUIDE_RAM
@@ -69,6 +74,7 @@ fun gen1GuideRam(cfg: Gen1Config): Gen1GuideRam? = when {
     cfg === GEN1_BLUE -> BLUE_GUIDE_RAM
     cfg === GEN1_RED_DE -> RED_GUIDE_RAM.shifted((cfg.badges - GEN1_RED.badges).toInt())
     cfg === GEN1_BLUE_DE -> BLUE_GUIDE_RAM.shifted((cfg.badges - GEN1_BLUE.badges).toInt())
+    cfg === GEN1_GREEN_LANDAR -> GREEN_GUIDE_RAM
     else -> null
 }
 
@@ -174,6 +180,7 @@ class Gen1World(wildRaw: List<String>, bossRaw: List<String>) : GuideWorld {
 internal val YELLOW_WORLD = Gen1World(G1Y_WILD_RAW, G1Y_BOSSES_RAW)
 internal val RED_WORLD = Gen1World(G1R_WILD_RAW, G1R_BOSSES_RAW)
 internal val BLUE_WORLD = Gen1World(G1B_WILD_RAW, G1B_BOSSES_RAW)
+internal val GREEN_WORLD = Gen1World(G1G_WILD_RAW, G1G_BOSSES_RAW)
 val YELLOW_LEGACY_WORLD = Gen1World(G1L_WILD_RAW, G1L_BOSSES_RAW)
 
 private fun gen1Guide(world: Gen1World) = GameGuide(verified = false, bosses = world.bosses, world = world, pages = emptyList())
@@ -181,6 +188,7 @@ private fun gen1Guide(world: Gen1World) = GameGuide(verified = false, bosses = w
 internal val GUIDE_YELLOW = gen1Guide(YELLOW_WORLD)
 internal val GUIDE_RED = gen1Guide(RED_WORLD)
 internal val GUIDE_BLUE = gen1Guide(BLUE_WORLD)
+internal val GUIDE_GREEN = gen1Guide(GREEN_WORLD)
 internal val GUIDE_YELLOW_LEGACY = gen1Guide(YELLOW_LEGACY_WORLD)
 
 /**

@@ -519,14 +519,14 @@ object Gen1Art {
         "000220000000",
     ) + List(5) { "000000000000" }
 
-    /** The HUD's ball for item [itemId] in Red, Blue or Yellow (every language), else null. */
+    /** The HUD's ball for item [itemId] in Red, Blue, Yellow (every language) or Japanese Green (translated), else null. */
     fun ballAsset(itemId: Int): String? =
         if (activeGame in BALL_GAMES && itemId in GEN1_BALL_COLOURS) "$BALLS/ball-$itemId.png" else null
 
     /** Red, Blue and Yellow's balls count as balls on the HUD (their bag is one list, with no pockets). */
     fun isBall(itemId: Int): Boolean = activeGame in BALL_GAMES && itemId in GEN1_BALL_COLOURS
 
-    private val BALL_GAMES = setOf(GameKind.RED, GameKind.BLUE, GameKind.YELLOW)
+    private val BALL_GAMES = setOf(GameKind.RED, GameKind.BLUE, GameKind.YELLOW, GameKind.GREEN_JP)
 
     /** Writes [rom]'s art into [dir] if it's a known Gen 1 cart (once per [VERSION]); returns the paths written. */
     fun extractTo(rom: ByteArray, dir: Path): List<String> {

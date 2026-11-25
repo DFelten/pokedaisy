@@ -124,6 +124,28 @@ class Gen1GuideTest {
         assertTrue(bosses.all { it.isDone(won) })
     }
 
+    /** Japanese Green in LandaR's translation: pret/pokegreen's data (the translation keeps it in place), at the Japanese
+     * RAM, on the green_landar save (no badges yet, in the player's room). */
+    @Test
+    fun `Green (translated) - its own guide, Blue's wild Pokémon, BROCK first`() {
+        assertEquals(GuideId.GREEN, guideId(GameKind.GREEN_JP, null))
+        assertTrue(gameGuide(GuideId.GREEN)!!.world === GREEN_WORLD)
+        val p = read("green_landar", GEN1_GREEN_LANDAR, GameKind.GREEN_JP).progress!!
+        assertTrue((0 until 8).none { p.flag(G1_BADGE_FLAG + it) })
+        val boss = GREEN_WORLD.bosses.first { !it.isDone(p) }
+        assertEquals("LEADER BROCK", boss.title)
+        assertEquals(listOf(74 to 12, 95 to 14), GREEN_WORLD.party(boss.trainer(p), p).map { it.species to it.level })
+        assertEquals(13, GREEN_WORLD.bosses.size)
+        // ROUTE 2: CATERPIE where Red has WEEDLE - the Japanese Green's wild Pokémon are English Blue's.
+        activeGame = GameKind.GREEN_JP
+        val route2 = GREEN_WORLD.encounters(0, 13, null).grass.map { it.species }.toSet()
+        assertEquals(route2, BLUE_WORLD.encounters(0, 13, null).grass.map { it.species }.toSet())
+        assertTrue(10 in route2 && 13 !in route2)
+        // Viridian's Pokémon Center counts with the town, as in the other Gen 1 games.
+        assertEquals(1, areaSection(GameKind.GREEN_JP, 0x29, -1))
+        assertTrue(areaThings(GuideId.GREEN, 1).isNotEmpty())
+    }
+
     @Test
     fun `HERE groups a town's buildings with it`() {
         // VERMILION CITY (5): its Pokémon Center (89) counts with it, and Yellow's SQUIRTLE gift is there.

@@ -9,7 +9,7 @@ package com.pokedaisy.app.companion.data
  * - INSTANT TEXT: PrintLetterDelay (its two flag checks first, `ld a, [nn]; bit n, a; ret nz` twice) returns at once: a `ret`
  *   on its first byte. Every letter goes down without a frame's wait; the A / B press still closes a page.
  * - REUSABLE TMS, Gen 1: ItemUseTMHM's end, `ld a, [wCurItem]; call IsItemHM; ret c; jp RemoveUsedItem`, then BootedUpTMText:
- *   the `ret c` made a `ret`. Gen 2: TeachTMHM's `ld a, [wCurItem]; call IsHM; ret c; ld c, ..; callfar ChangeHappiness;
+ *   the `ret c` made a `ret` (Japanese Green: its BootedUpTMText inline, not a `text_far`). Gen 2: TeachTMHM's `ld a, [wCurItem]; call IsHM; ret c; ld c, ..; callfar ChangeHappiness;
  *   call ConsumeTM; jr`: the `call ConsumeTM` three `nop`s (the happiness the move brings stays).
  * - FIELD POISON off: Gen 1's ApplyOutOfBattlePoisonDamage skips its damage (the day care's EXP and Pikachu's mood still run),
  *   Gen 2's DoPoisonStep takes its "no party" way out.
@@ -30,7 +30,8 @@ package com.pokedaisy.app.companion.data
  *   Gen 1: its caller is home code), in the cart's padding, which its write checks is still there.
  *
  * Found in Red, Blue, Yellow (every language), Gold, Silver, Crystal (rev 0, rev 1, Australia) and the hacks on that code
- * (Brown, Yellow Legacy, Crystal Clear, Crystal Legacy); PureRed / PureBlue's text check is three places, so INSTANT TEXT
+ * (Brown, Yellow Legacy, Crystal Clear, Crystal Legacy), and in Japanese Green's English translation (no RUNNING SHOES or EXP SHARE
+ * MODERN there: their shapes aren't in it); PureRed / PureBlue's text check is three places, so INSTANT TEXT
  * isn't offered there. Played headless (mgba_dump `rompatch`).
  */
 object GbGamePatches {
@@ -42,6 +43,8 @@ object GbGamePatches {
     private const val ANY = -1
     private val TEXT = sig("fa????cb??c0fa????cb??c8")
     private val TM1 = sig("fa????cd????d8c3????17??????50")
+    // Japanese Green (pret/pokegreen): the same end, BootedUpTMText's text inline after it (`text` = 00), not a `text_far`.
+    private val TM1_INLINE = sig("fa????cd????d8c3????00")
     private val TM2 = sig("fa????cd????d80e??21????3e??cfcd????18")
     private val BEEP1 = sig("21????cb7e3600c8afea????c921????cbfec9")
     private val BEEP2 = sig("21????cbbe18??21????cbfec9")
@@ -102,6 +105,7 @@ object GbGamePatches {
             InstantText.Patch(listOf(InstantText.Write(TAG + at, rom.copyOfRange(at, at + TEXT.size), byteArrayOf(0xC9.toByte()))))
         }
         val tms = (one(TM1)?.let { at -> Triple(at, TM1, 6 to byteArrayOf(0xC9.toByte())) }
+            ?: one(TM1_INLINE)?.let { at -> Triple(at, TM1_INLINE, 6 to byteArrayOf(0xC9.toByte())) }
             ?: one(TM2)?.let { at -> Triple(at, TM2, 15 to byteArrayOf(0, 0, 0)) })
             ?.let { (at, s, p) -> listOf(ReusableTms.Site(TAG + at, rom.copyOfRange(at, at + s.size), TAG + at + p.first, p.second)) }
             .orEmpty()

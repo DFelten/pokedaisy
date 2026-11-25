@@ -99,6 +99,13 @@ val GEN1_MUSIC_RED_DE = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.RED_DE_SHA1)
 val GEN1_MUSIC_BLUE_DE = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.BLUE_DE_SHA1)
 
 /**
+ * Japanese Green in LandaR's English translation (pret/pokegreen's pokegreen.sym; the translation leaves the sound engine where it
+ * is): Red's songs, audio RAM and WRAM park, its own PlayMusic (0x0E35). Checked headless (mgba_dump gbpark / gbcall / gbloop):
+ * ROUTES1 loops at 22.9 s, the wild battle at 31.3 s after a 13.1 s intro - Red's numbers.
+ */
+val GEN1_MUSIC_GREEN_LANDAR = GEN1_MUSIC_RED.copy(sha1 = TelemetrySampler.GREEN_LANDAR_V1_0_SHA1, playMusic = 0x0E35)
+
+/**
  * PureRed / PureBlue v2.7.6 (pureRGB's pokered.sym, the same in both): Red's sound engine and audio RAM, its own PlayMusic
  * (0x21D1), and its songs: Red's, but EVOLUTION where Red has SAFARI ZONE and bank 0x08's / 0x1F's ids from the gym battle
  * / CINNABAR MANSION on shifted (constants/music_constants.asm). Its added songs (bank 0x36's RONALD and the others it starts
@@ -230,7 +237,7 @@ private val GEN2_MUSIC_POLISHED_CRYSTAL = with(TelemetrySampler) {
 
 object Gen1Music {
     private val GAMES = listOf(GEN1_MUSIC_YELLOW, GEN1_MUSIC_YELLOW_GEN2_GRAPHICS, GEN1_MUSIC_YELLOW_DE, GEN1_MUSIC_YELLOW_FR, GEN1_MUSIC_YELLOW_IT, GEN1_MUSIC_YELLOW_ES,
-        GEN1_MUSIC_RED, GEN1_MUSIC_RED_GEN2_GRAPHICS, GEN1_MUSIC_BLUE, GEN1_MUSIC_RED_DE, GEN1_MUSIC_BLUE_DE, GEN1_MUSIC_PURE_RED, GEN1_MUSIC_PURE_BLUE, GEN1_MUSIC_YELLOW_LEGACY, GEN2_MUSIC_CRYSTAL, GEN2_MUSIC_CRYSTAL_REV1,
+        GEN1_MUSIC_RED, GEN1_MUSIC_RED_GEN2_GRAPHICS, GEN1_MUSIC_BLUE, GEN1_MUSIC_RED_DE, GEN1_MUSIC_BLUE_DE, GEN1_MUSIC_GREEN_LANDAR, GEN1_MUSIC_PURE_RED, GEN1_MUSIC_PURE_BLUE, GEN1_MUSIC_YELLOW_LEGACY, GEN2_MUSIC_CRYSTAL, GEN2_MUSIC_CRYSTAL_REV1,
         GEN2_MUSIC_CRYSTAL_AU, GEN2_MUSIC_CRYSTAL_DE, GEN2_MUSIC_CRYSTAL_LEGACY) +
         GEN2_MUSIC_CRYSTAL_CLEAR + GEN2_MUSIC_GOLD_SILVER + GEN2_MUSIC_GOLD_SILVER_DE + GEN2_MUSIC_POLISHED_CRYSTAL
 

@@ -64,8 +64,8 @@ class Gen1BoxCalls(
 
     private val partyMons get() = partyCount + 8
     private val partyOt get() = partyMons + PARTY_MAX * PARTY_MON_SIZE
-    private val boxMons get() = layout.activeBox + GEN1_BOX_MONS
-    private val boxOt get() = boxMons + GEN1_BOX_SLOTS * GEN1_BOX_MON_SIZE
+    private val boxMons get() = layout.activeBox + layout.monsOff
+    private val boxOt get() = boxMons + layout.slots * GEN1_BOX_MON_SIZE
 
     private fun u8(g: GameCalls, addr: Long) = g.read(addr, 1)[0].toInt() and 0xFF
 
@@ -73,13 +73,13 @@ class Gen1BoxCalls(
 
     private fun state(g: GameCalls): State {
         val count = u8(g, partyCount).coerceAtMost(PARTY_MAX)
-        val box = g.read(layout.activeBox, GEN1_BOX_SIZE)
+        val box = g.read(layout.activeBox, layout.boxSize)
         return State(count, g.read(partyCount + 1, PARTY_MAX), g.read(partyMons, PARTY_MAX * PARTY_MON_SIZE),
-            (box[0].toInt() and 0xFF).coerceAtMost(GEN1_BOX_SLOTS), box)
+            (box[0].toInt() and 0xFF).coerceAtMost(layout.slots), box)
     }
 
     private fun partyKey(s: State, slot: Int) = gen1MonKey(s.party, slot * PARTY_MON_SIZE)
-    private fun boxKey(s: State, slot: Int) = gen1MonKey(s.box, GEN1_BOX_MONS + slot * GEN1_BOX_MON_SIZE)
+    private fun boxKey(s: State, slot: Int) = gen1MonKey(s.box, layout.monsOff + slot * GEN1_BOX_MON_SIZE)
     private fun boxSpecies(s: State, slot: Int) = s.box[1 + slot].toInt() and 0xFF
 
     /** IsThisMonStarterPikachu: a PIKACHU with the player's ID and the first five letters of the player's name as OT. */
@@ -109,7 +109,7 @@ class Gen1BoxCalls(
     override fun changeBox(g: GameCalls, to: Int): BoxChangeResult {
         val num = u8(g, layout.curBox)
         val current = num and GEN1_BOX_CHANGED.inv()
-        if (to !in 0 until GEN1_NUM_BOXES || current !in 0 until GEN1_NUM_BOXES) return BoxChangeResult.FAILED
+        if (to !in 0 until layout.numBoxes || current !in 0 until layout.numBoxes) return BoxChangeResult.FAILED
         if (to == current) return BoxChangeResult.CHANGED
         if (num and GEN1_BOX_CHANGED == 0) {
             if (!g.gbCallAt(at, bankswitch, 0, SAVE_BANK, emptyAllBoxes)) return BoxChangeResult.NOT_NOW
@@ -136,7 +136,7 @@ class Gen1BoxCalls(
         val s = state(g)
         if (slot !in 0 until s.boxCount || boxKey(s, slot) != key) return BoxSwapResult.CHANGED
         if (s.partyCount >= PARTY_MAX) return BoxSwapResult.PARTY_FULL
-        if (starterPikachu(g, boxMons + slot * GEN1_BOX_MON_SIZE, boxOt + slot * 11)) return BoxSwapResult.STARTER_PIKACHU
+        if (starterPikachu(g, boxMons + slot * GEN1_BOX_MON_SIZE, boxOt + slot * layout.nameLength)) return BoxSwapResult.STARTER_PIKACHU
         return moveIn(g, s, slot)
     }
 
@@ -159,12 +159,12 @@ class Gen1BoxCalls(
         partySlot !in 0 until s.partyCount || partyKey(s, partySlot) != key -> BoxSwapResult.CHANGED
         // BillsPCDeposit's own rule: never the last one, fainted or not.
         !incoming && s.partyCount <= 1 -> BoxSwapResult.LAST_MON
-        starterPikachu(g, partyMons + partySlot * PARTY_MON_SIZE, partyOt + partySlot * 11) -> BoxSwapResult.STARTER_PIKACHU
+        starterPikachu(g, partyMons + partySlot * PARTY_MON_SIZE, partyOt + partySlot * layout.nameLength) -> BoxSwapResult.STARTER_PIKACHU
         else -> null
     }
 
     private fun moveOut(g: GameCalls, s: State, partySlot: Int): BoxSwapResult {
-        if (s.boxCount >= GEN1_BOX_SLOTS) return BoxSwapResult.BOX_FULL
+        if (s.boxCount >= layout.slots) return BoxSwapResult.BOX_FULL
         val species = s.partySpecies[partySlot].toInt() and 0xFF
         if (!call(g, moveMon, partySlot, species, PARTY_TO_BOX)) return BoxSwapResult.NOT_NOW
         if (!settle(g) || u8(g, layout.activeBox) != s.boxCount + 1) return BoxSwapResult.FAILED
@@ -180,7 +180,7 @@ class Gen1BoxCalls(
         val s = state(g)
         if (slot !in 0 until s.boxCount || boxKey(s, slot) != boxKey) return BoxSwapResult.CHANGED
         refuseOut(g, s, partySlot, partyKey, incoming = true)?.let { return it }
-        if (starterPikachu(g, boxMons + slot * GEN1_BOX_MON_SIZE, boxOt + slot * 11)) return BoxSwapResult.STARTER_PIKACHU
+        if (starterPikachu(g, boxMons + slot * GEN1_BOX_MON_SIZE, boxOt + slot * layout.nameLength)) return BoxSwapResult.STARTER_PIKACHU
         if (s.partyCount < PARTY_MAX) {
             val got = moveIn(g, s, slot)
             if (got != BoxSwapResult.SWAPPED) return got
@@ -253,6 +253,25 @@ val GEN1_BOX_CALLS_YELLOW_DE = Gen1BoxCalls(
         0x3F59L to "fa70d3e0ecfa71d3e0ed7dea",
         0x1C * 0x4000L + (0x7BF5 - 0x4000) to "3eb6cd3b37cd4337cda37b5d5421",
         0x1C * 0x4000L + (0x7D44 - 0x4000) to "cd7e7e3e02ea0040",
+    ),
+)
+
+/**
+ * Japanese Green in LandaR's translation: pret/pokegreen.sym, the Japanese RAM and box ([GEN1_GREEN_BOXES]: 8 of 30).
+ * ChangeBox past its menu starts on the save sound, like Yellow's.
+ */
+val GEN1_BOX_CALLS_GREEN_LANDAR = Gen1BoxCalls(
+    at = 0x1E22, bankswitch = 0x3620, moveMon = 0x3AB2, removePokemon = 0x3969, ret = 0x3635, setMapTextPointer = 0x3F3F,
+    changeBoxEntry = 0x7D3D, emptyAllBoxes = 0x7E9C,
+    curPartySpecies = 0xCF78L, whichPokemon = 0xCF79L, moveMonType = 0xCF7CL, curMapTextPtr = 0xD2EBL, partyCount = 0xD123L,
+    layout = GEN1_GREEN_BOXES,
+    signatures = listOf(
+        0x3AB2L to "f0b8f53e03e0b8ea0020cd",
+        0x3969L to "211a7f0601c32036e5",
+        0x3635L to "c9",
+        0x3F3FL to "faebd2e0ecfaecd2e0ed7dea",
+        0x1C * 0x4000L + (0x7D3D - 0x4000) to "3eb6cd8837cd9037cdf97c5d5421",
+        0x1C * 0x4000L + (0x7E9C - 0x4000) to "3e0aea00003e01ea",
     ),
 )
 

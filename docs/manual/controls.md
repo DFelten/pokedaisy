@@ -260,7 +260,7 @@ If you turn indoor running off while inside a building, leave and re-enter to re
 
 Only random encounters change. Fishing, moves that lure wild Pokémon out and battles the story sets up still happen, and items that keep wild Pokémon away work as usual on top. The change applies at once, no restart needed.
 
-It works on the Game Boy Advance originals in every language and on almost every supported hack, including the ones rebuilt from newer source code like SoulGold, Lazarus and Recharged Yellow. On the Game Boy it works in Red, Blue, Yellow (in every language), Yellow Legacy, PureRed, PureBlue, Brown, Gold, Silver, Crystal and Crystal Legacy. On Emerald Rogue, Quetzal, Monomyth and the other Game Boy games it shows `N/A`.
+It works on the Game Boy Advance originals in every language and on almost every supported hack, including the ones rebuilt from newer source code like SoulGold, Lazarus and Recharged Yellow. On the Game Boy it works in Red, Blue, Yellow (in every language), Yellow Legacy, PureRed, PureBlue, Brown, Green (Translated), Gold, Silver, Crystal and Crystal Legacy. On Emerald Rogue, Quetzal, Monomyth and the other Game Boy games it shows `N/A`.
 
 ## LEVEL UP ALL
 
@@ -311,7 +311,7 @@ Two of the games' old habits, each a switch in the companion's `GAMEPLAY` > `QUA
 - **`LOW HP BEEP`** `OFF`: no more beeping in battle while your Pokémon's health bar is in the red. Every other sound stays.
 - **`FIELD POISON`** `OFF`: a poisoned Pokémon no longer loses health while you walk around, and never faints from it on the way. In battle poison works as ever, and it stays poisoned until you heal it.
 
-They work in FireRed, LeafGreen, Emerald, Ruby and Sapphire (every language and release PokeDaisy supports) and in many hacks built on their code. On the Game Boy they work too, in Red, Blue, Yellow, Gold, Silver and Crystal and the hacks built on them. Elsewhere they show `N/A`. The change applies at once, no restart needed.
+They work in FireRed, LeafGreen, Emerald, Ruby and Sapphire (every language and release PokeDaisy supports) and in many hacks built on their code. On the Game Boy they work too, in Red, Blue, Yellow, Gold, Silver and Crystal, Green (Translated) and the hacks built on them. Elsewhere they show `N/A`. The change applies at once, no restart needed.
 
 ## BOSS RETRY
 
@@ -340,7 +340,7 @@ Eggs and fainted Pokémon are left out. The game shows each Pokémon's EXP as it
 
 While it's on, [achievements](achievements.md) are paused, since some sets reward reaching a level.
 
-It works in FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and release PokeDaisy supports, and in many hacks built on their code. On the Game Boy it works in Red, Blue, Yellow, Gold, Silver and Crystal and the hacks built on them; in Gold, Silver and Crystal it steps aside while one of your Pokémon holds the game's own item that shares EXP, which then shares it the game's way. On the DS it works in Platinum (the USA, French and Spanish releases), HeartGold and SoulSilver (every release PokeDaisy supports) and the English Black, White, Black 2 and White 2, with the DS core set to melonDS (`DS CORE`). There the game's own held item that shares EXP keeps working with it: with `SPLIT` its holder still gets its extra share on top of the party's, and with `FULL EXP` every Pokémon gets the whole amount and the holder its extra share on top, so holding it never costs the others anything. Where it can't work (hacks that changed how EXP is paid, like Unbound and Radical Red) the row shows `N/A`.
+It works in FireRed, LeafGreen, Emerald, Ruby and Sapphire, in every language and release PokeDaisy supports, and in many hacks built on their code. On the Game Boy it works in Red, Blue, Yellow, Gold, Silver and Crystal, Green (Translated) (without `MODERN`) and the hacks built on them; in Gold, Silver and Crystal it steps aside while one of your Pokémon holds the game's own item that shares EXP, which then shares it the game's way. On the DS it works in Platinum (the USA, French and Spanish releases), HeartGold and SoulSilver (every release PokeDaisy supports) and the English Black, White, Black 2 and White 2, with the DS core set to melonDS (`DS CORE`). There the game's own held item that shares EXP keeps working with it: with `SPLIT` its holder still gets its extra share on top of the party's, and with `FULL EXP` every Pokémon gets the whole amount and the holder its extra share on top, so holding it never costs the others anything. Where it can't work (hacks that changed how EXP is paid, like Unbound and Radical Red) the row shows `N/A`.
 
 ## LEVEL CAP
 

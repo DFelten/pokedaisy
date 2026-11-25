@@ -4,6 +4,7 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -45,7 +46,9 @@ class GreenLandarDecodeTest {
         assertEquals(listOf(0x14 to 5, 0x04 to 10, 0x0B to 2, 0x0F to 1, 0x1D to 1), t.items.map { it.itemId to it.quantity })
         assertEquals(listOf("POTION", "POKé BALL", "ANTIDOTE"), t.items.take(3).map { itemName(it.itemId) })
         assertEquals(0x26, t.regionMapSectionId)   // REDS_HOUSE_2F
-        assertNull(t.pokedex)
+        // The save's POKéDEX says 6: the six given are seen and caught.
+        assertEquals(setOf(1, 4, 7, 16, 19, 25), t.pokedex!!.caught)
+        assertEquals(t.pokedex!!.caught, t.pokedex!!.seen)
     }
 
     @Test
@@ -113,6 +116,55 @@ class GreenLandarDecodeTest {
             .invoke(null, 0, Gen1Art.font(rom, Gen1Art.GREEN).inputStream())
         val canDisplay = fontClass.getMethod("canDisplay", Char::class.java)
         for (c in "Bulba Pikac 0123456789 AZaz") assertTrue("glyph $c", canDisplay.invoke(font, c) as Boolean)
+    }
+
+    @Test
+    fun `dex pages from the cart - metric, the text in place, only the ten translated ones with text`() {
+        val rom = rom
+        assumeTrue("Green (LandaR) not on this machine", rom != null)
+        Gen1Dex.rom = rom
+        val t = POKEDEX_GREEN_LANDAR.gen1!!
+        try {
+            val bulbasaur = Gen1Dex.entry(t, 1)!!
+            assertEquals("Se", bulbasaur.category)   // the translation's two-letter category
+            assertEquals(7 to 69, bulbasaur.heightDm to bulbasaur.weightHg)
+            assertEquals("A seed was planted on Bulba at its birth", bulbasaur.description)
+            assertEquals(listOf(45, 49, 49, 45, 65), bulbasaur.baseStats)
+            // MEW's page is still Japanese in v1.0, which the Latin font can't show: no text, the rest read.
+            val mew = Gen1Dex.entry(t, 151)!!
+            assertEquals("" to "", mew.category to mew.description)
+            assertEquals(listOf(100, 100, 100, 100, 100), mew.baseStats)
+            val out = File("build/gen1-art-green-dex").apply { mkdirs() }
+            var withText = 0
+            for (s in 1..151) {
+                val e = Gen1Dex.entry(t, s)
+                assertNotNull("entry $s", e)
+                if (e!!.description.isNotEmpty()) withText++
+                val pic = Gen1Dex.frontPixels(t, s)
+                assertTrue("pic $s", pic!!.count { it != 0 } > 100)
+                if (s in listOf(1, 25, 41, 74, 115, 139, 151)) File(out, "$s.png").writeBytes(RomArt.Image(56, 56, pic).png())
+            }
+            // v1.0 translated ten pages; the rest are Japanese text the Latin font would turn into nonsense.
+            assertEquals(10, withText)
+        } finally {
+            Gen1Dex.rom = null
+        }
+    }
+
+    @Test
+    fun `STEADY music - Red's songs and park, the cart's own PlayMusic`() {
+        assertEquals(GEN1_MUSIC_GREEN_LANDAR, Gen1Music.forSha1(TelemetrySampler.GREEN_LANDAR_V1_0_SHA1))
+        assertEquals(GEN1_MUSIC_RED.songs, GEN1_MUSIC_GREEN_LANDAR.songs)
+        val rom = rom
+        assumeTrue("Green (LandaR) not on this machine", rom != null)
+        // English or German Red: the same PlayMusic at the same place (GEN1_MUSIC_RED_DE).
+        val en = english ?: File(GB_DIR + "Pokemon - Rote Edition (Germany) (SGB Enhanced).gb").takeIf { it.isFile }?.readBytes()
+        assumeTrue("Red not on this machine", en != null)
+        // PlayMusic is Red's code where the config says, wNewSoundID (Red CFCC) at the Japanese RAM's CFAE.
+        fun at(b: ByteArray, addr: Int, newSoundId: Int) = b.copyOfRange(addr, addr + 48).toList().windowed(2, 1)
+            .map { (lo, hi) -> ((lo.toInt() and 0xFF) or ((hi.toInt() and 0xFF) shl 8)) == newSoundId }
+            .let { hits -> b.copyOfRange(addr, addr + 48).mapIndexed { i, x -> if (hits.getOrElse(i) { false } || hits.getOrElse(i - 1) { false }) 0 else x.toInt() } }
+        assertEquals(at(en!!, GEN1_MUSIC_RED.playMusic, 0xCFCC), at(rom!!, GEN1_MUSIC_GREEN_LANDAR.playMusic, 0xCFAE))
     }
 
     private companion object {

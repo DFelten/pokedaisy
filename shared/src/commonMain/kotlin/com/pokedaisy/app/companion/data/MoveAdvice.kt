@@ -23,7 +23,7 @@ private val PHYSICAL_TYPES = setOf("Normal", "Fighting", "Flying", "Poison", "Gr
 
 /** Games whose moves go by type like the originals' (a hack with a split of its own would read wrong: no icon there). */
 private val BY_TYPE = setOf(
-    GameKind.YELLOW, GameKind.RED, GameKind.BLUE, GameKind.CRYSTAL, GameKind.CRYSTAL_CLEAR, GameKind.GOLD, GameKind.SILVER,
+    GameKind.YELLOW, GameKind.RED, GameKind.BLUE, GameKind.GREEN_JP, GameKind.CRYSTAL, GameKind.CRYSTAL_CLEAR, GameKind.GOLD, GameKind.SILVER,
 )
 
 /** [mv]'s category, null where the game's rule isn't known. Gen 4 and 5 keep one on each move ([dsSpecialMoves],

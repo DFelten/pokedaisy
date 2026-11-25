@@ -61,6 +61,9 @@ data class Gen1DexTables(
     /** Brown's front pics: base data's byte [rawPicBankOffset] is a ROM bank, and the pic at the front pic pointer there is
      * a plain 7x7-tile 2bpp block (0x310 bytes, the tiles column by column) - its bank 0 means the usual compressed pic. */
     val rawPicBankOffset: Int = -1,
+    /** The Japanese carts' pages: the text follows the weight in place (no text_far), and a page holding a character the
+     * charset lacks (Green's translation left most pages in Japanese, which its Latin font garbles) shows no text. */
+    val inlineText: Boolean = false,
 )
 
 val GEN1_DEX_YELLOW = Gen1DexTables(
@@ -185,6 +188,30 @@ private val GEN1_DEX_BROWN = GEN1_DEX_RED.copy(
     rawPicBankOffset = 27,
 )
 
+/**
+ * Japanese Green in LandaR's English translation v1.0 (pret/pokegreen's pokegreen.sym = the Japanese cart, whose tables the
+ * translation kept in place): metric pages with their text inline, its own pics (picsBankBreaks from its
+ * UncompressMonSprite), MEW apart in bank 1, the flags in the Japanese RAM. v1.0 translated the text of
+ * ten pages; the rest is Japanese text, left out (GreenLandarDecodeTest).
+ */
+private val GEN1_DEX_GREEN_LANDAR = GEN1_DEX_RED.copy(
+    baseStats = 0x0E to 0x4000,
+    dexEntryPointers = 0x10 to 0x445E,
+    monsterPalettes = 0x1C to 0x6A1E,
+    cgbPalettes = 0x1C to 0x6AB6,   // SuperPalettes
+    picsBankBreaks = intArrayOf(0x1F, 0x4A, 0x75, 0x9A),   // TANGELA + 1, MOLTRES + 1, DODRIO + 1, BULBASAUR + 1
+    fossilKabutopsBank = 0x0D,
+    owned = 0xD27BL,
+    seen = 0xD28EL,
+    mewBaseStats = 0x01 to 0x4200,
+    mewPicsBank = 0x01,
+    evosMoves = 0x0E to 0x7427,
+    tmMoves = 0x04 to 0x6276,
+    metric = true,
+    charset = Gen1Charset.GREEN_EN,
+    inlineText = true,
+)
+
 /** The Kanto dex: 151, no regional / national split. Its pages come from [Gen1Dex]. */
 val POKEDEX_YELLOW = PokedexTables(
     entries = 0, frontPics = 0, palettes = 0, speciesInfo = 0, speciesToNational = 0, abilityNames = 0, footprints = 0,
@@ -204,6 +231,7 @@ val POKEDEX_BLUE = POKEDEX_YELLOW.copy(gen1 = GEN1_DEX_RED.copy())
 val POKEDEX_RED_GEN2_GRAPHICS = POKEDEX_RED.copy(gen1 = GEN1_DEX_RED_GEN2_GRAPHICS)
 /** Yellow Gen II Graphics's. */
 val POKEDEX_YELLOW_GEN2_GRAPHICS = POKEDEX_YELLOW.copy(gen1 = GEN1_DEX_YELLOW_GEN2_GRAPHICS)
+val POKEDEX_GREEN_LANDAR = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_GREEN_LANDAR)
 val POKEDEX_RED_DE = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_DE)
 val POKEDEX_BLUE_DE = POKEDEX_YELLOW_METRIC.copy(gen1 = GEN1_DEX_RED_DE.copy())
 /** Yellow Legacy's. */
@@ -252,6 +280,13 @@ object Gen1Dex {
         return sb.toString().split(' ').filter { it.isNotEmpty() }.joinToString(" ")
     }
 
+    /** Every character from [o] to its @ is one [chars] knows. */
+    private fun readable(rom: ByteArray, o: Int, chars: Map<Int, String>): Boolean {
+        var i = o
+        while (i < rom.size && i < o + 400) { val c = u8(rom, i++); if (c == 0x50 || c == 0x5F) return true; if (c !in chars) return false }
+        return false
+    }
+
     private const val MEW = 151
 
     /** [dex]'s 28 bytes of base stats: BaseStats by Dex number, MEW's apart in Red / Blue. */
@@ -282,7 +317,7 @@ object Gen1Dex {
             val e = off(pb, u16(rom, off(pb, pa) + 2 * (internal - 1)))
             o = e
             while (u8(rom, o) != 0x50) o++
-            category = text(rom, e, chars)
+            category = if (t.inlineText && !readable(rom, e, chars)) "" else text(rom, e, chars)
             o++
         }
         // English: feet, inches, pounds x 10; Europe: decimetres, hectograms (one byte less).
@@ -293,7 +328,8 @@ object Gen1Dex {
         val hg = u16(rom, o + 1)
         val far = o + if (t.metric) 3 else 4
         // text_far: 0x17, address, bank.
-        val desc = if (u8(rom, far) == t.textFar) text(rom, off(u8(rom, far + 3), u16(rom, far + 1)), chars) else ""
+        val desc = if (t.inlineText) { if (readable(rom, far, chars)) text(rom, far, chars) else "" }
+            else if (u8(rom, far) == t.textFar) text(rom, off(u8(rom, far + 3), u16(rom, far + 1)), chars) else ""
         val s = baseStatsOff(t, dex)
         return DexEntry(
             national = dex,

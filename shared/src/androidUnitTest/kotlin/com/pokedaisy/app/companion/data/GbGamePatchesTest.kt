@@ -1,5 +1,6 @@
 package com.pokedaisy.app.companion.data
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -102,6 +103,24 @@ class GbGamePatchesTest {
                 .writeText(m.joinToString("") { "rompatch %x %s %x %s\n".format(it.addr, hex(it.expect), it.addr, hex(it.value)) })
         }
         assumeTrue(seen > 0)
+    }
+
+    @Test
+    fun `Japanese Green (translated) - pret-pokegreen's own places, no RUNNING SHOES or EXP MODERN`() {
+        val r = rom("Pocket Monsters - Green Version (Japan) (En) (v1.0) (LandaR).gb")
+        assumeTrue(r != null)
+        val f = GbGamePatches.find(r!!)!!
+        assertEquals(tag + 0x391D, f.text!!.writes.single().addr)                     // 00:391D PrintLetterDelay
+        assertEquals(tag + 0x3CF46, f.beep!!.writes.single().addr)                    // 0F:4F43 .setLowHealthAlarm's set 7, [hl]
+        assertEquals(tag + 0xCCEB, f.poison!!.writes.single().addr)                   // in 03:4CD5 ApplyOutOfBattlePoisonDamage
+        // 03:6706, in ItemUseTMHM (03:663A): its ret c, BootedUpTMText inline after it. Played headless: the TM used up without,
+        // kept with it, the move learned either way.
+        val tm = f.tms.single()
+        assertEquals(tag + 0xE706 to tag + 0xE70C, tm.at to tm.branch)
+        assertArrayEquals(byteArrayOf(0xC9.toByte()), tm.value)
+        assertEquals(0x1D035L to 0x1D034L, f.exp!!.sentPokes to f.exp!!.battle)    // wPartyGainExpFlags, wIsInBattle
+        assertNull(f.exp!!.modern)
+        assertNull(f.run)
     }
 
     @Test

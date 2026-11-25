@@ -17,7 +17,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
-| Green (Translated) (GB) | JP v1.0, LandaR | — | ✅ ⁷⁰ | ✅ ⁷⁰ | ✅ ⁷⁰ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
+| Green (Translated) (GB) | JP v1.0, LandaR | ✅ ⁷⁰ | ✅ ⁷⁰ | ✅ ⁷⁰ | ✅ ⁷⁰ | — | ✅ ⁷⁰ | — | n/a | n/a | ✅ ⁷⁰ | ✅ ⁷⁰ | ✅ ⁷⁰ | ◐ ⁷⁰ | n/a | — | — | — ³⁶ | — |
 | PureRed / PureBlue (GB) | 2.7.6 | n/a | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
 | Gold / Silver (GBC) | DE (Goldene Edition, Silberne Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁴ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | ✅ ⁵⁵ | — | — | — ³⁶ | — |
@@ -1287,4 +1287,17 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     `pokegreen.sym`), English's species, move and item ids. Its battle menu is the Japanese one: ITEM top right, POKéMON bottom
     left (`Gen1Config.itemTopRight`, `GbPartySwitch.actionCell`), the moves a row apart from row 8. Battle buttons, one-press
     picks and the POKéMON switch read their menus on the `green_landar_battle*` fixtures (a new game played headless); the
-    controls' timing wasn't run against the running game. DEX, GUIDE, EXPAND, the field features and STEADY music aren't mapped.
+    controls' timing wasn't run against the running game. The rest, each from `pokegreen.sym` and checked headless on that save:
+    - EXPAND (`pk_wide_gb.c`'s row for CRC32 `5b4cdebb`): `widecheck` exact on every walking frame; the frames that don't match
+      are the FLY landing's BGP fade and a battle's opening, as on Red. FOLLOWER (`pk_gb_follow.c`'s `gbfGreen`): walks behind,
+      tall grass covers its lower half.
+    - FLY, PC anywhere and WILD ENCOUNTERS (`GB_FIELD_GREEN_LANDAR`): Red's ways in at the Japanese addresses (wJoyIgnore CD66).
+    - BOXES and the PC's moves (`GEN1_GREEN_BOXES`, `GEN1_BOX_CALLS_GREEN_LANDAR`): 8 boxes of 30, 6-byte names, boxes 1-4 in SRAM
+      bank 2, 5-8 in bank 3; two deposits, the first box change and one more deposit by the game's own functions
+      (`green_landar_boxes`), the save ChangeBox wrote rebooted. The party order (SWITCH) trades 6-byte names.
+    - Game options (`GbGamePatches`): INSTANT TEXT, LOW HP BEEP, FIELD POISON, REUSABLE TMS (BootedUpTMText is inline here,
+      `TM1_INLINE`: taught with `rompatch`, the TM still in the bag) and EXP SHARE. No RUNNING SHOES or EXP SHARE's modern
+      mode (their code's shape isn't in the cart), no NO HMS NEEDED (bank 1 has no free room for its trampoline and the
+      Japanese RAM has no wFieldMovesLeftmostXCoord).
+    - STEADY music (`GEN1_MUSIC_GREEN_LANDAR`): Red's songs, park and loop points, its own PlayMusic (0x0E35).
+    Not done: bag USE (its item routines aren't mapped) and the TRAINER CARD (the Japanese card is laid out apart).

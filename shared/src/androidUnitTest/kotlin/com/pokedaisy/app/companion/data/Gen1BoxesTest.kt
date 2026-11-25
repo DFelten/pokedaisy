@@ -11,7 +11,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Red, Blue and Yellow's PC boxes (Gen1Boxes.kt) on the `*_boxes` fixtures, English and German: two Pokémon deposited into
+ * Red, Blue and Yellow's PC boxes (Gen1Boxes.kt) on the `*_boxes` fixtures, English and German (and translated Japanese Green): two Pokémon deposited into
  * BOX 1, the first box change to BOX 8 (BOX 1 into SRAM bank 2), one more deposited there - all by the game's own functions
  * (native-capture/boot/red_boxes.txt and its siblings). Then the PC's moves (Gen1BoxSwap.kt): their code in each cart, and the calls on a
  * stand-in game.
@@ -25,6 +25,8 @@ class Gen1BoxesTest {
     private val fixtures = listOf(
         Triple("red_boxes", GEN1_RED, GameKind.RED), Triple("red_de_boxes", GEN1_RED_DE, GameKind.RED),
         Triple("yellow_boxes", GEN1_YELLOW, GameKind.YELLOW), Triple("yellow_de_boxes", GEN1_YELLOW_DE, GameKind.YELLOW),
+        // Japanese Green (translated): 8 boxes of 30, its 6-byte names, BOX 1 in bank 2 too.
+        Triple("green_landar_boxes", GEN1_GREEN_LANDAR, GameKind.GREEN_JP),
     )
 
     private fun read(fixture: String, cfg: Gen1Config, game: GameKind): Telemetry {
@@ -40,11 +42,12 @@ class Gen1BoxesTest {
             val boxes = t.pcBoxes
             assertNotNull(fixture, boxes)
             boxes!!
-            assertEquals(fixture, 12, boxes.boxes.size)
+            val layout = gen1BoxLayoutFor(cfg)!!
+            assertEquals(fixture, layout.numBoxes, boxes.boxes.size)
             assertEquals(fixture, 7, boxes.currentBox)
             assertEquals(fixture, "BOX1", boxes.boxes[0].name)
-            assertEquals(fixture, "BOX12", boxes.boxes[11].name)
-            assertTrue(fixture, boxes.boxes.all { it.mons.size == 20 })
+            assertEquals(fixture, "BOX${layout.numBoxes}", boxes.boxes.last().name)
+            assertTrue(fixture, boxes.boxes.all { it.mons.size == layout.slots })
             assertEquals(fixture, setOf(0, 7), boxes.boxes.indices.filter { boxes.boxes[it].mons.any { m -> m != null } }.toSet())
             assertEquals(fixture, 2, boxes.boxes[0].mons.count { it != null })
             assertEquals(fixture, 1, boxes.boxes[7].mons.count { it != null })
@@ -102,6 +105,7 @@ class Gen1BoxesTest {
             GEN1_BOX_CALLS_RED_DE to listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb"),
             GEN1_BOX_CALLS_YELLOW to listOf("Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb"),
             GEN1_BOX_CALLS_YELLOW_DE to listOf("Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_GREEN_LANDAR to listOf("Pocket Monsters - Green Version (Japan) (En) (v1.0) (LandaR).gb"),
         )
         var seen = 0
         for ((calls, names) in carts) for (name in names) {
@@ -123,6 +127,7 @@ class Gen1BoxesTest {
         assertTrue(GB_FIELD_RED_BLUE_DE.pcBox === GEN1_BOX_CALLS_RED_DE)
         assertTrue(GB_FIELD_YELLOW.pcBox === GEN1_BOX_CALLS_YELLOW)
         assertTrue(GB_FIELD_YELLOW_DE.pcBox === GEN1_BOX_CALLS_YELLOW_DE)
+        assertTrue(GB_FIELD_GREEN_LANDAR.pcBox === GEN1_BOX_CALLS_GREEN_LANDAR)
         assertNull(GB_FIELD_YELLOW_FR.pcBox)
         assertNull(GB_FIELD_BROWN.pcBox)
     }

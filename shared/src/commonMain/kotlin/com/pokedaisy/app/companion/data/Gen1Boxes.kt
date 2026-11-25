@@ -16,7 +16,17 @@ import kotlinx.atomicfu.locks.synchronized
 data class Gen1BoxLayout(
     val curBox: Long,      // wCurrentBoxNum
     val activeBox: Long,   // wBoxDataStart
-)
+    /** NUM_BOXES, MONS_PER_BOX, NAME_LENGTH and how many boxes an SRAM bank holds: the Japanese carts' 8 of 30, 6-byte names, 4 a bank. */
+    val numBoxes: Int = GEN1_NUM_BOXES,
+    val slots: Int = GEN1_BOX_SLOTS,
+    val nameLength: Int = 11,
+    val perBank: Int = GEN1_BOXES_PER_BANK,
+) {
+    /** A box's bytes: the count, the species list + 0xFF, the structs, the OT names, the nicknames. */
+    val boxSize get() = 2 + slots + slots * (GEN1_BOX_MON_SIZE + 2 * nameLength)
+    val monsOff get() = 2 + slots
+    val nicknamesOff get() = monsOff + slots * (GEN1_BOX_MON_SIZE + nameLength)
+}
 
 /** English Red / Blue: pokered.sym. */
 val GEN1_RED_BOXES = Gen1BoxLayout(curBox = 0xD5A0L, activeBox = 0xDA80L)
@@ -26,6 +36,11 @@ val GEN1_YELLOW_BOXES = Gen1BoxLayout(curBox = 0xD59FL, activeBox = 0xDA7FL)
 val GEN1_RED_DE_BOXES = Gen1BoxLayout(curBox = 0xD5A5L, activeBox = 0xDA85L)
 /** German Gelbe Edition: Yellow's + 5. */
 val GEN1_YELLOW_DE_BOXES = Gen1BoxLayout(curBox = 0xD5A4L, activeBox = 0xDA84L)
+/**
+ * Japanese Green in LandaR's translation (pret/pokegreen's pokegreen.sym, sram.asm): 8 boxes of 30, 6-byte names, 0x566
+ * bytes each; boxes 1-4 in bank 2, 5-8 in bank 3.
+ */
+val GEN1_GREEN_BOXES = Gen1BoxLayout(curBox = 0xD51FL, activeBox = 0xD9B2L, numBoxes = 8, slots = 30, nameLength = 6, perBank = 4)
 
 /** The running cart's boxes, or null (the other languages and the hacks aren't mapped). */
 fun gen1BoxLayoutFor(cfg: Gen1Config): Gen1BoxLayout? = when {
@@ -33,6 +48,7 @@ fun gen1BoxLayoutFor(cfg: Gen1Config): Gen1BoxLayout? = when {
     cfg === GEN1_YELLOW_DE -> GEN1_YELLOW_DE_BOXES
     cfg === GEN1_RED || cfg === GEN1_BLUE -> GEN1_RED_BOXES
     cfg === GEN1_RED_DE || cfg === GEN1_BLUE_DE -> GEN1_RED_DE_BOXES
+    cfg === GEN1_GREEN_LANDAR -> GEN1_GREEN_BOXES
     else -> null
 }
 
@@ -43,7 +59,6 @@ internal const val GEN1_BOX_MON_SIZE = 33
 internal const val GEN1_BOX_MONS = 0x16
 internal const val GEN1_BOXES_PER_BANK = 6
 internal const val GEN1_BOX_CHANGED = 0x80
-private const val GEN1_BOX_NICKNAMES = GEN1_BOX_MONS + GEN1_BOX_SLOTS * GEN1_BOX_MON_SIZE + GEN1_BOX_SLOTS * 11
 
 /** The boxes as [readGen1Boxes] last decoded them, and the bytes they came from: the same bytes, the same object. */
 private var lastGen1Raw: ByteArray? = null
@@ -52,32 +67,33 @@ private var lastGen1Boxes: PcBoxes? = null
 fun readGen1Boxes(r: MemoryReader, cfg: Gen1Config, layout: Gen1BoxLayout): PcBoxes? = runCatching { readGen1BoxesRaw(r, cfg, layout) }.getOrNull()
 private fun readGen1BoxesRaw(r: MemoryReader, cfg: Gen1Config, layout: Gen1BoxLayout): PcBoxes? = run {
     val num = r.readCoreMemory(layout.curBox, 1)[0].toInt() and 0xFF
-    val current = (num and GEN1_BOX_CHANGED.inv()).takeIf { it < GEN1_NUM_BOXES } ?: return null
+    val current = (num and GEN1_BOX_CHANGED.inv()).takeIf { it < layout.numBoxes } ?: return null
     val changed = num and GEN1_BOX_CHANGED != 0
-    val raw = ByteArray(GEN1_NUM_BOXES * GEN1_BOX_SIZE)
-    for (b in 0 until GEN1_NUM_BOXES) {
+    val size = layout.boxSize
+    val raw = ByteArray(layout.numBoxes * size)
+    for (b in 0 until layout.numBoxes) {
         val at = when {
             b == current -> layout.activeBox
             // Never set up: an empty box (count 0), as EmptyAllSRAMBoxes will make it.
             !changed -> continue
-            else -> cartRam(2 + b / GEN1_BOXES_PER_BANK, 0xA000 + (b % GEN1_BOXES_PER_BANK) * GEN1_BOX_SIZE)
+            else -> cartRam(2 + b / layout.perBank, 0xA000 + (b % layout.perBank) * size)
         }
-        r.readCoreMemory(at, GEN1_BOX_SIZE).copyInto(raw, b * GEN1_BOX_SIZE)
+        r.readCoreMemory(at, size).copyInto(raw, b * size)
     }
     val key = byteArrayOf(num.toByte()) + raw
     synchronized(pcBoxesLock) { lastGen1Boxes.takeIf { key.contentEquals(lastGen1Raw) } }?.let { return it }
-    val charset = gen1Charset(cfg.language)
+    val charset = cfg.charset ?: gen1Charset(cfg.language)
     PcBoxes(
         currentBox = current,
-        boxes = List(GEN1_NUM_BOXES) { b ->
-            val o = b * GEN1_BOX_SIZE
-            val count = (raw[o].toInt() and 0xFF).takeIf { it <= GEN1_BOX_SLOTS } ?: 0
+        boxes = List(layout.numBoxes) { b ->
+            val o = b * size
+            val count = (raw[o].toInt() and 0xFF).takeIf { it <= layout.slots } ?: 0
             PcBox(
                 name = "BOX${b + 1}",
                 wallpaper = -1,
-                mons = List(GEN1_BOX_SLOTS) { s ->
-                    if (s >= count) null else decodeGen1BoxMon(raw, o + GEN1_BOX_MONS + s * GEN1_BOX_MON_SIZE, cfg)
-                        ?.copy(nickname = gen1Nickname(raw, o + GEN1_BOX_NICKNAMES + s * 11, charset))
+                mons = List(layout.slots) { s ->
+                    if (s >= count) null else decodeGen1BoxMon(raw, o + layout.monsOff + s * GEN1_BOX_MON_SIZE, cfg)
+                        ?.copy(nickname = gen1Nickname(raw, o + layout.nicknamesOff + s * layout.nameLength, charset, layout.nameLength))
                 },
             )
         },

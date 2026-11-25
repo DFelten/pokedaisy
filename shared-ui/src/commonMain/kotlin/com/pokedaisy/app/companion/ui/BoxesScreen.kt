@@ -919,14 +919,14 @@ private fun Wallpaper(box: BoxView, boxIndex: Int, lookedSlot: Int, ui: BoxesUiS
         val pad = inset + 2 * px
         val w = constraints.maxWidth - 2 * pad
         val h = constraints.maxHeight - 2 * pad
-        // Gen 3's 30 slots as the game's 6 x 5; a Game Boy box's 20 (no grid in the game: a list) as 5 x 4.
+        // Gen 3's 30 slots as the game's 6 x 5; a Game Boy box's 20 (no grid in the game: a list) as 5 x 4, Japanese Green's 30 as 6 x 5.
         val columns = boxColumns(box.mons.size)
         val rows = (box.mons.size + columns - 1) / columns
         val cellW = w / columns
         val cellH = h / rows
         // The game's 32x32 icons sit in 24-pixel cells: whole screen pixels per icon pixel, as many as that allows. A Game
         // Boy box's bigger cells would blow its icons up into each other: they get a gap of their own (GB_ICON_CELL).
-        val k = floor(minOf(cellW, cellH) / (if (box.mons.size == 30) ICON_CELL else GB_ICON_CELL)).coerceAtLeast(1f)
+        val k = floor(minOf(cellW, cellH) / (if (box.wallpaper >= 0) ICON_CELL else GB_ICON_CELL)).coerceAtLeast(1f)
         val iconPx = ICON * k
         val inBox = box.mons.filterNotNull()
         box.mons.forEachIndexed { slot, mon ->
@@ -1202,7 +1202,7 @@ internal object BoxWallpapers {
     private const val TILE = 16
 }
 
-/** A box's columns: Gen 3's 6 (x 5), else 5 (a Game Boy box's 20 as 5 x 4). */
+/** A box's columns: 30 slots (Gen 3, Japanese Green) 6 (x 5), else 5 (a Game Boy box's 20 as 5 x 4). */
 private fun boxColumns(slots: Int) = if (slots == 30) 6 else 5
 private const val ICON = 32f
 // The game's icon is 32 pixels in a 24-pixel cell: a cell this many screen pixels per icon pixel.
