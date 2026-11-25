@@ -565,7 +565,13 @@ fits them all. Red and Blue share every address within a language. What differs 
   0x35EE / 0x35F5) and code signatures: the PC opened (in the cart's language) and FLY landed at Pewter's Pokémon Center
   headless; the wild data tables are German Red's. EXPAND and FOLLOWER take German Red's rows by CRC32 (`widecheck`: 834 of 838
   exact, the same four frames as German Red's).
-- **Not yet**: the trainer card, the PC's box moves and bag USE (as the French / Italian / Spanish Yellows).
+- **BOXES, the PC's moves, bag USE, CARD** (same day): German Red's box layout and RAM; every routine the PC's moves and
+  bag USE call (MoveMon, RemovePokemon, ChangeBox, EmptyAllSRAMBoxes, RemoveItemFromInventory, UseItem's setup, the party
+  menu skips, EvosMovesPointerTable) mapped by German Red's code windows, operands masked, one vote each, then signed per cart.
+  Italian Blu differs from Rossa in two places (RemovePokemon's bytes, DisplayTextIDInit a byte earlier), so it has its own
+  calls (`GB_FIELD_BLUE_IT`). Checked headless on all six: German Red's box recipe (`red_de_boxes.txt`) with each cart's
+  addresses, BOX 1 in SRAM after a reboot; `RedBlueEuropeItemUseLiveTest`; the card against the game's own screen, pixel
+  for pixel (French and Spanish put the money's ¥ after the number).
 
 **Pokémon Brown** (Koolboyman's; 6.1.2 and 6.0.1, `GEN1_BROWN`, 2026-11-16): Rijon on Red's engine, a 2 MB DMG cart with
 Super Game Boy support and no source. pret/pokered built (rgbds 1.0.3, `make red` = retail Red byte for byte) gave

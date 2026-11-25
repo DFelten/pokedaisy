@@ -100,6 +100,10 @@ class Gen1BoxesTest {
         val carts = mapOf(
             GEN1_BOX_CALLS_RED to listOf("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", "Pokemon - Blue Version (USA, Europe) (SGB Enhanced).gb"),
             GEN1_BOX_CALLS_RED_DE to listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_RED_BLUE_FR to listOf("Pokemon - Version Rouge (France) (SGB Enhanced).gb", "Pokemon - Version Bleue (France) (SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_RED_IT to listOf("Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_BLUE_IT to listOf("Pokemon - Versione Blu (Italy) (SGB Enhanced).gb"),
+            GEN1_BOX_CALLS_RED_BLUE_ES to listOf("Pokemon - Edicion Roja (Spain) (SGB Enhanced).gb", "Pokemon - Edicion Azul (Spain) (SGB Enhanced).gb"),
             GEN1_BOX_CALLS_YELLOW to listOf("Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced).gb"),
             GEN1_BOX_CALLS_YELLOW_DE to listOf("Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (GBC,SGB Enhanced).gb"),
         )
@@ -110,7 +114,7 @@ class Gen1BoxesTest {
             val rom = f.readBytes()
             for (other in carts.keys) {
                 val ok = other.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) }
-                assertEquals("$name / ${other.layout}", other === calls, ok)
+                assertEquals("$name / ${other.removePokemon.toString(16)}", other === calls, ok)
             }
             seen++
         }
@@ -121,6 +125,9 @@ class Gen1BoxesTest {
     fun `each cart's field has its calls`() {
         assertTrue(GB_FIELD_RED_BLUE.pcBox === GEN1_BOX_CALLS_RED)
         assertTrue(GB_FIELD_RED_BLUE_DE.pcBox === GEN1_BOX_CALLS_RED_DE)
+        assertTrue(GB_FIELD_RED_BLUE_FR.pcBox === GEN1_BOX_CALLS_RED_BLUE_FR)
+        assertTrue(GB_FIELD_RED_IT.pcBox === GEN1_BOX_CALLS_RED_IT && GB_FIELD_BLUE_IT.pcBox === GEN1_BOX_CALLS_BLUE_IT)
+        assertTrue(GB_FIELD_RED_BLUE_ES.pcBox === GEN1_BOX_CALLS_RED_BLUE_ES)
         assertTrue(GB_FIELD_YELLOW.pcBox === GEN1_BOX_CALLS_YELLOW)
         assertTrue(GB_FIELD_YELLOW_DE.pcBox === GEN1_BOX_CALLS_YELLOW_DE)
         assertNull(GB_FIELD_YELLOW_FR.pcBox)

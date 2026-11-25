@@ -3,7 +3,7 @@ package com.pokedaisy.app.companion.data
 import kotlinx.atomicfu.locks.synchronized
 
 /**
- * Red, Blue and Yellow's PC boxes (English and German), pret/pokered's and pokeyellow's sram.asm / save.asm:
+ * Red, Blue and Yellow's PC boxes (English and German; Red / Blue in French, Italian and Spanish too), pret/pokered's and pokeyellow's sram.asm / save.asm:
  * - the box the PC is on is WRAM's wBoxDataStart: deposits and withdrawals change it there, and the game copies it into
  *   the save (sCurBoxData) only when it's saved. So unlike Crystal's sBox it's read from RAM, not the cart;
  * - boxes 1-6 are SRAM bank 2's, 7-12 bank 3's, 0x462 bytes apart from A000. A box change (ChangeBox) copies the current
@@ -22,17 +22,19 @@ data class Gen1BoxLayout(
 val GEN1_RED_BOXES = Gen1BoxLayout(curBox = 0xD5A0L, activeBox = 0xDA80L)
 /** English Yellow: pokeyellow.sym, Red's - 1. */
 val GEN1_YELLOW_BOXES = Gen1BoxLayout(curBox = 0xD59FL, activeBox = 0xDA7FL)
-/** German Rote / Blaue Edition: Red's + 5 (ChangeBox's own operands). */
+/** German Rote / Blaue Edition: Red's + 5 (ChangeBox's own operands); French, Italian and Spanish Red / Blue the same. */
 val GEN1_RED_DE_BOXES = Gen1BoxLayout(curBox = 0xD5A5L, activeBox = 0xDA85L)
 /** German Gelbe Edition: Yellow's + 5. */
 val GEN1_YELLOW_DE_BOXES = Gen1BoxLayout(curBox = 0xD5A4L, activeBox = 0xDA84L)
 
-/** The running cart's boxes, or null (the other languages and the hacks aren't mapped). */
+/** The running cart's boxes, or null (Yellow's other languages and the hacks aren't mapped). */
 fun gen1BoxLayoutFor(cfg: Gen1Config): Gen1BoxLayout? = when {
     cfg === GEN1_YELLOW -> GEN1_YELLOW_BOXES
     cfg === GEN1_YELLOW_DE -> GEN1_YELLOW_DE_BOXES
     cfg === GEN1_RED || cfg === GEN1_BLUE -> GEN1_RED_BOXES
     cfg === GEN1_RED_DE || cfg === GEN1_BLUE_DE -> GEN1_RED_DE_BOXES
+    cfg === GEN1_RED_FR || cfg === GEN1_BLUE_FR || cfg === GEN1_RED_IT || cfg === GEN1_BLUE_IT ||
+        cfg === GEN1_RED_ES || cfg === GEN1_BLUE_ES -> GEN1_RED_DE_BOXES
     else -> null
 }
 

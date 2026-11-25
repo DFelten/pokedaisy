@@ -112,7 +112,7 @@ sealed class GbField {
                 'E' -> GB_FIELD_RED_BLUE
                 'D' -> GB_FIELD_RED_BLUE_DE
                 'F' -> GB_FIELD_RED_BLUE_FR
-                'I' -> GB_FIELD_RED_BLUE_IT
+                'I' -> if (game == GameKind.BLUE) GB_FIELD_BLUE_IT else GB_FIELD_RED_IT
                 'S' -> GB_FIELD_RED_BLUE_ES
                 else -> null
             }
@@ -761,17 +761,19 @@ val GB_FIELD_RED_BLUE_DE = GbField.Gen1(
 
 /** French, Italian and Spanish Red / Blue (each language's two carts the same code at the same places): German Red's RAM and ways in,
  * their bank 0 moved (Bankswitch), found by the German signatures' bytes with their calls masked. No PC moves or item calls yet. */
-private fun redBlueEurope(bankswitch: Int, signatures: List<Pair<Long, String>>) = GbField.Gen1(
+private fun redBlueEurope(bankswitch: Int, boxCalls: Gen1BoxCalls, itemCalls: Gen1ItemCalls, signatures: List<Pair<Long, String>>) = GbField.Gen1(
     loopAfterWait = 0x0405, bankswitch = bankswitch, pcRoutine = 0x651C,
     walkCounter = 0xCFCAL, flags5 = 0xD735L, inBattle = 0xD05CL, badges = 0xD35BL,
     tileset = 0xD36CL, townsVisited = 0xD710L, destination = 0xD71FL, flags6 = 0xD737L, pikachuFlags = -1L, pikachuImage = -1L,
     partyCount = 0xD168L, partyMoves = 0xD178L, curMap = 0xD363L, grassRate = 0xD88CL,
     waterRate = 0xD8A9L, wildDataPointers = 0x4EEB,
+    boxCalls = boxCalls,
     partySwap = true,
+    itemCalls = itemCalls,
     signatures = signatures,
 )
 val GB_FIELD_RED_BLUE_FR = redBlueEurope(
-    bankswitch = 0x35F3,
+    bankswitch = 0x35F3, boxCalls = GEN1_BOX_CALLS_RED_BLUE_FR, itemCalls = GEN1_ITEM_CALLS_RED_BLUE_FR,
     signatures = listOf(
         0x402L to "cdab20cdb620fa3bd7cb77c49e03facacfa7c2b5",
         0x35F3L to "f0b8f578e0b8ea0020010136",
@@ -782,20 +784,26 @@ val GB_FIELD_RED_BLUE_FR = redBlueEurope(
         0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
     ),
 )
-val GB_FIELD_RED_BLUE_IT = redBlueEurope(
-    bankswitch = 0x35EE,
-    signatures = listOf(
-        0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
-        0x35EEL to "f0b8f578e0b8ea002001fc35",
-        0x3F0DL to "e08c213a3fcd273f2116cfcb",
-        0x62516L to "fa09c1fe04c0cd543c3e01ea11cf3e1fc30d3ff9",
-        0x7102CL to "7eea1fd72137d7cbde23cbfe",
-        0x71071L to "213dcd36ff23fa10d75ffa11d75701",
-        0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
-    ),
+private val RED_BLUE_IT_SIGNATURES = listOf(
+    0x402L to "cdaf20cdba20fa3bd7cb77c49e03facacfa7c2b5",
+    0x35EEL to "f0b8f578e0b8ea002001fc35",
+    0x3F0DL to "e08c213a3fcd273f2116cfcb",
+    0x62516L to "fa09c1fe04c0cd543c3e01ea11cf3e1fc30d3ff9",
+    0x7102CL to "7eea1fd72137d7cbde23cbfe",
+    0x71071L to "213dcd36ff23fa10d75ffa11d75701",
+    0xCEB8L to "21eb4efa63d34f060009092a666f2aea8cd8",
+)
+/** Italian Versione Rossa / Blu: one field, but Blu's PC and bag calls are its own ([GEN1_BOX_CALLS_BLUE_IT]). */
+val GB_FIELD_RED_IT = redBlueEurope(
+    bankswitch = 0x35EE, boxCalls = GEN1_BOX_CALLS_RED_IT, itemCalls = GEN1_ITEM_CALLS_RED_IT,
+    signatures = RED_BLUE_IT_SIGNATURES,
+)
+val GB_FIELD_BLUE_IT = redBlueEurope(
+    bankswitch = 0x35EE, boxCalls = GEN1_BOX_CALLS_BLUE_IT, itemCalls = GEN1_ITEM_CALLS_BLUE_IT,
+    signatures = RED_BLUE_IT_SIGNATURES,
 )
 val GB_FIELD_RED_BLUE_ES = redBlueEurope(
-    bankswitch = 0x35F5,
+    bankswitch = 0x35F5, boxCalls = GEN1_BOX_CALLS_RED_BLUE_ES, itemCalls = GEN1_ITEM_CALLS_RED_BLUE_ES,
     signatures = listOf(
         0x402L to "cdae20cdb920fa3bd7cb77c49e03facacfa7c2b5",
         0x35F5L to "f0b8f578e0b8ea0020010336",

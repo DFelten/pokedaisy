@@ -14,7 +14,7 @@ change to any of the places listed under "Where it's decided" updates its rows h
 | Yellow Legacy (GB) | 1.0.10 | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
 | Red / Blue (GB) | USA/Europe | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
 | Red / Blue (GB) | DE (Rote Edition / Blaue Edition) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
-| Red / Blue (GB) | FR / IT / ES (Version Rouge / Version Bleue, Versione Rossa / Versione Blu, Edición Roja / Edición Azul) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ¹³ | — | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
+| Red / Blue (GB) | FR / IT / ES (Version Rouge / Version Bleue, Versione Rossa / Versione Blu, Edición Roja / Edición Azul) | ✅ ¹² | ✅ | ✅ ¹ | ✅ ⁸ | ◐ ⁶⁵ | ✅ ¹³ | ✅ ⁵⁸ | n/a | n/a | ✅ ¹³ | ✅ ¹³ | ✅ ⁴⁸ | ◐ ⁵⁹ | n/a | — | — | — ³⁶ | — |
 | Red Gen II Graphics (GB) | 2.0 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | ✅ ⁵⁶ | — | n/a | n/a | ✅ ⁵⁶ | ✅ ⁵⁶ | — | n/a | n/a | — | — | — ³⁶ | — |
 | Yellow Gen II Graphics (GB) | 1.1 ⁵⁶ | — | ✅ | ✅ ¹ | ✅ ⁸ | — | — | — | n/a | n/a | — | — | — | n/a | n/a | — | — | — ³⁶ | — |
 | Brown (GB) | 6.0.1, 6.1.2 | — | ✅ ³⁸ | ✅ ³⁸ | ✅ ³⁸ | — | ✅ ³⁸ | — | n/a | n/a | ✅ ³⁸ | ✅ ³⁸ | ✅ ⁴⁸ | n/a | n/a | — | — | — ³⁶ | — |
@@ -1131,8 +1131,10 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     Red / Blue, which run as a Super Game Boy; CGBBasePalettes on Yellow) and the cart's own BlkPacket_TrainerCard (Red / Blue's
     RAINBOWBADGE blocks are a row taller). Addresses from DrawTrainerInfo's immediates (`scripts/find_gen1_card.py`). English
     Yellow, German Yellow, English Blue and German Red each matched the game's card headless pixel for pixel, with every badge,
-    none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. Not yet: French, Italian
-    and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
+    none and four (`Gen1TrainerCardTest`); English Red's art is Blue's, German Blue's German Red's. French, Italian and Spanish
+    Red / Blue (2026-11-25, `CardStyle.RED_BLUE_FR` / `_IT` / `_ES`, their tables by `find_gen1_card.py`): all six carts matched
+    the same way; French and Spanish print the money without MONEY_SIGN and put the ¥ after the number (`SIGN_AFTER`). Not yet:
+    French, Italian and Spanish Yellow (no carts to check), the hacks (Yellow Legacy, Brown, PureRed / PureBlue, the Gen II Graphics builds).
 59. FOLLOWER on Crystal, Gold, Silver, Red and Blue (2026-11-20, `pk_gb_follow.c`, rev 0 / rev 1 / AU, the German, French, Italian and Spanish Red / Blue by CRC32): the lead's party icon
     (`Gen2Art`'s, from the cart) drawn into the finished frame 16 pixels of the screen's scroll path behind the player, nothing of
     the game written. Hidden in battles (wBattleMode, hVBlank 1), on water (wPlayerState 4 / 8), with the sprites off or the
@@ -1235,7 +1237,7 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     saves: no English one exists here): a Repel, a Potion, a vitamin, PP UP, HM01 taught, RARE CANDY, a MOON STONE evolution, the bike on
     and off, a rod and ESCAPE ROPE refused in town; the COIN CASE's text on the German carts only (a German save in an English cart
     leaves the game's own SELECT COIN CASE broken too).
-65. Bag USE on Red / Blue (English and German) and Yellow (English and German) (2026-11-24, `Gen1ItemCalls` in `Gen1ItemUse.kt`,
+65. Bag USE on Red / Blue (English, German, French, Italian, Spanish) and Yellow (English and German) (2026-11-24, `Gen1ItemCalls` in `Gen1ItemUse.kt`,
     `GbField.Gen1.bagUse`, each cart by its code): healing items, FULL RESTORE, status cures, REVIVE / MAX REVIVE, ETHER / ELIXER kinds,
     PP UP and the three Repels, on the field only. The item leaves the bag through the game's own RemoveItemFromInventory (home, called
     from the overworld loop like the PC: hl = wNumBagItems, wWhichPokemon = its place, wItemQuantity = 1), then the effect is written
@@ -1268,7 +1270,11 @@ Hacks that are not in the table have no DEX, CARD or GUIDE yet. The MAP tab draw
     the companion: HP UP with no white flash, RARE CANDY's level and stats over the party menu, a THUNDER STONE evolving PIKACHU, the OLD ROD's bite with the
     light closing) and German Yellow (the rope, a stone, RARE CANDY forgetting a move; the partner back behind the player; picked: a vitamin,
     a stone refused by the starter with the bag untouched, the rod refused indoors); Yellow and English Red only by their code (no save
-    here). `Gen1ItemUseTest`.
+    here). French, Italian and Spanish Red / Blue (2026-11-25, `GEN1_ITEM_CALLS_RED_BLUE_FR` / `_RED_IT` / `_BLUE_IT` /
+    `_RED_BLUE_ES`: German Red's RAM, the home and bank-3 routines found again by their code; Italian Blu's UseItem setup sits a
+    byte before Rossa's): run as the app runs it against all six carts headless (`RedBlueEuropeItemUseLiveTest`: a REPEL, a
+    POTION, PP UP, HP UP through UseItem, RARE CANDY's level over the party menu, a THUNDER STONE evolving PIKACHU, the field free
+    after). `Gen1ItemUseTest`.
 66. Generation 3 Evolved (1.0.17, 1.0.22 and 1.0.26, pokeemerald-expansion 1.16.3's FireRed build, `NATIVE_GEN3_EVOLVED` /
     `NATIVE_GEN3_EVOLVED_V1_0_17` / `_V1_0_26`; 2026-11-24), checked headless on its new-game save in all three builds: the action, move, bag and
     party handlers read live, a written action cell + A opened the bag and the party, a written move cell + A used that move,

@@ -18,7 +18,8 @@ object Gen1TrainerCard {
     fun path(style: CardStyle) = "gen1/${style.name.lowercase()}/trainer_card.bin"
 
     /** Red's, Blue's and Yellow's styles: [Gen1TrainerCard]'s, not [TrainerCardArt]'s. */
-    val STYLES = setOf(CardStyle.RED_BLUE, CardStyle.RED_BLUE_DE, CardStyle.YELLOW, CardStyle.YELLOW_DE)
+    val STYLES = setOf(CardStyle.RED_BLUE, CardStyle.RED_BLUE_DE, CardStyle.RED_BLUE_FR, CardStyle.RED_BLUE_IT, CardStyle.RED_BLUE_ES,
+        CardStyle.YELLOW, CardStyle.YELLOW_DE)
 
     /** Where a cart keeps what its card draws (bank, address): DrawTrainerInfo's immediates (find_gen1_card.py). */
     class Tables(
@@ -61,6 +62,27 @@ object Gen1TrainerCard {
         pic = 0x04 to 0x6EE1, textBox = 0x0B to 0x7B98, names = 0x0B to 0x7C28, numbers = 0x0B to 0x7D98,
         faces = 0x03 to 0x6A97, boxTiles = 0x04 to 0x6298, nameMoneyTime = 0x04 to 0x7587, badgesText = 0x04 to 0x7599,
         palettes = 0x1C to 0x663A, blocks = 0x1C to 0x633A, font = 0x04 to 0x5A80, style = CardStyle.RED_BLUE_DE,
+    )
+
+    /** French Red and Blue (Version Rouge / Bleue: the same places in both; find_gen1_card.py, SuperPalettes 0x300 past the blocks as in the others). */
+    val RED_BLUE_FR_TABLES = Tables(
+        pic = 0x04 to 0x6EEC, textBox = 0x0B to 0x7B98, names = 0x0B to 0x7C28, numbers = 0x0B to 0x7D98,
+        faces = 0x03 to 0x6A8E, boxTiles = 0x04 to 0x6298, nameMoneyTime = 0x04 to 0x7594, badgesText = 0x04 to 0x75A6,
+        palettes = 0x1C to 0x6631, blocks = 0x1C to 0x6331, font = 0x04 to 0x5A80, style = CardStyle.RED_BLUE_FR,
+    )
+
+    /** Italian Red and Blue (Versione Rossa / Blu). */
+    val RED_BLUE_IT_TABLES = Tables(
+        pic = 0x04 to 0x6F00, textBox = 0x0B to 0x7B98, names = 0x0B to 0x7C28, numbers = 0x0B to 0x7D98,
+        faces = 0x03 to 0x6A98, boxTiles = 0x04 to 0x6298, nameMoneyTime = 0x04 to 0x75A6, badgesText = 0x04 to 0x75BA,
+        palettes = 0x1C to 0x66A0, blocks = 0x1C to 0x63A0, font = 0x04 to 0x5A80, style = CardStyle.RED_BLUE_IT,
+    )
+
+    /** Spanish Red and Blue (Edición Roja / Azul). */
+    val RED_BLUE_ES_TABLES = Tables(
+        pic = 0x04 to 0x6EFE, textBox = 0x0B to 0x7B98, names = 0x0B to 0x7C28, numbers = 0x0B to 0x7D98,
+        faces = 0x03 to 0x6AA0, boxTiles = 0x04 to 0x6298, nameMoneyTime = 0x04 to 0x75A6, badgesText = 0x04 to 0x75BA,
+        palettes = 0x1C to 0x6650, blocks = 0x1C to 0x6350, font = 0x04 to 0x5A80, style = CardStyle.RED_BLUE_ES,
     )
 
     // PalPacket_TrainerCard: PAL_MEWMON, PAL_BADGE, PAL_REDMON, PAL_YELLOWMON.
@@ -169,10 +191,13 @@ object Gen1TrainerCard {
         cfg === GEN1_YELLOW_DE -> CardStyle.YELLOW_DE
         cfg === GEN1_RED || cfg === GEN1_BLUE -> CardStyle.RED_BLUE
         cfg === GEN1_RED_DE || cfg === GEN1_BLUE_DE -> CardStyle.RED_BLUE_DE
+        cfg === GEN1_RED_FR || cfg === GEN1_BLUE_FR -> CardStyle.RED_BLUE_FR
+        cfg === GEN1_RED_IT || cfg === GEN1_BLUE_IT -> CardStyle.RED_BLUE_IT
+        cfg === GEN1_RED_ES || cfg === GEN1_BLUE_ES -> CardStyle.RED_BLUE_ES
         else -> null
     }
 
-    /** wPlayerName sits this far before wPlayerMoney in every cart here (Yellow D157 / D346, Red / Blue D158 / D347, the German ones +5). */
+    /** wPlayerName sits this far before wPlayerMoney in every cart here (Yellow D157 / D346, Red / Blue D158 / D347, the German, French, Italian and Spanish ones +5). */
     private const val NAME_BEFORE_MONEY = 0x1EF
     private const val NAME_LEN = 11
 
@@ -212,6 +237,7 @@ object Gen1TrainerCard {
     private const val SPACE = 0x7F
     private const val ZERO = 0xF6
     private const val YEN = 0xF0
+    private val SIGN_AFTER = setOf(CardStyle.RED_BLUE_FR, CardStyle.RED_BLUE_ES)
     private const val COLON = 0xD6
     private const val LINE = 0xD7
 
@@ -244,9 +270,15 @@ object Gen1TrainerCard {
         string(2, 2, art.nameMoneyTime.map { it.u })
         string(7, 2, card.name)
         // PrintBCDNumber: ¥ right before the first digit that isn't 0, left-aligned (all 0: ¥0).
+        // French and Spanish Red / Blue print the number alone (no MONEY_SIGN), left-aligned, then put the ¥ after it.
         val money = card.money.coerceIn(0, 999_999).toString()
-        put(8, 4, YEN)
-        money.forEachIndexed { i, ch -> put(9 + i, 4, ZERO + (ch - '0')) }
+        if (art.style in SIGN_AFTER) {
+            money.forEachIndexed { i, ch -> put(8 + i, 4, ZERO + (ch - '0')) }
+            put(8 + money.length, 4, YEN)
+        } else {
+            put(8, 4, YEN)
+            money.forEachIndexed { i, ch -> put(9 + i, 4, ZERO + (ch - '0')) }
+        }
         // PrintNumber: the hours left-aligned (a byte), the colon right after them, the minutes with a leading zero.
         val hours = card.hours.coerceIn(0, 255).toString()
         hours.forEachIndexed { i, ch -> put(9 + i, 6, ZERO + (ch - '0')) }

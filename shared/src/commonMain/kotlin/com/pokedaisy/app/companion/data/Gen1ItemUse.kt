@@ -811,6 +811,194 @@ val GEN1_ITEM_CALLS_RED_DE = Gen1ItemCalls(
     ),
 )
 
+/** French Version Rouge / Bleue (the same code at the same places in both): German Red's code moved again, its RAM. */
+val GEN1_ITEM_CALLS_RED_BLUE_FR = Gen1ItemCalls(
+    at = 0x0405, removeItem = 0x2BD1, ret = 0x3608,
+    whichPokemon = 0xCF97L, itemQuantity = 0xCF9BL, numBagItems = 0xD322L, partyCount = 0xD168L, repelSteps = 0xD0E0L,
+    machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x7782 - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x4FAA - 0x4000),
+        mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
+    bike = Gen1Bike(playDefaultMusic = 0x2303, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
+        curMap = 0xD363L, curMapTileset = 0xD36CL, walkBikeSurfState = 0xD705L, statusFlags6 = 0xD737L),
+    game = Gen1GameUse(bankswitch = 0x35F3, textIdInit = 0x7129, useItem = 0x30D9, whiteOutWithDelay3 = 0x3DF1,
+        restoreScreenTiles = 0x3DDB, loadGbPal = 0x20B6, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2425,
+        curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        medicinePick = 0x5B05, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD082L, statusFlags5 = 0xD735L, evosMoves = 0x0E * 0x4000L + (0x705F - 0x4000),
+        signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cdd935cddd362135d7cb",                               // PartyMenuInit
+            0x14D4L to "21e06c180321f16c",                                       // DrawPartyMenu
+            0x03 * 0x4000L + (0x5B02 - 0x4000) to "cdfc13dae15d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x705F - 0x4000) to "db71e971f5710672",                 // EvosMovesPointerTable
+            0x35F3L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x7129 - 0x4000) to "afea99cffa11cfcb",
+            0x30D9L to "060321c755c3f335",
+            0x3DF1L to "cd023e0e03c35637",
+            0x3DDBL to "cd82003e01ead0cf",
+            0x20B6L to "fa62d3472112217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa30d5e0b8",
+            0x2425L to "fad0cf3dc0f0b8f5",
+        ),
+    ),
+    signatures = listOf(
+        0x2BD1L to "f0b8f53e03e0b8ea0020cd744ef1e0b8",
+        0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa97cfcb27856f30012423fa9bcf",
+        0x3608L to "c9",
+        0x0E * 0x4000L to GEN1_MOVES_POUND,
+        0x04 * 0x4000L + (0x7782 - 0x4000) to GEN1_TMS,
+        0x10 * 0x4000L + (0x4FAA - 0x4000) to "7073202315642250",
+        0x0E * 0x4000L + (0x43DE - 0x4000) to GEN1_BULBASAUR,
+        0x01 * 0x4000L + (0x425B - 0x4000) to "97646464646418182d",
+        0x2303L to "cd6537af4f57eacfcf18120e",
+        0x0997L to "fa05d73d2807f0d7a7201118",
+        0x09C5L to "fa63d3$GEN1_BIKE_TAIL" + "6cd34721e2092ab828053c20f9a7c937c900030b0e11ff",
+    ),
+)
+
+/** Italian Versione Rossa: German Red's code moved again, its RAM. */
+val GEN1_ITEM_CALLS_RED_IT = Gen1ItemCalls(
+    at = 0x0405, removeItem = 0x2BD5, ret = 0x3603,
+    whichPokemon = 0xCF97L, itemQuantity = 0xCF9BL, numBagItems = 0xD322L, partyCount = 0xD168L, repelSteps = 0xD0E0L,
+    machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x7798 - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x4FB6 - 0x4000),
+        mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
+    bike = Gen1Bike(playDefaultMusic = 0x2307, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
+        curMap = 0xD363L, curMapTileset = 0xD36CL, walkBikeSurfState = 0xD705L, statusFlags6 = 0xD737L),
+    game = Gen1GameUse(bankswitch = 0x35EE, textIdInit = 0x70EA, useItem = 0x30D4, whiteOutWithDelay3 = 0x3DEC,
+        restoreScreenTiles = 0x3DD6, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
+        curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        medicinePick = 0x5AFB, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD082L, statusFlags5 = 0xD735L, evosMoves = 0x0E * 0x4000L + (0x7096 - 0x4000),
+        signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cdd435cdd8362135d7cb",                               // PartyMenuInit
+            0x14D4L to "21f06c180321016d",                                       // DrawPartyMenu
+            0x03 * 0x4000L + (0x5AF8 - 0x4000) to "cdfc13dad75d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x7096 - 0x4000) to "127220722c723d72",                 // EvosMovesPointerTable
+            0x35EEL to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x70EA - 0x4000) to "afea99cffa11cfcb",
+            0x30D4L to "060321c755c3ee35",
+            0x3DECL to "cdfd3d0e03c35137",
+            0x3DD6L to "cd82003e01ead0cf",
+            0x20BAL to "fa62d3472116217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa30d5e0b8",
+            0x2429L to "fad0cf3dc0f0b8f5",
+        ),
+    ),
+    signatures = listOf(
+        0x2BD5L to "f0b8f53e03e0b8ea0020cd744ef1e0b8",
+        0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa97cfcb27856f30012423fa9bcf",
+        0x3603L to "c9",
+        0x0E * 0x4000L to GEN1_MOVES_POUND,
+        0x04 * 0x4000L + (0x7798 - 0x4000) to GEN1_TMS,
+        0x10 * 0x4000L + (0x4FB6 - 0x4000) to "7073202315642250",
+        0x0E * 0x4000L + (0x43DE - 0x4000) to GEN1_BULBASAUR,
+        0x01 * 0x4000L + (0x425B - 0x4000) to "97646464646418182d",
+        0x2307L to "cd6037af4f57eacfcf18120e",
+        0x0997L to "fa05d73d2807f0d7a7201118",
+        0x09C5L to "fa63d3$GEN1_BIKE_TAIL" + "6cd34721e2092ab828053c20f9a7c937c900030b0e11ff",
+    ),
+)
+
+/** Italian Versione Blu: Rossa's places, but a few far calls' banks' code apart (RemovePokemon's target, DisplayTextIDInit). */
+val GEN1_ITEM_CALLS_BLUE_IT = Gen1ItemCalls(
+    at = 0x0405, removeItem = 0x2BD5, ret = 0x3603,
+    whichPokemon = 0xCF97L, itemQuantity = 0xCF9BL, numBagItems = 0xD322L, partyCount = 0xD168L, repelSteps = 0xD0E0L,
+    machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x7798 - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x4FB6 - 0x4000),
+        mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
+    bike = Gen1Bike(playDefaultMusic = 0x2307, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
+        curMap = 0xD363L, curMapTileset = 0xD36CL, walkBikeSurfState = 0xD705L, statusFlags6 = 0xD737L),
+    game = Gen1GameUse(bankswitch = 0x35EE, textIdInit = 0x70E9, useItem = 0x30D4, whiteOutWithDelay3 = 0x3DEC,
+        restoreScreenTiles = 0x3DD6, loadGbPal = 0x20BA, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2429,
+        curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        medicinePick = 0x5AFB, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD082L, statusFlags5 = 0xD735L, evosMoves = 0x0E * 0x4000L + (0x7096 - 0x4000),
+        signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cdd435cdd8362135d7cb",                               // PartyMenuInit
+            0x14D4L to "21f06c180321016d",                                       // DrawPartyMenu
+            0x03 * 0x4000L + (0x5AF8 - 0x4000) to "cdfc13dad75d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x7096 - 0x4000) to "127220722c723d72",                 // EvosMovesPointerTable
+            0x35EEL to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x70E9 - 0x4000) to "afea99cffa11cfcb",
+            0x30D4L to "060321c755c3ee35",
+            0x3DECL to "cdfd3d0e03c35137",
+            0x3DD6L to "cd82003e01ead0cf",
+            0x20BAL to "fa62d3472116217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa30d5e0b8",
+            0x2429L to "fad0cf3dc0f0b8f5",
+        ),
+    ),
+    signatures = listOf(
+        0x2BD5L to "f0b8f53e03e0b8ea0020cd744ef1e0b8",
+        0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa97cfcb27856f30012423fa9bcf",
+        0x3603L to "c9",
+        0x0E * 0x4000L to GEN1_MOVES_POUND,
+        0x04 * 0x4000L + (0x7798 - 0x4000) to GEN1_TMS,
+        0x10 * 0x4000L + (0x4FB6 - 0x4000) to "7073202315642250",
+        0x0E * 0x4000L + (0x43DE - 0x4000) to GEN1_BULBASAUR,
+        0x01 * 0x4000L + (0x425B - 0x4000) to "97646464646418182d",
+        0x2307L to "cd6037af4f57eacfcf18120e",
+        0x0997L to "fa05d73d2807f0d7a7201118",
+        0x09C5L to "fa63d3$GEN1_BIKE_TAIL" + "6cd34721e2092ab828053c20f9a7c937c900030b0e11ff",
+    ),
+)
+
+/** Spanish Edición Roja / Azul (the same code at the same places in both): German Red's code moved again, its RAM. */
+val GEN1_ITEM_CALLS_RED_BLUE_ES = Gen1ItemCalls(
+    at = 0x0405, removeItem = 0x2BD4, ret = 0x360A,
+    whichPokemon = 0xCF97L, itemQuantity = 0xCF9BL, numBagItems = 0xD322L, partyCount = 0xD168L, repelSteps = 0xD0E0L,
+    machines = Gen1Machines(technicalMachines = 0x04 * 0x4000L + (0x7798 - 0x4000), pokedexOrder = 0x10 * 0x4000L + (0x4FB4 - 0x4000),
+        mewBaseStats = 0x01 * 0x4000L + (0x425B - 0x4000)),
+    bike = Gen1Bike(playDefaultMusic = 0x2306, loadPlayerSpriteGraphics = 0x0997, bikeRidingTilesets = 0x09E2,
+        curMap = 0xD363L, curMapTileset = 0xD36CL, walkBikeSurfState = 0xD705L, statusFlags6 = 0xD737L),
+    game = Gen1GameUse(bankswitch = 0x35F5, textIdInit = 0x7103, useItem = 0x30DB, whiteOutWithDelay3 = 0x3DF3,
+        restoreScreenTiles = 0x3DDD, loadGbPal = 0x20B9, initMapSprites = 0x785B, initMapSpritesBank = 5,
+        loadPlayerSpriteGraphics = 0x0997, loadCurrentMapView = 0x0CAA, updateSprites = 0x2428,
+        curItem = 0xCF96L, pseudoItemId = 0xD157L, curOpponent = 0xD05EL, fontLoaded = 0xCFC9L, updateSpritesEnabled = 0xCFD0L,
+        medicinePick = 0x5B04, evoStonePick = 0x5A7A, evoStoneItemId = 0xD15BL, clearSprites = 0x0082, partyMenuInit = 0x1420, drawPartyMenu = 0x14D4,
+        partyMenuSavedItem = 0xCC2BL, partyMenuType = 0xD082L, statusFlags5 = 0xD735L, evosMoves = 0x0E * 0x4000L + (0x7069 - 0x4000),
+        signatures = listOf(
+            0x0082L to "af2100c306a02205",                                       // ClearSprites
+            0x1420L to "3e01cddb35cddf362135d7cb",                               // PartyMenuInit
+            0x14D4L to "21f06c180321016d",                                       // DrawPartyMenu
+            0x03 * 0x4000L + (0x5B01 - 0x4000) to "cdfc13dae05d2170d1012c00",   // DisplayPartyMenu; ItemUseMedicine.getPartyMonDataAddress
+            0x03 * 0x4000L + (0x5A77 - 0x4000) to "cdfc13c1383178ea96cf3e01",   // ItemUseEvoStone's DisplayPartyMenu and after
+            0x0E * 0x4000L + (0x7069 - 0x4000) to "e571f371ff711072",                 // EvosMovesPointerTable
+            0x35F5L to "f0b8f578e0b8ea00",
+            0x01 * 0x4000L + (0x7103 - 0x4000) to "afea99cffa11cfcb",
+            0x30DBL to "060321c755c3f535",
+            0x3DF3L to "cd043e0e03c35837",
+            0x3DDDL to "cd82003e01ead0cf",
+            0x20B9L to "fa62d3472115217d",
+            0x05 * 0x4000L + (0x785B - 0x4000) to "cd7b79d82100c111",
+            0x0CAAL to "f0b8f5fa30d5e0b8",
+            0x2428L to "fad0cf3dc0f0b8f5",
+        ),
+    ),
+    signatures = listOf(
+        0x2BD4L to "f0b8f53e03e0b8ea0020cd744ef1e0b8",
+        0x03 * 0x4000L + (0x4E74 - 0x4000) to "e523fa97cfcb27856f30012423fa9bcf",
+        0x360AL to "c9",
+        0x0E * 0x4000L to GEN1_MOVES_POUND,
+        0x04 * 0x4000L + (0x7798 - 0x4000) to GEN1_TMS,
+        0x10 * 0x4000L + (0x4FB4 - 0x4000) to "7073202315642250",
+        0x0E * 0x4000L + (0x43DE - 0x4000) to GEN1_BULBASAUR,
+        0x01 * 0x4000L + (0x425B - 0x4000) to "97646464646418182d",
+        0x2306L to "cd6737af4f57eacfcf18120e",
+        0x0997L to "fa05d73d2807f0d7a7201118",
+        0x09C5L to "fa63d3$GEN1_BIKE_TAIL" + "6cd34721e2092ab828053c20f9a7c937c900030b0e11ff",
+    ),
+)
+
 /** HappinessChangeTable's rows and PikachuMoods (bank 0x3D), the same in English and German Yellow. */
 private const val YELLOW_HAPPINESS = "050302050302010100030201010100020101fdfdfbfffffffbfbf6fbfbf6f6f6ec8a8380809480626c626c00"
 

@@ -46,7 +46,7 @@ The card is drawn at the largest whole size that fits the screen, so the pixels 
 | Recharged Yellow | FireRed's card with its own pictures, font and wording, and the six Pokémon you picked for the back |
 | Crystal (English and German) | The game's own card with its two pages: your status, and the eight gym leaders with a spinning badge for each one you've beaten |
 | Gold and Silver (English and German) | The game's own card, with the same two pages as Crystal's |
-| Red, Blue and Yellow (English and German) | The game's own card: your name, money and play time, and the eight gym leaders with a badge for each one you've beaten |
+| Red and Blue (English, German, French, Italian, Spanish), Yellow (English and German) | The game's own card: your name, money and play time, and the eight gym leaders with a badge for each one you've beaten |
 
 Other games don't have a CARD tab yet, including Ruby, Sapphire and the Japanese versions of the original games. Many hacks draw their trainer card in a way of their own that hasn't been mapped.
 

@@ -190,13 +190,13 @@ object Gen1Art {
      * English's pixel for pixel - RedBlueGermanDecodeTest - so they share its files), their own font (German Yellow's letters). */
     val RED_DE = redBlue(TelemetrySampler.RED_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
     val BLUE_DE = redBlue(TelemetrySampler.BLUE_DE_SHA1, 'D', 0x579A, 0x58E7, 0x50FE, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_DE_TABLES)
-    /** French, Italian and Spanish Red / Blue: German Red's art, moved again (port_gen1.py; English's pixels), their own font. No card yet. */
-    val RED_FR = redBlue(TelemetrySampler.RED_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF)
-    val BLUE_FR = redBlue(TelemetrySampler.BLUE_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF)
-    val RED_IT = redBlue(TelemetrySampler.RED_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS)
-    val BLUE_IT = redBlue(TelemetrySampler.BLUE_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS)
-    val RED_ES = redBlue(TelemetrySampler.RED_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS)
-    val BLUE_ES = redBlue(TelemetrySampler.BLUE_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS)
+    /** French, Italian and Spanish Red / Blue: German Red's art, moved again (port_gen1.py; English's pixels), their own font and card. */
+    val RED_FR = redBlue(TelemetrySampler.RED_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_FR_TABLES)
+    val BLUE_FR = redBlue(TelemetrySampler.BLUE_FR_SHA1, 'F', 0x5791, 0x58DE, 0x5103, 0x65B8, Gen1Charset.DF, Gen1TrainerCard.RED_BLUE_FR_TABLES)
+    val RED_IT = redBlue(TelemetrySampler.RED_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS, Gen1TrainerCard.RED_BLUE_IT_TABLES)
+    val BLUE_IT = redBlue(TelemetrySampler.BLUE_IT_SHA1, 'I', 0x5800, 0x594D, 0x5101, 0x65B8, Gen1Charset.IS, Gen1TrainerCard.RED_BLUE_IT_TABLES)
+    val RED_ES = redBlue(TelemetrySampler.RED_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS, Gen1TrainerCard.RED_BLUE_ES_TABLES)
+    val BLUE_ES = redBlue(TelemetrySampler.BLUE_ES_SHA1, 'S', 0x57B0, 0x58FD, 0x5104, 0x65B8, Gen1Charset.IS, Gen1TrainerCard.RED_BLUE_ES_TABLES)
 
     /**
      * PureRed and PureBlue v2.7.6 (pureRGB's pokered.sym: the same addresses in both). A Color cart, its default COLORS

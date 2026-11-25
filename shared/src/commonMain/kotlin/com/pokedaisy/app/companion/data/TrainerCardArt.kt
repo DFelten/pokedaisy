@@ -193,7 +193,8 @@ object TrainerCardArt {
         CardStyle.HOENN_IT -> HOENN_IT
         CardStyle.HOENN_ES -> HOENN_ES
         CardStyle.CRYSTAL, CardStyle.GOLD_SILVER -> error("the Game Boy cards are Gen2TrainerCard's")
-        CardStyle.RED_BLUE, CardStyle.RED_BLUE_DE, CardStyle.YELLOW, CardStyle.YELLOW_DE -> error("the Game Boy cards are Gen1TrainerCard's")
+        CardStyle.RED_BLUE, CardStyle.RED_BLUE_DE, CardStyle.RED_BLUE_FR, CardStyle.RED_BLUE_IT,
+        CardStyle.RED_BLUE_ES, CardStyle.YELLOW, CardStyle.YELLOW_DE -> error("the Game Boy cards are Gen1TrainerCard's")
     }
 
     /** Every blob a card needs, every style. */

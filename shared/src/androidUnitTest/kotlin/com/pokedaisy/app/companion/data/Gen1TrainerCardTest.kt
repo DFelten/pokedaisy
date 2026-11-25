@@ -9,9 +9,10 @@ import java.util.zip.CRC32
 /**
  * Red's, Blue's and Yellow's TRAINER CARD ([Gen1TrainerCard]): the save's side from the fixtures, the pictures from the
  * carts (skipped without them; `GB_ROM_DIR` moves them). The pinned CRCs are the game's own card screens, captured
- * headless in English Yellow, German Yellow, English Blue and German Red (the yellow / red fixtures' save with every badge,
- * none, and badges 1 3 6 8 poked in): [Gen1TrainerCard.render] matched each of them pixel for pixel. English Red's art
- * is Blue's and German Blue's German Red's, byte for byte. `GEN1_CARD_SHOTS=<dir of those .ppm>` compares them again.
+ * headless in English Yellow, German Yellow, English Blue, German Red and all six French, Italian and Spanish Red / Blue
+ * carts (the yellow / red fixtures' save with every badge, none, and badges 1 3 6 8 poked in, play time 24:18):
+ * [Gen1TrainerCard.render] matched each of them pixel for pixel. English Red's art is Blue's, and each other language's
+ * Blue its Red's, byte for byte. `GEN1_CARD_SHOTS=<dir of those .ppm>` compares them again.
  */
 class Gen1TrainerCardTest {
     private val dir = File(System.getenv("GB_ROM_DIR") ?: File(File(RETAIL_ROM_DIR).parentFile, "gbc").path)
@@ -28,6 +29,12 @@ class Gen1TrainerCardTest {
             art("Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_TABLES)?.let { "r" to it },
             art("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_DE_TABLES)?.let { "rde" to it },
             art("Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_DE_TABLES)?.let { "bde" to it },
+            art("Pokemon - Version Rouge (France) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_FR_TABLES)?.let { "rfr" to it },
+            art("Pokemon - Version Bleue (France) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_FR_TABLES)?.let { "bfr" to it },
+            art("Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_IT_TABLES)?.let { "rit" to it },
+            art("Pokemon - Versione Blu (Italy) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_IT_TABLES)?.let { "bit" to it },
+            art("Pokemon - Edicion Roja (Spain) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_ES_TABLES)?.let { "res" to it },
+            art("Pokemon - Edicion Azul (Spain) (SGB Enhanced).gb", Gen1TrainerCard.RED_BLUE_ES_TABLES)?.let { "bes" to it },
         )
     }
 
@@ -44,6 +51,9 @@ class Gen1TrainerCardTest {
             Triple("yellow", GEN1_YELLOW, CardStyle.YELLOW), Triple("yellow_de", GEN1_YELLOW_DE, CardStyle.YELLOW_DE),
             Triple("red", GEN1_RED, CardStyle.RED_BLUE), Triple("blue", GEN1_BLUE, CardStyle.RED_BLUE),
             Triple("red_de", GEN1_RED_DE, CardStyle.RED_BLUE_DE), Triple("blue_de", GEN1_BLUE_DE, CardStyle.RED_BLUE_DE),
+            Triple("red_fr", GEN1_RED_FR, CardStyle.RED_BLUE_FR), Triple("blue_fr", GEN1_BLUE_FR, CardStyle.RED_BLUE_FR),
+            Triple("red_it", GEN1_RED_IT, CardStyle.RED_BLUE_IT), Triple("blue_it", GEN1_BLUE_IT, CardStyle.RED_BLUE_IT),
+            Triple("red_es", GEN1_RED_ES, CardStyle.RED_BLUE_ES), Triple("blue_es", GEN1_BLUE_ES, CardStyle.RED_BLUE_ES),
         )) {
             val c = Gen1TrainerCard.read(FixtureMemoryReader.load(fixture), cfg) ?: error("$fixture: no card")
             assertEquals(fixture, style, c.style)
@@ -59,6 +69,9 @@ class Gen1TrainerCardTest {
         "YELLOW_DE_all" to 0x94acc34dL, "YELLOW_DE_some" to 0xca140c01L, "YELLOW_DE_none" to 0xc76cc7f5L,
         "RED_BLUE_all" to 0xd45b21aeL, "RED_BLUE_some" to 0x3eb507bbL, "RED_BLUE_none" to 0x4ebd0615L,
         "RED_BLUE_DE_all" to 0xe694fbffL, "RED_BLUE_DE_some" to 0x0c7addeaL, "RED_BLUE_DE_none" to 0x7c72dc44L,
+        "RED_BLUE_FR_all" to 0x7b846466L, "RED_BLUE_FR_some" to 0x916a4273L, "RED_BLUE_FR_none" to 0xe16243ddL,
+        "RED_BLUE_IT_all" to 0xe9576389L, "RED_BLUE_IT_some" to 0x03b9459cL, "RED_BLUE_IT_none" to 0x73b14432L,
+        "RED_BLUE_ES_all" to 0xb7e7db1bL, "RED_BLUE_ES_some" to 0x5d09fd0eL, "RED_BLUE_ES_none" to 0x2d01fca0L,
     )
 
     @Test

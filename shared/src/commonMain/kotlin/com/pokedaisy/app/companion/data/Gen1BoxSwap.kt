@@ -224,6 +224,70 @@ val GEN1_BOX_CALLS_RED_DE = Gen1BoxCalls(
     ),
 )
 
+/** French Version Rouge / Bleue (the same code at the same places in both): German Red's code moved again, its RAM. */
+val GEN1_BOX_CALLS_RED_BLUE_FR = Gen1BoxCalls(
+    at = 0x0405, bankswitch = 0x35F3, moveMon = 0x3A85, removePokemon = 0x393C, ret = 0x3608, setMapTextPointer = 0x3F2C,
+    changeBoxEntry = 0x789E, emptyAllBoxes = 0x7A10,
+    curPartySpecies = 0xCF96L, whichPokemon = 0xCF97L, moveMonType = 0xCF9AL, curMapTextPtr = 0xD371L, partyCount = 0xD168L,
+    layout = GEN1_RED_DE_BOXES,
+    signatures = listOf(
+        0x3A85L to "f0b8f53e03e0b8ea0020cd",
+        0x393CL to "21d97b0601c3f335e5",
+        0x3608L to "c9",
+        0x3F2CL to "fa71d3e0ecfa72d3e0ed7dea",
+        0x1C * 0x4000L + (0x789E - 0x4000) to "cd4c785d542185dacddf78fa26cc",
+        0x1C * 0x4000L + (0x7A10 - 0x4000) to "3e0aea00003e01ea",
+    ),
+)
+
+/** Italian Versione Rossa: German Red's code moved again, its RAM. */
+val GEN1_BOX_CALLS_RED_IT = Gen1BoxCalls(
+    at = 0x0405, bankswitch = 0x35EE, moveMon = 0x3A80, removePokemon = 0x3937, ret = 0x3603, setMapTextPointer = 0x3F27,
+    changeBoxEntry = 0x790E, emptyAllBoxes = 0x7A69,
+    curPartySpecies = 0xCF96L, whichPokemon = 0xCF97L, moveMonType = 0xCF9AL, curMapTextPtr = 0xD371L, partyCount = 0xD168L,
+    layout = GEN1_RED_DE_BOXES,
+    signatures = listOf(
+        0x3A80L to "f0b8f53e03e0b8ea0020cd",
+        0x3937L to "217e7b0601c3ee35e5",
+        0x3603L to "c9",
+        0x3F27L to "fa71d3e0ecfa72d3e0ed7dea",
+        0x1C * 0x4000L + (0x790E - 0x4000) to "cdbc785d542185dacd4f79fa26cc",
+        0x1C * 0x4000L + (0x7A69 - 0x4000) to "3e0aea00003e01ea",
+    ),
+)
+
+/** Italian Versione Blu: Rossa's places, but a few far calls' banks' code apart (RemovePokemon's target, DisplayTextIDInit). */
+val GEN1_BOX_CALLS_BLUE_IT = Gen1BoxCalls(
+    at = 0x0405, bankswitch = 0x35EE, moveMon = 0x3A80, removePokemon = 0x3937, ret = 0x3603, setMapTextPointer = 0x3F27,
+    changeBoxEntry = 0x790E, emptyAllBoxes = 0x7A69,
+    curPartySpecies = 0xCF96L, whichPokemon = 0xCF97L, moveMonType = 0xCF9AL, curMapTextPtr = 0xD371L, partyCount = 0xD168L,
+    layout = GEN1_RED_DE_BOXES,
+    signatures = listOf(
+        0x3A80L to "f0b8f53e03e0b8ea0020cd",
+        0x3937L to "217d7b0601c3ee35e5",
+        0x3603L to "c9",
+        0x3F27L to "fa71d3e0ecfa72d3e0ed7dea",
+        0x1C * 0x4000L + (0x790E - 0x4000) to "cdbc785d542185dacd4f79fa26cc",
+        0x1C * 0x4000L + (0x7A69 - 0x4000) to "3e0aea00003e01ea",
+    ),
+)
+
+/** Spanish Edición Roja / Azul (the same code at the same places in both): German Red's code moved again, its RAM. */
+val GEN1_BOX_CALLS_RED_BLUE_ES = Gen1BoxCalls(
+    at = 0x0405, bankswitch = 0x35F5, moveMon = 0x3A87, removePokemon = 0x393E, ret = 0x360A, setMapTextPointer = 0x3F2E,
+    changeBoxEntry = 0x78BB, emptyAllBoxes = 0x7A17,
+    curPartySpecies = 0xCF96L, whichPokemon = 0xCF97L, moveMonType = 0xCF9AL, curMapTextPtr = 0xD371L, partyCount = 0xD168L,
+    layout = GEN1_RED_DE_BOXES,
+    signatures = listOf(
+        0x3A87L to "f0b8f53e03e0b8ea0020cd",
+        0x393EL to "21bb7b0601c3f535e5",
+        0x360AL to "c9",
+        0x3F2EL to "fa71d3e0ecfa72d3e0ed7dea",
+        0x1C * 0x4000L + (0x78BB - 0x4000) to "cd69785d542185dacdfc78fa26cc",
+        0x1C * 0x4000L + (0x7A17 - 0x4000) to "3e0aea00003e01ea",
+    ),
+)
+
 /** English Yellow: pokeyellow.sym. */
 val GEN1_BOX_CALLS_YELLOW = Gen1BoxCalls(
     at = 0x0248, bankswitch = 0x3E84, moveMon = 0x3A59, removePokemon = 0x3914, ret = 0x3E97, setMapTextPointer = 0x3F54,

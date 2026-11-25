@@ -32,6 +32,31 @@ class Gen1ItemUseTest {
         assertTrue(GB_FIELD_YELLOW.bagUse === GEN1_ITEM_CALLS_YELLOW && GB_FIELD_YELLOW_DE.bagUse === GEN1_ITEM_CALLS_YELLOW_DE)
     }
 
+    @Test
+    fun `the French, Italian and Spanish carts each have their own calls' code`() {
+        val carts = mapOf(
+            GEN1_ITEM_CALLS_RED_BLUE_FR to listOf("Pokemon - Version Rouge (France) (SGB Enhanced).gb", "Pokemon - Version Bleue (France) (SGB Enhanced).gb"),
+            GEN1_ITEM_CALLS_RED_IT to listOf("Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb"),
+            GEN1_ITEM_CALLS_BLUE_IT to listOf("Pokemon - Versione Blu (Italy) (SGB Enhanced).gb"),
+            GEN1_ITEM_CALLS_RED_BLUE_ES to listOf("Pokemon - Edicion Roja (Spain) (SGB Enhanced).gb", "Pokemon - Edicion Azul (Spain) (SGB Enhanced).gb"),
+            GEN1_ITEM_CALLS_RED_DE to listOf("Pokemon - Rote Edition (Germany) (SGB Enhanced).gb"),
+        )
+        var seen = 0
+        for ((calls, names) in carts) for (name in names) {
+            val f = File(dir, name)
+            if (!f.isFile) continue
+            val rom = f.readBytes()
+            for (other in carts.keys) {
+                val ok = other.codeMatches { off, len -> rom.copyOfRange(off.toInt(), (off + len).toInt()) }
+                assertEquals("$name / ${other.removeItem.toString(16)}", other === calls, ok)
+            }
+            seen++
+        }
+        assumeTrue("no French / Italian / Spanish Red / Blue cart", seen > 1)
+        assertTrue(GB_FIELD_RED_BLUE_FR.bagUse === GEN1_ITEM_CALLS_RED_BLUE_FR && GB_FIELD_RED_BLUE_ES.bagUse === GEN1_ITEM_CALLS_RED_BLUE_ES)
+        assertTrue(GB_FIELD_RED_IT.bagUse === GEN1_ITEM_CALLS_RED_IT && GB_FIELD_BLUE_IT.bagUse === GEN1_ITEM_CALLS_BLUE_IT)
+    }
+
     /** WRAM, a bit of cart (Moves, Yellow's happiness tables) and RemoveItemFromInventory's effect on the bag hl names. */
     private class Game(val calls: Gen1ItemCalls) : GameCalls {
         val ram = ByteArray(0x2000)

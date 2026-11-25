@@ -72,8 +72,9 @@ class GbFieldTest {
             "Pokemon - Blaue Edition (Germany) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_DE,
             "Pokemon - Version Rouge (France) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_FR,
             "Pokemon - Version Bleue (France) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_FR,
-            "Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_IT,
-            "Pokemon - Versione Blu (Italy) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_IT,
+            "Pokemon - Versione Rossa (Italy) (SGB Enhanced).gb" to GB_FIELD_RED_IT,
+            // Blu's field code is Rossa's (GB_FIELD_BLUE_IT has the same): only its PC and bag calls differ (Gen1BoxesTest).
+            "Pokemon - Versione Blu (Italy) (SGB Enhanced).gb" to GB_FIELD_RED_IT,
             "Pokemon - Edicion Roja (Spain) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_ES,
             "Pokemon - Edicion Azul (Spain) (SGB Enhanced).gb" to GB_FIELD_RED_BLUE_ES,
             "Pokemon PureRed (v2.7.6).gb" to GB_FIELD_PURE_RGB,
